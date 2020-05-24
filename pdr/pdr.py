@@ -202,7 +202,7 @@ def read_image(filename, pointer="IMAGE"):  # ^IMAGE
         nrows = label["IMAGE"]["LINES"]
         ncols = label["IMAGE"]["LINE_SAMPLES"]
         if "LINE_PREFIX_BYTES" in label["IMAGE"].keys():
-            print("Accounting for a line prefix.")
+            #print("Accounting for a line prefix.")
             prefix_cols = int(label["IMAGE"]["LINE_PREFIX_BYTES"] / BYTES_PER_PIXEL)
         else:
             prefix_cols = 0
@@ -243,7 +243,7 @@ def read_image(filename, pointer="IMAGE"):  # ^IMAGE
             image = image.reshape(BANDS, nrows, ncols)
     finally:
         f.close()
-    print("Displaying an image")
+    #print("Displaying an image")
     #plt.figure(figsize=(4, 4))
     #plt.title(filename.split("/")[-1])
     #plt.xticks([])
@@ -309,10 +309,10 @@ def parse_table_structure(filename, pointer="TABLE"):
     # Requires renaming some columns to maintain uniqueness.
     # Also requires unpacking columns that contain multiple entries.
     label = parse_label(filename)
-    if pointer=="TELEMETRY_TABLE":
-        if ((label["SPACECRAFT_NAME"] == "GALILEO ORBITER") and
-            (label["INSTRUMENT_NAME"] == "OLID_STATE_IMAGING")):
-            label = {pointer:parse_label('ref/GALILEO_ORBITER/SOLID_STATE_IMAGING/rtlmtab.fmt')}
+    #if pointer=="TELEMETRY_TABLE":
+    #    if ((label["SPACECRAFT_NAME"] == "GALILEO ORBITER") and
+    #        (label["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING")):
+    #        label = {pointer:parse_label('ref/GALILEO_ORBITER/SOLID_STATE_IMAGING/rtlmtab.fmt')}
     dt = []
     for i in range(len(label[pointer].keys())):
         obj = label[pointer][i]
