@@ -96,16 +96,16 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
 ### END code derived from astroML
 ###
 
-def url_to_path(url, testdir="tests"):
+def url_to_path(url, test_dir="tests"):
     dirstart = url.split("://")[1].find("/")
-    filename = testdir + url.split("://")[1][dirstart:]
+    filename = test_dir + url.split("://")[1][dirstart:]
     return filename
 
-def download_data_and_label(url):
+def download_data_and_label(url,test_dir="tests"):
     """ Download an observational data file from the PDS.
     Check for a detached label file and also download that, if it exists.
     """
-    filename = url_to_path(url)
+    filename = url_to_path(url,test_dir=test_dir)
     if download_with_progress_bar(url, filename, quiet=True):
         print("An error has occurred: {fn}".format(fn=filename))
         return 1
@@ -118,6 +118,6 @@ def download_data_and_label(url):
             break
     return filename
 
-def download_test_data(index, testdir="tests", refdatafile="refdata.csv"):
-    refdata = pd.read_csv(f"{testdir}/{refdatafile}", comment="#")
-    return download_data_and_label(refdata["url"][index])
+def download_test_data(index, test_dir="tests", refdatafile="tests/refdata.csv"):
+    refdata = pd.read_csv(f"{refdatafile}", comment="#")
+    return download_data_and_label(refdata["url"][index],test_dir=test_dir)

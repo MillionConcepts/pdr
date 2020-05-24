@@ -12,11 +12,13 @@ import pvl
 import gzip
 import bz2
 from zipfile import ZipFile
-import matplotlib.pyplot as plt
-
+#import matplotlib.pyplot as plt # just for QA
 
 def pvl_to_dict(labeldata):
     # Convert a PVL label object to a Python dict
+    # Deprecated because PVL allows keywords to be repeated at the same depth
+    #   which are _not_ allowed in a dict(), so this function ends up clobbering
+    #   information.
     data = {}
     if (
         (type(labeldata) == pvl._collections.PVLModule)
@@ -28,7 +30,6 @@ def pvl_to_dict(labeldata):
     else:
         return labeldata
     return data
-
 
 def filetype(filename):
     """ Attempt to deduce the filetype based on the filename.
@@ -189,7 +190,6 @@ def data_start_byte(label, pointer):
         print("WTF?", label[pointer])
         raise
 
-
 def read_image(filename, pointer="IMAGE"):  # ^IMAGE
     """ Read a PDS IMG formatted file into an array.
     TODO: Check for and account for LINE_PREFIX.
@@ -243,19 +243,14 @@ def read_image(filename, pointer="IMAGE"):  # ^IMAGE
             image = image.reshape(BANDS, nrows, ncols)
     finally:
         f.close()
-    #print("Displaying an image")
-    #plt.figure(figsize=(4, 4))
-    #plt.title(filename.split("/")[-1])
-    #plt.xticks([])
-    #plt.yticks([])
     if len(np.shape(image)) == 2:
-        #plt.imshow(image, cmap="gray")
+        #plt.imshow(image, cmap="gray") # Just for QA
         pass
     elif len(np.shape(image)) == 3:
         if np.shape(image)[0] == 3:
             image = np.stack([image[0, :, :], image[1, :, :], image[2, :, :]], axis=2)
         if np.shape(image)[2] == 3:
-            #plt.imshow(image)
+            #plt.imshow(image) # Just for QA
             pass
     return image
 
@@ -514,7 +509,7 @@ def read_odl_header(filename):  # ^ODL_HEADER
 
 
 # def read_any_file(filename):
-class data:
+class Data:
     def __init__(self, filename):
         pointer_to_function = {
             "^IMAGE": read_image,
@@ -540,7 +535,7 @@ class data:
             "MSLMMM-COMPRESSED": read_mslmmm_compressed,
             "JP2": read_jp2,
         }
-
+        setattr(self,"filename",filename)
         # Try PDS4 options
         if os.path.exists(filename[: filename.rfind(".")] + ".xml"):
             if filename.endswith(".dat"):
@@ -575,24 +570,6 @@ class data:
                     except KeyError:
                         pass
             elif ".JP2" in filename:
-                print("*** Do not yet suport JP2 images. ***")
+                print("*** JP2 not yet suported. ***")
             else:
-                print("\t*** No pointers. ***")
-
-
-class read:
-    def __init__(self, filename):
-        self.filename = filename
-        if filename.endswith(".JP2"):
-            print("*** JP2 not yet supported. ***")
-        else:
-            self.data = data(filename)
-
-
-class io:
-    def __init__(cls):
-        pass
-
-    def read(filename):
-        return read(filename)
-
+                print("\t*** No data pointers in label. Unable to find data. ***")
