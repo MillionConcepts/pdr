@@ -13,6 +13,12 @@ The object uses the name of the data type as provided in the metadata. For examp
 ### Supported Data Sets
 Most of these are files archived under PDS3. The standards for these files was quite flexible, as was the quality control, especially for older missions.
 
+* Mars Science Laboratory
+    * Mars Descent Imager
+        * RDR
+        * EDR (w/ caveat below)
+    * 
+
 ### Notes and Caveats
 #### Mars Science Laboratory images
 The Mars Science Laboratory "raw" (EDR) images produced by the Malin Space Science Systems (MSSS) cameras, which include Mastcam, Mahli, and the Mars Descent Imager, are archived in a bespoke compressed format. These images carry the extension '.DAT' which is typically reserved for "table" style data in PDS3. Software for converting these files to more typical PDS3-style .IMG format files has been provided in the archive. If the `dat2img` script is compiled in a directory called "MMM_DAT2IMG" under the "pdr" directory, then the `read()` action will run this script and read the resulting output. Otherwise it will just return an error. Functionality is planned to either include / compile this code with the installation of this package or (much better) to port `dat2img` to pure Python. Help is welcomed with either of these efforts! The MSL "calibrated" (RDR) files should all work fine, though.
