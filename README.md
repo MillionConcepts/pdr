@@ -9,6 +9,8 @@ The object uses the name of the data type as provided in the metadata. For examp
 ### Supported Data Types
 1. All data archived under PDS4 standards should be fully supported. This tool simply wraps `pds4_tools`.
 2. Flexible Image Transport (FITS) data should be fully supported. This tool simply wraps `astropy.io.fits`.
+3. The *GeoTiff format is not supported*, but the plan is to include this functionality (and a lot of others!) by wrapping GDAL.
+4. The *ISIS Cube format is not supported*, but the plan is to include this functionality by also wrapping _something_.
 
 ### Supported Data Sets (w/ Notes)
 Most of these are files archived under PDS3. The standards for these files was quite flexible, as was the quality control, especially for older missions.
@@ -56,3 +58,4 @@ Many table data in PDS3 have a format that is defined in a special file at a dif
 
 #### Additional processing
 Some data, especially calibrated image data, might require the application of additional offsets or scale factors to convert the storage units to meaningful physical units. This information on how and when to apply such adjustments is typically stored (as plain text) in the instrument SIS, and the scale factors themselves are usually stored in the label. This hasn't been implemented anywhere, because it will probably require digging into each data set individually. So don't trust that the data output by `read()` is automatically read for analysis. Contributions towards solving this problem are very much welcomed.
+
