@@ -9,8 +9,8 @@ The object uses the name of the data type as provided in the metadata. For examp
 ### Supported Data Types
 1. All data archived under PDS4 standards should be fully supported. This tool simply wraps `pds4_tools`.
 2. Flexible Image Transport (FITS) data should be fully supported. This tool simply wraps `astropy.io.fits`.
-3. The *GeoTiff format is not supported*, but the plan is to include this functionality (and a lot of others!) by wrapping GDAL.
-4. The *ISIS Cube format is not supported*, but the plan is to include this functionality by also wrapping _something_.
+3. The **GeoTiff format is not supported**, but the plan is to include this functionality (and a lot of others!) by wrapping GDAL.
+4. The **ISIS Cube format is not supported**, but the plan is to include this functionality by also wrapping _something_.
 
 ### Supported Data Sets (w/ Notes)
 Most of these are files archived under PDS3. The standards for these files was quite flexible, as was the quality control, especially for older missions.
@@ -38,11 +38,11 @@ Most of these are files archived under PDS3. The standards for these files was q
     * APXS
         * EDR contains two tables (ENGINEERING_TABLE and MEASUREMENT_TABLE), which both appear to parse correctly.
     * Mossbauer
-        * The EDR label does not seem to contain a data pointer and so *does not parse*.
+        * The EDR label does not seem to contain a data pointer and so **does not parse**.
     * Descent Camera
         * EDR seems to work great.
     * Hazard Avoidance Camera (Hazcam)
-        * The '.rgb' files *maybe do not parse*; need to investigate what this file should actually contain.
+        * The '.rgb' files **maybe do not parse**; need to investigate what this file should actually contain.
         * The EDR and RDR '.img' files work.
 
 [... list is in progress ...]
