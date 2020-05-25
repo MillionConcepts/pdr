@@ -56,7 +56,7 @@ class TestPancam(unittest.TestCase):
         data = pdr.open(pdr.get(url))
         self.assertEqual(data.IMAGE.shape[0],1024)
         self.assertEqual(data.IMAGE.shape[1],1024)
-        self.assertEqual(len(data.IMAGE_HEADER),18)
+        self.assertEqual(len(data.LABEL),18)
         self.assertEqual(data.DESCRIPTION,'CAM_EDR_RDR_SIS.TXT')
         self.assertEqual(data.FILE_NAME,'2P132046745XYL1500P2445L7M1.rgb')
 
@@ -66,7 +66,7 @@ class TestPancam(unittest.TestCase):
         self.assertEqual(data.IMAGE.shape[0],64)
         self.assertEqual(data.IMAGE.shape[1],64)
         self.assertEqual(len(data.LABEL),85)
-        self.assertEqual(data.IMAGE_HEADER,199)
+        self.assertEqual(len(data.IMAGE_HEADER),199)
 
     def test_pancam_rad_1(self):
         url = "http://pds-geosciences.wustl.edu/mer/mer2-m-pancam-3-radcal-rdr-v1/mer2pc_1xxx/data/sol0052/2p130975038rad1100p2820l4c1.img"
@@ -74,7 +74,7 @@ class TestPancam(unittest.TestCase):
         self.assertEqual(data.IMAGE.shape[0],272)
         self.assertEqual(data.IMAGE.shape[1],320)
         self.assertEqual(len(data.LABEL),85)
-        self.assertEqual(data.IMAGE_HEADER,201) ### THIS IS WRONG! There really is an image header!
+        self.assertEqual(len(data.IMAGE_HEADER),201) ### THIS IS WRONG! There really is an image header!
 
     def test_pancam_erp_1(self):
         url = "http://pds-geosciences.wustl.edu/mer/mer1-m-pancam-2-edr-sci-v1/mer1pc_0xxx/data/sol0704/1p190678905erp64kcp2600l8c1.img"
@@ -222,9 +222,9 @@ class TestHazcam(unittest.TestCase):
     def test_hazcam_uvl_1(self):
         url = "http://pds-imaging.jpl.nasa.gov/data/mer/opportunity/mer1ho_0xxx/data/sol0370/rdr/1f161026369uvl42d9p1111l0m1.img"
         data = pdr.open(pdr.get(url))
-        self.assertEqual(data.IMAGE.shape[0],512)
+        self.assertEqual(data.IMAGE.shape[0],3)
         self.assertEqual(data.IMAGE.shape[1],512)
-        self.assertEqual(data.IMAGE.shape[2],3)
+        self.assertEqual(data.IMAGE.shape[2],512)
         self.assertEqual(len(data.LABEL),85)
         self.assertEqual(len(data.IMAGE_HEADER),372)
 
@@ -297,7 +297,7 @@ class TestMI(unittest.TestCase):
         data = pdr.open(pdr.get(url))
         self.assertEqual(data.IMAGE.shape[0],1024)
         self.assertEqual(data.IMAGE.shape[1],1024)
-        self.assertEqual(len(data.LABEL),35)
+        self.assertEqual(len(data.LABEL),84)
         self.assertEqual(len(data.IMAGE_HEADER),335)
 
     def test_mi_eff_4(self):
@@ -397,10 +397,10 @@ class TestRAT(unittest.TestCase):
     def test_rat_edr_1(self):
         # AttributeError: 'HeaderStructure' object has no attribute 'fields'
         url = "http://pds-geosciences.wustl.edu/mer/mer2-m-rat-2-edr-ops-v1/mer2ra_0xxx/data/sol0236/2d147320057edr8600d2515n0m1.dat"
-        #data = pdr.open(pdr.get(url))
-        #self.assertEqual(data.IMAGE.shape[0],63)
-        #self.assertEqual(data.IMAGE.shape[1],63)
-        #self.assertEqual(len(data.IMAGE_HEADER),350)
+        data = pdr.open(pdr.get(url))
+        self.assertEqual(len(data.LABEL),71)
+        self.assertEqual(len(data.TABLE),151)
+        self.assertEqual(len(data.TABLE.keys()),20)
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestRAT)
 unittest.TextTestRunner(verbosity=2).run(suite)

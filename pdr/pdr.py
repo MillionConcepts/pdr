@@ -506,15 +506,17 @@ def read_odl_header(filename):  # ^ODL_HEADER
 def read_label(filename):
     try:
         label = pvl.load(filename,strict=False)
+        if not len(label):
+            raise
+        return label
     except: # look for a detached label
         if os.path.exists(filename[: filename.rfind(".")] + ".LBL"):
-            label = pvl.load(filename[: filename.rfind(".")] + ".LBL", strict=False)
+            return pvl.load(filename[: filename.rfind(".")] + ".LBL", strict=False)
         elif os.path.exists(ilename[: filename.rfind(".")] + ".lbl"):
-            label = pvl.load(filename[: filename.rfind(".")] + ".lbl", strict=False)
+            return pvl.load(filename[: filename.rfind(".")] + ".lbl", strict=False)
         else:
             print(" *** Cannot find label data. *** ")
             raise
-    return label
 
 def read_file_name(filename, label):  # ^FILE_NAME
     return label["^FILE_NAME"]
