@@ -206,7 +206,7 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
         else:
             return dataset.read()
     except rasterio.errors.RasterioIOError:
-        print(' *** Not using rasterio. ***')
+        #print(' *** Not using rasterio. ***')
         pass
     #label = parse_label(filename)
     if "IMAGE" in label.keys():
@@ -267,17 +267,46 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
             pass
     return image
 
+def parse_image_header(filename,label):
+    # Backup function for parsing the IMAGE_HEADER when pvl breaks
+    with open(filename, "r") as f:
+        f.seek(data_start_byte(label, "^IMAGE_HEADER"))
+        header_str = str(f.read(label["IMAGE_HEADER"]["BYTES"]))
+    image_header = {}
+    lastkey = None
+    for entry in header_str.split('  '):
+        pv = entry.split('=')
+        if len(pv)==2:
+            # The `strip("'")` is to avoid double quotations
+            image_header[pv[0]] = pv[1].strip("'")
+            lastkey = pv[0]
+        elif len(pv)==1 and lastkey:
+            # Append the runon line to the previous value...
+            if len(pv[0]): # ... unless it's empty
+                image_header[lastkey]+=" "+pv[0].strip("'")
+        else:
+            raise
+    return image_header
 
 def read_image_header(filename, label):  # ^IMAGE_HEADER
     #label = parse_label(filename)
     try:
         with open(filename, "rb") as f:
             f.seek(data_start_byte(label, "^IMAGE_HEADER"))
-            image_header = pvl.load(f.read(label["IMAGE_HEADER"]["BYTES"]))
+            image_header = pvl.load(f.read(label["IMAGE_HEADER"]["BYTES"]),strict=False)
         return image_header
-    except:
-        print("*** Unable to parse image header. ***")
-        return
+    except:# Specifically on ParseError from PVL...
+        # The IMAGE_HEADER is not well-constructed according to PVL
+        try: # to parse it naively
+            return parse_image_header(filename,label)
+        except
+            #  Naive parsing didn't work...
+            #    so just return the unparsed plaintext of the image header.
+            with open(filename, "r") as f:
+                f.seek(data_start_byte(label, "^IMAGE_HEADER"))
+                image_header = str(f.read(label["IMAGE_HEADER"]["BYTES"]))
+            return image_header
+    raise # WHAT ARE THIS?!
 
 
 def read_bad_data_values_header(filename):  # ^BAD_DATA_VALUES_HEADER
