@@ -13,6 +13,7 @@ import gzip
 import bz2
 from zipfile import ZipFile
 #import matplotlib.pyplot as plt # just for QA
+import rasterio
 
 def pvl_to_dict(labeldata):
     # Convert a PVL label object to a Python dict
@@ -61,6 +62,8 @@ def parse_attached_label(filename):
     """ Parse an attached label of a IMG file.
     """
     # First grab the entries from the label that define how to read the label
+    return pvl.load(filename,strict=False)
+"""
     with open(filename, "rb") as f:
         for line_ in f:
             line = line_.decode("utf-8").strip()  # hacks through a rare error
@@ -85,13 +88,13 @@ def parse_attached_label(filename):
     except:
         with open(filename, "rb") as f:
             return pvl.load(f.read(RECORD_BYTES * (LABEL_RECORDS)), strict=False)
-
+"""
 
 def parse_label(filename, full=False):
     """ Wraps forking paths for attached and detached PDS3 labels.
     """
     if filename.endswith('.fmt'):
-        return pvl.load(filename)
+        return pvl.load(filename,strict=False)
     if not has_attached_label(filename):
         if os.path.exists(filename[: filename.rfind(".")] + ".LBL"):
             label = pvl.load(filename[: filename.rfind(".")] + ".LBL")
@@ -146,6 +149,7 @@ def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
         "REAL": ">f",
         "MAC_REAL": ">f",
         "SUN_REAL": ">f",
+        "MSB_BIT_STRING": "",
     }[SAMPLE_TYPE]
 
 
@@ -190,12 +194,21 @@ def data_start_byte(label, pointer):
         print("WTF?", label[pointer])
         raise
 
-def read_image(filename, pointer="IMAGE"):  # ^IMAGE
+def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
     """ Read a PDS IMG formatted file into an array.
     TODO: Check for and account for LINE_PREFIX.
     TODO: Check for and apply BIT_MASK.
     """
-    label = parse_label(filename)
+    try:
+        dataset = rasterio.open(filename)
+        if len(dataset.indexes)==1:
+            return dataset.read()[0,:,:] # Make 2D images actually 2D
+        else:
+            return dataset.read()
+    except rasterio.errors.RasterioIOError:
+        print(' *** Not using rasterio. ***')
+        pass
+    #label = parse_label(filename)
     if "IMAGE" in label.keys():
         BYTES_PER_PIXEL = int(label["IMAGE"]["SAMPLE_BITS"] / 8)
         DTYPE = sample_types(label["IMAGE"]["SAMPLE_TYPE"], BYTES_PER_PIXEL)
@@ -255,8 +268,8 @@ def read_image(filename, pointer="IMAGE"):  # ^IMAGE
     return image
 
 
-def read_image_header(filename):  # ^IMAGE_HEADER
-    label = parse_label(filename)
+def read_image_header(filename, label):  # ^IMAGE_HEADER
+    #label = parse_label(filename)
     try:
         with open(filename, "rb") as f:
             f.seek(data_start_byte(label, "^IMAGE_HEADER"))
@@ -299,47 +312,6 @@ def read_histogram(filename):  # ^HISTOGRAM
     return histogram
 
 
-def parse_table_structure(filename, pointer="TABLE"):
-    # Try to turn the TABLE definition into a column name / data type array.
-    # Requires renaming some columns to maintain uniqueness.
-    # Also requires unpacking columns that contain multiple entries.
-    label = parse_label(filename)
-    #if pointer=="TELEMETRY_TABLE":
-    #    if ((label["SPACECRAFT_NAME"] == "GALILEO ORBITER") and
-    #        (label["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING")):
-    #        label = {pointer:parse_label('ref/GALILEO_ORBITER/SOLID_STATE_IMAGING/rtlmtab.fmt')}
-    dt = []
-    for i in range(len(label[pointer].keys())):
-        obj = label[pointer][i]
-        if obj[0] == "COLUMN":
-            if obj[1]["NAME"] == "RESERVED":
-                name = "RESERVED_" + str(obj[1]["START_BYTE"])
-            else:
-                name = obj[1]["NAME"]
-            try:  # Some "columns" contain a lot of columns
-                for n in range(obj[1]["ITEMS"]):
-                    dt += [
-                        (
-                            f"{name}_{n}",
-                            sample_types(obj[1]["DATA_TYPE"], obj[1]["ITEM_BYTES"]),
-                        )
-                    ]
-            except KeyError:
-                dt += [(name, sample_types(obj[1]["DATA_TYPE"], obj[1]["BYTES"]))]
-    return np.dtype(dt)
-
-
-def read_table(filename, pointer="TABLE"):  # ^TABLE
-    label = parse_label(filename)
-    dt = parse_table_structure(filename, pointer)
-    return pd.DataFrame(
-        np.fromfile(
-            filename,
-            dtype=dt,
-            offset=data_start_byte(label, f"^{pointer}"),
-            count=label[pointer]["ROWS"],
-        )
-    )
 
 
 def read_engineering_table(filename):  # ^ENGINEERING_TABLE
@@ -457,12 +429,6 @@ def unknown(filename):
     return None, None
 
 
-def read_file_name(filename):  # ^FILE_NAME
-    # It just names itself.
-    label = parse_label(filename)
-    return label["^FILE_NAME"]
-
-
 def read_description(filename):  # ^DESCRIPTION
     label = parse_label(filename)
     return label["^DESCRIPTION"]
@@ -507,69 +473,83 @@ def read_odl_header(filename):  # ^ODL_HEADER
     print("*** ODL_HEADER not yet supported. ***")
     return
 
+def read_label(filename):
+    try:
+        label = pvl.load(filename,strict=False)
+    except: # look for a detached label
+        if os.path.exists(filename[: filename.rfind(".")] + ".LBL"):
+            label = pvl.load(filename[: filename.rfind(".")] + ".LBL", strict=False)
+        elif os.path.exists(ilename[: filename.rfind(".")] + ".lbl"):
+            label = pvl.load(filename[: filename.rfind(".")] + ".lbl", strict=False)
+        else:
+            print(" *** Cannot find label data. *** ")
+            raise
+    return label
+
+def read_file_name(filename, label):  # ^FILE_NAME
+    return label["^FILE_NAME"]
+
+def read_description(filename, label):  # ^DESCRIPTION
+    return label["^DESCRIPTION"]
+
+def parse_table_structure(label, pointer="TABLE"):
+    # Try to turn the TABLE definition into a column name / data type array.
+    # Requires renaming some columns to maintain uniqueness.
+    # Also requires unpacking columns that contain multiple entries.
+    #if pointer=="TELEMETRY_TABLE":
+    #    if ((label["SPACECRAFT_NAME"] == "GALILEO ORBITER") and
+    #        (label["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING")):
+    #        label = {pointer:parse_label('ref/GALILEO_ORBITER/SOLID_STATE_IMAGING/rtlmtab.fmt')}
+    dt = []
+    for i in range(len(label[pointer].keys())):
+        obj = label[pointer][i]
+        if obj[0] == "COLUMN":
+            if obj[1]["NAME"] == "RESERVED":
+                name = "RESERVED_" + str(obj[1]["START_BYTE"])
+            else:
+                name = obj[1]["NAME"]
+            try:  # Some "columns" contain a lot of columns
+                for n in range(obj[1]["ITEMS"]):
+                    dt += [
+                        (
+                            f"{name}_{n}",
+                            sample_types(obj[1]["DATA_TYPE"], obj[1]["ITEM_BYTES"]),
+                        )
+                    ]
+            except KeyError:
+                dt += [(name, sample_types(obj[1]["DATA_TYPE"], obj[1]["BYTES"]))]
+    return np.dtype(dt)
+
+def read_table(filename, label, pointer="TABLE"):  # ^TABLE
+    dt = parse_table_structure(label, pointer)
+    return pd.DataFrame(
+        np.fromfile(
+            filename,
+            dtype=dt,
+            offset=data_start_byte(label, f"^{pointer}"),
+            count=label[pointer]["ROWS"],
+        )
+    )
+
+pointer_to_function = {
+    "^IMAGE": read_image,
+    "^IMAGE_HEADER": read_image_header,
+    "^FILE_NAME": read_file_name,
+    "^TABLE": read_table,
+    "^DESCRIPTION": read_description,
+}
 
 # def read_any_file(filename):
 class Data:
     def __init__(self, filename):
-        pointer_to_function = {
-            "^IMAGE": read_image,
-            "^IMAGE_HEADER": read_image_header,
-            "^TELEMETRY_TABLE": read_telemetry_table,
-            "^BAD_DATA_VALUES_HEADER": read_bad_data_values_header,
-            "^LINE_PREFIX_TABLE": read_line_prefix_table,
-            "^HISTOGRAM": read_histogram,
-            "^TABLE": read_table,
-            "^MEASUREMENT_TABLE": read_measurement_table,
-            "^ENGINEERING_TABLE": read_engineering_table,
-            "^SPECTRUM": read_spectrum,
-            "^FILE_NAME": read_file_name,
-            "^DESCRIPTION": read_description,
-            "^ABDR_TABLE": read_abdr_table,
-            "^ARRAY": read_array,
-            "^VICAR_HEADER": read_vicar_header,
-            "^VICAR_EXTENSION_HEADER": read_vicar_extension_header,
-            "^HISTORY": read_history,
-            "^SPECTRAL_QUBE": read_spectral_qube,
-            "^SPACECRAFT_POINTING_MODE_DESC": read_spacecraft_pointing_mode_desc,
-            "^ODL_HEADER": read_odl_header,
-            "MSLMMM-COMPRESSED": read_mslmmm_compressed,
-            "JP2": read_jp2,
-        }
         setattr(self,"filename",filename)
-        # Try PDS4 options
-        if os.path.exists(filename[: filename.rfind(".")] + ".xml"):
-            if filename.endswith(".dat"):
-                self.dat = read_dat_pds4(filename)
-                self.label = pds4_tools.read(
-                    filename.replace(".dat", ".xml")
-                ).label.to_dict()
-                # print('DAT_PDS4',type(data))
-        else:
-            # Try PDS3 options
-            setattr(self, "LABEL", parse_label(filename, full=True))
-            label = parse_label(filename)
+        # Try PDS3 options
+        setattr(self, "LABEL", read_label(filename))
+        setattr(self, "pointers", [k for k in self.LABEL.keys() if k[0] == "^"])
+        _ = [setattr(self,pointer[1:] if pointer.startswith("^") else pointer,
+                pointer_to_function[pointer](filename,self.LABEL)) for pointer in self.pointers]
+        if not ("^IMAGE" in self.pointers): # Sometimes images don't have explicit pointers
             try:
-                pointers = [k for k in label.keys() if k[0] == "^"]
-            except AttributeError:
-                return
-            try:
-                if label["COMPRESSED_FILE"]["ENCODING_TYPE"] == "MSLMMM-COMPRESSED":
-                    pointers += [label["COMPRESSED_FILE"]["ENCODING_TYPE"]]
+                setattr(self, "IMAGE", read_image(filename, self.LABEL))
             except:
                 pass
-            print(filename)
-            if len(pointers):
-                print("\t", pointers)
-                for pointer in pointers:
-                    try:
-                        setattr(
-                            self,
-                            pointer[1:] if pointer.startswith("^") else pointer,
-                            pointer_to_function[pointer](filename),
-                        )
-                    except KeyError:
-                        pass
-            elif ".JP2" in filename:
-                print("*** JP2 not yet suported. ***")
-            else:
-                print("\t*** No data pointers in label. Unable to find data. ***")

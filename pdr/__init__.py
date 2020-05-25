@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import os.path as _osp
 
 from pdr.pdr import Data
-from pdr.utils import download_test_data
+from pdr.utils import download_test_data, download_data_and_label
 
 __version__ = "0.1.0"
 
@@ -15,6 +15,10 @@ def read(fp):
 def open(fp):
     return read(fp)
 
-def get(index, refdatafile="refdata.csv"):
+def get(url):
+    # Grab test data and the corresponding label (if applicable) into the test_dir
+    return download_data_and_label(url,test_dir=test_dir)
+
+def get_from_index(index, refdatafile="refdata.csv"):
     """ Retrieve the test data at row = _index_ in the refdata.csv. """
     return download_test_data(index, test_dir=test_dir, refdatafile=f"{test_dir}/refdata.csv")
