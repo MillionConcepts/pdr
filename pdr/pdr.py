@@ -13,7 +13,8 @@ import gzip
 import bz2
 from zipfile import ZipFile
 #import matplotlib.pyplot as plt # just for QA
-import rasterio
+
+import rasterio 
 
 def pvl_to_dict(labeldata):
     # Convert a PVL label object to a Python dict
@@ -149,7 +150,7 @@ def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
         "REAL": ">f",
         "MAC_REAL": ">f",
         "SUN_REAL": ">f",
-        "MSB_BIT_STRING": "",
+        "MSB_BIT_STRING": ">B",
     }[SAMPLE_TYPE]
 
 
@@ -225,8 +226,8 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
             BANDS = 1
         pixels = nrows * (ncols + prefix_cols) * BANDS
     else:
-        print("*** IMG w/ old format attached label not currently supported.")
-        print("\t{fn}".format(fn=filename))
+        #print("*** IMG w/ old format attached label not currently supported.")
+        #print("\t{fn}".format(fn=filename))
         return None
     fmt = "{endian}{pixels}{fmt}".format(endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1])
     try:  # a little decision tree to seamlessly deal with compression
@@ -299,7 +300,7 @@ def read_image_header(filename, label):  # ^IMAGE_HEADER
         # The IMAGE_HEADER is not well-constructed according to PVL
         try: # to parse it naively
             return parse_image_header(filename,label)
-        except
+        except:
             #  Naive parsing didn't work...
             #    so just return the unparsed plaintext of the image header.
             with open(filename, "r") as f:
@@ -343,12 +344,12 @@ def read_histogram(filename):  # ^HISTOGRAM
 
 
 
-def read_engineering_table(filename):  # ^ENGINEERING_TABLE
-    return read_table(filename, pointer="ENGINEERING_TABLE")
+def read_engineering_table(filename, label):  # ^ENGINEERING_TABLE
+    return read_table(filename, label, pointer="ENGINEERING_TABLE")
 
 
-def read_measurement_table(filename):  # ^MEASUREMENT_TABLE
-    return read_table(filename, pointer="MEASUREMENT_TABLE")
+def read_measurement_table(filename, label):  # ^MEASUREMENT_TABLE
+    return read_table(filename, label, pointer="MEASUREMENT_TABLE")
 
 
 def read_telemetry_table(filename):  # ^TELEMETRY_TABLE
@@ -546,6 +547,9 @@ def parse_table_structure(label, pointer="TABLE"):
                         )
                     ]
             except KeyError:
+                if len(dt):
+                    while name in np.array(dt)[:,0].tolist(): # already a column with this name
+                        name=f'{name}_' # dunno... dumb way to enforce uniqueness
                 dt += [(name, sample_types(obj[1]["DATA_TYPE"], obj[1]["BYTES"]))]
     return np.dtype(dt)
 
@@ -557,7 +561,7 @@ def read_table(filename, label, pointer="TABLE"):  # ^TABLE
             dtype=dt,
             offset=data_start_byte(label, f"^{pointer}"),
             count=label[pointer]["ROWS"],
-        )
+        ).byteswap().newbyteorder() # Pandas doesn't do non-native endian
     )
 
 pointer_to_function = {
@@ -566,6 +570,8 @@ pointer_to_function = {
     "^FILE_NAME": read_file_name,
     "^TABLE": read_table,
     "^DESCRIPTION": read_description,
+    "^MEASUREMENT_TABLE": read_measurement_table,
+    "^ENGINEERING_TABLE": read_engineering_table,
 }
 
 # def read_any_file(filename):
@@ -577,8 +583,12 @@ class Data:
         setattr(self, "pointers", [k for k in self.LABEL.keys() if k[0] == "^"])
         _ = [setattr(self,pointer[1:] if pointer.startswith("^") else pointer,
                 pointer_to_function[pointer](filename,self.LABEL)) for pointer in self.pointers]
-        if not ("^IMAGE" in self.pointers): # Sometimes images don't have explicit pointers
+        # Sometimes images do not have explicit pointers, so just always try
+        #  to read an image out of the file no matter what.
+        if not ("^IMAGE" in self.pointers):
             try:
-                setattr(self, "IMAGE", read_image(filename, self.LABEL))
+                image = read_image(filename, self.LABEL)
+                if not image is None:
+                    setattr(self, "IMAGE", read_image(filename, self.LABEL))
             except:
                 pass
