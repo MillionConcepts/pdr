@@ -218,16 +218,34 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
         if "LINE_PREFIX_BYTES" in label["IMAGE"].keys():
             #print("Accounting for a line prefix.")
             prefix_cols = int(label["IMAGE"]["LINE_PREFIX_BYTES"] / BYTES_PER_PIXEL)
+            prefix_bytes = prefix_cols*BYTES_PER_PIXEL
         else:
             prefix_cols = 0
+            prefix_bytes = 0
         try:
             BANDS = label["IMAGE"]["BANDS"]
+            band_storage_type = label["IMAGE"]["BAND_STORAGE_TYPE"]
         except KeyError:
             BANDS = 1
+            band_storage_type = None
         pixels = nrows * (ncols + prefix_cols) * BANDS
+        start_byte = data_start_byte(label, "^IMAGE")
+    elif label['INSTRUMENT_ID']=="M3" and label['PRODUCT_TYPE']=="RAW_IMAGE":
+        print('Special case: Chandrayaan-1 M3 data.')
+        BYTES_PER_PIXEL = int(label['L0_FILE']['L0_IMAGE']["SAMPLE_BITS"] / 8)
+        DTYPE = sample_types(label['L0_FILE']['L0_IMAGE']["SAMPLE_TYPE"], BYTES_PER_PIXEL)
+        nrows = label['L0_FILE']['L0_IMAGE']["LINES"]
+        ncols = label['L0_FILE']['L0_IMAGE']["LINE_SAMPLES"]
+        prefix_bytes = int(label['L0_FILE']['L0_IMAGE']["LINE_PREFIX_BYTES"])
+        prefix_cols = prefix_bytes / BYTES_PER_PIXEL # M3 has a prefix, but it's not image-shaped
+        BANDS = label['L0_FILE']['L0_IMAGE']["BANDS"]
+        pixels = nrows * (ncols + prefix_cols) * BANDS
+        start_byte = 0
+        band_storage_type = label['L0_FILE']['L0_IMAGE']['BAND_STORAGE_TYPE']
     else:
         #print("*** IMG w/ old format attached label not currently supported.")
         #print("\t{fn}".format(fn=filename))
+        print('No image data identified.')
         return None
     fmt = "{endian}{pixels}{fmt}".format(endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1])
     try:  # a little decision tree to seamlessly deal with compression
@@ -241,10 +259,10 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
             )
         else:
             f = open(filename, "rb")
-        f.seek(data_start_byte(label, "^IMAGE"))
-        image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
         # Make sure that single-band images are 2-dim arrays.
+        f.seek(start_byte)
         if BANDS == 1:
+            image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
             image = image.reshape(nrows, (ncols + prefix_cols))
             if prefix_cols:
                 # Ignore the prefix data, if any.
@@ -253,8 +271,20 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
                 if pointer == "LINE_PREFIX_TABLE":
                     return prefix
                 image = image[:, prefix_cols:]
+        elif band_storage_type=='BAND_SEQUENTIAL':
+            image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
+            image = image.reshape(BANDS, nrows, (ncols+prefix_cols))
+        elif band_storage_type=='LINE_INTERLEAVED':
+            image = []
+            for i in np.arange(nrows):
+                prefix = f.read(prefix_bytes)
+                frame = np.array(struct.unpack(f'<{BANDS*ncols}h',f.read(BANDS*ncols*BYTES_PER_PIXEL))).reshape(BANDS,ncols)
+                image+=[frame]
         else:
-            image = image.reshape(BANDS, nrows, ncols)
+            print(f"Unknown BAND_STORAGE_TYPE={band_storage_type}")
+            raise
+    except:
+        raise
     finally:
         f.close()
     if len(np.shape(image)) == 2:
@@ -341,25 +371,18 @@ def read_histogram(filename):  # ^HISTOGRAM
         )
     return histogram
 
-
-
-
 def read_engineering_table(filename, label):  # ^ENGINEERING_TABLE
     return read_table(filename, label, pointer="ENGINEERING_TABLE")
-
 
 def read_measurement_table(filename, label):  # ^MEASUREMENT_TABLE
     return read_table(filename, label, pointer="MEASUREMENT_TABLE")
 
-
 def read_telemetry_table(filename):  # ^TELEMETRY_TABLE
     return read_table(filename, pointer="TELEMETRY_TABLE")
-
 
 def read_spectrum(filename):  # ^SPECTRUM
     print("*** SPECTRUM data not yet supported. ***")
     return
-
 
 def read_jp2(filename):  # .JP2 extension
     # NOTE: These are the huge HIRISE images. It might be best to just
