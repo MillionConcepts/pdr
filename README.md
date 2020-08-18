@@ -1,4 +1,4 @@
-## The Planetary Data Reader (PDR)
+## The Planetary Data Reader (pdr)
 This tool will provide a single command ('read([filename])') for ingesting _all_ common planetary data types. It is currently in development. Any kind of "primary observational data" product currently archived in the PDS (under PDS3 or PDS4) should be covered, as should many common data types used in research workflows that do not appear in the PDS (e.g. ISIS Cube, GeoTIFF, ...) The supported data types / sets are listed below. There might be data types / sets that work but are not listed. There are also likely to be some files in the 'supported' data types / sets that break. In either of these cases, please submit an issue with a link to the file and information about the error (if applicable).
 
 ### Usage
@@ -16,7 +16,7 @@ The object uses the name of the data type as provided in the metadata. For examp
 Most of these are files archived under PDS3. The standards for these files was quite flexible, as was the quality control, especially for older missions. The current validation method is _visual inspection of the output_. Strategies for better and automated QA are desired.
 
 * Chandrayaan-1 M3
-    * Seems to work for the images, but they're noisy enough that it's hard to say. They _look_ like the examples given in the M3 calibration paper...
+    * Seems to work for the L0 images, but they're noisy enough that it's hard to say. They _look_ like the examples given in the M3 calibration paper.
     * The prefixes are not yet parsed. (They only include timestamps.)
     * This will probably break on edge cases. There are apparently L0 data with "missing lines" that can only be sussed out by comparing the number of bytes in between line prefix strings.I haven't encountered one of those yet, so it hasn't been coded around.
     * The PDR implementation might be more versatile than the ISIS3 read capability now, because ISIS3 seems to hardcode the number of BANDS to one of two options (even though there are like 5).
