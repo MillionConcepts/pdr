@@ -306,7 +306,7 @@ def read_line_prefix_table(filename,label,pointer="LINE_PREFIX_TABLE"):
 
 def read_CH1_M3_L0_prefix_table(filename,label):
     prefix = read_line_prefix_table(filename,label,pointer='L0_LINE_PREFIX_TABLE')
-    return [[p[:269]]+list(struct.unpack('<22B',p[640:662])) for p in prefix]
+    return [[p[:269].decode('ascii')]+list(struct.unpack('<22B',p[640:662])) for p in prefix]
 
 def parse_image_header(filename,label):
     # Backup function for parsing the IMAGE_HEADER when pvl breaks
