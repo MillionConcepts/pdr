@@ -261,6 +261,7 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
             f = open(filename, "rb")
         # Make sure that single-band images are 2-dim arrays.
         f.seek(start_byte)
+        prefix = None
         if BANDS == 1:
             image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
             image = image.reshape(nrows, (ncols + prefix_cols))
@@ -275,9 +276,9 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
             image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
             image = image.reshape(BANDS, nrows, (ncols+prefix_cols))
         elif band_storage_type=='LINE_INTERLEAVED':
-            image = []
+            image,prefix = [],[]
             for i in np.arange(nrows):
-                prefix = f.read(prefix_bytes)
+                prefix += [f.read(prefix_bytes)]
                 frame = np.array(struct.unpack(f'<{BANDS*ncols}h',f.read(BANDS*ncols*BYTES_PER_PIXEL))).reshape(BANDS,ncols)
                 image+=[frame]
         else:
@@ -296,7 +297,16 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
         if np.shape(image)[2] == 3:
             #plt.imshow(image) # Just for QA
             pass
+    if 'PREFIX' in pointer:
+        return prefix
     return image
+
+def read_line_prefix_table(filename,label,pointer="LINE_PREFIX_TABLE"):
+    return read_image(filename, label, pointer=pointer)
+
+def read_CH1_M3_L0_prefix_table(filename,label):
+    prefix = read_line_prefix_table(filename,label,pointer='L0_LINE_PREFIX_TABLE')
+    return [[p[:269]]+list(struct.unpack('<22B',p[640:662])) for p in prefix]
 
 def parse_image_header(filename,label):
     # Backup function for parsing the IMAGE_HEADER when pvl breaks
@@ -351,11 +361,6 @@ def read_bad_data_values_header(filename):  # ^BAD_DATA_VALUES_HEADER
         )
     )
     return bad_data_values_header
-
-
-def read_line_prefix_table(filename):
-    return read_image(filename, pointer="LINE_PREFIX_TABLE")
-
 
 def read_histogram(filename):  # ^HISTOGRAM
     label = parse_label(filename)
@@ -608,9 +613,12 @@ class Data:
         setattr(self, "pointers", [k for k in self.LABEL.keys() if k[0] == "^"])
         _ = [setattr(self,pointer[1:] if pointer.startswith("^") else pointer,
                 pointer_to_function[pointer](filename,self.LABEL)) for pointer in self.pointers]
+        if self.LABEL['INSTRUMENT_ID']=="M3" and self.LABEL['PRODUCT_TYPE']=="RAW_IMAGE":
+            setattr(self, "L0_IMAGE", read_image(filename, self.LABEL))
+            setattr(self,'L0_LINE_PREFIX_TABLE',read_CH1_M3_L0_prefix_table(filename,self.LABEL))
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
-        if not ("^IMAGE" in self.pointers):
+        elif not ("^IMAGE" in self.pointers):
             try:
                 image = read_image(filename, self.LABEL)
                 if not image is None:
