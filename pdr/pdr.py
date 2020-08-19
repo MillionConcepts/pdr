@@ -231,7 +231,7 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
         pixels = nrows * (ncols + prefix_cols) * BANDS
         start_byte = data_start_byte(label, "^IMAGE")
     elif label['INSTRUMENT_ID']=="M3" and label['PRODUCT_TYPE']=="RAW_IMAGE":
-        print('Special case: Chandrayaan-1 M3 data.')
+        #print('Special case: Chandrayaan-1 M3 data.')
         BYTES_PER_PIXEL = int(label['L0_FILE']['L0_IMAGE']["SAMPLE_BITS"] / 8)
         DTYPE = sample_types(label['L0_FILE']['L0_IMAGE']["SAMPLE_TYPE"], BYTES_PER_PIXEL)
         nrows = label['L0_FILE']['L0_IMAGE']["LINES"]

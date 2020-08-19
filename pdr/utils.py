@@ -97,28 +97,34 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
 ### END code derived from astroML
 ###
 
-def url_to_path(url, test_dir="tests"):
+def url_to_path(url, data_dir="."):
     dirstart = url.split("://")[1].find("/")
-    filename = test_dir + url.split("://")[1][dirstart:]
-    return filename
+    file_path = data_dir + url.split("://")[1][dirstart:]
+    return file_path
 
-def download_data_and_label(url,test_dir="tests"):
+def download_data_and_label(url,data_dir=".",labelurl=""):
     """ Download an observational data file from the PDS.
     Check for a detached label file and also download that, if it exists.
     """
-    filename = url_to_path(url,test_dir=test_dir)
-    if download_with_progress_bar(url, filename, quiet=True):
-        print("An error has occurred: {fn}".format(fn=filename))
+    file_path = url_to_path(url,data_dir=data_dir)
+    if download_with_progress_bar(url, file_path, quiet=True):
+        print("An error has occurred: {fn}".format(fn=file_path))
         return 1
-    for ext in [".LBL", ".lbl", ".xml", ".XML"]:
-        if not download_with_progress_bar(
-            url[: url.rfind(".")] + ext,
-            filename[: filename.rfind(".")] + ext,
-            quiet=True,
-        ):
-            break
-    return filename
+    
+    if not download_with_progress_bar(labelurl, url_to_path(labelurl,data_dir=data_dir), quiet=True):
+        label_path = url_to_path(labelurl,data_dir=data_dir)
+    else:
+        for ext in [".LBL", ".lbl", ".xml", ".XML"]: # HDR? ENVI headers
+            label_path = file_path[: file_path.rfind(".")] + ext
+            if not download_with_progress_bar(
+                url[: url.rfind(".")] + ext, label_path, quiet=True):
+                break
+    #if not os.path.exists(label_path):
+    #    label_path = None
+    print(f'Check: {label_path}')
+    return file_path,label_path if os.path.exists(label_path) else ""
 
-def download_test_data(index, test_dir="tests", refdatafile="tests/refdata.csv"):
+def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv"):
     refdata = pd.read_csv(f"{refdatafile}", comment="#")
-    return download_data_and_label(refdata["url"][index],test_dir=test_dir)
+    return download_data_and_label(refdata["url"][index],
+                          labelurl=refdata["lbl"][index],data_dir=data_dir)
