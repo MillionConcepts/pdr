@@ -200,6 +200,12 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
     TODO: Check for and account for LINE_PREFIX.
     TODO: Check for and apply BIT_MASK.
     """
+    """
+    rasterio will read an ENVI file if the HDR metadata is present...
+    However, it seems to read M3 L0 images incorrectly because it does
+    not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
+    the use of rasterio until I can figure out how to produce consistent
+    output.
     try:
         dataset = rasterio.open(filename)
         if len(dataset.indexes)==1:
@@ -209,6 +215,7 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
     except rasterio.errors.RasterioIOError:
         #print(' *** Not using rasterio. ***')
         pass
+    """
     #label = parse_label(filename)
     if "IMAGE" in label.keys():
         BYTES_PER_PIXEL = int(label["IMAGE"]["SAMPLE_BITS"] / 8)
@@ -281,6 +288,7 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
                 prefix += [f.read(prefix_bytes)]
                 frame = np.array(struct.unpack(f'<{BANDS*ncols}h',f.read(BANDS*ncols*BYTES_PER_PIXEL))).reshape(BANDS,ncols)
                 image+=[frame]
+            image = np.array(image).reshape(BANDS,nrows,ncols)
         else:
             print(f"Unknown BAND_STORAGE_TYPE={band_storage_type}")
             raise
