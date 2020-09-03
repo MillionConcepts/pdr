@@ -543,12 +543,12 @@ def read_label(filename):
     try:
         label = pvl.load(filename,strict=False)
         if not len(label):
-            raise
+            raise ValueError("Cannot find attached label data.")
         return label
     except: # look for a detached label
         if os.path.exists(filename[: filename.rfind(".")] + ".LBL"):
             return pvl.load(filename[: filename.rfind(".")] + ".LBL", strict=False)
-        elif os.path.exists(ilename[: filename.rfind(".")] + ".lbl"):
+        elif os.path.exists(filename[: filename.rfind(".")] + ".lbl"):
             return pvl.load(filename[: filename.rfind(".")] + ".lbl", strict=False)
         else:
             print(" *** Cannot find label data. *** ")
