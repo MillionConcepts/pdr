@@ -98,31 +98,33 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
 ###
 
 def url_to_path(url, data_dir="."):
-    dirstart = url.split("://")[1].find("/")
-    file_path = data_dir + url.split("://")[1][dirstart:]
+    try:
+        dirstart = url.split("://")[1].find("/")
+        file_path = data_dir + url.split("://")[1][dirstart:]
+        if file_path.split('/')[1] != 'data':
+            file_path = file_path.replace(file_path.split('/')[1], 'data/' + file_path.split('/')[1])
+            print(file_path)
+    except AttributeError: # for url==np.nan
+        file_path=""
     return file_path
 
-def download_data_and_label(url,data_dir=".",labelurl=""):
+def download_data_and_label(url,data_dir=".",lbl=None):
     """ Download an observational data file from the PDS.
     Check for a detached label file and also download that, if it exists.
     """
-    file_path = url_to_path(url,data_dir=data_dir)
-    if download_with_progress_bar(url, file_path, quiet=True):
-        print("An error has occurred: {fn}".format(fn=file_path))
-        return 1
-    
-    if not download_with_progress_bar(labelurl, url_to_path(labelurl,data_dir=data_dir), quiet=True):
-        label_path = url_to_path(labelurl,data_dir=data_dir)
-    else:
-        for ext in [".LBL", ".lbl", ".xml", ".XML"]: # HDR? ENVI headers
-            label_path = file_path[: file_path.rfind(".")] + ext
+    _ = download_with_progress_bar(url,
+                                   url_to_path(url,data_dir=data_dir),quiet=True)
+    try:
+        _ = download_with_progress_bar(lbl,
+                                       url_to_path(lbl,data_dir=data_dir),quiet=True)
+    except (AttributeError, FileNotFoundError):
+        # Attempt to guess the label URL (if there is a label)
+        for ext in [".LBL", ".lbl", ".xml", ".XML", ".HDR"]: # HDR? ENVI headers
+            lbl_ = url[:url.rfind(".")] + ext
             if not download_with_progress_bar(
-                url[: url.rfind(".")] + ext, label_path, quiet=True):
-                break
-    #if not os.path.exists(label_path):
-    #    label_path = None
-    print(f'Check: {label_path}')
-    return file_path,label_path if os.path.exists(label_path) else ""
+                lbl_,url_to_path(lbl_,data_dir=data_dir),quiet=True):
+                lbl = lbl_
+    return url_to_path(url,data_dir=data_dir),url_to_path(lbl,data_dir=data_dir)
 
 def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv"):
     refdata = pd.read_csv(f"{refdatafile}", comment="#")

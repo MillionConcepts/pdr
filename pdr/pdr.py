@@ -14,89 +14,14 @@ import bz2
 from zipfile import ZipFile
 #import matplotlib.pyplot as plt # just for QA
 
-import rasterio 
-
-def pvl_to_dict(labeldata):
-    # Convert a PVL label object to a Python dict
-    # Deprecated because PVL allows keywords to be repeated at the same depth
-    #   which are _not_ allowed in a dict(), so this function ends up clobbering
-    #   information.
-    data = {}
-    if (
-        (type(labeldata) == pvl._collections.PVLModule)
-        or (type(labeldata) == pvl._collections.PVLGroup)
-        or (type(labeldata) == pvl._collections.PVLObject)
-    ):
-        for k in labeldata.keys():
-            data[k] = pvl_to_dict(labeldata[k])
-    else:
-        return labeldata
-    return data
-
-def filetype(filename):
-    """ Attempt to deduce the filetype based on the filename.
-    """
-    if ".IMG" in filename.upper():
-        return "IMG"
-    elif ".FITS" in filename.upper():
-        return "FITS"
-    elif ".DAT" in filename.upper():
-        if os.path.exists(filename.replace(".DAT", ".LBL")):
-            # PDS3 .DAT with detached PVL label
-            return "PDS3DAT"
-        else:
-            # presumed PDS4 .DAT with detached xml label
-            return "PDS4DAT"
-    else:
-        print("*** Unsupported file type: [...]{end}".format(end=filename[-10:]))
-        return "UNK"
-
-
-def has_attached_label(filename):
-    """ Read the first line of a file to decide if it's a label.
-    """
-    with open(filename, "rb") as f:
-        return "PDS_VERSION_ID" in str(f.readline())
-
-
-def parse_attached_label(filename):
-    """ Parse an attached label of a IMG file.
-    """
-    # First grab the entries from the label that define how to read the label
-    return pvl.load(filename,strict=False)
-"""
-    with open(filename, "rb") as f:
-        for line_ in f:
-            line = line_.decode("utf-8").strip()  # hacks through a rare error
-            if "PDS_VERSION_ID" in line:
-                PDS_VERSION_ID = line.strip().split("=")[1]
-            if "RECORD_BYTES" in line:
-                RECORD_BYTES = int(line.strip().split("=")[1])
-            if "LABEL_RECORDS" in line:
-                if "<BYTES>" in line:
-                    # Convert pointer value to bytes like everything else
-                    LABEL_RECORDS = line.strip().split("=")[1].split()[0] * 8
-                else:
-                    LABEL_RECORDS = int(line.strip().split("=")[1])
-                break
-    # Read the label and then parse it with PVL
-    try:
-        with open(filename, "rb") as f:
-            return pvl.load(f.read(RECORD_BYTES * (LABEL_RECORDS)))
-    except UnboundLocalError:
-        print("*** RECORD_BYTES not set??? ***")
-        return None
-    except:
-        with open(filename, "rb") as f:
-            return pvl.load(f.read(RECORD_BYTES * (LABEL_RECORDS)), strict=False)
-"""
+import rasterio
 
 def parse_label(filename, full=False):
     """ Wraps forking paths for attached and detached PDS3 labels.
     """
-    if filename.endswith('.fmt'):
-        return pvl.load(filename,strict=False)
-    if not has_attached_label(filename):
+    try:
+        label = pvl.load(filename)
+    except:
         if os.path.exists(filename[: filename.rfind(".")] + ".LBL"):
             label = pvl.load(filename[: filename.rfind(".")] + ".LBL")
         elif os.path.exists(filename[: filename.rfind(".")] + ".lbl"):
@@ -109,8 +34,6 @@ def parse_label(filename, full=False):
         else:
             print("*** Unable to locate file label. ***")
             return None
-    else:
-        label = parse_attached_label(filename)
     # TODO: This ugly conditional exists entirely to deal with Cassini data
     # which all seem to be returning zero-value images, so maybe it's wrong!
     if (not full) and ("UNCOMPRESSED_FILE" in label.keys()):
@@ -199,23 +122,28 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
     """ Read a PDS IMG formatted file into an array.
     TODO: Check for and account for LINE_PREFIX.
     TODO: Check for and apply BIT_MASK.
-    """
-    """
-    rasterio will read an ENVI file if the HDR metadata is present...
+    Note: rasterio will read an ENVI file if the HDR metadata is present...
     However, it seems to read M3 L0 images incorrectly because it does
     not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
     the use of rasterio until I can figure out how to produce consistent
     output.
+    """
     try:
+        if 'INSTRUMENT_ID' in label.keys():
+            if (label['INSTRUMENT_ID'] == "M3" and label['PRODUCT_TYPE'] == "RAW_IMAGE"):
+                raise # because rasterio doesn't read M3 L0 data correctly
         dataset = rasterio.open(filename)
         if len(dataset.indexes)==1:
             return dataset.read()[0,:,:] # Make 2D images actually 2D
+        elif len(dataset.indexes)==3: # Return it to play nice with matplotlib
+             return np.stack([dataset.read()[0, :, :],
+                              dataset.read()[1, :, :],
+                              dataset.read()[2, :, :]], axis=2)
         else:
             return dataset.read()
     except rasterio.errors.RasterioIOError:
         #print(' *** Not using rasterio. ***')
         pass
-    """
     #label = parse_label(filename)
     if "IMAGE" in label.keys():
         BYTES_PER_PIXEL = int(label["IMAGE"]["SAMPLE_BITS"] / 8)
@@ -237,22 +165,23 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
             band_storage_type = None
         pixels = nrows * (ncols + prefix_cols) * BANDS
         start_byte = data_start_byte(label, "^IMAGE")
-    elif label['INSTRUMENT_ID']=="M3" and label['PRODUCT_TYPE']=="RAW_IMAGE":
-        #print('Special case: Chandrayaan-1 M3 data.')
-        BYTES_PER_PIXEL = int(label['L0_FILE']['L0_IMAGE']["SAMPLE_BITS"] / 8)
-        DTYPE = sample_types(label['L0_FILE']['L0_IMAGE']["SAMPLE_TYPE"], BYTES_PER_PIXEL)
-        nrows = label['L0_FILE']['L0_IMAGE']["LINES"]
-        ncols = label['L0_FILE']['L0_IMAGE']["LINE_SAMPLES"]
-        prefix_bytes = int(label['L0_FILE']['L0_IMAGE']["LINE_PREFIX_BYTES"])
-        prefix_cols = prefix_bytes / BYTES_PER_PIXEL # M3 has a prefix, but it's not image-shaped
-        BANDS = label['L0_FILE']['L0_IMAGE']["BANDS"]
-        pixels = nrows * (ncols + prefix_cols) * BANDS
-        start_byte = 0
-        band_storage_type = label['L0_FILE']['L0_IMAGE']['BAND_STORAGE_TYPE']
+    elif 'INSTRUMENT_ID' in label.keys():
+        if label['INSTRUMENT_ID']=="M3" and label['PRODUCT_TYPE']=="RAW_IMAGE":
+            #print('Special case: Chandrayaan-1 M3 data.')
+            BYTES_PER_PIXEL = int(label['L0_FILE']['L0_IMAGE']["SAMPLE_BITS"] / 8)
+            DTYPE = sample_types(label['L0_FILE']['L0_IMAGE']["SAMPLE_TYPE"], BYTES_PER_PIXEL)
+            nrows = label['L0_FILE']['L0_IMAGE']["LINES"]
+            ncols = label['L0_FILE']['L0_IMAGE']["LINE_SAMPLES"]
+            prefix_bytes = int(label['L0_FILE']['L0_IMAGE']["LINE_PREFIX_BYTES"])
+            prefix_cols = prefix_bytes / BYTES_PER_PIXEL # M3 has a prefix, but it's not image-shaped
+            BANDS = label['L0_FILE']['L0_IMAGE']["BANDS"]
+            pixels = nrows * (ncols + prefix_cols) * BANDS
+            start_byte = 0
+            band_storage_type = label['L0_FILE']['L0_IMAGE']['BAND_STORAGE_TYPE']
     else:
         #print("*** IMG w/ old format attached label not currently supported.")
         #print("\t{fn}".format(fn=filename))
-        print('No image data identified.')
+        print(f'*** No image data identified: {filename}')
         return None
     fmt = "{endian}{pixels}{fmt}".format(endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1])
     try:  # a little decision tree to seamlessly deal with compression
@@ -342,7 +271,7 @@ def read_image_header(filename, label):  # ^IMAGE_HEADER
     try:
         with open(filename, "rb") as f:
             f.seek(data_start_byte(label, "^IMAGE_HEADER"))
-            image_header = pvl.load(f.read(label["IMAGE_HEADER"]["BYTES"]),strict=False)
+            image_header = pvl.load(f.read(label["IMAGE_HEADER"]["BYTES"]))#,strict=False)
         return image_header
     except:# Specifically on ParseError from PVL...
         # The IMAGE_HEADER is not well-constructed according to PVL
@@ -541,17 +470,17 @@ def read_odl_header(filename):  # ^ODL_HEADER
 
 def read_label(filename):
     try:
-        label = pvl.load(filename,strict=False)
+        label = pvl.load(filename)#,strict=False)
         if not len(label):
             raise ValueError("Cannot find attached label data.")
         return label
     except: # look for a detached label
         if os.path.exists(filename[: filename.rfind(".")] + ".LBL"):
-            return pvl.load(filename[: filename.rfind(".")] + ".LBL", strict=False)
+            return pvl.load(filename[: filename.rfind(".")] + ".LBL",)# strict=False)
         elif os.path.exists(filename[: filename.rfind(".")] + ".lbl"):
-            return pvl.load(filename[: filename.rfind(".")] + ".lbl", strict=False)
+            return pvl.load(filename[: filename.rfind(".")] + ".lbl",)# strict=False)
         else:
-            print(" *** Cannot find label data. *** ")
+            print(f" *** Cannot find label data: {filename}")
             raise
 
 def read_file_name(filename, label):  # ^FILE_NAME
@@ -619,17 +548,22 @@ class Data:
         # Try PDS3 options
         setattr(self, "LABEL", read_label(filename))
         setattr(self, "pointers", [k for k in self.LABEL.keys() if k[0] == "^"])
-        _ = [setattr(self,pointer[1:] if pointer.startswith("^") else pointer,
-                pointer_to_function[pointer](filename,self.LABEL)) for pointer in self.pointers]
-        if self.LABEL['INSTRUMENT_ID']=="M3" and self.LABEL['PRODUCT_TYPE']=="RAW_IMAGE":
-            setattr(self, "L0_IMAGE", read_image(filename, self.LABEL))
-            setattr(self,'L0_LINE_PREFIX_TABLE',read_CH1_M3_L0_prefix_table(filename,self.LABEL))
+        try:
+            _ = [setattr(self,pointer[1:] if pointer.startswith("^") else pointer,
+                    pointer_to_function[pointer](filename,self.LABEL)) for pointer in self.pointers]
+        except: # no pointers defined
+            pass
+        try:
+            if self.LABEL['INSTRUMENT_ID']=="M3" and self.LABEL['PRODUCT_TYPE']=="RAW_IMAGE":
+                setattr(self, "L0_IMAGE", read_image(filename, self.LABEL))
+                setattr(self,'L0_LINE_PREFIX_TABLE',read_CH1_M3_L0_prefix_table(filename,self.LABEL))
+        except:
+            pass
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
-        elif not ("^IMAGE" in self.pointers):
-            try:
-                image = read_image(filename, self.LABEL)
-                if not image is None:
-                    setattr(self, "IMAGE", read_image(filename, self.LABEL))
-            except:
-                pass
+        try:
+            image = read_image(filename, self.LABEL)
+            if not image is None:
+                setattr(self, "IMAGE", read_image(filename, self.LABEL))
+        except:
+            pass
