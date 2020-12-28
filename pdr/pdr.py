@@ -15,47 +15,10 @@ from zipfile import ZipFile
 
 import rasterio
 
-def pvl_to_dict(labeldata):
-    # Convert a PVL label object to a Python dict
-    # Deprecated because PVL allows keywords to be repeated at the same depth
-    #   which are _not_ allowed in a dict(), so this function ends up clobbering
-    #   information.
-    data = {}
-    if (
-        (type(labeldata) == pvl._collections.PVLModule)
-        or (type(labeldata) == pvl._collections.PVLGroup)
-        or (type(labeldata) == pvl._collections.PVLObject)
-    ):
-        for k in labeldata.keys():
-            data[k] = pvl_to_dict(labeldata[k])
-    else:
-        return labeldata
-    return data
-
-
-def filetype(filename):
-    """Attempt to deduce the filetype based on the filename."""
-    if ".IMG" in filename.upper():
-        return "IMG"
-    elif ".FITS" in filename.upper():
-        return "FITS"
-    elif ".DAT" in filename.upper():
-        if os.path.exists(filename.replace(".DAT", ".LBL")):
-            # PDS3 .DAT with detached PVL label
-            return "PDS3DAT"
-        else:
-            # presumed PDS4 .DAT with detached xml label
-            return "PDS4DAT"
-    else:
-        print("*** Unsupported file type: [...]{end}".format(end=filename[-10:]))
-        return "UNK"
-
-
 def has_attached_label(filename):
     """Read the first line of a file to decide if it's a label."""
     with open(filename, "rb") as f:
         return "PDS_VERSION_ID" in str(f.readline())
-
 
 def parse_attached_label(filename):
     """Parse an attached label of a IMG file."""
@@ -174,18 +137,23 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
     However, it seems to read M3 L0 images incorrectly because it does
     not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
     the use of rasterio until I can figure out how to produce consistent
-    output.
+    output."""
     try:
+        if 'INSTRUMENT_ID' in label.keys():
+            if (label['INSTRUMENT_ID'] == "M3" and label['PRODUCT_TYPE'] == "RAW_IMAGE"):
+                raise # because rasterio doesn't read M3 L0 data correctly
         dataset = rasterio.open(filename)
         if len(dataset.indexes)==1:
             return dataset.read()[0,:,:] # Make 2D images actually 2D
+        elif len(dataset.indexes)==3: # Return it to play nice with matplotlib
+             return np.stack([dataset.read()[0, :, :],
+                              dataset.read()[1, :, :],
+                              dataset.read()[2, :, :]], axis=2)
         else:
             return dataset.read()
     except rasterio.errors.RasterioIOError:
         #print(' *** Not using rasterio. ***')
         pass
-    """
-    # label = parse_label(filename)
     if "IMAGE" in label.keys():
         BYTES_PER_PIXEL = int(label["IMAGE"]["SAMPLE_BITS"] / 8)
         DTYPE = sample_types(label["IMAGE"]["SAMPLE_TYPE"], BYTES_PER_PIXEL)
@@ -341,7 +309,6 @@ def read_image_header(filename, label):  # ^IMAGE_HEADER
                 image_header = str(f.read(label["IMAGE_HEADER"]["BYTES"]))
             return image_header
     raise  # WHAT ARE THIS?!
-
 
 def read_bad_data_values_header(filename):  # ^BAD_DATA_VALUES_HEADER
     label = parse_label(filename)
@@ -620,30 +587,36 @@ class Data:
         # Try PDS3 options
         setattr(self, "LABEL", read_label(filename))
         setattr(self, "pointers", [k for k in self.LABEL.keys() if k[0] == "^"])
-        _ = [
-            setattr(
-                self,
-                pointer[1:] if pointer.startswith("^") else pointer,
-                pointer_to_function[pointer](filename, self.LABEL),
-            )
-            for pointer in self.pointers
-        ]
-        if (
-            self.LABEL["INSTRUMENT_ID"] == "M3"
-            and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
-        ):
-            setattr(self, "L0_IMAGE", read_image(filename, self.LABEL))
-            setattr(
-                self,
-                "L0_LINE_PREFIX_TABLE",
-                read_CH1_M3_L0_prefix_table(filename, self.LABEL),
-            )
+        try:
+            _ = [
+                setattr(
+                    self,
+                    pointer[1:] if pointer.startswith("^") else pointer,
+                    pointer_to_function[pointer](filename, self.LABEL),
+                )
+                for pointer in self.pointers
+            ]
+        except: # no pointers defined
+            pass
+        try:
+            if (
+                self.LABEL["INSTRUMENT_ID"] == "M3"
+                and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
+            ):
+                setattr(self, "L0_IMAGE", read_image(filename, self.LABEL))
+                setattr(
+                    self,
+                    "L0_LINE_PREFIX_TABLE",
+                    read_CH1_M3_L0_prefix_table(filename, self.LABEL),
+                )
+        except: # not an M3 L0 image
+            pass
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
-        elif not ("^IMAGE" in self.pointers):
-            try:
-                image = read_image(filename, self.LABEL)
-                if not image is None:
-                    setattr(self, "IMAGE", read_image(filename, self.LABEL))
-            except:
-                pass
+        #if not ("^IMAGE" in self.pointers):
+        try:
+            image = read_image(filename, self.LABEL)
+            if not image is None:
+                setattr(self, "IMAGE", read_image(filename, self.LABEL))
+        except:
+            pass
