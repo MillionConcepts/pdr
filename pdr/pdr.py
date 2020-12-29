@@ -145,10 +145,6 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
         dataset = rasterio.open(filename)
         if len(dataset.indexes)==1:
             return dataset.read()[0,:,:] # Make 2D images actually 2D
-        elif len(dataset.indexes)==3: # Return it to play nice with matplotlib
-             return np.stack([dataset.read()[0, :, :],
-                              dataset.read()[1, :, :],
-                              dataset.read()[2, :, :]], axis=2)
         else:
             return dataset.read()
     except rasterio.errors.RasterioIOError:
@@ -241,15 +237,6 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
         raise
     finally:
         f.close()
-    if len(np.shape(image)) == 2:
-        # plt.imshow(image, cmap="gray") # Just for QA
-        pass
-    elif len(np.shape(image)) == 3:
-        if np.shape(image)[0] == 3:
-            image = np.stack([image[0, :, :], image[1, :, :], image[2, :, :]], axis=2)
-        if np.shape(image)[2] == 3:
-            # plt.imshow(image) # Just for QA
-            pass
     if "PREFIX" in pointer:
         return prefix
     return image
