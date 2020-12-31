@@ -150,26 +150,37 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
     except rasterio.errors.RasterioIOError:
         #print(' *** Not using rasterio. ***')
         pass
-    if "IMAGE" in label.keys():
-        BYTES_PER_PIXEL = int(label["IMAGE"]["SAMPLE_BITS"] / 8)
-        DTYPE = sample_types(label["IMAGE"]["SAMPLE_TYPE"], BYTES_PER_PIXEL)
-        nrows = label["IMAGE"]["LINES"]
-        ncols = label["IMAGE"]["LINE_SAMPLES"]
-        if "LINE_PREFIX_BYTES" in label["IMAGE"].keys():
-            # print("Accounting for a line prefix.")
-            prefix_cols = int(label["IMAGE"]["LINE_PREFIX_BYTES"] / BYTES_PER_PIXEL)
-            prefix_bytes = prefix_cols * BYTES_PER_PIXEL
+    if pointer in label.keys():
+        if pointer=='QUBE': # ISIS2 QUBE format
+            print('Also QUBE')
+            BYTES_PER_PIXEL = int(label[pointer]["CORE_ITEM_BYTES"])# / 8)
+            DTYPE = sample_types(label[pointer]["CORE_ITEM_TYPE"], BYTES_PER_PIXEL)
+            nrows = label[pointer]["CORE_ITEMS"][2]
+            ncols = label[pointer]["CORE_ITEMS"][0]
+            prefix_cols,prefix_bytes = 0,0
+            # TODO: Handle the QUB suffix data
+            BANDS = label[pointer]["CORE_ITEMS"][1]
+            band_storage_type = "ISIS2_QUBE"
         else:
-            prefix_cols = 0
-            prefix_bytes = 0
-        try:
-            BANDS = label["IMAGE"]["BANDS"]
-            band_storage_type = label["IMAGE"]["BAND_STORAGE_TYPE"]
-        except KeyError:
-            BANDS = 1
-            band_storage_type = None
+            BYTES_PER_PIXEL = int(label[pointer]["SAMPLE_BITS"] / 8)
+            DTYPE = sample_types(label[pointer]["SAMPLE_TYPE"], BYTES_PER_PIXEL)
+            nrows = label[pointer]["LINES"]
+            ncols = label[pointer]["LINE_SAMPLES"]
+            if "LINE_PREFIX_BYTES" in label[pointer].keys():
+                # print("Accounting for a line prefix.")
+                prefix_cols = int(label[pointer]["LINE_PREFIX_BYTES"] / BYTES_PER_PIXEL)
+                prefix_bytes = prefix_cols * BYTES_PER_PIXEL
+            else:
+                prefix_cols = 0
+                prefix_bytes = 0
+            try:
+                BANDS = label[pointer]["BANDS"]
+                band_storage_type = label[pointer]["BAND_STORAGE_TYPE"]
+            except KeyError:
+                BANDS = 1
+                band_storage_type = None
         pixels = nrows * (ncols + prefix_cols) * BANDS
-        start_byte = data_start_byte(label, "^IMAGE")
+        start_byte = data_start_byte(label, f"^{pointer}")
     elif label["INSTRUMENT_ID"] == "M3" and label["PRODUCT_TYPE"] == "RAW_IMAGE":
         # print('Special case: Chandrayaan-1 M3 data.')
         BYTES_PER_PIXEL = int(label["L0_FILE"]["L0_IMAGE"]["SAMPLE_BITS"] / 8)
@@ -231,8 +242,9 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
                 image += [frame]
             image = np.array(image).reshape(BANDS, nrows, ncols)
         else:
-            print(f"Unknown BAND_STORAGE_TYPE={band_storage_type}")
-            raise
+            print(f"*** Unknown BAND_STORAGE_TYPE={band_storage_type}. Guessing BAND_SEQUENTIAL.")
+            image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
+            image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
     except:
         raise
     finally:
@@ -241,6 +253,9 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
         return prefix
     return image
 
+def read_qube(filename, label, pointer='QUBE'):
+    print('QUBE')
+    return read_image(filename, label, pointer=pointer)
 
 def read_line_prefix_table(filename, label, pointer="LINE_PREFIX_TABLE"):
     return read_image(filename, label, pointer=pointer)
@@ -556,6 +571,10 @@ def read_table(filename, label, pointer="TABLE"):  # ^TABLE
         .newbyteorder()  # Pandas doesn't do non-native endian
     )
 
+def read_history(filename,label,pointer="HISTORY"):
+    # TODO: Make this function work.
+    # This pointer appears in ISIS2 QUBE files (like for VIMS).
+    return ""
 
 pointer_to_function = {
     "^IMAGE": read_image,
@@ -565,6 +584,8 @@ pointer_to_function = {
     "^DESCRIPTION": read_description,
     "^MEASUREMENT_TABLE": read_measurement_table,
     "^ENGINEERING_TABLE": read_engineering_table,
+    "^QUBE": read_qube,
+    "^HISTORY": read_history,
 }
 
 # def read_any_file(filename):
@@ -584,7 +605,7 @@ class Data:
                 for pointer in self.pointers
             ]
         except: # no pointers defined
-            pass
+            raise
         try:
             if (
                 self.LABEL["INSTRUMENT_ID"] == "M3"
