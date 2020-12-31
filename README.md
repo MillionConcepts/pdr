@@ -10,7 +10,9 @@ The object uses the name of the data type as provided in the metadata. For examp
 1. All data archived under PDS4 standards should be fully supported. This tool simply wraps `pds4_tools`.
 2. Flexible Image Transport (FITS) data should be fully supported. This tool simply wraps `astropy.io.fits`.
 3. The **GeoTiff format is not supported**, but the plan is to include this functionality (and a lot of others!) by wrapping GDAL.
-4. The **ISIS Cube format is not supported**, but the plan is to include this functionality by also wrapping _something_.
+4. The **ISIS Cube format is partly supported**, but maybe not reliably or correctly.
+
+In general, `pdr` returns the raw array data for images and other rasters. Many missions and instruments require that this data be adjusted in some way (e.g. with scale and offset factors) to place it into physical units appropriate for scientific analysis. None of that has been implemented at this time, so you should check the instrument SIS to make sure. Any information required for the transformation _should_ be contained in the data `LABEL` or `HEADER` which are also returned by `pdr` (when they exist). The plan is to eventually add this functionality, but it will be fiddly and time-consuming.
 
 ### Supported Data Sets (w/ Notes)
 Most of these are files archived under PDS3. The standards for these files was quite flexible, as was the quality control, especially for older missions. The current validation method is _visual inspection of the output_. Strategies for better and automated QA are desired.
@@ -39,6 +41,7 @@ Most of these are files archived under PDS3. The standards for these files was q
 * Viking
     * Camera_2
         * These files contain an IMAGE and a HISTOGRAM. Both appear to parse correctly.
+* Galileo SSI
 * Mars Exploration Rover (MER)
     * APXS
         * EDR contains two tables (ENGINEERING_TABLE and MEASUREMENT_TABLE), which both appear to parse correctly.
@@ -63,4 +66,4 @@ Many table data in PDS3 have a format that is defined in a special file at a dif
 Some data, especially calibrated image data, might require the application of additional offsets or scale factors to convert the storage units to meaningful physical units. The information on how and when to apply such adjustments is typically stored (as plain text) in the instrument SIS, and the scale factors themselves are usually stored in the label. This hasn't been implemented anywhere, because it will probably require digging into each data set individually. So **do not trust that the data output by `read()` is ready for analysis** without further processing. Contributions towards solving this problem are very much welcomed.
 
 #### Big files (like HiRISE)
-No sort of memory management is implemented, so expect a crash on most machines if you try to read very large files.
+No sort of memory management or lazy-loading is implemented, so expect a crash or very slow response on most machines if you try to read very large files.
