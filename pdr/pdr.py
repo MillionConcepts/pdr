@@ -1,4 +1,4 @@
-import pds4_tools
+import pds4_tools as pds4
 import numpy as np
 import pandas as pd
 import os
@@ -36,7 +36,7 @@ def parse_label(filename, full=False):
             label = pvl.load(filename[: filename.rfind(".")] + ".lbl")
         elif os.path.exists(filename[: filename.rfind(".")] + ".xml"):
             # TODO: Make label data format consistent between PDS3 & 4
-            label = pds4_tools.read(
+            label = pds4.read(
                 filename[: filename.rfind(".")] + ".xml", quiet=True
             ).label.to_dict()
         else:
@@ -396,7 +396,7 @@ def read_fits(filename, dim=0, quiet=True):
     hdulist.close()
     return (
         data,
-        pds4_tools.read(filename.replace(".fits", ".xml"), quiet=True).label.to_dict(),
+        pds4.read(filename.replace(".fits", ".xml"), quiet=True).label.to_dict(),
     )
 
 
@@ -410,12 +410,12 @@ def read_dat_pds4(filename, write_csv=False, quiet=True):
         filename = filename[:-4] + ".xml"
     if filename[-4:].lower() != ".xml":
         raise TypeError("Unknown filetype: {ext}".format(ext=filename[-4:]))
-    structures = pds4_tools.pds4_read(filename, quiet=quiet)
+    structures = pds4.pds4_read(filename, quiet=quiet)
     dat_dict = OrderedDict({})
     for i in range(len(structures[0].fields)):
         name = structures[0].fields[i].meta_data["name"]
         dat_dtype = structures[0].fields[i].meta_data["data_type"]
-        dtype = pds4_tools.reader.data_types.pds_to_numpy_type(dat_dtype)
+        dtype = pds4.reader.data_types.pds_to_numpy_type(dat_dtype)
         data = np.array(structures[0].fields[i], dtype=dtype)
         if (sys.byteorder == "little" and ">" in str(dtype)) or (
             sys.byteorder == "big" and "<" in str(dtype)
@@ -511,6 +511,11 @@ def read_label(filename):
             return pvl.load(filename[: filename.rfind(".")] + ".LBL")
         elif os.path.exists(filename[: filename.rfind(".")] + ".lbl"):
             return pvl.load(filename[: filename.rfind(".")] + ".lbl")
+        elif os.path.exists(filename[: filename.rfind(".")] + ".xml"):
+            # TODO: Also read the FITS header as a ^HEADER
+            return pds4.read(
+                filename[: filename.rfind(".")] + ".xml", quiet=True
+            ).label.to_dict()
         else:
             print(" *** Cannot find label data. *** ")
             raise
