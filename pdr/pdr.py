@@ -581,6 +581,31 @@ def read_history(filename,label,pointer="HISTORY"):
     # This pointer appears in ISIS2 QUBE files (like for VIMS).
     return ""
 
+def read_archive_context_desc(filename,label,pointer="ARCHIVE_CONTEXT_DESC"):
+    # TODO: Make this function work.
+    # This pointer appears in Rosetta / MIDAS data
+    return ""
+
+def read_image_calibration_desc(filename,label,pointer="IMAGE_CALIBRATION_DESC"):
+    # TODO: Make this function work.
+    # This pointer appears in Rosetta / MIDAS data
+    return ""
+
+def read_tip_image_catalog_desc(filename,label,pointer="TIP_IMAGE_CATALOG_DESC"):
+    # TODO: Make this function work.
+    # This pointer appears in Rosetta / MIDAS data
+    return ""
+
+def read_bcr_header(filename,label,pointer="BCR_HEADER"):
+    # TODO: Make this function work.
+    # This pointer appears in Rosetta / MIDAS data
+    return ""
+
+def read_bcr_image(filename,label,pointer="BCR_IMAGE"):
+    # TODO: Make this function work.
+    # This pointer appears in Rosetta / MIDAS data
+    return read_image(filename, label, pointer=pointer)
+
 pointer_to_function = {
     "^IMAGE": read_image,
     "^IMAGE_HEADER": read_image_header,
@@ -591,6 +616,11 @@ pointer_to_function = {
     "^ENGINEERING_TABLE": read_engineering_table,
     "^QUBE": read_qube,
     "^HISTORY": read_history,
+    "^ARCHIVE_CONTEXT_DESC": read_archive_context_desc,
+    "^IMAGE_CALIBRATION_DESC": read_image_calibration_desc,
+    "^TIP_IMAGE_CATALOG_DESC": read_tip_image_catalog_desc,
+    "^BCR_HEADER": read_bcr_header,
+    "^BCR_IMAGE": read_bcr_image,
 }
 
 # def read_any_file(filename):
