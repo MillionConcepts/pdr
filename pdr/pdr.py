@@ -559,6 +559,17 @@ def pointer_to_function(pointer):
 # def read_any_file(filename):
 class Data:
     def __init__(self, filename):
+        if filename.endswith(('xml','XML','lbl','LBL')):
+            if os.path.exists(fn:=filename[:filename.rfind('.')]+'.IMG'):
+                filename=fn
+            elif os.path.exists(fn:=filename[:filename.rfind('.')]+'.img'):
+                filename = fn
+            elif os.path.exists(fn:=filename[:filename.rfind('.')]+'.fit'):
+                filename = fn
+            elif os.path.exists(fn := filename[:filename.rfind('.')] + '.FITS'):
+                filename = fn
+            elif os.path.exists(fn:=filename[:filename.rfind('.')]+'.FIT'):
+                filename = fn
         setattr(self, "filename", filename)
         # Try PDS3 options
         setattr(self, "LABEL", read_label(filename))
