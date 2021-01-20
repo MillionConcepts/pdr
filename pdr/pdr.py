@@ -200,7 +200,7 @@ def read_image(filename, label, pointer="IMAGE"):  # ^IMAGE
     else:
         # print("*** IMG w/ old format attached label not currently supported.")
         # print("\t{fn}".format(fn=filename))
-        print("No image data identified.")
+        # print("No image data identified.")
         return None
     fmt = "{endian}{pixels}{fmt}".format(endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1])
     try:  # a little decision tree to seamlessly deal with compression
@@ -352,10 +352,6 @@ def read_telemetry_table(filename):  # ^TELEMETRY_TABLE
     return read_table(filename, pointer="TELEMETRY_TABLE")
 
 
-def read_spectrum(filename):  # ^SPECTRUM
-    print("*** SPECTRUM data not yet supported. ***")
-    return
-
 
 def read_jp2(filename):  # .JP2 extension
     # NOTE: These are the huge HIRISE images. It might be best to just
@@ -460,46 +456,6 @@ def read_description(filename):  # ^DESCRIPTION
     return label["^DESCRIPTION"]
 
 
-def read_abdr_table(filename):  # ^ABDR_TABLE
-    print("*** ADBR_TABLE not yet supported. ***")
-    return
-
-
-def read_array(filename):  # ^ARRAY
-    print("*** ARRAY not yet supported. ***")
-    return
-
-
-def read_vicar_header(filename):  # ^VICAR_HEADER
-    print("*** VICAR_HEADER not yet supported. ***")
-    return
-
-
-def read_vicar_extension_header(filename):  # ^VICAR_EXTENSION_HEADER
-    print("*** VICAR_EXTENSION_HEADER not yet supported. ***")
-    return
-
-
-def read_history(filename):  # ^HISTORY
-    print("*** HISTORY not yet supported. ***")
-    return
-
-
-def read_spectral_qube(filename):  # ^SPECTRAL_QUBE
-    print("*** SPECTRAL_QUBE not yet supported. ***")
-    return
-
-
-def read_spacecraft_pointing_mode_desc(filename):  # ^SPACECRAFT_POINTING_MODE_DESC
-    print("*** SPACECRAFT_POINTING_MODE_DESC not yet supported. ***")
-    return
-
-
-def read_odl_header(filename):  # ^ODL_HEADER
-    print("*** ODL_HEADER not yet supported. ***")
-    return
-
-
 def read_label(filename):
     try:
         label = pvl.load(filename)
@@ -527,7 +483,6 @@ def read_file_name(filename, label):  # ^FILE_NAME
 
 def read_description(filename, label):  # ^DESCRIPTION
     return label["^DESCRIPTION"]
-
 
 def parse_table_structure(label, pointer="TABLE"):
     # Try to turn the TABLE definition into a column name / data type array.
@@ -576,52 +531,30 @@ def read_table(filename, label, pointer="TABLE"):  # ^TABLE
         .newbyteorder()  # Pandas doesn't do non-native endian
     )
 
-def read_history(filename,label,pointer="HISTORY"):
-    # TODO: Make this function work.
-    # This pointer appears in ISIS2 QUBE files (like for VIMS).
-    return ""
-
-def read_archive_context_desc(filename,label,pointer="ARCHIVE_CONTEXT_DESC"):
-    # TODO: Make this function work.
-    # This pointer appears in Rosetta / MIDAS data
-    return ""
-
-def read_image_calibration_desc(filename,label,pointer="IMAGE_CALIBRATION_DESC"):
-    # TODO: Make this function work.
-    # This pointer appears in Rosetta / MIDAS data
-    return ""
-
-def read_tip_image_catalog_desc(filename,label,pointer="TIP_IMAGE_CATALOG_DESC"):
-    # TODO: Make this function work.
-    # This pointer appears in Rosetta / MIDAS data
-    return ""
-
-def read_bcr_header(filename,label,pointer="BCR_HEADER"):
-    # TODO: Make this function work.
-    # This pointer appears in Rosetta / MIDAS data
-    return ""
-
 def read_bcr_image(filename,label,pointer="BCR_IMAGE"):
     # TODO: Make this function work.
     # This pointer appears in Rosetta / MIDAS data
     return read_image(filename, label, pointer=pointer)
 
-pointer_to_function = {
-    "^IMAGE": read_image,
-    "^IMAGE_HEADER": read_image_header,
-    "^FILE_NAME": read_file_name,
-    "^TABLE": read_table,
-    "^DESCRIPTION": read_description,
-    "^MEASUREMENT_TABLE": read_measurement_table,
-    "^ENGINEERING_TABLE": read_engineering_table,
-    "^QUBE": read_qube,
-    "^HISTORY": read_history,
-    "^ARCHIVE_CONTEXT_DESC": read_archive_context_desc,
-    "^IMAGE_CALIBRATION_DESC": read_image_calibration_desc,
-    "^TIP_IMAGE_CATALOG_DESC": read_tip_image_catalog_desc,
-    "^BCR_HEADER": read_bcr_header,
-    "^BCR_IMAGE": read_bcr_image,
-}
+def tbd(filename,label,pointer=""):
+    print(f"The {pointer} pointer is not yet fully supported.")
+    return label[f"^{pointer}"]
+
+def pointer_to_function(pointer):
+    try:
+        return {
+            "^IMAGE": read_image,
+            "^IMAGE_HEADER": read_image_header,
+            "^FILE_NAME": read_file_name,
+            "^TABLE": read_table,
+            "^DESCRIPTION": read_description,
+            "^MEASUREMENT_TABLE": read_measurement_table,
+            "^ENGINEERING_TABLE": read_engineering_table,
+            "^QUBE": read_qube,
+            "^BCR_IMAGE": read_bcr_image,
+            }[pointer]
+    except KeyError:
+        return tbd
 
 # def read_any_file(filename):
 class Data:
@@ -635,7 +568,7 @@ class Data:
                 setattr(
                     self,
                     pointer[1:] if pointer.startswith("^") else pointer,
-                    pointer_to_function[pointer](filename, self.LABEL),
+                    pointer_to_function(pointer)(filename, self.LABEL, pointer=pointer.strip("^")),
                 )
                 for pointer in self.pointers
             ]
