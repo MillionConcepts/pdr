@@ -18,6 +18,7 @@ data_extensions = ('.img','.IMG',
                    # And then the really unusual ones...
                    '.n06', '.grn', # Viking
                    '.rgb', # MER
+                   '.raw','.RAW', # Mars Express VMC
                    )
 
 def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
