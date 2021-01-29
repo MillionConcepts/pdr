@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import rasterio
 import struct
+import warnings
+from pvl.exceptions import ParseError
 
+# Define known data and label filename extensions
+# This is used in order to search for companion data/metadata
 label_extensions = ('.xml','.XML','.lbl','.LBL')
 data_extensions = ('.img','.IMG',
                    '.fit','.FIT','.fits','.FITS',
@@ -17,12 +21,10 @@ data_extensions = ('.img','.IMG',
                    )
 
 def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
-    """Defines a translation from PDS data types to Python data types.
-
-    TODO: The commented-out types below are technically valid PDS3
-        types, but I haven't yet worked out the translation to Python.
+    """Defines a translation from PDS data types to Python data types,
+    using both the type and bytes specified (because the mapping to type
+    is not consistent across PDS3).
     """
-    # NOTE: The byte depth of various data types is non-unique in PDS3
     return {
         "MSB_INTEGER": ">h",
         "INTEGER": ">h",
@@ -65,10 +67,14 @@ def data_start_byte(label, pointer):
     elif type(label[pointer]) is str:
         return 0
     else:
-        print("WTF?", label[pointer])
-        raise
+        raise ParseError(f"Unknown data pointer format: {label[pointer]}")
 
 def read_label(self):
+    """Attempt to read the data label, checking first whether this is a
+    PDS4 file, then whether it has a detached label, then whether it
+    has an attached label. Returns None if all of these attempts are
+    unsuccessful.
+    """
     if 'labelname' in dir(self): # a detached label exists
         if Path(self.labelname).suffix.lower()=='.xml':
             return pds4.read(
@@ -81,10 +87,11 @@ def read_label(self):
         return
 
 def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
-    """Read a PDS IMG formatted file into an array.
-    TODO: Check for and account for LINE_PREFIX.
-    TODO: Check for and apply BIT_MASK.
+    """Read a PDS IMG formatted file into an array. Defaults to using
+    `rasterio`, and then tries to parse the file directly.
     """
+    # TODO: Check for and account for LINE_PREFIX.
+    # TODO: Check for and apply BIT_MASK.
     """
     rasterio will read an ENVI file if the HDR metadata is present...
     However, it seems to read M3 L0 images incorrectly because it does
@@ -109,7 +116,6 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
         pass
     if pointer in self.LABEL.keys():
         if pointer=='QUBE': # ISIS2 QUBE format
-            print('Also QUBE')
             BYTES_PER_PIXEL = int(self.LABEL[pointer]["CORE_ITEM_BYTES"])# / 8)
             DTYPE = sample_types(self.LABEL[pointer]["CORE_ITEM_TYPE"], BYTES_PER_PIXEL)
             nrows = self.LABEL[pointer]["CORE_ITEMS"][2]
@@ -124,7 +130,6 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
             nrows = self.LABEL[pointer]["LINES"]
             ncols = self.LABEL[pointer]["LINE_SAMPLES"]
             if "LINE_PREFIX_BYTES" in self.LABEL[pointer].keys():
-                # print("Accounting for a line prefix.")
                 prefix_cols = int(self.LABEL[pointer]["LINE_PREFIX_BYTES"] / BYTES_PER_PIXEL)
                 prefix_bytes = prefix_cols * BYTES_PER_PIXEL
             else:
@@ -197,7 +202,7 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
                 image += [frame]
             image = np.array(image).reshape(BANDS, nrows, ncols)
         else:
-            print(f"*** Unknown BAND_STORAGE_TYPE={band_storage_type}. Guessing BAND_SEQUENTIAL.")
+            warnings.warn(f"Unknown BAND_STORAGE_TYPE={band_storage_type}. Guessing BAND_SEQUENTIAL.")
             image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
             image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
     except:
@@ -209,12 +214,17 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
     return image
 
 def read_table_structure(self, pointer='TABLE'):
-    # Try to turn the TABLE definition into a column name / data type array.
-    # Requires renaming some columns to maintain uniqueness.
-    # Also requires unpacking columns that contain multiple entries.
-    # Also requires adding "placeholder" entries for undefined data (e.g. commas
-    #  in cases where the allocated bytes is larger than given by BYTES, so we
-    #  need to read in the "placeholder" space and then discard it later).
+    """Try to turn the TABLE definition into a column name / data type array.
+    Requires renaming some columns to maintain uniqueness.
+    Also requires unpacking columns that contain multiple entries.
+    Also requires adding "placeholder" entries for undefined data (e.g. commas
+    in cases where the allocated bytes is larger than given by BYTES, so we
+    need to read in the "placeholder" space and then discard it later).
+
+    If the table format is defined in an external FMT file, then this will
+    attempt to locate it in the same directory as the data / label, and throw
+    an error if it's not there. TODO: Grab external format files as needed.
+    """
     if "^STRUCTURE" in self.LABEL[pointer]:
         if Path(fmtpath:= self.filename.replace(
             PurePath(self.filename).name,
@@ -225,9 +235,9 @@ def read_table_structure(self, pointer='TABLE'):
             self.LABEL[pointer]['^STRUCTURE'].lower())).exists():
                 LABEL = pvl.load(fmtpath)
         else:
-            print(f'*** Unable to locate external table format file:\n\t{self.LABEL[pointer]["^STRUCTURE"]}')
+            warnings.warn(f'Unable to locate external table format file:\n\t{self.LABEL[pointer]["^STRUCTURE"]}')
             return None
-        print(f"Reading external format file:\n\t{fmtpath}")
+        #print(f"Reading external format file:\n\t{fmtpath}")
     else:
         LABEL = self.LABEL[pointer]
     fmtdef = pd.DataFrame()
@@ -249,6 +259,10 @@ def read_table_structure(self, pointer='TABLE'):
     return fmtdef
 
 def parse_table_structure(self, pointer="TABLE"):
+    """Generate an dtype array to later pass to numpy.fromfile
+    to unpack the table data according to the format given in the
+    label.
+    """
     fmtdef = read_table_structure(self, pointer=pointer)
     dt = []
     if fmtdef is None:
@@ -256,7 +270,6 @@ def parse_table_structure(self, pointer="TABLE"):
     for i in range(len(fmtdef)):
         dt += [(fmtdef.iloc[i].NAME,
                 sample_types(fmtdef.iloc[i].DATA_TYPE, int(fmtdef.iloc[i].BYTES)))]
-        # print(fmtdef.iloc[i].NAME,fmtdef.iloc[i].DATA_TYPE,fmtdef.iloc[i].BYTES)
         try:
             allocation = fmtdef.iloc[i + 1].START_BYTE - fmtdef.iloc[i].START_BYTE
         except IndexError:
@@ -269,6 +282,9 @@ def parse_table_structure(self, pointer="TABLE"):
     return np.dtype(dt), fmtdef
 
 def read_table(self, pointer="TABLE"):
+    """ Read a table. Will first attempt to parse it as generic CSV
+    and then fall back to parsin git based on the label format definition.
+    """
     dt, fmtdef = parse_table_structure(self, pointer=pointer)
     try:
         # Check if this is just a CSV file
@@ -291,7 +307,7 @@ def read_table(self, pointer="TABLE"):
         return self.LABEL[pointer]
 
 def read_header(self, pointer="HEADER"):
-    # Maybe boldly assume that this is just a prepended PVL header
+    """ Attempt to read a file header. """
     if (self.filename.lower().endswith('.fits') or
             self.filename.lower().endswith('.fit')):
         try: # Is it a FITS file?
@@ -301,11 +317,14 @@ def read_header(self, pointer="HEADER"):
     try:
         return pvl.load(self.filename)
     except:
-        print(f"*** Unable to find or parse {pointer}")
+        warnings.warn(f"Unable to find or parse {pointer}")
         return self.LABEL[f"^{pointer}"]
 
 def tbd(self, pointer=""):
-    print(f"*** The {pointer} pointer is not yet fully supported.")
+    """ This is a placeholder function for pointers that are
+    not explicitly supported elsewhere. It throws a warning and
+    passes just the value of the pointer."""
+    warnings.warn(f"The {pointer} pointer is not yet fully supported.")
     return self.LABEL[f"^{pointer}"]
 
 def pointer_to_function(pointer):
@@ -339,7 +358,7 @@ class Data:
                     setattr(self, "labelname", labelname)
                     break
         else:
-            print(f"*** Unknown filetype: {Path(fn).suffix}")
+            warnings.warn(f"Unknown filetype: {Path(fn).suffix}")
             setattr(self, 'filename', fn)
 
         # Just use pds4_tools if this is a PDS4 file
@@ -351,7 +370,7 @@ class Data:
             setattr(self, "index", index)
             return
         except:
-            # Not a PDS4 file
+            # Presume that this is not a PDS4 file
             pass
 
         LABEL = read_label(self)
