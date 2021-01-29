@@ -1,7 +1,6 @@
 import os
 import sys
 import pandas as pd
-#import tqdm
 
 """
 The following three functions are substantially derived from code in
@@ -14,25 +13,13 @@ Redistribution and use in source and binary forms, with or without modification,
 Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-if sys.version_info[0] == 3:
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-    from urllib.parse import urlencode
-    from io import BytesIO
-else:
-    from urllib2 import urlopen
-    from urllib2 import HTTPError
-    from urllib import urlencode
-    from cStringIO import StringIO as BytesIO
-
+from urllib.request import urlopen
+from urllib.error import HTTPError
+from io import BytesIO
 
 def url_content_length(fhandle):
-    if sys.version_info[0] == 3:
-        length = dict(fhandle.info())["Content-Length"]
-    else:
-        length = fhandle.info().getheader("Content-Length")
+    length = dict(fhandle.info())["Content-Length"]
     return int(length.strip())
-
 
 def bytes_to_string(nbytes):
     if nbytes < 1024:

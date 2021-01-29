@@ -4,66 +4,30 @@ This tool will provide a single command---`read([filename])`---for ingesting _al
 ### Usage
 Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the full path to an data product _or_ a metadata / label file (e.g. with extensions of .LBL, .lbl, or .xml). The `read()` (or alias `open()`) function will look for the corresponding data or metadata file in the same path. It returns an object containing all of the data and metadata.
 
-The object uses the name of the data type as provided in the metadata. For example, PDS3 images are typically defined as "IMAGE" objects in the metadata, so it the data would be contained `pdr.read(filename).IMAGE`. The "LABEL" data is typically references (as a PVL object) in `pdr.read(filename).LABEL`. Some PDS3 files, especially older ones, contain multiple data types. Suggestions on how to improve the organization of these objects is welcomed.
+The returned object uses the name of the data type as provided in the metadata. For example, PDS3 images are typically defined as "IMAGE" objects in the metadata, so it the data would be contained `pdr.read(filename).IMAGE`. The "LABEL" data is typically references (as a PVL object) in `pdr.read(filename).LABEL`. Some PDS3 files, especially older ones, contain multiple data types. Suggestions on how to improve the organization of these objects is welcomed.
+The object can also be treated _sort of_ like a `dict()` with the observational data and metadata attributes as keys. So, for example, `pdr.read(filename).keys()` might return `['IMAGE','LABEL']`, and then the image array can be accessed with `pdr.read(filename)['IMAGE']`. Checking the `keys()` of the returned object is often a good first thing to do.
 
 ### Supported Data Types
 1. All data archived under PDS4 standards should be fully supported. This tool simply wraps `pds4_tools`.
 2. Flexible Image Transport (FITS) data should be fully supported. This tool simply wraps `astropy.io.fits`.
-3. The **GeoTiff format is not supported**, but the plan is to include this functionality (and a lot of others!) by wrapping GDAL.
-4. The **ISIS Cube format is partly supported**, but maybe not reliably or correctly.
-
-In general, `pdr` returns the raw array data for images and other rasters. Many missions and instruments require that this data be adjusted in some way (e.g. with scale and offset factors) to place it into physical units appropriate for scientific analysis. None of that has been implemented at this time, so you should check the instrument SIS to make sure. Any information required for the transformation _should_ be contained in the data `LABEL` or `HEADER` which are also returned by `pdr` (when they exist). The plan is to eventually add this functionality, but it will be fiddly and time-consuming.
-
-### Supported Data Sets (w/ Notes)
-Most of these are files archived under PDS3. The standards for these files was quite flexible, as was the quality control, especially for older missions. The current validation method is _visual inspection of the output_. Strategies for better and automated QA are desired.
-
-* Chandrayaan-1 M3
-    * Treats L0 data as a special case.
-    * Seems to work for the L0 images, but they're noisy enough that it's hard to say. They _look_ like the examples given in the M3 calibration paper.
-    * This will probably break on edge cases. There are apparently L0 data with "missing lines" that can only be sussed out by comparing the number of bytes in between line prefix strings.I haven't encountered one of those yet, so it hasn't been coded around.
-    * The PDR implementation might be more versatile than the ISIS3 read capability now, because ISIS3 seems to hardcode the number of BANDS to one of two options (even though there are like 5).
-* Mars Science Laboratory
-    * Mars Descent Imager
-        * RDR data works. Uncompressed EDR works (see: caveat below).
-    * Mastcam
-        * RDR data works. Uncompressed EDR works (see: caveat below).
-    * MAHLI
-        * RDR data works. Uncompressed EDR works (see: caveat below).
-* Mars Global Surveyor
-    * Near Infrared Mapping Spectrometer (NIMS)
-        * The image data works fine. These files contain other table data. Not all of it is supported. The "BAD_DATA_VALUES_HEADER" requires referencing the "BADDATA.TXT" metadata / format file (see: note below).
-* Cassini
-    * Imaging Science Subsystem (COISS)
-        * WACFM
-            * The image and table data contained in these files all appear to parse successfully.
-        * NACFM
-            * The image and table data contained in these files all appear to parse successfully.
-* Viking
-    * Camera_2
-        * These files contain an IMAGE and a HISTOGRAM. Both appear to parse correctly.
-* Galileo SSI
-* Mars Exploration Rover (MER)
-    * APXS
-        * EDR contains two tables (ENGINEERING_TABLE and MEASUREMENT_TABLE), which both appear to parse correctly.
-    * Mossbauer
-        * The EDR label does not seem to contain a data pointer and so **does not parse**.
-    * Descent Camera
-        * EDR seems to work great.
-    * Hazard Avoidance Camera (Hazcam)
-        * The '.rgb' files **maybe do not parse**; need to investigate what this file should actually contain.
-        * The EDR and RDR '.img' files work.
-
-[... list is in progress ...]
+3. Many but not all data archived under PDS3 are currently supported. Older files formats are less likely to work correctly.
+   + Some PDS3 table data are defined in external reference files (usually with a `.FMT` extension). If this file exists in the same directory as the data being read, then it should work. Future functionality will make this smoother.
+4. The **GeoTiff format is not supported**, but the plan is to include this functionality (and a lot of others!) by wrapping GDAL.
+5. The **ISIS Cube format is partly supported**, but maybe not reliably or correctly.
     
-### Notes and Caveats
-#### Mars Science Laboratory images
-The Mars Science Laboratory "raw" (EDR) images produced by the Malin Space Science Systems (MSSS) cameras, which include Mastcam, MAHLI, and the Mars Descent Imager, are archived in a bespoke compressed format. These images carry the extension '.DAT' which is typically reserved for "table" style data in PDS3. Software for converting these files to more typical PDS3-style .IMG format files has been provided in the archive. If the `dat2img` script is compiled in a directory called "MMM_DAT2IMG" under the "pdr" directory, then the `read()` action will run this script and read the resulting output. Otherwise it will just return an error. Functionality is planned to either include / compile this code with the installation of this package or (much better) to port `dat2img` to pure Python. Help is welcomed with either of these efforts! The MSL "calibrated" (RDR) files should all work fine, though.
-
-#### Detached table format files
-Many table data in PDS3 have a format that is defined in a special file at a different location in the archive. Prototype capability for finding / reading these automatically exists, but has not been incorporated into this tool yet. So table data defined in this way are not yet supported.
-
+### Other Notes and Caveats
 #### Additional processing
 Some data, especially calibrated image data, might require the application of additional offsets or scale factors to convert the storage units to meaningful physical units. The information on how and when to apply such adjustments is typically stored (as plain text) in the instrument SIS, and the scale factors themselves are usually stored in the label. This hasn't been implemented anywhere, because it will probably require digging into each data set individually. So **do not trust that the data output by `read()` is ready for analysis** without further processing. Contributions towards solving this problem are very much welcomed.
+
+#### Mars Science Laboratory compressed EDR images: Currently broken.
+**This isn't supported at all right now. Temporarily broken!** The Mars Science Laboratory "raw" (EDR) images produced by the Malin Space Science Systems (MSSS) cameras, which include Mastcam, MAHLI, and the Mars Descent Imager, are archived in a bespoke compressed format. These images carry the extension '.DAT' which is typically reserved for "table" style data in PDS3. Software for converting these files to more typical PDS3-style .IMG format files has been provided in the archive. If the `dat2img` script is compiled in a directory called "MMM_DAT2IMG" under the "pdr" directory, then the `read()` action will run this script and read the resulting output. Otherwise it will just return an error. Functionality is planned to either include / compile this code with the installation of this package or (much better) to port `dat2img` to pure Python. Help is welcomed with either of these efforts! The MSL "calibrated" (RDR) files should all work fine, though.
+
+
+#### Detached table format files
+Some PDS3 table data are defined in external reference files (usually with a `.FMT` extension). If this file exists in the same directory as the data being read, then it should work. Future functionality will make this smoother.
+
+#### External description files
+Some PDS3 labels point to external metadata "description" files (usually a `.PDF`). The current functionality is to just return the name of this file as given by the pointer, not its contents.
 
 #### Big files (like HiRISE)
 No sort of memory management or lazy-loading is implemented, so expect a crash or very slow response on most machines if you try to read very large files.
