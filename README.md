@@ -7,6 +7,13 @@ Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the full
 The returned object uses the name of the data type as provided in the metadata. For example, PDS3 images are typically defined as "IMAGE" objects in the metadata, so it the data would be contained `pdr.read(filename).IMAGE`. The "LABEL" data is typically references (as a PVL object) in `pdr.read(filename).LABEL`. Some PDS3 files, especially older ones, contain multiple data types. Suggestions on how to improve the organization of these objects is welcomed.
 The object can also be treated _sort of_ like a `dict()` with the observational data and metadata attributes as keys. So, for example, `pdr.read(filename).keys()` might return `['IMAGE','LABEL']`, and then the image array can be accessed with `pdr.read(filename)['IMAGE']`. Checking the `keys()` of the returned object is often a good first thing to do.
 
+In general:
++ Image data will be represented as `numpy` arrays.
++ Table data will be represented as `pandas` DataFrames.
++ Header and label data will be represented as _either_ `pvl` objects or fitsio objects, depending on the data type.
++ Other data will be represented as simple python types (e.g. strings, tuples, dicts).
++ There might be rare exceptions.
+
 ### Supported Data Types
 1. All data archived under PDS4 standards should be fully supported. This tool simply wraps `pds4_tools`.
 2. Flexible Image Transport (FITS) data should be fully supported. This tool simply wraps `astropy.io.fits`.
