@@ -111,11 +111,13 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
     not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
     the use of rasterio until I can figure out how to produce consistent
     output."""
-    try:  # Is it a FITS file?
-        hdu = fits.open(self.filename)
-        return hdu[pointer_to_fits_key(pointer, hdu)].data
-    except:
-        pass
+    if (self.filename.lower().endswith('.fits') or
+            self.filename.lower().endswith('.fit')):
+        try:  # Is it a FITS file?
+            hdu = fits.open(self.filename)
+            return hdu[pointer_to_fits_key(pointer, hdu)].data
+        except:
+            pass
     try:
         if 'INSTRUMENT_ID' in self.LABEL.keys():
             if (self.LABEL['INSTRUMENT_ID'] == "M3" and self.LABEL['PRODUCT_TYPE'] == "RAW_IMAGE"):
@@ -303,12 +305,13 @@ def read_table(self, pointer="TABLE"):
     """ Read a table. Will first attempt to parse it as generic CSV
     and then fall back to parsin git based on the label format definition.
     """
-    try:  # Is it a FITS file?
-        hdu = fits.open(self.filename)
-        return hdu[pointer_to_fits_key(pointer, hdu)].data
-    except:
-        pass
-
+    if (self.filename.lower().endswith('.fits') or
+            self.filename.lower().endswith('.fit')):
+        try:  # Is it a FITS file?
+            hdu = fits.open(self.filename)
+            return hdu[pointer_to_fits_key(pointer, hdu)].data
+        except:
+            pass
     dt, fmtdef = parse_table_structure(self, pointer=pointer)
     try:
         # Check if this is just a CSV file
@@ -349,11 +352,13 @@ def tbd(self, pointer=""):
     """ This is a placeholder function for pointers that are
     not explicitly supported elsewhere. It throws a warning and
     passes just the value of the pointer."""
-    try:  # Is it a FITS file?
-        hdu = fits.open(self.filename)
-        return hdu[pointer_to_fits_key(pointer, hdu)].data
-    except:
-        pass
+    if (self.filename.lower().endswith('.fits') or
+            self.filename.lower().endswith('.fit')):
+        try:  # Is it a FITS file?
+            hdu = fits.open(self.filename)
+            return hdu[pointer_to_fits_key(pointer, hdu)].data
+        except:
+            pass
     warnings.warn(f"The {pointer} pointer is not yet fully supported.")
     return self.LABEL[f"^{pointer}"]
 
