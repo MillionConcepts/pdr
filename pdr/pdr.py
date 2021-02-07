@@ -7,7 +7,9 @@ import pandas as pd
 import rasterio
 import struct
 import warnings
+from pandas.io.parsers import ParserError
 from pvl.exceptions import ParseError
+import Levenshtein as lev
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
@@ -54,6 +56,16 @@ def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
         "CHARACTER":f"S{SAMPLE_BYTES}", # ASCII character string
     }[SAMPLE_TYPE]
 
+def pointer_to_fits_key(pointer,hdu):
+    """ In some data sets with FITS, the PDS3 object names and FITS object names
+    are not identical. This function attempts to use Levenshtein "fuzzy matching" to
+    identify the correlation between the two. It is not guaranteed to be correct! And
+    special case handling might be required in the future. """
+    if pointer=='IMAGE' or pointer=='TABLE':
+        return 0
+    levratio = [lev.ratio(i[1].lower(),pointer.lower()) for i in hdu.info(output=False)]
+    return levratio.index(max(levratio))
+
 def data_start_byte(label, pointer):
     """Determine the first byte of the data in an IMG file from its pointer."""
     if type(label[pointer]) is int:
@@ -99,6 +111,11 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
     not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
     the use of rasterio until I can figure out how to produce consistent
     output."""
+    try:  # Is it a FITS file?
+        hdu = fits.open(self.filename)
+        return hdu[pointer_to_fits_key(pointer, hdu)].data
+    except:
+        pass
     try:
         if 'INSTRUMENT_ID' in self.LABEL.keys():
             if (self.LABEL['INSTRUMENT_ID'] == "M3" and self.LABEL['PRODUCT_TYPE'] == "RAW_IMAGE"):
@@ -286,12 +303,18 @@ def read_table(self, pointer="TABLE"):
     """ Read a table. Will first attempt to parse it as generic CSV
     and then fall back to parsin git based on the label format definition.
     """
+    try:  # Is it a FITS file?
+        hdu = fits.open(self.filename)
+        return hdu[pointer_to_fits_key(pointer, hdu)].data
+    except:
+        pass
+
     dt, fmtdef = parse_table_structure(self, pointer=pointer)
     try:
         # Check if this is just a CSV file
         return pd.read_csv(self.filename,
                            names=fmtdef.NAME.tolist())
-    except (UnicodeDecodeError, AttributeError):
+    except (UnicodeDecodeError, AttributeError, ParserError):
         pass # This is not parseable as a CSV file
     table = pd.DataFrame(
         np.fromfile(
@@ -312,7 +335,8 @@ def read_header(self, pointer="HEADER"):
     if (self.filename.lower().endswith('.fits') or
             self.filename.lower().endswith('.fit')):
         try: # Is it a FITS file?
-            return fits.open(self.filename)[0].header
+            hdu = fits.open(self.filename)
+            return hdu[pointer_to_fits_key(pointer,hdu)].header
         except:
             pass
     try:
@@ -325,6 +349,11 @@ def tbd(self, pointer=""):
     """ This is a placeholder function for pointers that are
     not explicitly supported elsewhere. It throws a warning and
     passes just the value of the pointer."""
+    try:  # Is it a FITS file?
+        hdu = fits.open(self.filename)
+        return hdu[pointer_to_fits_key(pointer, hdu)].data
+    except:
+        pass
     warnings.warn(f"The {pointer} pointer is not yet fully supported.")
     return self.LABEL[f"^{pointer}"]
 

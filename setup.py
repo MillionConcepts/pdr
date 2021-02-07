@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pdr", # Replace with your own username
-    version="0.4a1",
+    version="0.4.2a",
     author="Chase Million",
     author_email="chase@millionconcepts.com",
     description="Planetary Data Reader",
@@ -20,4 +20,14 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
+    install_requires=[
+        "pds4_tools",
+        "rasterio",
+        "pandas",
+        "numpy",
+        "astropy",
+        "pvl>=1.1.0",
+        "python-Levenshtein",
+    ]
+
 )
