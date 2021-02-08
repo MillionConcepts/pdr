@@ -17,6 +17,7 @@ label_extensions = ('.xml','.XML','.lbl','.LBL')
 data_extensions = ('.img','.IMG',
                    '.fit','.FIT','.fits','.FITS',
                    '.dat','.DAT','.tab','.TAB',
+                   '.QUB',
                    # And then the really unusual ones...
                    '.n06', '.grn', # Viking
                    '.rgb', # MER
@@ -80,7 +81,11 @@ def data_start_byte(label, pointer):
     elif type(label[pointer]) is str:
         return 0
     else:
-        raise ParseError(f"Unknown data pointer format: {label[pointer]}")
+        try:
+            # This is to handle the PVL "Quantity" object... should probably do this better
+            return label[pointer].value
+        except:
+            raise ParseError(f"Unknown data pointer format: {label[pointer]}")
 
 def read_label(self):
     """Attempt to read the data label, checking first whether this is a
@@ -124,16 +129,17 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
                 userasterio=False # because rasterio doesn't read M3 L0 data correctly
     except:
         pass
-    try:
-        if not userasterio:
-            raise
-        dataset = rasterio.open(self.filename)
-        if len(dataset.indexes)==1:
-            return dataset.read()[0,:,:] # Make 2D images actually 2D
-        else:
-            return dataset.read()
-    except rasterio.errors.RasterioIOError:
-        pass
+    if pointer=='IMAGE' or self.filename.lower().endswith('qub'):
+        try:
+            if not userasterio:
+                raise
+            dataset = rasterio.open(self.filename)
+            if len(dataset.indexes)==1:
+                return dataset.read()[0,:,:] # Make 2D images actually 2D
+            else:
+                return dataset.read()
+        except rasterio.errors.RasterioIOError:
+            pass
     if pointer in self.LABEL.keys():
         if pointer=='QUBE': # ISIS2 QUBE format
             BYTES_PER_PIXEL = int(self.LABEL[pointer]["CORE_ITEM_BYTES"])# / 8)
@@ -428,7 +434,8 @@ class Data:
 
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
-        if not "IMAGE" in index:
+        # Must exclude QUB files or it will reread them as an IMAGE
+        if not "IMAGE" in index and not self.filename.lower().endswith('qub'):
             try:
                 image = read_image(self)
                 if not image is None:
@@ -440,6 +447,8 @@ class Data:
         # Create an index of all of the pointers to data
         setattr(self,"index",index)
 
+    # The following two functions make this object act sort of dict-like
+    #  in useful ways for data exploration.
     def keys(self):
         # Returns the keys for observational data and metadata objects
         return self.index
@@ -447,4 +456,5 @@ class Data:
     # Make it possible to call the object like a dict
     def __getitem__(self, item):
          return getattr(self, item)
+
 

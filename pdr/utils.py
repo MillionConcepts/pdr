@@ -117,3 +117,17 @@ def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv")
     refdata = pd.read_csv(f"{refdatafile}", comment="#")
     return download_data_and_label(refdata["url"][index],
                           labelurl=refdata["lbl"][index],data_dir=data_dir)
+
+def asciify(img,maxwidth=80,
+            gscale='$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~i!lI;:,\"^`". ',   #70 levels of gray
+    rampspace = 'log'):
+    # Generate an in-terminal quicklook image by downsampling and converting to ASCII
+    scale = int(np.ceil(data.IMAGE.shape[1]/maxwidth))
+    img = block_reduce(data.IMAGE,(2*scale,scale),func=np.mean)
+    if rampspace == 'log':
+        # Assign the value bins on a log scale using geomspace
+        dig = np.geomspace(img.min(),img.max(),num=len(gscale),endpoint=True)
+    else:
+        dig = np.linspace(img.min(),img.max(),num=len(gscale),endpoint=True)
+    ind = np.digitize(img,dig)-1
+    return ''.join([''.join([gscale[pixel] for pixel in row])+'\n' for row in ind])
