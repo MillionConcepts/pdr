@@ -1,6 +1,7 @@
 import os
 import sys
 import pandas as pd
+import numpy as np
 
 """
 The following three functions are substantially derived from code in
@@ -120,10 +121,10 @@ def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv")
 
 def asciify(img,maxwidth=80,
             gscale='$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~i!lI;:,\"^`". ',   #70 levels of gray
-    rampspace = 'log'):
+    rampspace = 'log',func=np.mean):
     # Generate an in-terminal quicklook image by downsampling and converting to ASCII
     scale = int(np.ceil(data.IMAGE.shape[1]/maxwidth))
-    img = block_reduce(data.IMAGE,(2*scale,scale),func=np.mean)
+    img = block_reduce(data.IMAGE,(2*scale,scale),func=func)
     if rampspace == 'log':
         # Assign the value bins on a log scale using geomspace
         dig = np.geomspace(img.min(),img.max(),num=len(gscale),endpoint=True)
