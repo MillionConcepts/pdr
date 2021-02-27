@@ -1,6 +1,13 @@
 ## The Planetary Data Reader (pdr)
 This tool will provide a single command---`read([filename])`---for ingesting _all_ common planetary data types. It is currently in development. Any kind of "primary observational data" product currently archived in the PDS (under PDS3 or PDS4) should be covered eventually, as should many common data types used in research workflows that do not appear in the PDS (e.g. ISIS Cube, GeoTIFF, ...) The supported data types / sets are listed below. There might be data types / sets that work but are not listed. There are also likely to be some files in the 'supported' data types / sets that break. In either of these cases, please submit an issue with a link to the file and information about the error (if applicable).
 
+### Installation
+_pdr_ is not yet on `pip` or `conda`. You can install it with a command like the following:
+
+    pip install git+https://github.com/MillionConcepts/pdr.git
+
+The minimum supported version of Python is _3.6_. A fresh conda environment may prevent headaches.
+
 ### Usage
 Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the full path to an data product _or_ a metadata / label file (e.g. with extensions of .LBL, .lbl, or .xml). The `read()` (or alias `open()`) function will look for the corresponding data or metadata file in the same path. It returns an object containing all of the data and metadata.
 

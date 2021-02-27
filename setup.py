@@ -28,6 +28,7 @@ setuptools.setup(
         "astropy",
         "pvl>=1.1.0",
         "python-Levenshtein",
+        "scikit-image",
     ]
 
 )
