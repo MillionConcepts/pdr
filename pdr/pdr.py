@@ -10,6 +10,7 @@ import warnings
 from pandas.io.parsers import ParserError
 from pvl.exceptions import ParseError
 import Levenshtein as lev
+import gzip
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
@@ -18,6 +19,8 @@ data_extensions = ('.img','.IMG',
                    '.fit','.FIT','.fits','.FITS',
                    '.dat','.DAT','.tab','.TAB',
                    '.QUB',
+                   # Compressed data... not PDS-compliant, but...
+                   '.gz',
                    # And then the really unusual ones...
                    '.n06', '.grn', # Viking
                    '.rgb', # MER
@@ -87,6 +90,19 @@ def data_start_byte(label, pointer):
         except:
             raise ParseError(f"Unknown data pointer format: {label[pointer]}")
 
+def decompress(filename):
+    if filename.endswith(".gz"):
+        f = gzip.open(filename, "rb")
+    elif filename.endswith(".bz2"):
+        f = bz2.BZ2File(filename, "rb")
+    elif filename.endswith(".ZIP"):
+        f = ZipFile(filename, "r").open(
+            ZipFile(filename, "r").infolist()[0].filename
+        )
+    else:
+        f = open(filename, "rb")
+    return f
+
 def read_label(self):
     """Attempt to read the data label, checking first whether this is a
     PDS4 file, then whether it has a detached label, then whether it
@@ -100,7 +116,8 @@ def read_label(self):
             ).label.to_dict()
         return pvl.load(self.labelname)
     try:
-        return pvl.load(self.filename) # check for an attached label
+
+        return pvl.load(decompress(self.filename)) # check for an attached label
     except:
         return
 
@@ -188,18 +205,10 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
         band_storage_type = self.LABEL["L0_FILE"]["L0_IMAGE"]["BAND_STORAGE_TYPE"]
     else:
         return None
+
     fmt = "{endian}{pixels}{fmt}".format(endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1])
     try:  # a little decision tree to seamlessly deal with compression
-        if self.filename.endswith(".gz"):
-            f = gzip.open(filename, "rb")
-        elif self.filename.endswith(".bz2"):
-            f = bz2.BZ2File(filename, "rb")
-        elif self.filename.endswith(".ZIP"):
-            f = ZipFile(filename, "r").open(
-                ZipFile(filename, "r").infolist()[0].filename
-            )
-        else:
-            f = open(self.filename, "rb")
+        f = decompress(self.filename)
         # Make sure that single-band images are 2-dim arrays.
         f.seek(start_byte)
         prefix = None
