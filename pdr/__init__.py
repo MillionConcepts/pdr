@@ -7,7 +7,6 @@ __version__ = "0.4.2a"
 
 pkg_dir = _osp.abspath(_osp.dirname(__file__))
 test_dir = _osp.join(pkg_dir, 'tests')
-print(test_dir)
 
 def read(fp):
     return Data(fp)
