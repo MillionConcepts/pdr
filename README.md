@@ -6,7 +6,7 @@ _pdr_ is not yet on `pip` or `conda`. You can install it with a command like the
 
     pip install git+https://github.com/MillionConcepts/pdr.git
 
-The minimum supported version of Python is _3.6_. A fresh conda environment may prevent headaches.
+The minimum supported version of Python is _3.8_. A fresh conda environment may prevent headaches.
 
 ### Usage
 Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the full path to an data product _or_ a metadata / label file (e.g. with extensions of .LBL, .lbl, or .xml). The `read()` (or alias `open()`) function will look for the corresponding data or metadata file in the same path. It returns an object containing all of the data and metadata.
