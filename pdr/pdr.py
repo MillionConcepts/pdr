@@ -7,7 +7,7 @@ import pandas as pd
 import rasterio
 import struct
 import warnings
-from pandas.io.parsers import ParserError
+from pandas.errors import ParserError
 from pvl.exceptions import ParseError
 import Levenshtein as lev
 import gzip
