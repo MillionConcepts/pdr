@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pdr", # Replace with your own username
-    version="0.4.2a",
+    version="0.4.3a",
     author="Chase Million",
     author_email="chase@millionconcepts.com",
     description="Planetary Data Reader",
