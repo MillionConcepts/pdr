@@ -1,0 +1,23 @@
+name: pdr
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - git
+  - jupyter
+  - pip
+  - gdal
+  - rasterio
+  - pvl
+  - python-Levenshtein
+  - astropy
+  - pytest
+  - scikit-image
+  - gzip
+  - zipfile
+  - bz2
+  - pip:
+      - pds4-tools

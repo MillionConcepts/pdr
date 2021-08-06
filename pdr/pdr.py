@@ -11,6 +11,8 @@ from pandas.errors import ParserError
 from pvl.exceptions import ParseError
 import Levenshtein as lev
 import gzip
+from zipfile import ZipFile
+import bz2
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
@@ -332,6 +334,7 @@ def read_table(self, pointer="TABLE"):
         # Check if this is just a CSV file
         return pd.read_csv(self.filename,
                            names=fmtdef.NAME.tolist())
+    # TODO: write read_csv as it appears to not be in the code
     except (UnicodeDecodeError, AttributeError, ParserError):
         pass # This is not parseable as a CSV file
     table = pd.DataFrame(
