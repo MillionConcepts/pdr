@@ -29,6 +29,7 @@ data_extensions = ('.img','.IMG',
                    '.raw','.RAW', # Mars Express VMC
                    )
 
+
 def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
     """Defines a translation from PDS data types to Python data types,
     using both the type and bytes specified (because the mapping to type
@@ -62,6 +63,7 @@ def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
         "CHARACTER":f"S{SAMPLE_BYTES}", # ASCII character string
     }[SAMPLE_TYPE]
 
+
 def pointer_to_fits_key(pointer,hdu):
     """ In some data sets with FITS, the PDS3 object names and FITS object names
     are not identical. This function attempts to use Levenshtein "fuzzy matching" to
@@ -71,6 +73,7 @@ def pointer_to_fits_key(pointer,hdu):
         return 0
     levratio = [lev.ratio(i[1].lower(),pointer.lower()) for i in hdu.info(output=False)]
     return levratio.index(max(levratio))
+
 
 def data_start_byte(label, pointer):
     """Determine the first byte of the data in an IMG file from its pointer."""
@@ -92,6 +95,7 @@ def data_start_byte(label, pointer):
         except:
             raise ParseError(f"Unknown data pointer format: {label[pointer]}")
 
+
 def decompress(filename):
     if filename.endswith(".gz"):
         f = gzip.open(filename, "rb")
@@ -104,6 +108,7 @@ def decompress(filename):
     else:
         f = open(filename, "rb")
     return f
+
 
 def read_label(self):
     """Attempt to read the data label, checking first whether this is a
@@ -123,6 +128,7 @@ def read_label(self):
     except:
         return
 
+
 def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
     """Read a PDS IMG formatted file into an array. Defaults to using
     `rasterio`, and then tries to parse the file directly.
@@ -135,13 +141,6 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
     not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
     the use of rasterio until I can figure out how to produce consistent
     output."""
-    if (self.filename.lower().endswith('.fits') or
-            self.filename.lower().endswith('.fit')):
-        try:  # Is it a FITS file?
-            hdu = fits.open(self.filename)
-            return hdu[pointer_to_fits_key(pointer, hdu)].data
-        except:
-            pass
     try:
         if 'INSTRUMENT_ID' in self.LABEL.keys():
             if (self.LABEL['INSTRUMENT_ID'] == "M3" and self.LABEL['PRODUCT_TYPE'] == "RAW_IMAGE"):
@@ -250,6 +249,7 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
         return prefix
     return image
 
+
 def read_table_structure(self, pointer='TABLE'):
     """Try to turn the TABLE definition into a column name / data type array.
     Requires renaming some columns to maintain uniqueness.
@@ -295,6 +295,7 @@ def read_table_structure(self, pointer='TABLE'):
             fmtdef = fmtdef.append(obj, ignore_index=True)
     return fmtdef
 
+
 def parse_table_structure(self, pointer="TABLE"):
     """Generate an dtype array to later pass to numpy.fromfile
     to unpack the table data according to the format given in the
@@ -318,17 +319,11 @@ def parse_table_structure(self, pointer="TABLE"):
 
     return np.dtype(dt), fmtdef
 
+
 def read_table(self, pointer="TABLE"):
     """ Read a table. Will first attempt to parse it as generic CSV
     and then fall back to parsin git based on the label format definition.
     """
-    if (self.filename.lower().endswith('.fits') or
-            self.filename.lower().endswith('.fit')):
-        try:  # Is it a FITS file?
-            hdu = fits.open(self.filename)
-            return hdu[pointer_to_fits_key(pointer, hdu)].data
-        except:
-            pass
     dt, fmtdef = parse_table_structure(self, pointer=pointer)
     try:
         # Check if this is just a CSV file
@@ -351,36 +346,39 @@ def read_table(self, pointer="TABLE"):
     except TypeError: # Failed to read the table
         return self.LABEL[pointer]
 
+
 def read_header(self, pointer="HEADER"):
     """ Attempt to read a file header. """
-    if (self.filename.lower().endswith('.fits') or
-            self.filename.lower().endswith('.fit')):
-        try: # Is it a FITS file?
-            hdu = fits.open(self.filename)
-            return hdu[pointer_to_fits_key(pointer,hdu)].header
-        except:
-            pass
     try:
         return pvl.load(self.filename)
     except:
         warnings.warn(f"Unable to find or parse {pointer}")
         return self.LABEL[f"^{pointer}"]
 
+
+def fits_handling(self, pointer=""):
+    """This function attempts to read all .fits or .fit files with fits.open. Files with 'HEADER' pointer return
+    header, all others return data """
+    try:
+        hdu = fits.open(self.filename)
+        if 'HEADER' in pointer:
+            return hdu[pointer_to_fits_key(pointer, hdu)].header
+        return hdu[pointer_to_fits_key(pointer, hdu)].data
+    except:
+        return self.LABEL[pointer]  # assuming this does not need to be specified as f-string (like in read_header/tbd)
+
+
 def tbd(self, pointer=""):
     """ This is a placeholder function for pointers that are
     not explicitly supported elsewhere. It throws a warning and
     passes just the value of the pointer."""
-    if (self.filename.lower().endswith('.fits') or
-            self.filename.lower().endswith('.fit')):
-        try:  # Is it a FITS file?
-            hdu = fits.open(self.filename)
-            return hdu[pointer_to_fits_key(pointer, hdu)].data
-        except:
-            pass
     warnings.warn(f"The {pointer} pointer is not yet fully supported.")
     return self.LABEL[f"^{pointer}"]
 
-def pointer_to_function(pointer):
+
+def pointer_to_function(pointer, filename):
+    if filename.lower().endswith(('fits','fit')):
+        return fits_handling
     if 'DESC' in pointer: # probably points to a reference file
         return tbd
     elif 'HEADER' in pointer:
@@ -393,6 +391,7 @@ def pointer_to_function(pointer):
         return read_table
     else:
         return tbd
+
 
 class Data:
     def __init__(self, fn):
@@ -437,7 +436,7 @@ class Data:
                     setattr(
                         self,
                         pointer[1:] if pointer.startswith("^") else pointer,
-                        pointer_to_function(pointer)(self, pointer=pointer.strip("^")),
+                        pointer_to_function(pointer, self.filename)(self, pointer=pointer.strip("^")),
                     )
                     for pointer in self.pointers
                 ]
