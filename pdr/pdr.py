@@ -1,3 +1,5 @@
+from functools import partial
+from operator import contains
 from pathlib import Path, PurePath
 import pds4_tools as pds4
 from astropy.io import fits
@@ -64,14 +66,23 @@ def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
     }[SAMPLE_TYPE]
 
 
-def pointer_to_fits_key(pointer,hdu):
+# TODO: watch out for cases in which individual products may be scattered
+#  across multiple HDUs. I'm not certain where these are, and I think it is
+#  technically illegal in every PDS3 version, but I'm almost certain they
+#  exist anyway.
+def pointer_to_fits_key(pointer, hdulist):
     """ In some data sets with FITS, the PDS3 object names and FITS object names
     are not identical. This function attempts to use Levenshtein "fuzzy matching" to
     identify the correlation between the two. It is not guaranteed to be correct! And
     special case handling might be required in the future. """
-    if pointer=='IMAGE' or pointer=='TABLE':
+    if pointer in ("IMAGE", "TABLE", None, ""):
+        # TODO: sometimes the primary HDU contains _just_ a header.
+        #  (e.g., GALEX raw6, which is not in scope, but I'm sure something in
+        #  the PDS does this awful thing too.) it might be a good idea to have
+        #  a heuristic for, when we are implicitly looking for data, walking
+        #  forward until we find a HDU that actually has something in it.
         return 0
-    levratio = [lev.ratio(i[1].lower(),pointer.lower()) for i in hdu.info(output=False)]
+    levratio = [lev.ratio(i[1].lower(),pointer.lower()) for i in hdulist.info(output=False)]
     return levratio.index(max(levratio))
 
 
@@ -129,6 +140,11 @@ def read_label(self):
         return
 
 
+# TODO: all these read* functions should probably all be methods of pdr.Data.
+#  I think initially there was a notion that these might be supported as
+#  discretely-accessible API elements, but I think we moved away from that at
+#  some point. If we _didn't_, they need to be rethought, because they require
+#  already-initialized pdr.Data objects!
 def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
     """Read a PDS IMG formatted file into an array. Defaults to using
     `rasterio`, and then tries to parse the file directly.
@@ -223,6 +239,8 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
                 if pointer == "LINE_PREFIX_TABLE":
                     return prefix
                 image = image[:, prefix_cols:]
+        # TODO: I think the ndarray.reshape call signatures in the next three
+        #  cases may be wrong.
         elif band_storage_type == "BAND_SEQUENTIAL":
             image = np.array(struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)))
             image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
@@ -356,17 +374,22 @@ def read_header(self, pointer="HEADER"):
         return self.LABEL[f"^{pointer}"]
 
 
-def fits_handling(self, pointer=""):
-    """This function attempts to read all .fits or .fit files with fits.open. Files with 'HEADER' pointer return
-    header, all others return data """
+def handle_fits_file(self, pointer=""):
+    """
+    This function attempts to read all FITS files, compressed or uncompressed,
+    with astropy.io.fits. Files with 'HEADER' pointer return the header, all
+    others return data.
+    """
     try:
-        hdu = fits.open(self.filename)
+        hdulist = fits.open(self.filename)
         if 'HEADER' in pointer:
-            return hdu[pointer_to_fits_key(pointer, hdu)].header
-        return hdu[pointer_to_fits_key(pointer, hdu)].data
+            return hdulist[pointer_to_fits_key(pointer, hdulist)].header
+        return hdulist[pointer_to_fits_key(pointer, hdulist)].data
     except:
-        return self.LABEL[pointer]  # assuming this does not need to be specified as f-string (like in read_header/tbd)
-
+        # TODO: assuming this does not need to be specified as f-string (like in
+        #  read_header/tbd) -- maybe! must determine and specify what cases
+        #  this exception was needed to handle
+        return self.LABEL[pointer]
 
 def tbd(self, pointer=""):
     """ This is a placeholder function for pointers that are
@@ -376,9 +399,17 @@ def tbd(self, pointer=""):
     return self.LABEL[f"^{pointer}"]
 
 
+def looks_like_a_fits_file(filename):
+    is_fits_extension = partial(contains, ['.fits', '.fit'])
+    return any(map(is_fits_extension, Path(filename.lower()).suffixes))
+
+
 def pointer_to_function(pointer, filename):
-    if filename.lower().endswith(('fits','fit')):
-        return fits_handling
+    # send both compressed and uncompressed fits files to astropy.io.fits
+    # TODO, maybe: dispatch to decompress() for weirdo compression formats,
+    #  but possibly not right here?
+    if looks_like_a_fits_file(filename):
+        return handle_fits_file
     if 'DESC' in pointer: # probably points to a reference file
         return tbd
     elif 'HEADER' in pointer:
@@ -389,8 +420,7 @@ def pointer_to_function(pointer, filename):
         return tbd
     elif 'TABLE' in pointer:
         return read_table
-    else:
-        return tbd
+    return tbd
 
 
 class Data:
@@ -448,8 +478,15 @@ class Data:
         # Must exclude QUB files or it will reread them as an IMAGE
         if not "IMAGE" in index and not self.filename.lower().endswith('qub'):
             try:
-                image = read_image(self)
-                if not image is None:
+                if looks_like_a_fits_file(self.filename):
+                    image = handle_fits_file(self)
+                else:
+                    # TODO: this will presently break if passed an unlabeled
+                    #  image file. read_image() should probably be made more
+                    #  permissive in some way to handle this, or we should at
+                    #  least give a useful error message.
+                    image = read_image(self)
+                if image is not None:
                     setattr(self, "IMAGE", image)
                     index+=['IMAGE']
             except:
