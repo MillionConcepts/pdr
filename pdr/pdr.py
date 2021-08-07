@@ -80,7 +80,8 @@ def pointer_to_fits_key(pointer, hdulist):
         #  (e.g., GALEX raw6, which is not in scope, but I'm sure something in
         #  the PDS does this awful thing too.) it might be a good idea to have
         #  a heuristic for, when we are implicitly looking for data, walking
-        #  forward until we find a HDU that actually has something in it.
+        #  forward until we find a HDU that actually has something in it...
+        #  or maybe just populating multiple keys from the HDU names.
         return 0
     levratio = [lev.ratio(i[1].lower(),pointer.lower()) for i in hdulist.info(output=False)]
     return levratio.index(max(levratio))
@@ -505,4 +506,17 @@ class Data:
     def __getitem__(self, item):
          return getattr(self, item)
 
+    # TODO, maybe: do __str__ and __repr__ better
 
+    def __repr__(self):
+        return f"pdr.Data({self.filename})\nkeys={self.keys()}"
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __len__(self):
+        return len(self.index)
+
+    def __iter__(self):
+        for key in self.keys():
+            yield self[key]
