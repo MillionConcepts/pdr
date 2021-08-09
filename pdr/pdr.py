@@ -18,17 +18,17 @@ import bz2
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
-label_extensions = ('.xml','.XML','.lbl','.LBL')
-data_extensions = ('.img','.IMG',
-                   '.fit','.FIT','.fits','.FITS',
-                   '.dat','.DAT','.tab','.TAB',
+label_extensions = ('.xml', '.XML', '.lbl', '.LBL')
+data_extensions = ('.img', '.IMG',
+                   '.fit', '.FIT', '.fits', '.FITS',
+                   '.dat', '.DAT', '.tab', '.TAB',
                    '.QUB',
                    # Compressed data... not PDS-compliant, but...
                    '.gz',
                    # And then the really unusual ones...
-                   '.n06', '.grn', # Viking
-                   '.rgb', # MER
-                   '.raw','.RAW', # Mars Express VMC
+                   '.n06', '.grn',  # Viking
+                   '.rgb',  # MER
+                   '.raw', '.RAW',  # Mars Express VMC
                    )
 
 
@@ -59,12 +59,12 @@ def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
         "MAC_REAL": ">f",
         "SUN_REAL": ">f",
         "MSB_BIT_STRING": ">B",
-        "ASCII_REAL":f"S{SAMPLE_BYTES}", # "Character string representing a real number"
-        "ASCII_INTEGER":f"S{SAMPLE_BYTES}", # ASCII character string representing an integer
-        "DATE":f"S{SAMPLE_BYTES}", # "ASCII character string representing a date in PDS standard format" (1990-08-01T23:59:59)
-        "CHARACTER":f"S{SAMPLE_BYTES}", # ASCII character string
+        "ASCII_REAL": f"S{SAMPLE_BYTES}",  # "Character string representing a real number"
+        "ASCII_INTEGER": f"S{SAMPLE_BYTES}",  # ASCII character string representing an integer
+        "DATE": f"S{SAMPLE_BYTES}",
+        # "ASCII character string representing a date in PDS standard format" (1990-08-01T23:59:59)
+        "CHARACTER": f"S{SAMPLE_BYTES}",  # ASCII character string
     }[SAMPLE_TYPE]
-
 
 # TODO: watch out for cases in which individual products may be scattered
 #  across multiple HDUs. I'm not certain where these are, and I think it is
@@ -75,6 +75,7 @@ def pointer_to_fits_key(pointer, hdulist):
     are not identical. This function attempts to use Levenshtein "fuzzy matching" to
     identify the correlation between the two. It is not guaranteed to be correct! And
     special case handling might be required in the future. """
+
     if pointer in ("IMAGE", "TABLE", None, ""):
         # TODO: sometimes the primary HDU contains _just_ a header.
         #  (e.g., GALEX raw6, which is not in scope, but I'm sure something in
@@ -128,15 +129,15 @@ def read_label(self):
     has an attached label. Returns None if all of these attempts are
     unsuccessful.
     """
-    if 'labelname' in dir(self): # a detached label exists
-        if Path(self.labelname).suffix.lower()=='.xml':
+    if 'labelname' in dir(self):  # a detached label exists
+        if Path(self.labelname).suffix.lower() == '.xml':
             return pds4.read(
                 self.labelname, quiet=True
             ).label.to_dict()
         return pvl.load(self.labelname)
     try:
 
-        return pvl.load(decompress(self.filename)) # check for an attached label
+        return pvl.load(decompress(self.filename))  # check for an attached label
     except:
         return
 
@@ -161,27 +162,27 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
     try:
         if 'INSTRUMENT_ID' in self.LABEL.keys():
             if (self.LABEL['INSTRUMENT_ID'] == "M3" and self.LABEL['PRODUCT_TYPE'] == "RAW_IMAGE"):
-                userasterio=False # because rasterio doesn't read M3 L0 data correctly
+                userasterio = False  # because rasterio doesn't read M3 L0 data correctly
     except:
         pass
-    if pointer=='IMAGE' or self.filename.lower().endswith('qub'):
+    if pointer == 'IMAGE' or self.filename.lower().endswith('qub'):
         try:
             if not userasterio:
                 raise
             dataset = rasterio.open(self.filename)
-            if len(dataset.indexes)==1:
-                return dataset.read()[0,:,:] # Make 2D images actually 2D
+            if len(dataset.indexes) == 1:
+                return dataset.read()[0, :, :]  # Make 2D images actually 2D
             else:
                 return dataset.read()
         except rasterio.errors.RasterioIOError:
             pass
     if pointer in self.LABEL.keys():
-        if pointer=='QUBE': # ISIS2 QUBE format
-            BYTES_PER_PIXEL = int(self.LABEL[pointer]["CORE_ITEM_BYTES"])# / 8)
+        if pointer == 'QUBE':  # ISIS2 QUBE format
+            BYTES_PER_PIXEL = int(self.LABEL[pointer]["CORE_ITEM_BYTES"])  # / 8)
             DTYPE = sample_types(self.LABEL[pointer]["CORE_ITEM_TYPE"], BYTES_PER_PIXEL)
             nrows = self.LABEL[pointer]["CORE_ITEMS"][2]
             ncols = self.LABEL[pointer]["CORE_ITEMS"][0]
-            prefix_cols,prefix_bytes = 0,0
+            prefix_cols, prefix_bytes = 0, 0
             # TODO: Handle the QUB suffix data
             BANDS = self.LABEL[pointer]["CORE_ITEMS"][1]
             band_storage_type = "ISIS2_QUBE"
@@ -215,7 +216,7 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
         ncols = self.LABEL["L0_FILE"]["L0_IMAGE"]["LINE_SAMPLES"]
         prefix_bytes = int(self.LABEL["L0_FILE"]["L0_IMAGE"]["LINE_PREFIX_BYTES"])
         prefix_cols = (
-            prefix_bytes / BYTES_PER_PIXEL
+                prefix_bytes / BYTES_PER_PIXEL
         )  # M3 has a prefix, but it's not image-shaped
         BANDS = self.LABEL["L0_FILE"]["L0_IMAGE"]["BANDS"]
         pixels = nrows * (ncols + prefix_cols) * BANDS
@@ -251,7 +252,7 @@ def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
                 prefix += [f.read(prefix_bytes)]
                 frame = np.array(
                     struct.unpack(
-                        f"<{BANDS*ncols}h", f.read(BANDS * ncols * BYTES_PER_PIXEL)
+                        f"<{BANDS * ncols}h", f.read(BANDS * ncols * BYTES_PER_PIXEL)
                     )
                 ).reshape(BANDS, ncols)
                 image += [frame]
@@ -282,18 +283,18 @@ def read_table_structure(self, pointer='TABLE'):
     an error if it's not there. TODO: Grab external format files as needed.
     """
     if "^STRUCTURE" in self.LABEL[pointer]:
-        if Path(fmtpath:= self.filename.replace(
-            PurePath(self.filename).name,
-            self.LABEL[pointer]['^STRUCTURE'])).exists():
-                LABEL = pvl.load(fmtpath)
-        elif Path(fmtpath:= self.filename.replace(
-            PurePath(self.filename).name,
-            self.LABEL[pointer]['^STRUCTURE'].lower())).exists():
-                LABEL = pvl.load(fmtpath)
+        if Path(fmtpath := self.filename.replace(
+                PurePath(self.filename).name,
+                self.LABEL[pointer]['^STRUCTURE'])).exists():
+            LABEL = pvl.load(fmtpath)
+        elif Path(fmtpath := self.filename.replace(
+                PurePath(self.filename).name,
+                self.LABEL[pointer]['^STRUCTURE'].lower())).exists():
+            LABEL = pvl.load(fmtpath)
         else:
             warnings.warn(f'Unable to locate external table format file:\n\t{self.LABEL[pointer]["^STRUCTURE"]}')
             return None
-        #print(f"Reading external format file:\n\t{fmtpath}")
+        # print(f"Reading external format file:\n\t{fmtpath}")
     else:
         LABEL = self.LABEL[pointer]
     fmtdef = pd.DataFrame()
@@ -334,7 +335,7 @@ def parse_table_structure(self, pointer="TABLE"):
             allocation = self.LABEL[pointer]['ROW_BYTES'] - fmtdef.iloc[i].START_BYTE + 1
         if allocation > fmtdef.iloc[i].BYTES:
             dt += [(f'PLACEHOLDER_{i}',
-                    sample_types('CHARACTER',int(allocation - fmtdef.iloc[i].BYTES)))]
+                    sample_types('CHARACTER', int(allocation - fmtdef.iloc[i].BYTES)))]
 
     return np.dtype(dt), fmtdef
 
@@ -350,7 +351,7 @@ def read_table(self, pointer="TABLE"):
                            names=fmtdef.NAME.tolist())
     # TODO: write read_csv as it appears to not be in the code
     except (UnicodeDecodeError, AttributeError, ParserError):
-        pass # This is not parseable as a CSV file
+        pass  # This is not parseable as a CSV file
     table = pd.DataFrame(
         np.fromfile(
             self.filename,
@@ -361,8 +362,8 @@ def read_table(self, pointer="TABLE"):
     )
     try:
         # If there were any cruft "placeholder" columns, discard them
-        return table.drop([k for k in table.keys() if 'PLACEHOLDER' in k],axis=1)
-    except TypeError: # Failed to read the table
+        return table.drop([k for k in table.keys() if 'PLACEHOLDER' in k], axis=1)
+    except TypeError:  # Failed to read the table
         return self.LABEL[pointer]
 
 
@@ -431,13 +432,13 @@ class Data:
         if fn.endswith(label_extensions):
             setattr(self, "labelname", fn)
             for dext in data_extensions:
-                if Path(filename:=fn.replace(Path(fn).suffix,dext)).exists():
+                if Path(filename := fn.replace(Path(fn).suffix, dext)).exists():
                     setattr(self, "filename", filename)
                     break
         elif fn.endswith(data_extensions):
             setattr(self, "filename", fn)
             for lext in label_extensions:
-                if Path(labelname:=fn.replace(Path(fn).suffix, lext)).exists():
+                if Path(labelname := fn.replace(Path(fn).suffix, lext)).exists():
                     setattr(self, "labelname", labelname)
                     break
         else:
@@ -446,10 +447,10 @@ class Data:
 
         # Just use pds4_tools if this is a PDS4 file
         try:
-            data = pds4.read(self.labelname,quiet=True)
+            data = pds4.read(self.labelname, quiet=True)
             for struct in data.structures:
-                setattr(self, struct.id.replace(' ','_'), struct.data)
-                index += [struct.id.replace(' ','_')]
+                setattr(self, struct.id.replace(' ', '_'), struct.data)
+                index += [struct.id.replace(' ', '_')]
             setattr(self, "index", index)
             return
         except:
@@ -471,7 +472,7 @@ class Data:
                     )
                     for pointer in self.pointers
                 ]
-            except: # no pointers defined
+            except:  # no pointers defined
                 raise
 
         # Sometimes images do not have explicit pointers, so just always try
@@ -489,12 +490,12 @@ class Data:
                     image = read_image(self)
                 if image is not None:
                     setattr(self, "IMAGE", image)
-                    index+=['IMAGE']
+                    index += ['IMAGE']
             except:
                 pass
 
         # Create an index of all of the pointers to data
-        setattr(self,"index",index)
+        setattr(self, "index", index)
 
     # The following two functions make this object act sort of dict-like
     #  in useful ways for data exploration.
