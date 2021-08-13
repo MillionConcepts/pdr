@@ -6,3 +6,4 @@
 *gitignore*
 /pdr.egg-info/
 /.idea/
+/pdrtestsuite/

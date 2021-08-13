@@ -18,9 +18,11 @@ from urllib.request import urlopen
 from urllib.error import HTTPError
 from io import BytesIO
 
+
 def url_content_length(fhandle):
     length = dict(fhandle.info())["Content-Length"]
     return int(length.strip())
+
 
 def bytes_to_string(nbytes):
     if nbytes < 1024:
@@ -66,10 +68,10 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
         if next_chunk:
             buf.write(next_chunk)
             s = (
-                "["
-                + nchunks * "="
-                + (num_units - 1 - nchunks) * " "
-                + "]  %s / %s   \r" % (bytes_to_string(buf.tell()), content_length_str)
+                    "["
+                    + nchunks * "="
+                    + (num_units - 1 - nchunks) * " "
+                    + "]  %s / %s   \r" % (bytes_to_string(buf.tell()), content_length_str)
             )
         else:
             sys.stdout.write("\n")
@@ -81,8 +83,10 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
     buf.seek(0)
     open(file_path, "wb").write(buf.getvalue())
     return 0
+
+
 ###
-### END code derived from astroML
+# END code derived from astroML
 ###
 
 def url_to_path(url, data_dir="."):
@@ -92,29 +96,31 @@ def url_to_path(url, data_dir="."):
         if file_path.split('/')[1] != 'data':
             file_path = file_path.replace(file_path.split('/')[1], 'data/' + file_path.split('/')[1])
             print(file_path)
-    except AttributeError: # for url==np.nan
-        file_path=""
+    except AttributeError:  # for url==np.nan
+        file_path = ""
     return file_path
 
-def download_data_and_label(url,data_dir=".",lbl=None):
+
+def download_data_and_label(url, data_dir=".", lbl=None):
     """ Download an observational data file from the PDS.
     Check for a detached label file and also download that, if it exists.
     """
     _ = download_with_progress_bar(url,
-                                   url_to_path(url,data_dir=data_dir),quiet=True)
+                                   url_to_path(url, data_dir=data_dir), quiet=True)
     try:
         _ = download_with_progress_bar(lbl,
-                                       url_to_path(lbl,data_dir=data_dir),quiet=True)
+                                       url_to_path(lbl, data_dir=data_dir), quiet=True)
     except (AttributeError, FileNotFoundError):
         # Attempt to guess the label URL (if there is a label)
-        for ext in [".LBL", ".lbl", ".xml", ".XML", ".HDR"]: # HDR? ENVI headers
+        for ext in [".LBL", ".lbl", ".xml", ".XML", ".HDR"]:  # HDR? ENVI headers
             lbl_ = url[:url.rfind(".")] + ext
             if not download_with_progress_bar(
-                lbl_,url_to_path(lbl_,data_dir=data_dir),quiet=True):
+                    lbl_, url_to_path(lbl_, data_dir=data_dir), quiet=True):
                 lbl = lbl_
-    return url_to_path(url,data_dir=data_dir),url_to_path(lbl,data_dir=data_dir)
+    return url_to_path(url, data_dir=data_dir), url_to_path(lbl, data_dir=data_dir)
+
 
 def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv"):
     refdata = pd.read_csv(f"{refdatafile}", comment="#")
     return download_data_and_label(refdata["url"][index],
-                          labelurl=refdata["lbl"][index],data_dir=data_dir)
+                                   labelurl=refdata["lbl"][index], data_dir=data_dir)
