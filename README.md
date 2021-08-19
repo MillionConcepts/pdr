@@ -52,3 +52,7 @@ Some PDS3 labels point to external metadata "description" files (usually a `.PDF
 
 #### Big files (like HiRISE)
 No sort of memory management or lazy-loading is implemented, so expect a crash or very slow response on most machines if you try to read very large files.
+
+---
+
+This work is supported by NASA grant No. 80NSSC21K0885.
