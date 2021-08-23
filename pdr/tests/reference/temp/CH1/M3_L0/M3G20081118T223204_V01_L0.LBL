@@ -1,0 +1,91 @@
+PDS_VERSION_ID                 = PDS3                                         
+LABEL_REVISION_NOTE            = "2010-02-09, S. Lundeen"                     
+DATA_SET_ID                    = "CH1-ORB-L-M3-2-L0-RAW-V1.0"                 
+PRODUCT_ID                     = "M3G20081118T223204_V01_L0"                  
+RECORD_TYPE                    = UNDEFINED                                    
+                                                                              
+MISSION_ID                     = "CH1"                                        
+MISSION_NAME                   = "CHANDRAYAAN-1"                              
+INSTRUMENT_HOST_ID             = "CH1-ORB"                                    
+INSTRUMENT_HOST_NAME           = "CHANDRAYAAN-1 ORBITER"                      
+INSTRUMENT_NAME                = "MOON MINERALOGY MAPPER"                     
+INSTRUMENT_ID                  = M3                                           
+TARGET_NAME                    = "MOON"                                       
+TARGET_TYPE                    = "SATELLITE"                                  
+MISSION_PHASE_NAME             = "PRIMARY MISSION"                            
+PRODUCT_TYPE                   = RAW_IMAGE                                    
+PRODUCT_CREATION_TIME          = 2009-06-09T19:31:42                          
+START_TIME                     = 2008-11-18T22:32:04                          
+STOP_TIME                      = 2008-11-18T22:34:04                          
+SPACECRAFT_CLOCK_START_COUNT   = "2/599698.948"                               
+SPACECRAFT_CLOCK_STOP_COUNT    = "2/599818.922"                               
+ORBIT_NUMBER                   = 00141                                        
+PRODUCT_VERSION_TYPE           = "PRELIMINARY"                                
+                                                                              
+PRODUCER_INSTITUTION_NAME      = "JET PROPULSION LABORATORY"                  
+SOFTWARE_NAME                  = "m3_igds_l0_v18.pl"                          
+SOFTWARE_VERSION_ID            = "18"                                         
+DESCRIPTION                    = "M3 Level 0 data product which consists  of  
+raw science data, reassembled into time-sequenced data in units of digital    
+numbers."                                                                     
+                                                                              
+/* Level 0 Image Instrument and Observation Parameters */                     
+                                                                              
+INSTRUMENT_MODE_ID             = "GLOBAL"                                     
+DETECTOR_TEMPERATURE           = 160.71                                       
+CH1:SWATH_WIDTH                = 320 <PIXELS>                                 
+CH1:SWATH_LENGTH               = 1180 <LINES>                                 
+                                                                              
+/* Description of Level 0 IMAGE file, containing both multi-banded image */   
+/* data described with the IMAGE object and line prefix information */        
+/* described with the TABLE object. */                                        
+                                                                              
+OBJECT                  = L0_FILE                                             
+  ^L0_LINE_PREFIX_TABLE = "M3G20081118T223204_V01_L0.IMG"                     
+  ^L0_IMAGE             = "M3G20081118T223204_V01_L0.IMG"                     
+  RECORD_TYPE           = FIXED_LENGTH                                        
+  RECORD_BYTES          = 56320                                               
+  FILE_RECORDS          = 1180                                                
+                                                                              
+  OBJECT                     = L0_LINE_PREFIX_TABLE                           
+    INTERCHANGE_FORMAT       = BINARY                                         
+    ROWS                     = 1180                                           
+    COLUMNS                  = 9                                              
+    ROW_BYTES                = 1280                                           
+    ROW_SUFFIX_BYTES         = 55040                                          
+    ^STRUCTURE               = "LN_PRFX_HDR.FMT"                              
+  END_OBJECT                 = L0_LINE_PREFIX_TABLE                           
+                                                                              
+  OBJECT                     = L0_IMAGE                                       
+    LINES                    = 1180                                           
+    LINE_SAMPLES             = 320                                            
+    LINE_PREFIX_BYTES        = 1280                                           
+    SAMPLE_TYPE              = LSB_INTEGER                                    
+    SAMPLE_BITS              = 16                                             
+    UNIT                     = "DN"                                           
+    BANDS                    = 86                                             
+    BAND_STORAGE_TYPE        = LINE_INTERLEAVED                               
+    LINE_DISPLAY_DIRECTION   = DOWN                                           
+    SAMPLE_DISPLAY_DIRECTION = RIGHT                                          
+  END_OBJECT                 = L0_IMAGE                                       
+                                                                              
+END_OBJECT = L0_FILE                                                          
+                                                                              
+/* Description of Level 0 HEADER file */                                      
+                                                                              
+OBJECT             = L0_HDR_FILE                                              
+  ^L0_ENVI_HEADER  = "M3G20081118T223204_V01_L0.HDR"                          
+  RECORD_TYPE      = VARIABLE_LENGTH                                          
+  FILE_RECORDS     = 11                                                       
+                                                                              
+  OBJECT               = L0_ENVI_HEADER                                       
+    INTERCHANGE_FORMAT = "ASCII"                                              
+    BYTES              = 303                                                  
+    HEADER_TYPE        = ENVI                                                 
+    DESCRIPTION        = "Header file for compatibility with the commercial   
+                          software package ENVI."                             
+  END_OBJECT           = L0_ENVI_HEADER                                       
+                                                                              
+END_OBJECT = L0_HDR_FILE                                                      
+                                                                              
+END                                                                           

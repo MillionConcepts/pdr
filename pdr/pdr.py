@@ -9,6 +9,8 @@ import pandas as pd
 import rasterio
 import struct
 import warnings
+
+from dustgoggles.func import dig_for, dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
 import Levenshtein as lev
@@ -18,6 +20,8 @@ import bz2
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
+from pdr.utils import get_pds3_pointers
+
 label_extensions = ('.xml', '.XML', '.lbl', '.LBL')
 data_extensions = ('.img', '.IMG',
                    '.fit', '.FIT', '.fits', '.FITS',
@@ -163,7 +167,8 @@ class Data:
         if LABEL:
             setattr(self, "LABEL", LABEL)
             index += ['LABEL']
-            setattr(self, "pointers", [k for k in self.LABEL.keys() if k[0] == "^"])
+            pointer_targets = get_pds3_pointers(LABEL)
+            setattr(self, "pointers", [p_t[0] for p_t in pointer_targets])
             index += [p.strip('^') for p in self.pointers]
             try:
                 _ = [
@@ -180,7 +185,7 @@ class Data:
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
         # Must exclude QUB files or it will reread them as an IMAGE
-        if "IMAGE" not in index and not self.filename.lower().endswith('qub'):
+        if not any("IMAGE" in key for key in index) and not self.filename.lower().endswith('qub'):
             try:
                 if self.looks_like_a_fits_file():
                     image = self.handle_fits_file()
@@ -457,7 +462,7 @@ class Data:
             return pvl.load(self.filename)
         except:
             warnings.warn(f"Unable to find or parse {pointer}")
-            return self.LABEL[f"^{pointer}"]
+            return dig_for_value(self.LABEL, pointer)
 
     def handle_fits_file(self, pointer=""):
         """
@@ -485,7 +490,7 @@ class Data:
         not explicitly supported elsewhere. It throws a warning and
         passes just the value of the pointer."""
         warnings.warn(f"The {pointer} pointer is not yet fully supported.")
-        return self.LABEL[f"^{pointer}"]
+        return dig_for_value(self.LABEL, pointer)
 
 
 
@@ -494,6 +499,7 @@ class Data:
     def keys(self):
         # Returns the keys for observational data and metadata objects
         return self.index
+
 
     # Make it possible to call the object like a dict
     def __getitem__(self, item):

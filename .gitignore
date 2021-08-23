@@ -1,9 +1,0 @@
-*ipynb*
-*pycache*
-/test_files
-/output_files
-/input_files
-*gitignore*
-/pdr.egg-info/
-/.idea/
-/pdrtestsuite/

@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import numpy as np
+import pvl
 
 """
 The following three functions are substantially derived from code in
@@ -124,3 +125,20 @@ def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv")
     refdata = pd.read_csv(f"{refdatafile}", comment="#")
     return download_data_and_label(refdata["url"][index],
                                    labelurl=refdata["lbl"][index], data_dir=data_dir)
+
+
+# TODO: excessively ugly
+def get_pds3_pointers(label=None, local_path=None):
+    if label is None:
+        label = pvl.load(local_path)
+    # TODO: inadequate? see issue pdr#15 -- did I have a resolution for this
+    #  somewhere? do we really need to do a full recursion step...? gross
+    pointer_targets = [(k, v) for k, v in label.items() if k[0] == "^"]
+    for entry in label.values():
+        if not isinstance(entry, pvl.collections.PVLObject):
+            continue
+        pointer_targets += [(k, v) for k, v in entry.items() if k[0] == "^"]
+    return pointer_targets
+
+
+# def get_from_pvl
