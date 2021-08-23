@@ -69,7 +69,7 @@ def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
         "PC_UNSIGNED_INTEGER": "<B",
         "VAX_UNSIGNED_INTEGER": "<B",
         "IEEE_REAL": ">f",
-        "PC_REAL": "<f",
+        "PC_REAL": "<d" if SAMPLE_BYTES == 8 else "<f",
         "FLOAT": ">f",
         "REAL": ">f",
         "MAC_REAL": ">f",
