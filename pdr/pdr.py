@@ -130,13 +130,14 @@ def decompress(filename):
 
 class Data:
     def __init__(self, fn):
-        index = []
-        # Attempt to identify and assign the data and label files
         # TODO: products can have multiple data files, and in some cases one
         #  of those data files also contains the attached label -- basically,
         #  these can't be strings
         self.filename = fn
-        self.labelname = fn
+        self.labelname = None
+        # index of all of the pointers to data
+        self.index = []
+        # Attempt to identify and assign the data and label files
         if fn.endswith(label_extensions):
             setattr(self, "labelname", fn)
             for dext in data_extensions:
@@ -157,12 +158,12 @@ class Data:
             #  break with all M3 data or anything else that uses weird extensions...
 
         # Just use pds4_tools if this is a PDS4 file
+        # TODO: redundant and confusing w/read_label
         try:
             data = pds4.read(self.labelname, quiet=True)
             for struct in data.structures:
                 setattr(self, struct.id.replace(' ', '_'), struct.data)
-                index += [struct.id.replace(' ', '_')]
-            setattr(self, "index", index)
+                self.index += [struct.id.replace(' ', '_')]
             return
         except:
             # Presume that this is not a PDS4 file
@@ -171,10 +172,10 @@ class Data:
         LABEL = self.read_label()
         if LABEL:
             setattr(self, "LABEL", LABEL)
-            index += ['LABEL']
+            self.index += ['LABEL']
             pointer_targets = get_pds3_pointers(LABEL)
             setattr(self, "pointers", [p_t[0] for p_t in pointer_targets])
-            index += [p.strip('^') for p in self.pointers]
+            self.index += [p.strip('^') for p in self.pointers]
             try:
                 _ = [
                     setattr(
@@ -190,7 +191,7 @@ class Data:
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
         # Must exclude QUB files or it will reread them as an IMAGE
-        if not any("IMAGE" in key for key in index) and not self.filename.lower().endswith('qub'):
+        if not any("IMAGE" in key for key in self.index) and not self.filename.lower().endswith('qub'):
             try:
                 if self.looks_like_a_fits_file():
                     image = self.handle_fits_file()
@@ -202,12 +203,10 @@ class Data:
                     image = self.read_image()
                 if image is not None:
                     setattr(self, "IMAGE", image)
-                    index += ['IMAGE']
+                    self.index += ['IMAGE']
             except:
                 pass
 
-        # Create an index of all of the pointers to data
-        setattr(self, "index", index)
 
     def read_label(self):
         """Attempts to read the data label, checking first whether this is a
@@ -215,7 +214,7 @@ class Data:
         has an attached label. Returns None if all of these attempts are
         unsuccessful.
         """
-        if 'labelname' in dir(self):  # a detached label exists
+        if self.labelname:  # a detached label exists
             if Path(self.labelname).suffix.lower() == '.xml':
                 return pds4.read(
                     self.labelname, quiet=True
