@@ -132,6 +132,11 @@ class Data:
     def __init__(self, fn):
         index = []
         # Attempt to identify and assign the data and label files
+        # TODO: products can have multiple data files, and in some cases one
+        #  of those data files also contains the attached label -- basically,
+        #  these can't be strings
+        self.filename = fn
+        self.labelname = fn
         if fn.endswith(label_extensions):
             setattr(self, "labelname", fn)
             for dext in data_extensions:
