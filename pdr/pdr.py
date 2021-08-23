@@ -1,6 +1,8 @@
 from functools import partial
 from operator import contains
 from pathlib import Path, PurePath
+from typing import Mapping
+
 import pds4_tools as pds4
 from astropy.io import fits
 import pvl
@@ -104,27 +106,6 @@ def pointer_to_fits_key(pointer, hdulist):
         for i in hdulist.info(output=False)
     ]
     return levratio.index(max(levratio))
-
-
-def data_start_byte(label, pointer):
-    """Determine the first byte of the data in an IMG file from its pointer."""
-    if type(label[pointer]) is int:
-        return label["RECORD_BYTES"] * (label[pointer] - 1)
-    elif type(label[pointer]) is list:
-        if type(label[pointer][0]) is int:
-            return label[pointer][0]
-        elif type(label[pointer][-1]) is int:
-            return label["RECORD_BYTES"] * (label[pointer][-1] - 1)
-        else:
-            return 0
-    elif type(label[pointer]) is str:
-        return 0
-    else:
-        try:
-            # This is to handle the PVL "Quantity" object... should probably do this better
-            return label[pointer].value
-        except:
-            raise ParseError(f"Unknown data pointer format: {label[pointer]}")
 
 
 def decompress(filename):
@@ -283,7 +264,7 @@ class Data:
                     and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
                 ):
                     userasterio = False  # because rasterio doesn't read M3 L0 data correctly
-        except:
+        except (KeyError, AttributeError):
             pass
         if pointer == "IMAGE" or self.filename.lower().endswith("qub"):
             try:
@@ -298,7 +279,7 @@ class Data:
                     return dataset.read()
             except rasterio.errors.RasterioIOError:
                 pass
-        block = self.labelget(pointer)
+        block = self.labelblock(pointer)
         if block:
             if pointer == "QUBE":  # ISIS2 QUBE format
                 BYTES_PER_PIXEL = int(block["CORE_ITEM_BYTES"])  # / 8)
@@ -329,7 +310,11 @@ class Data:
                     BANDS = 1
                     band_storage_type = None
             pixels = nrows * (ncols + prefix_cols) * BANDS
-            start_byte = data_start_byte(self.LABEL, f"^{pointer}")
+            # TODO: handle cases where image blocks are nested inside file
+            #  blocks and info such as RECORD_BYTES is found only there
+            #  -- previously I did this by making pointers lists, but this may
+            #  be an unwieldy solution
+            start_byte = self.data_start_byte(pointer)
         elif (
             self.LABEL["INSTRUMENT_ID"] == "M3"
             and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
@@ -364,7 +349,12 @@ class Data:
             endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1]
         )
         try:  # a little decision tree to seamlessly deal with compression
-            f = decompress(self.filename)
+            if isinstance(self.labelget(f"^{pointer}"), str):
+                f = decompress(
+                    self.get_relative_path(self.labelget(f"^{pointer}"))
+                )
+            else:
+                f = decompress(self.filename)
             # Make sure that single-band images are 2-dim arrays.
             f.seek(start_byte)
             prefix = None
@@ -388,20 +378,26 @@ class Data:
                 )
                 image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
             elif band_storage_type == "LINE_INTERLEAVED":
+                pixels_per_frame = BANDS * ncols
+                endian, length = (DTYPE[0], DTYPE[-1])
+                fmt = f"{endian}{pixels_per_frame}{length}"
                 image, prefix = [], []
-                for i in np.arange(nrows):
-                    prefix += [f.read(prefix_bytes)]
+                for _ in np.arange(nrows):
+                    prefix.append(f.read(prefix_bytes))
                     frame = np.array(
                         struct.unpack(
-                            f"<{BANDS * ncols}h",
-                            f.read(BANDS * ncols * BYTES_PER_PIXEL),
+                            fmt, f.read(pixels_per_frame * BYTES_PER_PIXEL)
                         )
                     ).reshape(BANDS, ncols)
-                    image += [frame]
-                image = np.array(image).reshape(BANDS, nrows, ncols)
+                    image.append(frame)
+                    del frame
+                image = np.swapaxes(
+                    np.stack([frame for frame in image], axis=2), 1, 2
+                )
             else:
                 warnings.warn(
-                    f"Unknown BAND_STORAGE_TYPE={band_storage_type}. Guessing BAND_SEQUENTIAL."
+                    f"Unknown BAND_STORAGE_TYPE={band_storage_type}. "
+                    f"Guessing BAND_SEQUENTIAL."
                 )
                 image = np.array(
                     struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL))
@@ -535,9 +531,8 @@ class Data:
             np.fromfile(
                 self.filename,
                 dtype=dt,
-                # TODO: data_start_byte needs to be made to work in nested blocks
-                offset=data_start_byte(self.LABEL, f"^{pointer}"),
-                count=self.labelget(pointer)["ROWS"],
+                offset=self.data_start_byte(pointer),
+                count=self.labelblock(pointer)["ROWS"],
             )
             .byteswap()
             .newbyteorder()  # Pandas doesn't do non-native endian
@@ -560,9 +555,9 @@ class Data:
 
     def handle_fits_file(self, pointer=""):
         """
-        This function attempts to read all FITS files, compressed or uncompressed,
-        with astropy.io.fits. Files with 'HEADER' pointer return the header, all
-        others return data.
+        This function attempts to read all FITS files, compressed or
+        uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
+        return the header, all others return data.
         """
         try:
             hdulist = fits.open(self.filename)
@@ -570,9 +565,9 @@ class Data:
                 return hdulist[pointer_to_fits_key(pointer, hdulist)].header
             return hdulist[pointer_to_fits_key(pointer, hdulist)].data
         except:
-            # TODO: assuming this does not need to be specified as f-string (like in
-            #  read_header/tbd) -- maybe! must determine and specify what cases
-            #  this exception was needed to handle
+            # TODO: assuming this does not need to be specified as f-string
+            #  (like in read_header/tbd) -- maybe! must determine and specify
+            #  what cases this exception was needed to handle
             return self.labelget(pointer)
 
     def looks_like_a_fits_file(self):
@@ -591,15 +586,68 @@ class Data:
     def labelget(self, text):
         """
         get the first value from this object's label whose key exactly matches
-        `text`. TODO: very crude. needs to work with XML.
+        `text`. if only_block is passed, will only return this value if it's a
+        mapping (e.g. nested PVL block) and otherwise returns key from top
+        label level. TODO: very crude. needs to work with XML.
         """
         return dig_for_value(self.LABEL, text)
+
+    def labelblock(self, text):
+        """
+        get the first value from this object's label whose key
+        exactly matches `text` iff it is a mapping (e.g. nested PVL block);
+        otherwise, returns the label as a whole.
+        TODO: very crude. needs to work with XML.
+        """
+        what_got_dug = dig_for_value(self.LABEL, text)
+        if not isinstance(what_got_dug, Mapping):
+            return self.LABEL
+        return what_got_dug
+
+    def data_start_byte(self, pointer):
+        """Determine the first byte of the data in an IMG file from its
+        pointer."""
+        # TODO: hacky, make this consistent -- actually this pointer notation
+        #  is hacky across the module, primarily because it's horrible in the
+        #  first place :shrug: -- previously I did this by making pointers
+        #  lists, but this may be unwieldy
+        target = self.labelget(pointer)
+        if isinstance(target, Mapping):
+            target = self.labelget(f"^{pointer}")
+        labelblock = self.labelblock(pointer)
+        if isinstance(target, int):
+            return labelblock["RECORD_BYTES"] * (labelblock[pointer] - 1)
+        elif isinstance(target, list):
+            if isinstance(target[0], int):
+                return target[0]
+            elif isinstance(target[-1], int):
+                return labelblock["RECORD_BYTES"] * (target[-1] - 1)
+            else:
+                return 0
+        elif type(target) is str:
+            return 0
+        else:
+            try:
+                # This is to handle the PVL "Quantity" object... should
+                # probably
+                # do this better
+                return target.value
+            except:
+                raise ParseError(f"Unknown data pointer format: {target}")
 
     # The following two functions make this object act sort of dict-like
     #  in useful ways for data exploration.
     def keys(self):
         # Returns the keys for observational data and metadata objects
         return self.index
+
+    def get_relative_path(self, file):
+        if self.labelname:
+            return str(Path(Path(self.labelname).parent, file))
+        elif self.filename:
+            return str(Path(Path(self.filename).parent, file))
+        else:
+            return file
 
     # Make it possible to call the object like a dict
     def __getitem__(self, item):
