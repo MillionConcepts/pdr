@@ -11,7 +11,7 @@ import re
 def mslmrd(data):
     fn = Path(data.filename).name
     caltype_code = re.search(r"_DR\w(\w).", fn).group(1)
-    dims = {"L": (1533, 2108), "X": (1200, 1648)}[caltype_code]
+    dims = {"L": (3, 1533, 2108), "X": (3, 1200, 1648)}[caltype_code]
     if data.IMAGE.shape != dims:
         raise ValueError(
             f"dimension mismatch between loaded array "

@@ -615,13 +615,19 @@ class Data:
         if isinstance(target, Mapping):
             target = self.labelget(f"^{pointer}")
         labelblock = self.labelblock(pointer)
+        # TODO: I am positive this will break sometimes; need to find the
+        #  correct RECORD_BYTES in some cases...sequence pointers
+        if "RECORD_BYTES" in labelblock.keys():
+            record_bytes = labelblock["RECORD_BYTES"]
+        else:
+            record_bytes = self.labelget("RECORD_BYTES")
         if isinstance(target, int):
-            return labelblock["RECORD_BYTES"] * (labelblock[pointer] - 1)
+            return record_bytes * (target - 1)
         elif isinstance(target, list):
             if isinstance(target[0], int):
                 return target[0]
             elif isinstance(target[-1], int):
-                return labelblock["RECORD_BYTES"] * (target[-1] - 1)
+                return record_bytes * (target[-1] - 1)
             else:
                 return 0
         elif type(target) is str:

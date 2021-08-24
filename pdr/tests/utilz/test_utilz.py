@@ -21,6 +21,10 @@ from pdr.utils import get_pds3_pointers
 REF_ROOT = Path(Path(__file__).parent.parent, "reference")
 DATA_ROOT = Path(Path(__file__).parent.parent, "data")
 
+pdrtestlog = logging.getLogger()
+pdrtestlog.addHandler(logging.FileHandler("pdrtests.log"))
+pdrtestlog.setLevel("INFO")
+
 
 @cache
 def read_csv_cached(fn: str, *args, **kwargs) -> pd.DataFrame:
@@ -37,9 +41,12 @@ def record_mismatches(results, absent, novel):
 
 def make_hash_reference(hash_path: str) -> Callable[[str, Mapping], dict]:
     reference_hash_table = read_csv_cached(hash_path)
+    reference_hash_table.index = reference_hash_table["product_id"]
 
     def compare_hashes(product_id: str, test_hashes: Mapping):
-        reference_hashes = json.loads(reference_hash_table[product_id])
+        reference_hashes = json.loads(
+            reference_hash_table.loc[product_id]["hashes"]
+        )
         problems = {}
         missing_keys, new_keys = disjoint(reference_hashes, test_hashes)
         # note keys that are completely new or missing
@@ -61,10 +68,15 @@ def make_hash_reference(hash_path: str) -> Callable[[str, Mapping], dict]:
 def find_ref_paths(dataset, mission, rules):
     ref_paths = {}
     for ref_type in ["hash", "index"]:
-        if ref_type not in rules.keys():
-            stem = f"{mission.lower()}_{dataset.lower()}.csv"
-        else:
+        if ref_type in rules.keys():
             stem = rules[ref_type]
+        # TODO: why am I making these defaults different?
+        #  is it because hashing is more expensive and i want it
+        #  split by default? huh
+        elif ref_type == "index":
+            stem = f"{mission.lower()}.csv"
+        else:
+            stem = f"{mission.lower()}_{dataset.lower()}.csv"
         ref_paths[ref_type] = str(Path(REF_ROOT, ref_type, stem))
     ref_paths["data"] = Path(DATA_ROOT, mission, dataset)
     if not ref_paths["data"].exists():
@@ -87,15 +99,19 @@ def filter_products(file_table, filt):
     else:
         predicate = pdstr("contains", filt)
     file_table = file_table.loc[
-        predicate(file_table["label_file"])
+        predicate(file_table["url_stem"] + file_table["label_file"])
     ].reset_index(drop=True)
     return file_table
 
 
 def make_hash_comparison(compare_hashes_to_reference: Callable):
     def hash_and_check(data):
-        hashes = {key: checksum_object(value) for key, value in data.items()}
-        problems = compare_hashes_to_reference(hashes)
+        hashes = {key: checksum_object(data[key]) for key in data.keys()}
+        if "PRODUCT_ID" in data.LABEL.keys():
+            nominal_product_id = data.LABEL["PRODUCT_ID"]
+        else:
+            nominal_product_id = Path(data.filename).stem
+        problems = compare_hashes_to_reference(nominal_product_id, hashes)
         # TODO: log this more usefully
         if problems:
             raise ValueError(problems)
@@ -134,7 +150,8 @@ def find_test_paths(dataset, mission, rules):
 
 # TODO: this can eventually be have options to do something other
 #  than bang lists of urls...many options here. or we could just mount
-#  buckets w/s3fs for cloud testing.
+#  buckets w/s3fs for cloud testing. If we _do_ want to just bang lists of
+#  urls, maybe integrate with get function in pdr.__init__
 
 # TODO: decide if we actually want file discovery to work like this...it could
 #  plausibly be more productive to change flow to always infer from the
@@ -150,12 +167,14 @@ def collect_files(product, references, local_only=False):
         try:
             response = requests.get(f"{product['url_stem']}/{file}")
             if response.status_code == 404:
-                logging.warning(f"404 result on {product['url_stem']}/{file}")
+                pdrtestlog.warning(
+                    f"404 result on {product['url_stem']}/{file}"
+                )
                 continue
             with open(Path(references["data"], file), "wb") as local_file:
                 local_file.write(response.content)
         except requests.exceptions.RequestException as e:
-            logging.warning(e)
+            pdrtestlog.warning(e)
             continue
 
 
@@ -178,14 +197,16 @@ def check_product(product, references, checks, local_only=False):
     try:
         collect_files(product, references, local_only)
     except OSError:
-        logging.warning(
+        pdrtestlog.warning(
             "file not present and I couldn't download it or something"
         )
         return
     data = pdr.read(str(Path(references["data"], product["label_file"])))
     check_results = []
     for check in checks:
-        check_results.append(check(data))
+        result = check(data)
+        if result is not None:
+            check_results.append(check(data))
     return check_results
 
 
@@ -193,23 +214,17 @@ def just_hash(data):
     return {key: checksum_object(data[key]) for key in data.keys()}
 
 
-def test_dataset(mission: str, dataset: str, local_only=False):
+def perform_dataset_test(mission: str, dataset: str, local_only=False):
     products, references, checks = read_test_rules(mission, dataset)
     results = {}
     for _, product in products.iterrows():
-        results[product["product_id"]] = check_product(
-            product, references, checks, local_only
-        )
-
-
-def regenerate_test_hashes(mission, dataset):
-    rules = DATASET_TESTING_RULES[mission][dataset]
-    products, references = find_test_paths(dataset, mission, rules)
-    results = {}
-    for _, product in products.iterrows():
-        results[product["product_id"]] = check_product(
-            product, references, [just_hash]
-        )[0]
+        test_results = check_product(product, references, checks, local_only)
+        if not test_results:
+            result_message = "successful"
+        else:
+            result_message = str(test_results)
+        pdrtestlog.info(f"{product['product_id']}: {result_message}")
+        results[product["product_id"]] = test_results
     return results
 
 
@@ -238,6 +253,13 @@ def make_pds3_row(local_path):
     for target in targets:
         if isinstance(target, str):
             files.append(target)
+        elif isinstance(target, Sequence):
+            files.append(target[0])
+        elif isinstance(target, int):
+            continue
+        else:
+            raise TypeError("what is this?")
+    files = list(set(files))
     row = {
         "label_file": local_path.name,
         "files": json.dumps(files),
@@ -253,7 +275,7 @@ def get_product_row(data_path, local_only, url):
     local_path = Path(data_path, Path(url).name)
     if not local_path.exists():
         if local_only is True:
-            logging.warning("label not here and i'm not allowed to phone out")
+            pdrtestlog.warning(f"{local_path} not here and local_only=True")
             return {}
         label_response = requests.get(url)
         with open(local_path, "wb") as file:
@@ -266,12 +288,38 @@ def get_product_row(data_path, local_only, url):
     return row
 
 
-def label_urls_to_test_index(label_urls, mission, dataset, local_only=False):
+def label_urls_to_test_index(label_urls, local_only=False):
     """warning: actually downloads labels if you let it"""
-    data_path = Path(REF_ROOT, "temp", mission, dataset)
+    data_path = Path(REF_ROOT, "temp", "index_label_cache")
     if not data_path.exists():
         os.makedirs(data_path)
     rows = []
     for url in label_urls:
         rows.append(get_product_row(data_path, local_only, url))
     return pd.DataFrame(rows)
+
+
+def regenerate_test_hashes(mission, dataset, write=True):
+    rules = DATASET_TESTING_RULES[mission][dataset]
+    products, references = find_test_paths(dataset, mission, rules)
+    if len(products) == 0:
+        pdrtestlog.warning(f"no products found for {mission} {dataset}")
+        return None
+    results = {}
+    for _, product in products.iterrows():
+        results[product["product_id"]] = check_product(
+            product, references, [just_hash]
+        )[0]
+        pdrtestlog.info(f"hashed {product['product_id']}")
+    serial = {
+        product_id: json.dumps(hashes)
+        for product_id, hashes in results.items()
+    }
+    serialframe = pd.DataFrame.from_dict(serial, orient="index")
+    serialframe.columns = ["hashes"]
+    serialframe["product_id"] = serialframe.index
+    if write:
+        hash_path = Path(REF_ROOT, "temp", "hash", f"{mission}_{dataset}.csv")
+        os.makedirs(hash_path.parent, exist_ok=True)
+        serialframe.to_csv(hash_path, index=None)
+    return serialframe
