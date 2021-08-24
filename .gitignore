@@ -1,0 +1,14 @@
+*ipynb*
+*pycache*
+/test_files
+/output_files
+/input_files
+/pdr.egg-info/
+/.idea/
+/pdrtestsuite/
+*scratch.py
+*scratch.ipynb
+/pdr/tests/data/
+/pdr/oldtests/
+**pdrtests.log**
+/pdr/tests/reference/temp/
