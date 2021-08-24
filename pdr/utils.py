@@ -1,7 +1,7 @@
 import os
 import sys
+
 import pandas as pd
-import numpy as np
 import pvl
 from dustgoggles.structures import dig_for
 
@@ -135,3 +135,11 @@ def get_pds3_pointers(label=None, local_path=None):
     # TODO: inadequate? see issue pdr#15 -- did I have a resolution for this
     #  somewhere? do we really need to do a full recursion step...? gross
     return dig_for(label, "^", lambda k, v: k.startswith(v))
+
+
+def pointerize(string):
+    return string if string.startswith("^") else "^" + string
+
+
+def depointerize(string):
+    return string[1:] if string.startswith("^") else string

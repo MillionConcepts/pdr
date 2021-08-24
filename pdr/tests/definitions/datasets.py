@@ -5,7 +5,10 @@ from pdr.tests.utilz.checkers import dimension_checker, specified_image_size
 REF_ROOT = Path(Path(__file__).parent.parent)
 
 DATASET_TESTING_RULES = {
-    "ch1": {"m3_l0": {"filter": "_L0."}, "m3_l1b": {"filter": "_L1B."}},
+    "ch1": {
+        "m3_l0": {"filter": "_L0.", "shared": "ch1.csv"},
+        "m3_l1b": {"filter": "_L1B.", "shared": "ch1.csv"},
+    },
     "msl": {
         "mslmrd": {
             "filter": "MSLMRD",

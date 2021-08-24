@@ -12,3 +12,5 @@
 /pdr/oldtests/
 **pdrtests.log**
 /pdr/tests/reference/temp/
+*.dot
+*.profile

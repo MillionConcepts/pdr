@@ -67,16 +67,16 @@ def make_hash_reference(hash_path: str) -> Callable[[str, Mapping], dict]:
 
 def find_ref_paths(dataset, mission, rules):
     ref_paths = {}
-    for ref_type in ["hash", "index"]:
+    for ref_type in ["hash", "index", "shared"]:
         if ref_type in rules.keys():
             stem = rules[ref_type]
-        # TODO: why am I making these defaults different?
-        #  is it because hashing is more expensive and i want it
-        #  split by default? huh
-        elif ref_type == "index":
-            stem = f"{mission.lower()}.csv"
+        # TODO: why am I making these defaults different? huh
         else:
-            stem = f"{mission.lower()}_{dataset.lower()}.csv"
+            stem = {
+                "hash": f"{mission.lower()}_{dataset.lower()}",
+                "index": f"{mission.lower()}.csv",
+                "shared": f"{mission.lower()}_{dataset.lower()}.csv",
+            }[ref_type]
         ref_paths[ref_type] = str(Path(REF_ROOT, ref_type, stem))
     ref_paths["data"] = Path(DATA_ROOT, mission, dataset)
     if not ref_paths["data"].exists():
@@ -156,26 +156,57 @@ def find_test_paths(dataset, mission, rules):
 # TODO: decide if we actually want file discovery to work like this...it could
 #  plausibly be more productive to change flow to always infer from the
 #  label, or...idk. that's why i'm not consolidating with url lister for now
+
+
+def concatenate_url_list(absent, product, shared_file_table, shared_files):
+    possible_urls = []
+    for file in absent:
+        if file in shared_files:
+            possible_urls.append(
+                shared_file_table.loc[
+                    shared_file_table["filename"] == file
+                ].iloc[0]["url"]
+            )
+        else:
+            possible_urls.append(f"{product['url_stem']}/{file}")
+    return possible_urls
+
+
+def perform_test_download(url, references):
+    try:
+        response = requests.get(url)
+        if response.status_code == 404:
+            pdrtestlog.warning(f"404 result on {url}")
+            return
+        with open(
+            Path(references["data"], Path(url).name), "wb"
+        ) as local_file:
+            local_file.write(response.content)
+    except requests.exceptions.RequestException as e:
+        pdrtestlog.warning(e)
+        return
+
+
 def collect_files(product, references, local_only=False):
     files = json.loads(product["files"])
     absent = [
         file for file in files if file not in references["local_contents"]
     ]
     if absent and local_only:
-        raise OSError("file not found and not allowed to try to download it")
-    for file in absent:
-        try:
-            response = requests.get(f"{product['url_stem']}/{file}")
-            if response.status_code == 404:
-                pdrtestlog.warning(
-                    f"404 result on {product['url_stem']}/{file}"
-                )
-                continue
-            with open(Path(references["data"], file), "wb") as local_file:
-                local_file.write(response.content)
-        except requests.exceptions.RequestException as e:
-            pdrtestlog.warning(e)
-            continue
+        raise OSError(f"not allowed to download absent files {absent}")
+    if not absent:
+        return
+    if Path(references["shared"]).exists():
+        shared_file_table = read_csv_cached(Path(references["shared"]))
+        shared_files = shared_file_table["filename"].values
+    else:
+        shared_file_table = []
+        shared_files = []
+    possible_urls = concatenate_url_list(
+        absent, product, shared_file_table, shared_files
+    )
+    for url in possible_urls:
+        perform_test_download(url, references)
 
 
 def checksum_object(obj, hasher=md5):

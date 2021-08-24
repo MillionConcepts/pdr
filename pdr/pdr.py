@@ -22,7 +22,7 @@ import bz2
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
-from pdr.utils import get_pds3_pointers
+from pdr.utils import get_pds3_pointers, depointerize, pointerize
 
 label_extensions = (".xml", ".XML", ".lbl", ".LBL")
 data_extensions = (
@@ -46,6 +46,17 @@ data_extensions = (
     ".raw",
     ".RAW",  # Mars Express VMC
 )
+
+
+def skeptically_load_header(path, object_name="header"):
+    try:
+        try:
+            return pvl.load(path)
+        except ValueError:
+            with open(path, "r") as file:
+                return file.read()
+    except (ParseError, ValueError, OSError):
+        warnings.warn(f"unable to parse {object_name}")
 
 
 def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
@@ -173,20 +184,14 @@ class Data:
             self.index += ["LABEL"]
             pointer_targets = get_pds3_pointers(LABEL)
             setattr(self, "pointers", [p_t[0] for p_t in pointer_targets])
-            self.index += [p.strip("^") for p in self.pointers]
-            try:
-                _ = [
-                    setattr(
-                        self,
-                        pointer[1:] if pointer.startswith("^") else pointer,
-                        self.pointer_to_function(pointer)(
-                            pointer=pointer.strip("^")
-                        ),
-                    )
-                    for pointer in self.pointers
-                ]
-            except:  # no pointers defined
-                raise
+            for pointer in self.pointers:
+                object_name = depointerize(pointer)
+                self.index.append(object_name)
+                setattr(
+                    self,
+                    object_name,
+                    self.pointer_to_function(object_name)(object_name),
+                )
 
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
@@ -234,8 +239,8 @@ class Data:
         if self.looks_like_a_fits_file():
             return self.handle_fits_file
         if "DESC" in pointer:  # probably points to a reference file
-            return self.tbd
-        elif "HEADER" in pointer:
+            return self.read_text
+        elif "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
             return self.read_header
         elif ("IMAGE" in pointer) or ("QUB" in pointer):
             return self.read_image
@@ -245,7 +250,7 @@ class Data:
             return self.read_table
         return self.tbd
 
-    def read_image(self, pointer="IMAGE", userasterio=True):  # ^IMAGE
+    def read_image(self, object_name="IMAGE", userasterio=True):  # ^IMAGE
         """Read a PDS IMG formatted file into an array. Defaults to using
         `rasterio`, and then tries to parse the file directly.
         """
@@ -257,6 +262,7 @@ class Data:
         not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
         the use of rasterio until I can figure out how to produce consistent
         output."""
+        object_name = depointerize(object_name)
         try:
             if "INSTRUMENT_ID" in self.LABEL.keys():
                 if (
@@ -266,7 +272,7 @@ class Data:
                     userasterio = False  # because rasterio doesn't read M3 L0 data correctly
         except (KeyError, AttributeError):
             pass
-        if pointer == "IMAGE" or self.filename.lower().endswith("qub"):
+        if object_name == "IMAGE" or self.filename.lower().endswith("qub"):
             try:
                 if not userasterio:
                     raise
@@ -279,9 +285,9 @@ class Data:
                     return dataset.read()
             except rasterio.errors.RasterioIOError:
                 pass
-        block = self.labelblock(pointer)
+        block = self.labelblock(object_name)
         if block:
-            if pointer == "QUBE":  # ISIS2 QUBE format
+            if object_name == "QUBE":  # ISIS2 QUBE format
                 BYTES_PER_PIXEL = int(block["CORE_ITEM_BYTES"])  # / 8)
                 DTYPE = sample_types(block["CORE_ITEM_TYPE"], BYTES_PER_PIXEL)
                 nrows = block["CORE_ITEMS"][2]
@@ -314,7 +320,7 @@ class Data:
             #  blocks and info such as RECORD_BYTES is found only there
             #  -- previously I did this by making pointers lists, but this may
             #  be an unwieldy solution
-            start_byte = self.data_start_byte(pointer)
+            start_byte = self.data_start_byte(object_name)
         elif (
             self.LABEL["INSTRUMENT_ID"] == "M3"
             and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
@@ -349,9 +355,11 @@ class Data:
             endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1]
         )
         try:  # a little decision tree to seamlessly deal with compression
-            if isinstance(self.labelget(f"^{pointer}"), str):
+            if isinstance(self.labelget(pointerize(object_name)), str):
                 f = decompress(
-                    self.get_relative_path(self.labelget(f"^{pointer}"))
+                    self.get_absolute_path(
+                        self.labelget(pointerize(object_name))
+                    )
                 )
             else:
                 f = decompress(self.filename)
@@ -367,7 +375,7 @@ class Data:
                     # Ignore the prefix data, if any.
                     # TODO: Also return the prefix
                     prefix = image[:, :prefix_cols]
-                    if pointer == "LINE_PREFIX_TABLE":
+                    if object_name == "LINE_PREFIX_TABLE":
                         return prefix
                     image = image[:, prefix_cols:]
             # TODO: I think the ndarray.reshape call signatures in the next three
@@ -407,11 +415,11 @@ class Data:
             raise
         finally:
             f.close()
-        if "PREFIX" in pointer:
+        if "PREFIX" in object_name:
             return prefix
         return image
 
-    def read_table_structure(self, pointer):
+    def read_table_structure(self, object_name):
         """Try to turn the TABLE definition into a column name / data type array.
         Requires renaming some columns to maintain uniqueness.
         Also requires unpacking columns that contain multiple entries.
@@ -425,7 +433,7 @@ class Data:
         """
         # TODO: this will generally fail for PDS4 --
         #  but maybe it never needs to be called?
-        block = dig_for_value(self.LABEL, pointer)
+        block = self.labelblock(depointerize(object_name))
         if "^STRUCTURE" in block:
             if Path(
                 fmtpath := self.filename.replace(
@@ -545,13 +553,35 @@ class Data:
         except TypeError:  # Failed to read the table
             return self.labelget(pointer)
 
-    def read_header(self, pointer="HEADER"):
-        """Attempt to read a file header."""
+    def read_text(self, object_name):
+        target = self.labelget(pointerize(object_name))
+        local_path = self.get_absolute_path(
+            self.labelget(pointerize(object_name))
+        )
         try:
-            return pvl.load(self.filename)
-        except:
-            warnings.warn(f"Unable to find or parse {pointer}")
-            return self.labelget(pointer)
+            return open(local_path).read()
+        except FileNotFoundError:
+            warnings.warn(f"couldn't find {target}")
+        except UnicodeDecodeError:
+            warnings.warn(f"couldn't parse {target}")
+        return self.labelget(object_name)
+
+    def read_header(self, object_name="HEADER"):
+        """Attempt to read a file header."""
+        target = self.labelget(pointerize(object_name))
+        if isinstance(target, (list, int)):
+            warnings.warn(
+                "headers with specified byte/record offsets are not presently "
+                "supported"
+            )
+            return self.labelget(object_name)
+        local_path = self.get_absolute_path(
+            self.labelget(pointerize(object_name))
+        )
+        if Path(local_path).exists():
+            return skeptically_load_header(local_path, object_name)
+        warnings.warn(f"Unable to find {object_name}")
+        return self.labelget(pointerize(object_name))
 
     def handle_fits_file(self, pointer=""):
         """
@@ -604,17 +634,18 @@ class Data:
             return self.LABEL
         return what_got_dug
 
-    def data_start_byte(self, pointer):
+    def data_start_byte(self, object_name):
         """Determine the first byte of the data in an IMG file from its
         pointer."""
         # TODO: hacky, make this consistent -- actually this pointer notation
         #  is hacky across the module, primarily because it's horrible in the
         #  first place :shrug: -- previously I did this by making pointers
         #  lists, but this may be unwieldy
-        target = self.labelget(pointer)
+        # TODO: like similar functions, this will currently break with PDS4
+        target = self.labelget(object_name)
         if isinstance(target, Mapping):
-            target = self.labelget(f"^{pointer}")
-        labelblock = self.labelblock(pointer)
+            target = self.labelget(pointerize(object_name))
+        labelblock = self.labelblock(object_name)
         # TODO: I am positive this will break sometimes; need to find the
         #  correct RECORD_BYTES in some cases...sequence pointers
         if "RECORD_BYTES" in labelblock.keys():
@@ -647,13 +678,14 @@ class Data:
         # Returns the keys for observational data and metadata objects
         return self.index
 
-    def get_relative_path(self, file):
+    def get_absolute_path(self, file):
         if self.labelname:
             return str(Path(Path(self.labelname).parent, file))
         elif self.filename:
             return str(Path(Path(self.filename).parent, file))
         else:
             return file
+
 
     # Make it possible to call the object like a dict
     def __getitem__(self, item):
@@ -673,3 +705,5 @@ class Data:
     def __iter__(self):
         for key in self.keys():
             yield self[key]
+
+
