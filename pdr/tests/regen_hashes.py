@@ -3,7 +3,7 @@
 from pdr.tests.definitions.datasets import DATASET_TESTING_RULES
 from pdr.tests.utilz.test_utilz import regenerate_test_hashes
 
-# regenerate_test_hashes("mer", "navcam")
+# regenerate_test_hashes("msl", "hazcam", dump_browse=True)
 #
 dump_browse = True
 

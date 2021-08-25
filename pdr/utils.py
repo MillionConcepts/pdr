@@ -232,6 +232,8 @@ def browsify(obj, outfile):
                 obj = obj[middle_band]
             else:
                 obj = np.dstack([channel for channel in obj])
+        if obj.dtype in (np.uint8, np.int16):
+            obj = obj.astype(np.int32)
         Image.fromarray(eightbit(obj)).save(outfile + ".jpg")
     elif isinstance(obj, pd.DataFrame):
         obj.to_csv(outfile + ".csv"),
