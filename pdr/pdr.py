@@ -7,6 +7,7 @@ import pds4_tools as pds4
 from astropy.io import fits
 import pvl
 import numpy as np
+from PIL import Image
 import pandas as pd
 import rasterio
 import struct
@@ -22,7 +23,13 @@ import bz2
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
-from pdr.utils import get_pds3_pointers, depointerize, pointerize
+from pdr.utils import (
+    get_pds3_pointers,
+    depointerize,
+    pointerize,
+    eightbit,
+    browsify,
+)
 
 label_extensions = (".xml", ".XML", ".lbl", ".LBL")
 data_extensions = (
@@ -686,6 +693,14 @@ class Data:
         else:
             return file
 
+    def dump_browse(self, prefix=None, outpath=None):
+        if prefix is None:
+            prefix = Path(self.filename).stem
+        if outpath is None:
+            outpath = Path(".")
+        for object_name in self.index:
+            outfile = str(Path(outpath, f"{prefix}_{object_name}"))
+            browsify(self[object_name], outfile)
 
     # Make it possible to call the object like a dict
     def __getitem__(self, item):
@@ -705,5 +720,3 @@ class Data:
     def __iter__(self):
         for key in self.keys():
             yield self[key]
-
-

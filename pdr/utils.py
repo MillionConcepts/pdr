@@ -1,7 +1,13 @@
 import os
+import pickle
 import sys
+import warnings
+from typing import Union, Sequence
 
+import astropy.io.fits
+import numpy as np
 import pandas as pd
+from PIL import Image
 import pvl
 from dustgoggles.structures import dig_for
 
@@ -70,10 +76,11 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
         if next_chunk:
             buf.write(next_chunk)
             s = (
-                    "["
-                    + nchunks * "="
-                    + (num_units - 1 - nchunks) * " "
-                    + "]  %s / %s   \r" % (bytes_to_string(buf.tell()), content_length_str)
+                "["
+                + nchunks * "="
+                + (num_units - 1 - nchunks) * " "
+                + "]  %s / %s   \r"
+                % (bytes_to_string(buf.tell()), content_length_str)
             )
         else:
             sys.stdout.write("\n")
@@ -91,12 +98,15 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
 # END code derived from astroML
 ###
 
+
 def url_to_path(url, data_dir="."):
     try:
         dirstart = url.split("://")[1].find("/")
         file_path = data_dir + url.split("://")[1][dirstart:]
-        if file_path.split('/')[1] != 'data':
-            file_path = file_path.replace(file_path.split('/')[1], 'data/' + file_path.split('/')[1])
+        if file_path.split("/")[1] != "data":
+            file_path = file_path.replace(
+                file_path.split("/")[1], "data/" + file_path.split("/")[1]
+            )
             print(file_path)
     except AttributeError:  # for url==np.nan
         file_path = ""
@@ -104,28 +114,44 @@ def url_to_path(url, data_dir="."):
 
 
 def download_data_and_label(url, data_dir=".", lbl=None):
-    """ Download an observational data file from the PDS.
+    """Download an observational data file from the PDS.
     Check for a detached label file and also download that, if it exists.
     """
-    _ = download_with_progress_bar(url,
-                                   url_to_path(url, data_dir=data_dir), quiet=True)
+    _ = download_with_progress_bar(
+        url, url_to_path(url, data_dir=data_dir), quiet=True
+    )
     try:
-        _ = download_with_progress_bar(lbl,
-                                       url_to_path(lbl, data_dir=data_dir), quiet=True)
+        _ = download_with_progress_bar(
+            lbl, url_to_path(lbl, data_dir=data_dir), quiet=True
+        )
     except (AttributeError, FileNotFoundError):
         # Attempt to guess the label URL (if there is a label)
-        for ext in [".LBL", ".lbl", ".xml", ".XML", ".HDR"]:  # HDR? ENVI headers
-            lbl_ = url[:url.rfind(".")] + ext
+        for ext in [
+            ".LBL",
+            ".lbl",
+            ".xml",
+            ".XML",
+            ".HDR",
+        ]:  # HDR? ENVI headers
+            lbl_ = url[: url.rfind(".")] + ext
             if not download_with_progress_bar(
-                    lbl_, url_to_path(lbl_, data_dir=data_dir), quiet=True):
+                lbl_, url_to_path(lbl_, data_dir=data_dir), quiet=True
+            ):
                 lbl = lbl_
-    return url_to_path(url, data_dir=data_dir), url_to_path(lbl, data_dir=data_dir)
+    return url_to_path(url, data_dir=data_dir), url_to_path(
+        lbl, data_dir=data_dir
+    )
 
 
-def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv"):
+def download_test_data(
+    index, data_dir=".", refdatafile="pdr/tests/refdata.csv"
+):
     refdata = pd.read_csv(f"{refdatafile}", comment="#")
-    return download_data_and_label(refdata["url"][index],
-                                   labelurl=refdata["lbl"][index], data_dir=data_dir)
+    return download_data_and_label(
+        refdata["url"][index],
+        labelurl=refdata["lbl"][index],
+        data_dir=data_dir,
+    )
 
 
 # TODO: excessively ugly
@@ -143,3 +169,74 @@ def pointerize(string):
 
 def depointerize(string):
     return string[1:] if string.startswith("^") else string
+
+
+# noinspection PyArgumentList
+def normalize_range(
+    image: np.ndarray,
+    bounds: Sequence[int] = (0, 1),
+    stretch: Union[float, Sequence[float]] = None,
+) -> np.ndarray:
+    """
+    simple linear min-max scaler that optionally cuts off low and high
+
+    percentiles of the input
+    """
+    working_image = image.copy()
+    if isinstance(stretch, Sequence):
+        cheat_low, cheat_high = stretch
+    else:
+        cheat_low, cheat_high = (stretch, stretch)
+    range_min, range_max = bounds
+    if cheat_low is not None:
+        minimum = np.percentile(image, cheat_low).astype(image.dtype)
+    else:
+        minimum = image.min()
+    if cheat_high is not None:
+        maximum = np.percentile(image, 100 - cheat_high).astype(image.dtype)
+    else:
+        maximum = image.max()
+    if not ((cheat_high is None) and (cheat_low is None)):
+        working_image = np.clip(working_image, minimum, maximum)
+    return range_min + (working_image - minimum) * (range_max - range_min) / (
+        maximum - minimum
+    )
+
+
+def eightbit(array, stretch=(0, 0)):
+    """return an eight-bit version of an array"""
+    return np.round(normalize_range(array, (0, 255), stretch)).astype(np.uint8)
+
+
+def browsify(obj, outfile):
+    if isinstance(obj, pvl.collections.OrderedMultiDict):
+        try:
+            pvl.dump(obj, open(outfile + ".lbl", 'w'))
+        except (ValueError, TypeError) as e:
+            warnings.warn(
+                f"pvl will not dump; {e}; writing to {outfile}.badpvl.txt"
+            )
+            with open(outfile + ".badpvl.txt", 'w') as file:
+                file.write(str(obj))
+    elif isinstance(obj, np.recarray):
+        try:
+            obj = pd.DataFrame.from_records(obj)
+            obj.to_csv(outfile + ".csv")
+        except ValueError:
+            pickle.dump(obj, open(outfile + '_nested_recarray.pkl', 'wb'))
+    elif isinstance(obj, np.ndarray):
+        if len(obj.shape) == 3:
+            if obj.shape[0] != 3:
+                warnings.warn("dumping only middle band of this image")
+                middle_band = round(obj.shape[0] / 2)
+                obj = obj[middle_band]
+            else:
+                obj = np.dstack([channel for channel in obj])
+        Image.fromarray(eightbit(obj)).save(outfile + ".jpg")
+    elif isinstance(obj, pd.DataFrame):
+        obj.to_csv(outfile + ".csv"),
+    elif obj is None:
+        return
+    else:
+        with open(outfile + ".txt", "w") as stream:
+            stream.write(str(obj))

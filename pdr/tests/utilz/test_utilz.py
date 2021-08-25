@@ -65,7 +65,7 @@ def make_hash_reference(hash_path: str) -> Callable[[str, Mapping], dict]:
     return compare_hashes
 
 
-def find_ref_paths(dataset, mission, rules):
+def find_ref_paths(mission, dataset, rules):
     ref_paths = {}
     for ref_type in ["hash", "index", "shared"]:
         if ref_type in rules.keys():
@@ -130,7 +130,7 @@ def read_test_rules(
     mission: str, dataset: str
 ) -> tuple[pd.DataFrame, dict, Sequence[Callable]]:
     rules = DATASET_TESTING_RULES[mission][dataset]
-    products, references = find_test_paths(dataset, mission, rules)
+    products, references = find_test_paths(mission, dataset, rules)
     checks = []
     if "nohash" not in rules.keys():
         hash_reference_checker = make_hash_reference(references["hash"])
@@ -140,8 +140,8 @@ def read_test_rules(
     return products, references, checks
 
 
-def find_test_paths(dataset, mission, rules):
-    ref_paths = find_ref_paths(dataset, mission, rules)
+def find_test_paths(mission, dataset, rules):
+    ref_paths = find_ref_paths(mission, dataset, rules)
     product_table = read_csv_cached(ref_paths["index"])
     if "filter" in rules.keys():
         product_table = filter_products(product_table, rules["filter"])
@@ -173,11 +173,14 @@ def concatenate_url_list(absent, product, shared_file_table, shared_files):
 
 
 def perform_test_download(url, references):
-    try:
-        response = requests.get(url)
+    response = requests.get(url)
+    if response.status_code == 404:
+        pdrtestlog.warning(f"404 result on {url}")
+        response = requests.get(url.lower())
         if response.status_code == 404:
             pdrtestlog.warning(f"404 result on {url}")
             return
+    try:
         with open(
             Path(references["data"], Path(url).name), "wb"
         ) as local_file:
@@ -231,14 +234,14 @@ def check_product(product, references, checks, local_only=False):
         pdrtestlog.warning(
             "file not present and I couldn't download it or something"
         )
-        return
+        return None, None
     data = pdr.read(str(Path(references["data"], product["label_file"])))
     check_results = []
     for check in checks:
         result = check(data)
         if result is not None:
             check_results.append(check(data))
-    return check_results
+    return check_results, data
 
 
 def just_hash(data):
@@ -249,7 +252,9 @@ def perform_dataset_test(mission: str, dataset: str, local_only=False):
     products, references, checks = read_test_rules(mission, dataset)
     results = {}
     for _, product in products.iterrows():
-        test_results = check_product(product, references, checks, local_only)
+        test_results, __ = check_product(
+            product, references, checks, local_only
+        )
         if not test_results:
             result_message = "successful"
         else:
@@ -330,18 +335,23 @@ def label_urls_to_test_index(label_urls, local_only=False):
     return pd.DataFrame(rows)
 
 
-def regenerate_test_hashes(mission, dataset, write=True):
+def regenerate_test_hashes(mission, dataset, dump_browse=False, write=True):
     rules = DATASET_TESTING_RULES[mission][dataset]
-    products, references = find_test_paths(dataset, mission, rules)
+    products, references = find_test_paths(mission, dataset, rules)
     if len(products) == 0:
         pdrtestlog.warning(f"no products found for {mission} {dataset}")
         return None
     results = {}
     for _, product in products.iterrows():
-        results[product["product_id"]] = check_product(
+        results[product["product_id"]], data = check_product(
             product, references, [just_hash]
-        )[0]
+        )
         pdrtestlog.info(f"hashed {product['product_id']}")
+        if dump_browse:
+            outpath = Path(REF_ROOT, "temp", "browse", mission, dataset)
+            os.makedirs(outpath, exist_ok=True)
+            prefix = product["product_id"]
+            data.dump_browse(prefix, outpath)
     serial = {
         product_id: json.dumps(hashes)
         for product_id, hashes in results.items()
