@@ -46,7 +46,7 @@ def make_hash_reference(hash_path: str) -> Callable[[str, Mapping], dict]:
     def compare_hashes(product_id: str, test_hashes: Mapping):
         reference_hashes = json.loads(
             reference_hash_table.loc[product_id]["hashes"]
-        )
+        )[0]
         problems = {}
         missing_keys, new_keys = disjoint(reference_hashes, test_hashes)
         # note keys that are completely new or missing
@@ -73,7 +73,7 @@ def find_ref_paths(mission, dataset, rules):
         # TODO: why am I making these defaults different? huh
         else:
             stem = {
-                "hash": f"{mission.lower()}_{dataset.lower()}",
+                "hash": f"{mission.lower()}_{dataset.lower()}.csv",
                 "index": f"{mission.lower()}.csv",
                 "shared": f"{mission.lower()}_{dataset.lower()}.csv",
             }[ref_type]
