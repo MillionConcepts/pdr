@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pdr", # Replace with your own username
+    name="pdr",
     version="0.4.3a",
     author="Chase Million",
     author_email="chase@millionconcepts.com",
@@ -29,6 +29,9 @@ setuptools.setup(
         "pvl>=1.1.0",
         "python-Levenshtein",
         "scikit-image",
-    ]
-
+        "dustgoggles"
+    ],
+    extras_require={
+        "tests": ["pytest"],
+    }
 )

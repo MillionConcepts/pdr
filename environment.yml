@@ -21,3 +21,4 @@ dependencies:
   - bz2
   - pip:
       - pds4-tools
+      - git+https://github.com/MillionConcepts/dustgoggles.git
