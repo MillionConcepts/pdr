@@ -5,6 +5,7 @@ from functools import cache
 from hashlib import md5
 from pathlib import Path
 from typing import Callable, Mapping, Sequence
+import warnings
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -13,6 +14,7 @@ import pvl
 import requests
 from dustgoggles.func import disjoint, intersection
 from dustgoggles.pivot import pdstr
+from rasterio.errors import NotGeoreferencedWarning
 
 import pdr
 from pdr.tests.definitions.datasets import DATASET_TESTING_RULES
@@ -24,6 +26,8 @@ DATA_ROOT = Path(Path(__file__).parent.parent, "data")
 pdrtestlog = logging.getLogger()
 pdrtestlog.addHandler(logging.FileHandler("pdrtests.log"))
 pdrtestlog.setLevel("INFO")
+
+warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
 
 @cache

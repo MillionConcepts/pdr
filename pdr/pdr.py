@@ -1,25 +1,25 @@
+import bz2
 from functools import partial
+import gzip
 from operator import contains
 from pathlib import Path, PurePath
 from typing import Mapping
-
-import pds4_tools as pds4
-from astropy.io import fits
-import pvl
-import numpy as np
-from PIL import Image
-import pandas as pd
-import rasterio
+from zipfile import ZipFile
 import struct
 import warnings
 
+
+from astropy.io import fits
 from dustgoggles.structures import dig_for_value
+import pds4_tools as pds4
+import pvl
+import numpy as np
+import pandas as pd
+import rasterio
+from rasterio.errors import NotGeoreferencedWarning
+import Levenshtein as lev
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
-import Levenshtein as lev
-import gzip
-from zipfile import ZipFile
-import bz2
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
@@ -27,9 +27,10 @@ from pdr.utils import (
     get_pds3_pointers,
     depointerize,
     pointerize,
-    eightbit,
     browsify,
 )
+
+warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
 label_extensions = (".xml", ".XML", ".lbl", ".LBL")
 data_extensions = (
