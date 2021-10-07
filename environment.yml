@@ -16,9 +16,6 @@ dependencies:
   - astropy
   - pytest
   - scikit-image
-  - gzip
-  - zipfile
-  - bz2
   - pip:
       - pds4-tools
       - git+https://github.com/MillionConcepts/dustgoggles.git
