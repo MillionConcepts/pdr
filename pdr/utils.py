@@ -2,7 +2,8 @@ import os
 import pickle
 import sys
 import warnings
-from typing import Union, Sequence
+from pathlib import Path
+from typing import Union, Sequence, Optional, Any
 
 import astropy.io.fits
 import numpy as np
@@ -175,7 +176,7 @@ def depointerize(string):
 def normalize_range(
     image: np.ndarray,
     bounds: Sequence[int] = (0, 1),
-    stretch: Union[float, Sequence[float]] = None,
+    stretch: Union[float, Sequence[float]] = (0, 0),
 ) -> np.ndarray:
     """
     simple linear min-max scaler that optionally cuts off low and high
@@ -203,27 +204,31 @@ def normalize_range(
     )
 
 
-def eightbit(array, stretch=(0, 0)):
-    """return an eight-bit version of an array"""
+def eightbit(array: np.array, stretch: tuple[float] = (0, 0)):
+    """return an eight-bit version of an array, optionally stretched"""
     return np.round(normalize_range(array, (0, 255), stretch)).astype(np.uint8)
 
 
-def browsify(obj, outfile):
+def browsify(
+    obj: Any,
+    outfile: Union[str, Path],
+    image_stretch: Optional[tuple[float, float]] = None,
+):
     if isinstance(obj, pvl.collections.OrderedMultiDict):
         try:
-            pvl.dump(obj, open(outfile + ".lbl", 'w'))
+            pvl.dump(obj, open(outfile + ".lbl", "w"))
         except (ValueError, TypeError) as e:
             warnings.warn(
                 f"pvl will not dump; {e}; writing to {outfile}.badpvl.txt"
             )
-            with open(outfile + ".badpvl.txt", 'w') as file:
+            with open(outfile + ".badpvl.txt", "w") as file:
                 file.write(str(obj))
     elif isinstance(obj, np.recarray):
         try:
             obj = pd.DataFrame.from_records(obj)
             obj.to_csv(outfile + ".csv")
         except ValueError:
-            pickle.dump(obj, open(outfile + '_nested_recarray.pkl', 'wb'))
+            pickle.dump(obj, open(outfile + "_nested_recarray.pkl", "wb"))
     elif isinstance(obj, np.ndarray):
         if len(obj.shape) == 3:
             if obj.shape[0] != 3:
@@ -234,7 +239,7 @@ def browsify(obj, outfile):
                 obj = np.dstack([channel for channel in obj])
         if obj.dtype in (np.uint8, np.int16):
             obj = obj.astype(np.int32)
-        Image.fromarray(eightbit(obj)).save(outfile + ".jpg")
+        Image.fromarray(eightbit(obj), image_stretch).save(outfile + ".jpg")
     elif isinstance(obj, pd.DataFrame):
         obj.to_csv(outfile + ".csv"),
     elif obj is None:

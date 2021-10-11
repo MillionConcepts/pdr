@@ -3,7 +3,7 @@ from functools import partial
 import gzip
 from operator import contains
 from pathlib import Path, PurePath
-from typing import Mapping
+from typing import Mapping, Optional, Union
 from zipfile import ZipFile
 import struct
 import warnings
@@ -694,14 +694,25 @@ class Data:
         else:
             return file
 
-    def dump_browse(self, prefix=None, outpath=None):
+    def dump_browse(
+        self,
+        prefix: Optional[Union[str, Path]] = None,
+        outpath: Optional[Union[str, Path]] = None,
+        **browse_args,
+    ) -> None:
+        """
+        attempt to dump all data objects associated with this Data object
+        to disk.
+        the only browse_arg currently supported is "range", a min-max
+        percentile range clip for browse images.
+        """
         if prefix is None:
             prefix = Path(self.filename).stem
         if outpath is None:
             outpath = Path(".")
         for object_name in self.index:
             outfile = str(Path(outpath, f"{prefix}_{object_name}"))
-            browsify(self[object_name], outfile)
+            browsify(self[object_name], outfile, **browse_args)
 
     # Make it possible to call the object like a dict
     def __getitem__(self, item):
