@@ -5,11 +5,11 @@ import warnings
 from pathlib import Path
 from typing import Union, Sequence, Optional, Any
 
-import astropy.io.fits
 import numpy as np
 import pandas as pd
 from PIL import Image
 import pvl
+from pvl.grammar import OmniGrammar
 from dustgoggles.structures import dig_for
 
 """
@@ -216,7 +216,7 @@ def browsify(
 ):
     if isinstance(obj, pvl.collections.OrderedMultiDict):
         try:
-            pvl.dump(obj, open(outfile + ".lbl", "w"))
+            pvl.dump(obj, open(outfile + ".lbl", "w"), grammar=OmniGrammar())
         except (ValueError, TypeError) as e:
             warnings.warn(
                 f"pvl will not dump; {e}; writing to {outfile}.badpvl.txt"
@@ -239,7 +239,7 @@ def browsify(
                 obj = np.dstack([channel for channel in obj])
         if obj.dtype in (np.uint8, np.int16):
             obj = obj.astype(np.int32)
-        Image.fromarray(eightbit(obj), image_stretch).save(outfile + ".jpg")
+        Image.fromarray(eightbit(obj, image_stretch)).save(outfile + ".jpg")
     elif isinstance(obj, pd.DataFrame):
         obj.to_csv(outfile + ".csv"),
     elif obj is None:
