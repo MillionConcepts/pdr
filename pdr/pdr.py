@@ -53,6 +53,10 @@ data_extensions = (
     ".rgb",  # MER
     ".raw",
     ".RAW",  # Mars Express VMC
+    ".TIF",
+    ".tif",
+    ".TIFF",
+    ".tiff"
 )
 
 
