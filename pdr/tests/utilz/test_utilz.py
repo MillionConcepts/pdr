@@ -32,10 +32,13 @@ warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
 @cache
 def read_csv_cached(fn: str, *args, **kwargs) -> pd.DataFrame:
+    """Creates a pandas dataframe from an input csv file."""
     return pd.read_csv(fn, *args, **kwargs)
 
 
 def record_mismatches(results, absent, novel):
+    """Assigns strings of "missing from output" and "not found in reference" to
+    the value of the missing and new keys in the results dictionary."""
     for key in absent:
         results[key] = "missing from output"
     for key in novel:
@@ -44,10 +47,21 @@ def record_mismatches(results, absent, novel):
 
 
 def make_hash_reference(hash_path: str) -> Callable[[str, Mapping], dict]:
+    """
+    Intakes the directory path for the hash csv file.
+    Returns the 'compare_hashes' function defined within.
+    """
     reference_hash_table = read_csv_cached(hash_path)
     reference_hash_table.index = reference_hash_table["product_id"]
 
     def compare_hashes(product_id: str, test_hashes: Mapping):
+        """
+        Loads in reference hash table handed to it by make_hash_reference.
+        Looks for new (in test_hashes not in references) or missing hashes (in
+        reference, not in test_hashes) in test_hashes that do not appear in
+        the reference hash table. These missing/new hashes are returned as a
+        dictionary called problems.
+        """
         reference_hashes = json.loads(
             reference_hash_table.loc[product_id]["hashes"]
         )[0]
@@ -69,7 +83,13 @@ def make_hash_reference(hash_path: str) -> Callable[[str, Mapping], dict]:
     return compare_hashes
 
 
-def find_ref_paths(mission, dataset, rules):
+def find_ref_paths(mission: str, dataset: str, rules: Mapping):
+    """
+    Intakes the mission, dataset, and rules (from dataset.py) and returns
+    the directory paths for the hash, index, shared .csv files and where the
+    data itself lives as a dictionary: ref_paths. If these csv files or data
+    directory don't exist they are created.
+    """
     ref_paths = {}
     for ref_type in ["hash", "index", "shared"]:
         if ref_type in rules.keys():
@@ -109,7 +129,15 @@ def filter_products(file_table, filt):
 
 
 def make_hash_comparison(compare_hashes_to_reference: Callable):
+    """
+    Intakes a function that defines problems, outputs internally defined\
+    function hash_and_check.
+    """
     def hash_and_check(data):
+        """
+        Intakes data and creates a hash for it. Hashes are compared to reference
+        hashes and any that don't match it raises a ValueError.
+        """
         hashes = {key: checksum_object(data[key]) for key in data.keys()}
         if "PRODUCT_ID" in data.LABEL.keys():
             nominal_product_id = data.LABEL["PRODUCT_ID"]
@@ -133,6 +161,11 @@ def make_hash_comparison(compare_hashes_to_reference: Callable):
 def read_test_rules(
     mission: str, dataset: str
 ) -> tuple[pd.DataFrame, dict, Sequence[Callable]]:
+    """
+    Takes in a mission and dataset string. Reads through dataset_testing_rules
+    from datasets.py (which says which files are what kinds). Then creates a
+    list of functions called checks based on the preferences in the rules.
+    """
     rules = DATASET_TESTING_RULES[mission][dataset]
     products, references = find_test_paths(mission, dataset, rules)
     checks = []
@@ -144,7 +177,13 @@ def read_test_rules(
     return products, references, checks
 
 
-def find_test_paths(mission, dataset, rules):
+def find_test_paths(mission: str, dataset: str, rules: Mapping):
+    """
+    Intakes the mission and dataset strings and the rules for which files to read as a dictionary.
+    It then reads in the index csv file as a pandas table (product_table) and filters it by the filter
+    (if present) in the rules dictionary. Outputs the filtered product table and reference file paths
+    (for the location of the reference csv files and the data itself).
+    """
     ref_paths = find_ref_paths(mission, dataset, rules)
     product_table = read_csv_cached(ref_paths["index"])
     if "filter" in rules.keys():
@@ -163,6 +202,10 @@ def find_test_paths(mission, dataset, rules):
 
 
 def concatenate_url_list(absent, product, shared_file_table, shared_files):
+    """
+    If a file is not present, the filename is appended to the url stem
+    and added to a list of possible_urls as their online location.
+    """
     possible_urls = []
     for file in absent:
         if file in shared_files:
@@ -195,6 +238,7 @@ def perform_test_download(url, references):
 
 
 def collect_files(product, references, local_only=False):
+    """Attempts a test download of missing files if any and if not local_only."""
     files = json.loads(product["files"])
     absent = [
         file for file in files if file not in references["local_contents"]
