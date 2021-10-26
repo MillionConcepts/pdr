@@ -343,7 +343,7 @@ class Data:
                     struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
                     dtype=numpy_dtype,
                 )
-                image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
+                image = image.reshape(BANDS, (nrows, ncols + prefix_cols))
             elif band_storage_type == "LINE_INTERLEAVED":
                 pixels_per_frame = BANDS * ncols
                 endian, length = (sample_type[0], sample_type[-1])
@@ -355,8 +355,8 @@ class Data:
                         struct.unpack(
                             fmt,
                             f.read(pixels_per_frame * BYTES_PER_PIXEL),
-                            dtype=numpy_dtype,
-                        )
+                        ),
+                        dtype=numpy_dtype,
                     ).reshape(BANDS, ncols)
                     image.append(frame)
                     del frame
@@ -372,7 +372,7 @@ class Data:
                     struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
                     dtype=numpy_dtype,
                 )
-                image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
+                image = image.reshape(BANDS, (nrows, ncols + prefix_cols))
         except:
             raise
         finally:
