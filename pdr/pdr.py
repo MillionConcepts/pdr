@@ -310,7 +310,7 @@ class Data:
         fmt = "{endian}{pixels}{fmt}".format(
             endian=sample_type[0], pixels=pixels, fmt=sample_type[-1]
         )
-        numpy_dtype = np.dtype(fmt)
+        numpy_dtype = np.dtype(f"{sample_type[0]}{sample_type[-1]}")
         try:  # a little decision tree to seamlessly deal with compression
             if isinstance(self.labelget(pointerize(object_name)), str):
                 f = decompress(
