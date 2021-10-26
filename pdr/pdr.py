@@ -23,6 +23,7 @@ from pvl.exceptions import ParseError
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
+from pdr.datatypes import LABEL_EXTENSIONS, DATA_EXTENSIONS, sample_types
 from pdr.utils import (
     get_pds3_pointers,
     depointerize,
@@ -31,33 +32,6 @@ from pdr.utils import (
 )
 
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
-
-label_extensions = (".xml", ".XML", ".lbl", ".LBL")
-data_extensions = (
-    ".img",
-    ".IMG",
-    ".fit",
-    ".FIT",
-    ".fits",
-    ".FITS",
-    ".dat",
-    ".DAT",
-    ".tab",
-    ".TAB",
-    ".QUB",
-    # Compressed data... not PDS-compliant, but...
-    ".gz",
-    # And then the really unusual ones...
-    ".n06",
-    ".grn",  # Viking
-    ".rgb",  # MER
-    ".raw",
-    ".RAW",  # Mars Express VMC
-    ".TIF",
-    ".tif",
-    ".TIFF",
-    ".tiff"
-)
 
 
 def skeptically_load_header(path, object_name="header"):
@@ -69,41 +43,6 @@ def skeptically_load_header(path, object_name="header"):
                 return file.read()
     except (ParseError, ValueError, OSError):
         warnings.warn(f"unable to parse {object_name}")
-
-
-def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
-    """Defines a translation from PDS data types to Python data types,
-    using both the type and bytes specified (because the mapping to type
-    is not consistent across PDS3).
-    """
-    return {
-        "MSB_INTEGER": ">h",
-        "INTEGER": ">h",
-        "MAC_INTEGER": ">h",
-        "SUN_INTEGER": ">h",
-        "MSB_UNSIGNED_INTEGER": ">h" if SAMPLE_BYTES == 2 else ">B",
-        "UNSIGNED_INTEGER": ">B",
-        "MAC_UNSIGNED_INTEGER": ">B",
-        "SUN_UNSIGNED_INTEGER": ">B",
-        "LSB_INTEGER": "<h" if SAMPLE_BYTES == 2 else "<B",
-        "PC_INTEGER": "<h",
-        "VAX_INTEGER": "<h",
-        "LSB_UNSIGNED_INTEGER": "<h" if SAMPLE_BYTES == 2 else "<B",
-        "PC_UNSIGNED_INTEGER": "<B",
-        "VAX_UNSIGNED_INTEGER": "<B",
-        "IEEE_REAL": ">f",
-        "PC_REAL": "<d" if SAMPLE_BYTES == 8 else "<f",
-        "FLOAT": ">f",
-        "REAL": ">f",
-        "MAC_REAL": ">f",
-        "SUN_REAL": ">f",
-        "MSB_BIT_STRING": ">B",
-        "ASCII_REAL": f"S{SAMPLE_BYTES}",  # "Character string representing a real number"
-        "ASCII_INTEGER": f"S{SAMPLE_BYTES}",  # ASCII character string representing an integer
-        "DATE": f"S{SAMPLE_BYTES}",
-        # "ASCII character string representing a date in PDS standard format" (1990-08-01T23:59:59)
-        "CHARACTER": f"S{SAMPLE_BYTES}",  # ASCII character string
-    }[SAMPLE_TYPE]
 
 
 # TODO: watch out for cases in which individual products may be scattered
@@ -155,17 +94,17 @@ class Data:
         # index of all of the pointers to data
         self.index = []
         # Attempt to identify and assign the data and label files
-        if fn.endswith(label_extensions):
+        if fn.endswith(LABEL_EXTENSIONS):
             setattr(self, "labelname", fn)
-            for dext in data_extensions:
+            for dext in DATA_EXTENSIONS:
                 if Path(
                     filename := fn.replace(Path(fn).suffix, dext)
                 ).exists():
                     setattr(self, "filename", filename)
                     break
-        elif fn.endswith(data_extensions):
+        elif fn.endswith(DATA_EXTENSIONS):
             setattr(self, "filename", fn)
-            for lext in label_extensions:
+            for lext in LABEL_EXTENSIONS:
                 if Path(
                     labelname := fn.replace(Path(fn).suffix, lext)
                 ).exists():
@@ -182,9 +121,9 @@ class Data:
         # TODO: redundant and confusing w/read_label
         try:
             data = pds4.read(self.labelname, quiet=True)
-            for struct in data.structures:
-                setattr(self, struct.id.replace(" ", "_"), struct.data)
-                self.index += [struct.id.replace(" ", "_")]
+            for structure in data.structures:
+                setattr(self, structure.id.replace(" ", "_"), struct.data)
+                self.index += [structure.id.replace(" ", "_")]
             return
         except:
             # Presume that this is not a PDS4 file
@@ -281,7 +220,8 @@ class Data:
                     self.LABEL["INSTRUMENT_ID"] == "M3"
                     and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
                 ):
-                    userasterio = False  # because rasterio doesn't read M3 L0 data correctly
+                    # because rasterio doesn't read M3 L0 data correctly
+                    userasterio = False
         except (KeyError, AttributeError):
             pass
         if object_name == "IMAGE" or self.filename.lower().endswith("qub"):
@@ -301,7 +241,9 @@ class Data:
         if block:
             if object_name == "QUBE":  # ISIS2 QUBE format
                 BYTES_PER_PIXEL = int(block["CORE_ITEM_BYTES"])  # / 8)
-                DTYPE = sample_types(block["CORE_ITEM_TYPE"], BYTES_PER_PIXEL)
+                sample_type = sample_types(
+                    block["CORE_ITEM_TYPE"], BYTES_PER_PIXEL
+                )
                 nrows = block["CORE_ITEMS"][2]
                 ncols = block["CORE_ITEMS"][0]
                 prefix_cols, prefix_bytes = 0, 0
@@ -310,7 +252,9 @@ class Data:
                 band_storage_type = "ISIS2_QUBE"
             else:
                 BYTES_PER_PIXEL = int(block["SAMPLE_BITS"] / 8)
-                DTYPE = sample_types(block["SAMPLE_TYPE"], BYTES_PER_PIXEL)
+                sample_type = sample_types(
+                    block["SAMPLE_TYPE"], BYTES_PER_PIXEL
+                )
                 nrows = block["LINES"]
                 ncols = block["LINE_SAMPLES"]
                 if "LINE_PREFIX_BYTES" in block.keys():
@@ -337,12 +281,12 @@ class Data:
             self.LABEL["INSTRUMENT_ID"] == "M3"
             and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
         ):
-            # This is handling the special case of Chandrayaan M3 L0 data, which are
-            # in a deprecated ENVI format that uses "line prefixes"
+            # This is handling the special case of Chandrayaan M3 L0 data,
+            # which are in a deprecated ENVI format that uses "line prefixes"
             BYTES_PER_PIXEL = int(
                 self.LABEL["L0_FILE"]["L0_IMAGE"]["SAMPLE_BITS"] / 8
             )
-            DTYPE = sample_types(
+            sample_type = sample_types(
                 self.LABEL["L0_FILE"]["L0_IMAGE"]["SAMPLE_TYPE"],
                 BYTES_PER_PIXEL,
             )
@@ -364,8 +308,9 @@ class Data:
             return None
 
         fmt = "{endian}{pixels}{fmt}".format(
-            endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1]
+            endian=sample_type[0], pixels=pixels, fmt=sample_type[-1]
         )
+        numpy_dtype = np.dtype(fmt)
         try:  # a little decision tree to seamlessly deal with compression
             if isinstance(self.labelget(pointerize(object_name)), str):
                 f = decompress(
@@ -380,7 +325,8 @@ class Data:
             prefix = None
             if BANDS == 1:
                 image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL))
+                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
+                    dtype=numpy_dtype,
                 )
                 image = image.reshape(nrows, (ncols + prefix_cols))
                 if prefix_cols:
@@ -394,19 +340,22 @@ class Data:
             #  cases may be wrong.
             elif band_storage_type == "BAND_SEQUENTIAL":
                 image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL))
+                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
+                    dtype=numpy_dtype,
                 )
                 image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
             elif band_storage_type == "LINE_INTERLEAVED":
                 pixels_per_frame = BANDS * ncols
-                endian, length = (DTYPE[0], DTYPE[-1])
+                endian, length = (sample_type[0], sample_type[-1])
                 fmt = f"{endian}{pixels_per_frame}{length}"
                 image, prefix = [], []
                 for _ in np.arange(nrows):
                     prefix.append(f.read(prefix_bytes))
                     frame = np.array(
                         struct.unpack(
-                            fmt, f.read(pixels_per_frame * BYTES_PER_PIXEL)
+                            fmt,
+                            f.read(pixels_per_frame * BYTES_PER_PIXEL),
+                            dtype=numpy_dtype,
                         )
                     ).reshape(BANDS, ncols)
                     image.append(frame)
@@ -420,7 +369,8 @@ class Data:
                     f"Guessing BAND_SEQUENTIAL."
                 )
                 image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL))
+                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
+                    dtype=numpy_dtype,
                 )
                 image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
         except:
@@ -461,7 +411,8 @@ class Data:
                 structure = pvl.load(fmtpath)
             else:
                 warnings.warn(
-                    f'Unable to locate external table format file:\n\t{block["^STRUCTURE"]}'
+                    f"Unable to locate external table format "
+                    f'file:\n\t{block["^STRUCTURE"]}'
                 )
                 return None
             # print(f"Reading external format file:\n\t{fmtpath}")
@@ -512,7 +463,8 @@ class Data:
                     fmtdef.iloc[i + 1].START_BYTE - fmtdef.iloc[i].START_BYTE
                 )
             except IndexError:
-                # The +1 is for the carriage return... these files are badly formatted...
+                # The +1 is for the carriage return... these files are badly
+                # formatted...
                 allocation = (
                     dig_for_value(self.LABEL, pointer)["ROW_BYTES"]
                     - fmtdef.iloc[i].START_BYTE
@@ -718,7 +670,7 @@ class Data:
             outfile = str(Path(outpath, f"{prefix}_{object_name}"))
             browsify(self[object_name], outfile, **browse_args)
 
-    # Make it possible to call the object like a dict
+    # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
         return getattr(self, item)
 

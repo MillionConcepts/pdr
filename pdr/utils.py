@@ -204,7 +204,7 @@ def normalize_range(
     )
 
 
-def eightbit(array: np.array, stretch: tuple[float] = (0, 0)):
+def eightbit(array: np.array, stretch: tuple[float, float] = (0, 0)) -> np.ndarray:
     """return an eight-bit version of an array, optionally stretched"""
     return np.round(normalize_range(array, (0, 255), stretch)).astype(np.uint8)
 
@@ -226,6 +226,7 @@ def browsify(
     elif isinstance(obj, np.recarray):
         try:
             obj = pd.DataFrame.from_records(obj)
+            # noinspection PyTypeChecker
             obj.to_csv(outfile + ".csv")
         except ValueError:
             pickle.dump(obj, open(outfile + "_nested_recarray.pkl", "wb"))
@@ -241,6 +242,7 @@ def browsify(
             obj = obj.astype(np.int32)
         Image.fromarray(eightbit(obj, image_stretch)).save(outfile + ".jpg")
     elif isinstance(obj, pd.DataFrame):
+        # noinspection PyTypeChecker
         obj.to_csv(outfile + ".csv"),
     elif obj is None:
         return
