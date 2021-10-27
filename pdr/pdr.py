@@ -1,42 +1,37 @@
 import bz2
-from functools import partial
 import gzip
-from operator import contains
+import struct
+import warnings
 from pathlib import Path, PurePath
 from typing import Mapping, Optional, Union
 from zipfile import ZipFile
-import struct
-import warnings
 
-
-from astropy.io import fits
-from dustgoggles.structures import dig_for_value
-import pds4_tools as pds4
-import pvl
+import Levenshtein as lev
 import numpy as np
 import pandas as pd
+import pds4_tools as pds4
+import pvl
 import rasterio
-from rasterio.errors import NotGeoreferencedWarning
-import Levenshtein as lev
+from astropy.io import fits
+from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
+from rasterio.errors import NotGeoreferencedWarning
 
-# Define known data and label filename extensions
-# This is used in order to search for companion data/metadata
+from pdr.browsify import browsify
+
 from pdr.datatypes import (
     LABEL_EXTENSIONS,
     DATA_EXTENSIONS,
     sample_types,
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
+    pointer_to_method_name,
 )
-from pdr.utils import (
-    get_pds3_pointers,
-    depointerize,
-    pointerize,
-    browsify,
-)
+from pdr.utils import depointerize, get_pds3_pointers, pointerize
 
+# we do not want rasterio to shout about data not being georeferenced; most
+# rasters are not _supposed_ to be georeferenced.
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
 
@@ -56,11 +51,13 @@ def skeptically_load_header(path, object_name="header"):
 #  technically illegal in every PDS3 version, but I'm almost certain they
 #  exist anyway.
 def pointer_to_fits_key(pointer, hdulist):
-    """In some data sets with FITS, the PDS3 object names and FITS object names
-    are not identical. This function attempts to use Levenshtein "fuzzy matching" to
-    identify the correlation between the two. It is not guaranteed to be correct! And
-    special case handling might be required in the future."""
-
+    """
+    In some data sets with FITS, the PDS3 object names and FITS object
+    names are not identical. This function attempts to use Levenshtein
+    "fuzzy matching" to identify the correlation between the two. It is not
+    guaranteed to be correct! And special case handling might be required in
+    the future.
+    """
     if pointer in ("IMAGE", "TABLE", None, ""):
         # TODO: sometimes the primary HDU contains _just_ a header.
         #  (e.g., GALEX raw6, which is not in scope, but I'm sure something in
@@ -121,9 +118,11 @@ class Data:
         else:
             warnings.warn(f"Unknown filetype: {Path(fn).suffix}")
             setattr(self, "filename", fn)
-            # TODO: Can you have an unknown filetype and a known label? Should we define attribute labelname here? I
-            #  guess you couldn't know if it was a file or a label because the extension didn't fit...So this will
-            #  break with all M3 data or anything else that uses weird extensions...
+            # TODO: Can you have an unknown filetype and a known label?
+            #  Should we define attribute labelname here? I guess you
+            #  couldn't know if it was a file or a label because the
+            #  extension didn't fit...So this will break with all M3 data or
+            #  anything else that uses weird extensions...
 
         # Just use pds4_tools if this is a PDS4 file
         # TODO: redundant and confusing w/read_label
@@ -149,7 +148,7 @@ class Data:
                 setattr(
                     self,
                     object_name,
-                    self.pointer_to_function(object_name)(object_name),
+                    self.load_from_pointer(object_name),
                 )
 
         # Sometimes images do not have explicit pointers, so just always try
@@ -191,23 +190,9 @@ class Data:
         except:
             return
 
-    def pointer_to_function(self, pointer):
-        # send both compressed and uncompressed fits files to astropy.io.fits
-        # TODO, maybe: dispatch to decompress() for weirdo compression formats,
-        #  but possibly not right here?
-        if self.looks_like_a_fits_file():
-            return self.handle_fits_file
-        if "DESC" in pointer:  # probably points to a reference file
-            return self.read_text
-        elif "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
-            return self.read_header
-        elif ("IMAGE" in pointer) or ("QUB" in pointer):
-            return self.read_image
-        elif "LINE_PREFIX_TABLE" in pointer:
-            return self.tbd
-        elif "TABLE" in pointer:
-            return self.read_table
-        return self.tbd
+    def load_from_pointer(self, pointer):
+        loader = getattr(self, pointer_to_method_name(pointer, self.filename))
+        return loader(pointer)
 
     def read_image(self, object_name="IMAGE", userasterio=True):  # ^IMAGE
         """Read a PDS IMG formatted file into an array. Defaults to using
@@ -390,19 +375,22 @@ class Data:
         return image
 
     def read_table_structure(self, object_name):
-        """Try to turn the TABLE definition into a column name / data type array.
-        Requires renaming some columns to maintain uniqueness.
-        Also requires unpacking columns that contain multiple entries.
-        Also requires adding "placeholder" entries for undefined data (e.g. commas
-        in cases where the allocated bytes is larger than given by BYTES, so we
-        need to read in the "placeholder" space and then discard it later).
-
-        If the table format is defined in an external FMT file, then this will
-        attempt to locate it in the same directory as the data / label, and throw
-        an error if it's not there. TODO: Grab external format files as needed.
         """
-        # TODO: this will generally fail for PDS4 --
-        #  but maybe it never needs to be called?
+        Try to turn the TABLE definition into a column name / data type
+        array. Requires renaming some columns to maintain uniqueness. Also
+        requires unpacking columns that contain multiple entries. Also
+        requires adding "placeholder" entries for undefined data (e.g.
+        commas in cases where the allocated bytes is larger than given by
+        BYTES, so we need to read in the "placeholder" space and then
+        discard it later).
+
+        If the table format is defined in an external FMT file, then this
+        will attempt to locate it in the same directory as the data / label,
+        and throw an error if it's not there.
+        TODO: Grab external format files as needed.
+        """
+        # TODO: this will generally fail for PDS4 -- but maybe it never needs
+        #  to be called?
         block = self.labelblock(depointerize(object_name))
         if "^STRUCTURE" in block:
             if Path(
@@ -491,7 +479,8 @@ class Data:
         return np.dtype(dt), fmtdef
 
     def read_table(self, pointer="TABLE"):
-        """Read a table. Will first attempt to parse it as generic CSV
+        """
+        Read a table. Will first attempt to parse it as generic CSV
         and then fall back to parsing it based on the label format definition.
         """
         try:
@@ -560,6 +549,9 @@ class Data:
         This function attempts to read all FITS files, compressed or
         uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
         return the header, all others return data.
+        TODO, maybe: dispatch to decompress() for weirdo compression
+          formats, but possibly not right here? hopefully we shouldn't need
+          to handle compressed FITS files too often anyway.
         """
         try:
             hdulist = fits.open(self.filename)
@@ -571,12 +563,6 @@ class Data:
             #  (like in read_header/tbd) -- maybe! must determine and specify
             #  what cases this exception was needed to handle
             return self.labelget(pointer)
-
-    def looks_like_a_fits_file(self):
-        is_fits_extension = partial(contains, [".fits", ".fit"])
-        return any(
-            map(is_fits_extension, Path(self.filename.lower()).suffixes)
-        )
 
     def find_special_constants(self, key):
         """
@@ -723,6 +709,7 @@ class Data:
         self,
         prefix: Optional[Union[str, Path]] = None,
         outpath: Optional[Union[str, Path]] = None,
+        scaled=True,
         **browse_args,
     ) -> None:
         """
@@ -736,8 +723,11 @@ class Data:
         if outpath is None:
             outpath = Path(".")
         for object_name in self.index:
+            obj = self[object_name]
+            if isinstance(obj, np.ndarray) and (scaled is True):
+                obj = self.get_scaled(object_name)
             outfile = str(Path(outpath, f"{prefix}_{object_name}"))
-            browsify(self[object_name], outfile, **browse_args)
+            browsify(obj, outfile, **browse_args)
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):

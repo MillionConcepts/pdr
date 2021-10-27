@@ -1,15 +1,11 @@
-import os
-import pickle
-import sys
-import warnings
-from pathlib import Path
-from typing import Union, Sequence, Optional, Any
+"""assorted utility functions"""
 
-import numpy as np
+import os
+import sys
+from typing import Optional
+
 import pandas as pd
-from PIL import Image
 import pvl
-from pvl.grammar import OmniGrammar
 from dustgoggles.structures import dig_for
 
 """
@@ -114,16 +110,21 @@ def url_to_path(url, data_dir="."):
     return file_path
 
 
-def download_data_and_label(url, data_dir=".", lbl=None):
-    """Download an observational data file from the PDS.
+def download_data_and_label(
+    url: str, data_dir: str = ".", lbl_url: Optional[str] = None
+) -> tuple[str, str]:
+    """
+    Download an observational data file from the PDS.
     Check for a detached label file and also download that, if it exists.
+    Optionally specify known url of the label with lbl_url.
+    returns local paths to downloaded data and label files.
     """
     _ = download_with_progress_bar(
         url, url_to_path(url, data_dir=data_dir), quiet=True
     )
     try:
         _ = download_with_progress_bar(
-            lbl, url_to_path(lbl, data_dir=data_dir), quiet=True
+            lbl_url, url_to_path(lbl_url, data_dir=data_dir), quiet=True
         )
     except (AttributeError, FileNotFoundError):
         # Attempt to guess the label URL (if there is a label)
@@ -138,25 +139,32 @@ def download_data_and_label(url, data_dir=".", lbl=None):
             if not download_with_progress_bar(
                 lbl_, url_to_path(lbl_, data_dir=data_dir), quiet=True
             ):
-                lbl = lbl_
+                lbl_url = lbl_
     return url_to_path(url, data_dir=data_dir), url_to_path(
-        lbl, data_dir=data_dir
+        lbl_url, data_dir=data_dir
     )
 
 
 def download_test_data(
-    index, data_dir=".", refdatafile="pdr/tests/refdata.csv"
-):
+    index: int, data_dir: str = ".", refdatafile: str = "pdr/tests/refdata.csv"
+) -> tuple[str, str]:
     refdata = pd.read_csv(f"{refdatafile}", comment="#")
     return download_data_and_label(
         refdata["url"][index],
-        labelurl=refdata["lbl"][index],
+        lbl_url=refdata["lbl"][index],
         data_dir=data_dir,
     )
 
 
 # TODO: excessively ugly
-def get_pds3_pointers(label=None, local_path=None):
+def get_pds3_pointers(
+    label: Optional[pvl.collections.OrderedMultiDict] = None,
+    local_path: Optional[str] = None,
+) -> tuple[pvl.collections.OrderedMultiDict]:
+    """
+    attempt to get all PDS3 "pointers" -- PVL objects starting with "^" --
+    from a passed label or path to label file.
+    """
     if label is None:
         label = pvl.load(local_path)
     # TODO: inadequate? see issue pdr#15 -- did I have a resolution for this
@@ -164,88 +172,11 @@ def get_pds3_pointers(label=None, local_path=None):
     return dig_for(label, "^", lambda k, v: k.startswith(v))
 
 
-def pointerize(string):
+def pointerize(string: str) -> str:
+    """make a string start with ^ if it didn't already"""
     return string if string.startswith("^") else "^" + string
 
 
-def depointerize(string):
+def depointerize(string: str) -> str:
+    """prevent a string from starting with ^"""
     return string[1:] if string.startswith("^") else string
-
-
-# noinspection PyArgumentList
-def normalize_range(
-    image: np.ndarray,
-    bounds: Sequence[int] = (0, 1),
-    stretch: Union[float, Sequence[float]] = (0, 0),
-) -> np.ndarray:
-    """
-    simple linear min-max scaler that optionally cuts off low and high
-
-    percentiles of the input
-    """
-    working_image = image.copy()
-    if isinstance(stretch, Sequence):
-        cheat_low, cheat_high = stretch
-    else:
-        cheat_low, cheat_high = (stretch, stretch)
-    range_min, range_max = bounds
-    if cheat_low is not None:
-        minimum = np.percentile(image, cheat_low).astype(image.dtype)
-    else:
-        minimum = image.min()
-    if cheat_high is not None:
-        maximum = np.percentile(image, 100 - cheat_high).astype(image.dtype)
-    else:
-        maximum = image.max()
-    if not ((cheat_high is None) and (cheat_low is None)):
-        working_image = np.clip(working_image, minimum, maximum)
-    return range_min + (working_image - minimum) * (range_max - range_min) / (
-        maximum - minimum
-    )
-
-
-def eightbit(array: np.array, stretch: tuple[float, float] = (0, 0)) -> np.ndarray:
-    """return an eight-bit version of an array, optionally stretched"""
-    return np.round(normalize_range(array, (0, 255), stretch)).astype(np.uint8)
-
-
-def browsify(
-    obj: Any,
-    outfile: Union[str, Path],
-    image_stretch: Optional[tuple[float, float]] = None,
-):
-    if isinstance(obj, pvl.collections.OrderedMultiDict):
-        try:
-            pvl.dump(obj, open(outfile + ".lbl", "w"), grammar=OmniGrammar())
-        except (ValueError, TypeError) as e:
-            warnings.warn(
-                f"pvl will not dump; {e}; writing to {outfile}.badpvl.txt"
-            )
-            with open(outfile + ".badpvl.txt", "w") as file:
-                file.write(str(obj))
-    elif isinstance(obj, np.recarray):
-        try:
-            obj = pd.DataFrame.from_records(obj)
-            # noinspection PyTypeChecker
-            obj.to_csv(outfile + ".csv")
-        except ValueError:
-            pickle.dump(obj, open(outfile + "_nested_recarray.pkl", "wb"))
-    elif isinstance(obj, np.ndarray):
-        if len(obj.shape) == 3:
-            if obj.shape[0] != 3:
-                warnings.warn("dumping only middle band of this image")
-                middle_band = round(obj.shape[0] / 2)
-                obj = obj[middle_band]
-            else:
-                obj = np.dstack([channel for channel in obj])
-        if obj.dtype in (np.uint8, np.int16):
-            obj = obj.astype(np.int32)
-        Image.fromarray(eightbit(obj, image_stretch)).save(outfile + ".jpg")
-    elif isinstance(obj, pd.DataFrame):
-        # noinspection PyTypeChecker
-        obj.to_csv(outfile + ".csv"),
-    elif obj is None:
-        return
-    else:
-        with open(outfile + ".txt", "w") as stream:
-            stream.write(str(obj))
