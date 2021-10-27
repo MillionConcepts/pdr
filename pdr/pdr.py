@@ -23,7 +23,13 @@ from pvl.exceptions import ParseError
 
 # Define known data and label filename extensions
 # This is used in order to search for companion data/metadata
-from pdr.datatypes import LABEL_EXTENSIONS, DATA_EXTENSIONS, sample_types
+from pdr.datatypes import (
+    LABEL_EXTENSIONS,
+    DATA_EXTENSIONS,
+    sample_types,
+    PDS3_CONSTANT_NAMES,
+    IMPLICIT_PDS3_CONSTANTS,
+)
 from pdr.utils import (
     get_pds3_pointers,
     depointerize,
@@ -93,6 +99,8 @@ class Data:
         self.labelname = None
         # index of all of the pointers to data
         self.index = []
+        # known special constants per pointer
+        self.specials = {}
         # Attempt to identify and assign the data and label files
         if fn.endswith(LABEL_EXTENSIONS):
             setattr(self, "labelname", fn)
@@ -570,6 +578,65 @@ class Data:
             map(is_fits_extension, Path(self.filename.lower()).suffixes)
         )
 
+    def find_special_constants(self, key):
+        """
+        attempts to find special constants in the associated object
+        by referencing the label and "standard" implicit special constant
+        values, then populates self.special_constants as appropriate.
+        TODO: doesn't do anything for PDS4 products at present. Also, we
+         need an attribute for distinguishing PDS3 from PDS4 products.
+        """
+        obj, block = self._init_array_method(key)
+        # check for explicitly-defined special constants
+        specials = {
+            name: block[name]
+            for name in PDS3_CONSTANT_NAMES
+            if name in block.keys()
+        }
+        # check for implicit constants appropriate to the sample type
+        implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[str(obj.dtype)]
+        specials |= {
+            possibility: constant
+            for possibility, constant in implicit_possibilities.items()
+            if constant in obj
+        }
+        self.specials[key] = specials
+
+    def get_scaled(self, key: str) -> np.ndarray:
+        """
+        fetches copy of data object corresponding to key, masks special
+        constants, then applies any scale and offset specified in the label.
+        only relevant to arrays.
+        TODO: as above, does nothing for PDS4.
+        """
+        obj, block = self._init_array_method(key)
+        obj = obj.copy()
+        if key not in self.specials:
+            self.find_special_constants(key)
+        if self.specials[key] != {}:
+            obj = np.ma.MaskedArray(obj)
+            obj.mask = np.isin(obj.data, list(self.specials[key].values()))
+        scale = 1
+        offset = 0
+        if "SCALING_FACTOR" in block.keys():
+            scale = block["SCALING_FACTOR"]
+        if "OFFSET" in block.keys():
+            offset = block["OFFSET"]
+        return obj * scale + offset
+
+    def _init_array_method(
+        self, object_name: str
+    ) -> tuple[np.ndarray, Mapping]:
+        """
+        helper function -- grab an array-type object and its label "block".
+        specifying a generic return type because eventually we would like this
+        to work with XML trees as well as PVL
+        """
+        obj = self[object_name]
+        if not isinstance(obj, np.ndarray):
+            raise TypeError("this method is only applicable to arrays.")
+        return obj, self.labelblock(object_name)
+
     def tbd(self, pointer=""):
         """This is a placeholder function for pointers that are
         not explicitly supported elsewhere. It throws a warning and
@@ -599,8 +666,10 @@ class Data:
         return what_got_dug
 
     def data_start_byte(self, object_name):
-        """Determine the first byte of the data in an IMG file from its
-        pointer."""
+        """
+        Determine the first byte of the data in an IMG file from its
+        pointer.
+        """
         # TODO: hacky, make this consistent -- actually this pointer notation
         #  is hacky across the module, primarily because it's horrible in the
         #  first place :shrug: -- previously I did this by making pointers

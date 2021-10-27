@@ -155,7 +155,7 @@ IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
             "N/A": -214743648,
             "UNK": 2147483647,
         },
-        # TODO: dubious -- not sure when we read 64-bit integers out of PDS3
+        # TODO: dubious. not sure when we read 64-bit integers out of PDS3
         #  objects anyway?
         "int64": {"N/A": -214743648, "UNK": 2147483647},
         "uint32": {
