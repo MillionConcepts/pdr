@@ -321,7 +321,7 @@ class Data:
                     struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
                     dtype=numpy_dtype,
                 )
-                image = image.reshape(nrows, (ncols + prefix_cols))
+                image = image.reshape((nrows, ncols + prefix_cols))
                 if prefix_cols:
                     # Ignore the prefix data, if any.
                     # TODO: Also return the prefix
@@ -329,14 +329,14 @@ class Data:
                     if object_name == "LINE_PREFIX_TABLE":
                         return prefix
                     image = image[:, prefix_cols:]
-            # TODO: I think the ndarray.reshape call signatures in the next three
-            #  cases may be wrong.
+            # TODO: I think the ndarray.reshape calls in the next
+            #  three cases may be wrong.
             elif band_storage_type == "BAND_SEQUENTIAL":
                 image = np.array(
                     struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
                     dtype=numpy_dtype,
                 )
-                image = image.reshape(BANDS, (nrows, ncols + prefix_cols))
+                image = image.reshape((BANDS, nrows, ncols + prefix_cols))
             elif band_storage_type == "LINE_INTERLEAVED":
                 pixels_per_frame = BANDS * ncols
                 endian, length = (sample_type[0], sample_type[-1])
@@ -365,7 +365,7 @@ class Data:
                     struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
                     dtype=numpy_dtype,
                 )
-                image = image.reshape(BANDS, (nrows, ncols + prefix_cols))
+                image = image.reshape((BANDS, nrows, ncols + prefix_cols))
         except:
             raise
         finally:
@@ -580,7 +580,7 @@ class Data:
             if name in block.keys()
         }
         # check for implicit constants appropriate to the sample type
-        implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[str(obj.dtype)]
+        implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[obj.dtype.name]
         specials |= {
             possibility: constant
             for possibility, constant in implicit_possibilities.items()

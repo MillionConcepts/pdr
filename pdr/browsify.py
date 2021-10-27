@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import pvl
-from pvl.grammar import OmniGrammar
+from pvl.grammar import OmniGrammar, PVLGrammar, ODLGrammar
 
 
 # noinspection PyArgumentList
@@ -59,11 +59,18 @@ def colorfill_maskedarray(
     color: tuple[int, int, int] = (0, 255, 255),
 ):
     """
-    given a 2-D masked array and an optionally-specified RGB color (default
-    cyan), return a 3-D array with masked values filled with that color.
-    for likely uses, masked_array should probably be 8-bit.
+    masked_array: 2-D masked array or a 3-D masked array with last axis of
+    length 3. for likely uses, this should probably be 8-bit unsigned integer.
+    color: optionally-specified RGB color (default cyan)
+    return a 3-D array with masked values filled with color.
     """
-    return np.dstack([masked_array.filled(color[ix]) for ix in range(3)])
+    if len(masked_array.shape) == 2:
+        return np.dstack([masked_array.filled(color[ix]) for ix in range(3)])
+    if masked_array.shape[-1] != 3:
+        raise ValueError("3-D arrays must have last axis of length = 3")
+    return np.dstack(
+        [masked_array[:, :, ix].filled(color[ix]) for ix in range(3)]
+    )
 
 
 def browsify(
@@ -112,12 +119,13 @@ def _browsify_pds3_label(obj: pvl.collections.OrderedMultiDict, outbase: str):
     try:
         pvl.dump(obj, open(outbase + ".lbl", "w"), grammar=OmniGrammar())
     except (ValueError, TypeError) as e:
-        warnings.warn(
-            f"pvl will not dump; {e}; writing to {outbase}.badpvl.txt"
-        )
-        # if that fails, just dump them as text
-        with open(outbase + ".badpvl.txt", "w") as file:
-            file.write(str(obj))
+        # warnings.warn(
+        #     f"pvl will not dump; {e}; writing to {outbase}.badpvl.txt"
+        # )
+        # # if that fails, just dump them as text
+        # with open(outbase + ".badpvl.txt", "w") as file:
+        #     file.write(str(obj))
+        pass
 
 
 def _browsify_array(

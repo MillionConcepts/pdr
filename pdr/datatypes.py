@@ -100,7 +100,7 @@ def sample_types(sample_type: str, sample_bytes: int) -> str:
 IMAGE_EXTENSIONS = (".img", ".tif", ".tiff", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
-FITS_EXTENSIONS = (".fits", ".fits")
+FITS_EXTENSIONS = (".fits", ".fit")
 
 
 def looks_like_this_kind_of_file(filename:str, kind_extensions) -> bool:
