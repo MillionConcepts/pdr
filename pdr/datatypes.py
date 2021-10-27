@@ -2,6 +2,7 @@
 definitions of sample types / data types / dtypes / ctypes, file formats
 and extensions, associated special constants, and so on.
 """
+import struct
 from itertools import product
 
 LABEL_EXTENSIONS = (".xml", ".XML", ".lbl", ".LBL")
@@ -28,8 +29,13 @@ DATA_EXTENSIONS = (
     ".TIF",
     ".tif",
     ".TIFF",
-    ".tiff"
+    ".tiff",
 )
+
+
+def read_hex(string, fmt):
+    return struct.unpack(fmt, bytes.fromhex(string))[0]
+
 
 def sample_types(sample_type: str, sample_bytes: int) -> str:
     """
@@ -110,25 +116,76 @@ PDS3_CONSTANT_NAMES = tuple(PDS3_ISIS_CONSTANT_NAMES + PDS3_CONSTANT_NAMES)
 # any particular product.
 # the "implicit" use of ISIS constants may in fact be illegal, but appears
 # common.
+# also note that some ISIS values collide with Standards-specified
+# N/A / UNK / NULL values -- again, we have no way to automatically
+# distinguish them.
 
 # References:
 # PDS3 Standards Reference v3.8, p.172
 # (https://pds.nasa.gov/datastandards/pds3/standards/sr/StdRef_20090227_v3.8.pdf)
 # GDAL PDS3 driver
+# TODO: -32768 is noted in this driver as NULL but defined in the Standards as
+#   an N/A value -- should clarify
 # (https://github.com/OSGeo/gdal/blob/master/frmts/pds/pdsdataset.cpp)
-# ISIS...
+# ISIS special pixel values
+# (https://isis.astrogeology.usgs.gov/Object/Developer/_special_pixel_8h_source.html)
 
-# TODO: this won't work correctly if arrays are being cast into larger dtypes.
-# TODO: what, if anything, are the 'correct' constants for int64?
 IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
     {
-    "uint8": {"NULL": 0},
-    "int16": {"N/A": -32768, "UNK": 32767},
-    "uint16": {"N/A": 65533, "UNK": 65534},
-    "int32": {"N/A": -214743648, "UNK": 2147483647},
-    "uint32": {"N/A": 4294967293, "UNK": 4294967294},
-    "float32": {"NULL": -3.4028226550889044521e+38, "N/A": -1E32, "UNK": 1E32},
-    "float64": {"NULL": -3.4028226550889044521e+38, "N/A": -1E32, "UNK": 1E32},
+        "uint8": {"NULL": 0, "ISIS_SAT_HIGH": 255},
+        "int16": {
+            "N/A": -32768,
+            "UNK": 32767,
+            "ISIS_LOW_INST_SAT": -32766,
+            "ISIS_LOW_REPR_SAT": -32767,
+            "ISIS_HIGH_INST_SAT": -32765,
+            "ISIS_HIGH_REPR_SAT": -32764,
+        },
+        "uint16": {
+            "NULL": 0,
+            "N/A": 65533,
+            "UNK": 65534,
+            "ISIS_LOW_INST_SAT": 2,
+            "ISIS_LOW_REPR_SAT": 1,
+            "ISIS_HIGH_INST_SAT": 65534,
+            "ISIS_HIGH_REPR_SAT": 65535,
+        },
+        # TODO: signed 32-bit integers don't seem to be considered in ISIS?
+        "int32": {
+            "N/A": -214743648,
+            "UNK": 2147483647,
+        },
+        # TODO: dubious -- not sure when we read 64-bit integers out of PDS3
+        #  objects anyway?
+        "int64": {"N/A": -214743648, "UNK": 2147483647},
+        "uint32": {
+            "N/A": 4294967293,
+            "UNK": 4294967294,
+            "ISIS_NULL": read_hex("FF7FFFFB", ">I"),
+            "ISIS_LOW_INST_SAT": read_hex("FF7FFFFD", ">I"),
+            "ISIS_LOW_REPR_SAT": read_hex("FF7FFFFC", ">I"),
+            "ISIS_HIGH_INST_SAT": read_hex("FF7FFFFE", ">I"),
+            "ISIS_HIGH_REPR_SAT": read_hex("FF7FFFFF", ">I"),
+        },
+        "float32": {
+            # also ISIS_NULL, but it's specified in the GDAL driver...
+            "NULL": -3.4028226550889044521e38,
+            "N/A": -1e32,
+            "UNK": 1e32,
+            "ISIS_LOW_INST_SAT": read_hex("FF7FFFFD", ">f"),
+            "ISIS_LOW_REPR_SAT": read_hex("FF7FFFFC", ">f"),
+            "ISIS_HIGH_INST_SAT": read_hex("FF7FFFFE", ">f"),
+            "ISIS_HIGH_REPR_SAT": read_hex("FF7FFFFF", ">f"),
+        },
+        # TODO: something funny is happening here in ISIS re:
+        #  a "special kludge for double precision initialization" -- there
+        #  are additional values defined here, and I'm not sure how to
+        #  interpret the DBL_UNION / DBL_INIT calls.
+        #  I'm not sure when we explicitly read doubles out
+        #  of PDS3 objects anyway?
+        "float64": {
+            "NULL": -3.4028226550889044521e38,
+        },
     }
 )
 
