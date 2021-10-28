@@ -588,15 +588,19 @@ class Data:
         }
         self.specials[key] = specials
 
-    def get_scaled(self, key: str) -> np.ndarray:
+    def get_scaled(self, key: str, inplace: bool = False) -> np.ndarray:
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.
         only relevant to arrays.
+
+        if inplace is True, modifies object in place.
+
         TODO: as above, does nothing for PDS4.
         """
         obj, block = self._init_array_method(key)
-        obj = obj.copy()
+        if inplace is not True:
+            obj = obj.copy()
         if key not in self.specials:
             self.find_special_constants(key)
         if self.specials[key] != {}:
@@ -710,13 +714,17 @@ class Data:
         prefix: Optional[Union[str, Path]] = None,
         outpath: Optional[Union[str, Path]] = None,
         scaled=True,
-        **browse_args,
+        delete=False,
+        **browse_kwargs,
     ) -> None:
         """
         attempt to dump all data objects associated with this Data object
         to disk.
-        the only browse_arg currently supported is "range", a min-max
-        percentile range clip for browse images.
+
+        if delete is True, objects are deleted as soon as they are dumped,
+        rendering this Data object 'empty' afterwards.
+
+        browse_kwargs are passed directly to pdr.browisfy.dump_browse.
         """
         if prefix is None:
             prefix = Path(self.filename).stem
@@ -725,9 +733,11 @@ class Data:
         for object_name in self.index:
             obj = self[object_name]
             if isinstance(obj, np.ndarray) and (scaled is True):
-                obj = self.get_scaled(object_name)
+                obj = self.get_scaled(object_name, inplace=delete)
             outfile = str(Path(outpath, f"{prefix}_{object_name}"))
-            browsify(obj, outfile, **browse_args)
+            browsify(obj, outfile, **browse_kwargs)
+            if delete is True:
+                del obj
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):

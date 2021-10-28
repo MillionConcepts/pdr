@@ -50,7 +50,9 @@ def eightbit(
     array: np.array, clip: Union[float, tuple[float, float]] = 0
 ) -> np.ndarray:
     """
-    return an eight-bit version of an array, optionally clipped at min/max percentiles"""
+    return an eight-bit version of an array, optionally clipped at min/max
+    percentiles
+    """
     return np.round(normalize_range(array, (0, 255), clip)).astype(np.uint8)
 
 
