@@ -1,63 +1,38 @@
 import bz2
-from functools import partial
 import gzip
-from operator import contains
+import struct
+import warnings
 from pathlib import Path, PurePath
 from typing import Mapping, Optional, Union
 from zipfile import ZipFile
-import struct
-import warnings
 
-
-from astropy.io import fits
-from dustgoggles.structures import dig_for_value
-import pds4_tools as pds4
-import pvl
+import Levenshtein as lev
 import numpy as np
 import pandas as pd
+import pds4_tools as pds4
+import pvl
 import rasterio
-from rasterio.errors import NotGeoreferencedWarning
-import Levenshtein as lev
+from astropy.io import fits
+from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
+from rasterio.errors import NotGeoreferencedWarning
 
-# Define known data and label filename extensions
-# This is used in order to search for companion data/metadata
-from pdr.utils import (
-    get_pds3_pointers,
-    depointerize,
-    pointerize,
-    browsify,
+from pdr.browsify import browsify
+
+from pdr.datatypes import (
+    LABEL_EXTENSIONS,
+    DATA_EXTENSIONS,
+    sample_types,
+    PDS3_CONSTANT_NAMES,
+    IMPLICIT_PDS3_CONSTANTS,
+    pointer_to_method_name,
 )
+from pdr.utils import depointerize, get_pds3_pointers, pointerize
 
+# we do not want rasterio to shout about data not being georeferenced; most
+# rasters are not _supposed_ to be georeferenced.
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
-
-label_extensions = (".xml", ".XML", ".lbl", ".LBL")
-data_extensions = (
-    ".img",
-    ".IMG",
-    ".fit",
-    ".FIT",
-    ".fits",
-    ".FITS",
-    ".dat",
-    ".DAT",
-    ".tab",
-    ".TAB",
-    ".QUB",
-    # Compressed data... not PDS-compliant, but...
-    ".gz",
-    # And then the really unusual ones...
-    ".n06",
-    ".grn",  # Viking
-    ".rgb",  # MER
-    ".raw",
-    ".RAW",  # Mars Express VMC
-    ".TIF",
-    ".tif",
-    ".TIFF",
-    ".tiff"
-)
 
 
 def skeptically_load_header(path, object_name="header"):
@@ -71,51 +46,18 @@ def skeptically_load_header(path, object_name="header"):
         warnings.warn(f"unable to parse {object_name}")
 
 
-def sample_types(SAMPLE_TYPE, SAMPLE_BYTES):
-    """Defines a translation from PDS data types to Python data types,
-    using both the type and bytes specified (because the mapping to type
-    is not consistent across PDS3).
-    """
-    return {
-        "MSB_INTEGER": ">h",
-        "INTEGER": ">h",
-        "MAC_INTEGER": ">h",
-        "SUN_INTEGER": ">h",
-        "MSB_UNSIGNED_INTEGER": ">h" if SAMPLE_BYTES == 2 else ">B",
-        "UNSIGNED_INTEGER": ">B",
-        "MAC_UNSIGNED_INTEGER": ">B",
-        "SUN_UNSIGNED_INTEGER": ">B",
-        "LSB_INTEGER": "<h" if SAMPLE_BYTES == 2 else "<B",
-        "PC_INTEGER": "<h",
-        "VAX_INTEGER": "<h",
-        "LSB_UNSIGNED_INTEGER": "<h" if SAMPLE_BYTES == 2 else "<B",
-        "PC_UNSIGNED_INTEGER": "<B",
-        "VAX_UNSIGNED_INTEGER": "<B",
-        "IEEE_REAL": ">f",
-        "PC_REAL": "<d" if SAMPLE_BYTES == 8 else "<f",
-        "FLOAT": ">f",
-        "REAL": ">f",
-        "MAC_REAL": ">f",
-        "SUN_REAL": ">f",
-        "MSB_BIT_STRING": ">B",
-        "ASCII_REAL": f"S{SAMPLE_BYTES}",  # "Character string representing a real number"
-        "ASCII_INTEGER": f"S{SAMPLE_BYTES}",  # ASCII character string representing an integer
-        "DATE": f"S{SAMPLE_BYTES}",
-        # "ASCII character string representing a date in PDS standard format" (1990-08-01T23:59:59)
-        "CHARACTER": f"S{SAMPLE_BYTES}",  # ASCII character string
-    }[SAMPLE_TYPE]
-
-
 # TODO: watch out for cases in which individual products may be scattered
 #  across multiple HDUs. I'm not certain where these are, and I think it is
 #  technically illegal in every PDS3 version, but I'm almost certain they
 #  exist anyway.
 def pointer_to_fits_key(pointer, hdulist):
-    """In some data sets with FITS, the PDS3 object names and FITS object names
-    are not identical. This function attempts to use Levenshtein "fuzzy matching" to
-    identify the correlation between the two. It is not guaranteed to be correct! And
-    special case handling might be required in the future."""
-
+    """
+    In some data sets with FITS, the PDS3 object names and FITS object
+    names are not identical. This function attempts to use Levenshtein
+    "fuzzy matching" to identify the correlation between the two. It is not
+    guaranteed to be correct! And special case handling might be required in
+    the future.
+    """
     if pointer in ("IMAGE", "TABLE", None, ""):
         # TODO: sometimes the primary HDU contains _just_ a header.
         #  (e.g., GALEX raw6, which is not in scope, but I'm sure something in
@@ -154,18 +96,20 @@ class Data:
         self.labelname = None
         # index of all of the pointers to data
         self.index = []
+        # known special constants per pointer
+        self.specials = {}
         # Attempt to identify and assign the data and label files
-        if fn.endswith(label_extensions):
+        if fn.endswith(LABEL_EXTENSIONS):
             setattr(self, "labelname", fn)
-            for dext in data_extensions:
+            for dext in DATA_EXTENSIONS:
                 if Path(
                     filename := fn.replace(Path(fn).suffix, dext)
                 ).exists():
                     setattr(self, "filename", filename)
                     break
-        elif fn.endswith(data_extensions):
+        elif fn.endswith(DATA_EXTENSIONS):
             setattr(self, "filename", fn)
-            for lext in label_extensions:
+            for lext in LABEL_EXTENSIONS:
                 if Path(
                     labelname := fn.replace(Path(fn).suffix, lext)
                 ).exists():
@@ -174,17 +118,19 @@ class Data:
         else:
             warnings.warn(f"Unknown filetype: {Path(fn).suffix}")
             setattr(self, "filename", fn)
-            # TODO: Can you have an unknown filetype and a known label? Should we define attribute labelname here? I
-            #  guess you couldn't know if it was a file or a label because the extension didn't fit...So this will
-            #  break with all M3 data or anything else that uses weird extensions...
+            # TODO: Can you have an unknown filetype and a known label?
+            #  Should we define attribute labelname here? I guess you
+            #  couldn't know if it was a file or a label because the
+            #  extension didn't fit...So this will break with all M3 data or
+            #  anything else that uses weird extensions...
 
         # Just use pds4_tools if this is a PDS4 file
         # TODO: redundant and confusing w/read_label
         try:
             data = pds4.read(self.labelname, quiet=True)
-            for struct in data.structures:
-                setattr(self, struct.id.replace(" ", "_"), struct.data)
-                self.index += [struct.id.replace(" ", "_")]
+            for structure in data.structures:
+                setattr(self, structure.id.replace(" ", "_"), struct.data)
+                self.index += [structure.id.replace(" ", "_")]
             return
         except:
             # Presume that this is not a PDS4 file
@@ -202,7 +148,7 @@ class Data:
                 setattr(
                     self,
                     object_name,
-                    self.pointer_to_function(object_name)(object_name),
+                    self.load_from_pointer(object_name),
                 )
 
         # Sometimes images do not have explicit pointers, so just always try
@@ -244,23 +190,9 @@ class Data:
         except:
             return
 
-    def pointer_to_function(self, pointer):
-        # send both compressed and uncompressed fits files to astropy.io.fits
-        # TODO, maybe: dispatch to decompress() for weirdo compression formats,
-        #  but possibly not right here?
-        if self.looks_like_a_fits_file():
-            return self.handle_fits_file
-        if "DESC" in pointer:  # probably points to a reference file
-            return self.read_text
-        elif "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
-            return self.read_header
-        elif ("IMAGE" in pointer) or ("QUB" in pointer):
-            return self.read_image
-        elif "LINE_PREFIX_TABLE" in pointer:
-            return self.tbd
-        elif "TABLE" in pointer:
-            return self.read_table
-        return self.tbd
+    def load_from_pointer(self, pointer):
+        loader = getattr(self, pointer_to_method_name(pointer, self.filename))
+        return loader(pointer)
 
     def read_image(self, object_name="IMAGE", userasterio=True):  # ^IMAGE
         """Read a PDS IMG formatted file into an array. Defaults to using
@@ -281,7 +213,8 @@ class Data:
                     self.LABEL["INSTRUMENT_ID"] == "M3"
                     and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
                 ):
-                    userasterio = False  # because rasterio doesn't read M3 L0 data correctly
+                    # because rasterio doesn't read M3 L0 data correctly
+                    userasterio = False
         except (KeyError, AttributeError):
             pass
         if object_name == "IMAGE" or self.filename.lower().endswith("qub"):
@@ -301,7 +234,9 @@ class Data:
         if block:
             if object_name == "QUBE":  # ISIS2 QUBE format
                 BYTES_PER_PIXEL = int(block["CORE_ITEM_BYTES"])  # / 8)
-                DTYPE = sample_types(block["CORE_ITEM_TYPE"], BYTES_PER_PIXEL)
+                sample_type = sample_types(
+                    block["CORE_ITEM_TYPE"], BYTES_PER_PIXEL
+                )
                 nrows = block["CORE_ITEMS"][2]
                 ncols = block["CORE_ITEMS"][0]
                 prefix_cols, prefix_bytes = 0, 0
@@ -310,7 +245,9 @@ class Data:
                 band_storage_type = "ISIS2_QUBE"
             else:
                 BYTES_PER_PIXEL = int(block["SAMPLE_BITS"] / 8)
-                DTYPE = sample_types(block["SAMPLE_TYPE"], BYTES_PER_PIXEL)
+                sample_type = sample_types(
+                    block["SAMPLE_TYPE"], BYTES_PER_PIXEL
+                )
                 nrows = block["LINES"]
                 ncols = block["LINE_SAMPLES"]
                 if "LINE_PREFIX_BYTES" in block.keys():
@@ -337,12 +274,12 @@ class Data:
             self.LABEL["INSTRUMENT_ID"] == "M3"
             and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
         ):
-            # This is handling the special case of Chandrayaan M3 L0 data, which are
-            # in a deprecated ENVI format that uses "line prefixes"
+            # This is handling the special case of Chandrayaan M3 L0 data,
+            # which are in a deprecated ENVI format that uses "line prefixes"
             BYTES_PER_PIXEL = int(
                 self.LABEL["L0_FILE"]["L0_IMAGE"]["SAMPLE_BITS"] / 8
             )
-            DTYPE = sample_types(
+            sample_type = sample_types(
                 self.LABEL["L0_FILE"]["L0_IMAGE"]["SAMPLE_TYPE"],
                 BYTES_PER_PIXEL,
             )
@@ -364,8 +301,9 @@ class Data:
             return None
 
         fmt = "{endian}{pixels}{fmt}".format(
-            endian=DTYPE[0], pixels=pixels, fmt=DTYPE[-1]
+            endian=sample_type[0], pixels=pixels, fmt=sample_type[-1]
         )
+        numpy_dtype = np.dtype(f"{sample_type[0]}{sample_type[-1]}")
         try:  # a little decision tree to seamlessly deal with compression
             if isinstance(self.labelget(pointerize(object_name)), str):
                 f = decompress(
@@ -380,9 +318,10 @@ class Data:
             prefix = None
             if BANDS == 1:
                 image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL))
+                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
+                    dtype=numpy_dtype,
                 )
-                image = image.reshape(nrows, (ncols + prefix_cols))
+                image = image.reshape((nrows, ncols + prefix_cols))
                 if prefix_cols:
                     # Ignore the prefix data, if any.
                     # TODO: Also return the prefix
@@ -390,24 +329,27 @@ class Data:
                     if object_name == "LINE_PREFIX_TABLE":
                         return prefix
                     image = image[:, prefix_cols:]
-            # TODO: I think the ndarray.reshape call signatures in the next three
-            #  cases may be wrong.
+            # TODO: I think the ndarray.reshape calls in the next
+            #  three cases may be wrong.
             elif band_storage_type == "BAND_SEQUENTIAL":
                 image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL))
+                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
+                    dtype=numpy_dtype,
                 )
-                image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
+                image = image.reshape((BANDS, nrows, ncols + prefix_cols))
             elif band_storage_type == "LINE_INTERLEAVED":
                 pixels_per_frame = BANDS * ncols
-                endian, length = (DTYPE[0], DTYPE[-1])
+                endian, length = (sample_type[0], sample_type[-1])
                 fmt = f"{endian}{pixels_per_frame}{length}"
                 image, prefix = [], []
                 for _ in np.arange(nrows):
                     prefix.append(f.read(prefix_bytes))
                     frame = np.array(
                         struct.unpack(
-                            fmt, f.read(pixels_per_frame * BYTES_PER_PIXEL)
-                        )
+                            fmt,
+                            f.read(pixels_per_frame * BYTES_PER_PIXEL),
+                        ),
+                        dtype=numpy_dtype,
                     ).reshape(BANDS, ncols)
                     image.append(frame)
                     del frame
@@ -420,9 +362,10 @@ class Data:
                     f"Guessing BAND_SEQUENTIAL."
                 )
                 image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL))
+                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
+                    dtype=numpy_dtype,
                 )
-                image = image.reshape(BANDS, nrows, (ncols + prefix_cols))
+                image = image.reshape((BANDS, nrows, ncols + prefix_cols))
         except:
             raise
         finally:
@@ -432,19 +375,22 @@ class Data:
         return image
 
     def read_table_structure(self, object_name):
-        """Try to turn the TABLE definition into a column name / data type array.
-        Requires renaming some columns to maintain uniqueness.
-        Also requires unpacking columns that contain multiple entries.
-        Also requires adding "placeholder" entries for undefined data (e.g. commas
-        in cases where the allocated bytes is larger than given by BYTES, so we
-        need to read in the "placeholder" space and then discard it later).
-
-        If the table format is defined in an external FMT file, then this will
-        attempt to locate it in the same directory as the data / label, and throw
-        an error if it's not there. TODO: Grab external format files as needed.
         """
-        # TODO: this will generally fail for PDS4 --
-        #  but maybe it never needs to be called?
+        Try to turn the TABLE definition into a column name / data type
+        array. Requires renaming some columns to maintain uniqueness. Also
+        requires unpacking columns that contain multiple entries. Also
+        requires adding "placeholder" entries for undefined data (e.g.
+        commas in cases where the allocated bytes is larger than given by
+        BYTES, so we need to read in the "placeholder" space and then
+        discard it later).
+
+        If the table format is defined in an external FMT file, then this
+        will attempt to locate it in the same directory as the data / label,
+        and throw an error if it's not there.
+        TODO: Grab external format files as needed.
+        """
+        # TODO: this will generally fail for PDS4 -- but maybe it never needs
+        #  to be called?
         block = self.labelblock(depointerize(object_name))
         if "^STRUCTURE" in block:
             if Path(
@@ -461,7 +407,8 @@ class Data:
                 structure = pvl.load(fmtpath)
             else:
                 warnings.warn(
-                    f'Unable to locate external table format file:\n\t{block["^STRUCTURE"]}'
+                    f"Unable to locate external table format "
+                    f'file:\n\t{block["^STRUCTURE"]}'
                 )
                 return None
             # print(f"Reading external format file:\n\t{fmtpath}")
@@ -512,7 +459,8 @@ class Data:
                     fmtdef.iloc[i + 1].START_BYTE - fmtdef.iloc[i].START_BYTE
                 )
             except IndexError:
-                # The +1 is for the carriage return... these files are badly formatted...
+                # The +1 is for the carriage return... these files are badly
+                # formatted...
                 allocation = (
                     dig_for_value(self.LABEL, pointer)["ROW_BYTES"]
                     - fmtdef.iloc[i].START_BYTE
@@ -531,7 +479,8 @@ class Data:
         return np.dtype(dt), fmtdef
 
     def read_table(self, pointer="TABLE"):
-        """Read a table. Will first attempt to parse it as generic CSV
+        """
+        Read a table. Will first attempt to parse it as generic CSV
         and then fall back to parsing it based on the label format definition.
         """
         try:
@@ -600,6 +549,9 @@ class Data:
         This function attempts to read all FITS files, compressed or
         uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
         return the header, all others return data.
+        TODO, maybe: dispatch to decompress() for weirdo compression
+          formats, but possibly not right here? hopefully we shouldn't need
+          to handle compressed FITS files too often anyway.
         """
         try:
             hdulist = fits.open(self.filename)
@@ -612,11 +564,79 @@ class Data:
             #  what cases this exception was needed to handle
             return self.labelget(pointer)
 
-    def looks_like_a_fits_file(self):
-        is_fits_extension = partial(contains, [".fits", ".fit"])
-        return any(
-            map(is_fits_extension, Path(self.filename.lower()).suffixes)
-        )
+    def find_special_constants(self, key):
+        """
+        attempts to find special constants in the associated object
+        by referencing the label and "standard" implicit special constant
+        values, then populates self.special_constants as appropriate.
+        TODO: doesn't do anything for PDS4 products at present. Also, we
+         need an attribute for distinguishing PDS3 from PDS4 products.
+        """
+        obj, block = self._init_array_method(key)
+        # check for explicitly-defined special constants
+        specials = {
+            name: block[name]
+            for name in PDS3_CONSTANT_NAMES
+            if name in block.keys()
+        }
+        # check for implicit constants appropriate to the sample type
+        implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[obj.dtype.name]
+        specials |= {
+            possibility: constant
+            for possibility, constant in implicit_possibilities.items()
+            if constant in obj
+        }
+        self.specials[key] = specials
+
+    def get_scaled(self, key: str, inplace=False) -> np.ndarray:
+        """
+        fetches copy of data object corresponding to key, masks special
+        constants, then applies any scale and offset specified in the label.
+        only relevant to arrays.
+
+        if inplace is True, does calculations in-place on original array,
+        with attendant memory savings and destructiveness.
+
+        TODO: as above, does nothing for PDS4.
+        """
+        obj, block = self._init_array_method(key)
+        if key not in self.specials:
+            self.find_special_constants(key)
+        if self.specials[key] != {}:
+            obj = np.ma.MaskedArray(obj)
+            obj.mask = np.isin(obj.data, list(self.specials[key].values()))
+        scale = 1
+        offset = 0
+        if "SCALING_FACTOR" in block.keys():
+            scale = block["SCALING_FACTOR"]
+        if "OFFSET" in block.keys():
+            offset = block["OFFSET"]
+        # meaningfully better for enormous unscaled arrays
+        if (scale == 1) and (offset == 0):
+            return obj
+        if inplace is True:
+            # try to perform the operation in-place...
+            try:
+                obj *= scale
+                obj += offset
+                return obj
+            # ...but perhaps we can't.
+            except TypeError:
+                pass
+        return obj * scale + offset
+
+    def _init_array_method(
+        self, object_name: str
+    ) -> tuple[np.ndarray, Mapping]:
+        """
+        helper function -- grab an array-type object and its label "block".
+        specifying a generic return type because eventually we would like this
+        to work with XML trees as well as PVL
+        """
+        obj = self[object_name]
+        if not isinstance(obj, np.ndarray):
+            raise TypeError("this method is only applicable to arrays.")
+        return obj, self.labelblock(object_name)
 
     def tbd(self, pointer=""):
         """This is a placeholder function for pointers that are
@@ -647,8 +667,10 @@ class Data:
         return what_got_dug
 
     def data_start_byte(self, object_name):
-        """Determine the first byte of the data in an IMG file from its
-        pointer."""
+        """
+        Determine the first byte of the data in an IMG file from its
+        pointer.
+        """
         # TODO: hacky, make this consistent -- actually this pointer notation
         #  is hacky across the module, primarily because it's horrible in the
         #  first place :shrug: -- previously I did this by making pointers
@@ -702,23 +724,35 @@ class Data:
         self,
         prefix: Optional[Union[str, Path]] = None,
         outpath: Optional[Union[str, Path]] = None,
-        **browse_args,
+        scaled=True,
+        purge=False,
+        **browse_kwargs,
     ) -> None:
         """
         attempt to dump all data objects associated with this Data object
         to disk.
-        the only browse_arg currently supported is "range", a min-max
-        percentile range clip for browse images.
+
+        if purge is True, objects are deleted as soon as they are dumped,
+        rendering this Data object 'empty' afterwards.
+
+        browse_kwargs are passed directly to pdr.browisfy.dump_browse.
         """
         if prefix is None:
             prefix = Path(self.filename).stem
         if outpath is None:
             outpath = Path(".")
         for object_name in self.index:
+            if isinstance(self[object_name], np.ndarray) and (scaled is True):
+                obj = self.get_scaled(object_name, inplace=purge)
+            else:
+                obj = self[object_name]
             outfile = str(Path(outpath, f"{prefix}_{object_name}"))
-            browsify(self[object_name], outfile, **browse_args)
+            browsify(obj, outfile, purge, **browse_kwargs)
+            del obj
+            if (purge is True) and (object_name != "LABEL"):
+                self.__delattr__(object_name)
 
-    # Make it possible to call the object like a dict
+    # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
         return getattr(self, item)
 
