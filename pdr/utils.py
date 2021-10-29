@@ -213,6 +213,7 @@ def browsify(
     obj: Any,
     outfile: Union[str, Path],
     image_stretch: Optional[tuple[float, float]] = None,
+    dump_band: Optional[int] = None,
 ):
     if isinstance(obj, pvl.collections.OrderedMultiDict):
         try:
@@ -232,9 +233,18 @@ def browsify(
     elif isinstance(obj, np.ndarray):
         if len(obj.shape) == 3:
             if obj.shape[0] != 3:
-                warnings.warn("dumping only middle band of this image")
-                middle_band = round(obj.shape[0] / 2)
-                obj = obj[middle_band]
+                if dump_band is None:
+                    warnings.warn("dumping only middle band of this image")
+                    middle_band = round(obj.shape[0] / 2)
+                    obj = obj[middle_band]
+                else:
+                    try:
+                        obj = obj[dump_band]
+                    except IndexError:
+                        warnings.warn("requested band out of index range"
+                                      "dumping only middle band of this image")
+                        middle_band = round(obj.shape[0] / 2)
+                        obj = obj[middle_band]
             else:
                 obj = np.dstack([channel for channel in obj])
         if obj.dtype in (np.uint8, np.int16):
