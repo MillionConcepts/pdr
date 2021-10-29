@@ -588,19 +588,18 @@ class Data:
         }
         self.specials[key] = specials
 
-    def get_scaled(self, key: str, inplace: bool = False) -> np.ndarray:
+    def get_scaled(self, key: str, inplace=False) -> np.ndarray:
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.
         only relevant to arrays.
 
-        if inplace is True, modifies object in place.
+        if inplace is True, does calculations in-place on original array,
+        with attendant memory savings and destructiveness.
 
         TODO: as above, does nothing for PDS4.
         """
         obj, block = self._init_array_method(key)
-        if inplace is not True:
-            obj = obj.copy()
         if key not in self.specials:
             self.find_special_constants(key)
         if self.specials[key] != {}:
@@ -612,6 +611,18 @@ class Data:
             scale = block["SCALING_FACTOR"]
         if "OFFSET" in block.keys():
             offset = block["OFFSET"]
+        # meaningfully better for enormous unscaled arrays
+        if (scale == 1) and (offset == 0):
+            return obj
+        if inplace is True:
+            # try to perform the operation in-place...
+            try:
+                obj *= scale
+                obj += offset
+                return obj
+            # ...but perhaps we can't.
+            except TypeError:
+                pass
         return obj * scale + offset
 
     def _init_array_method(
@@ -714,14 +725,14 @@ class Data:
         prefix: Optional[Union[str, Path]] = None,
         outpath: Optional[Union[str, Path]] = None,
         scaled=True,
-        delete=False,
+        purge=False,
         **browse_kwargs,
     ) -> None:
         """
         attempt to dump all data objects associated with this Data object
         to disk.
 
-        if delete is True, objects are deleted as soon as they are dumped,
+        if purge is True, objects are deleted as soon as they are dumped,
         rendering this Data object 'empty' afterwards.
 
         browse_kwargs are passed directly to pdr.browisfy.dump_browse.
@@ -731,13 +742,15 @@ class Data:
         if outpath is None:
             outpath = Path(".")
         for object_name in self.index:
-            obj = self[object_name]
-            if isinstance(obj, np.ndarray) and (scaled is True):
-                obj = self.get_scaled(object_name, inplace=delete)
+            if isinstance(self[object_name], np.ndarray) and (scaled is True):
+                obj = self.get_scaled(object_name, inplace=purge)
+            else:
+                obj = self[object_name]
             outfile = str(Path(outpath, f"{prefix}_{object_name}"))
-            browsify(obj, outfile, **browse_kwargs)
-            if delete is True:
-                del obj
+            browsify(obj, outfile, purge, **browse_kwargs)
+            del obj
+            if (purge is True) and (object_name != "LABEL"):
+                self.__delattr__(object_name)
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):

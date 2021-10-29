@@ -12,48 +12,101 @@ from pvl.grammar import OmniGrammar, PVLGrammar, ODLGrammar
 
 
 # noinspection PyArgumentList
+def find_masked_bounds(image, cheat_low, cheat_high):
+    """
+    relatively memory-efficient way to perform bound calculations for
+    normalize_range on a masked array.
+    """
+    valid = image[~image.mask]
+    if (cheat_low != 0) and (cheat_high != 0):
+        minimum, maximum = np.percentile(
+            valid, [cheat_low, 100 - cheat_high], overwrite_input=True
+        ).astype(image.dtype)
+    elif cheat_low != 0:
+        maximum = valid.max()
+        minimum = np.percentile(valid, cheat_low, overwrite_input=True).astype(
+            image.dtype
+        )
+    elif cheat_high != 0:
+        minimum = valid.min()
+        maximum = np.percentile(
+            valid, 100 - cheat_high, overwrite_input=True
+        ).astype(image.dtype)
+    else:
+        minimum = valid.min()
+        maximum = valid.max()
+    return minimum, maximum
+
+
+# noinspection PyArgumentList
+def find_unmasked_bounds(cheat_high, cheat_low, image):
+    """straightforward way to find unmasked array bounds for normalize_range"""
+    if cheat_low != 0:
+        minimum = np.percentile(image, cheat_low).astype(image.dtype)
+    else:
+        minimum = image.min()
+    if cheat_high != 0:
+        maximum = np.percentile(image, 100 - cheat_high).astype(image.dtype)
+    else:
+        maximum = image.max()
+    return minimum, maximum
+
+
 def normalize_range(
     image: np.ndarray,
     bounds: Sequence[int] = (0, 1),
     clip: Union[float, tuple[float, float]] = 0,
+    inplace: bool = False,
 ) -> np.ndarray:
     """
     simple linear min-max scaler that optionally percentile-clips the input at
-    clip = (low_percentile, 100 - high_percentile)
+    clip = (low_percentile, 100 - high_percentile). if inplace is True,
+    may transform the original array, with attendant memory savings and
+    destructive effects.
     """
-    working = image.copy()
-    if isinstance(working, np.ma.MaskedArray):
-        valid = working[~working.mask]
-    else:
-        valid = working
     if isinstance(clip, Sequence):
         cheat_low, cheat_high = clip
     else:
         cheat_low, cheat_high = (clip, clip)
     range_min, range_max = bounds
-    if cheat_low is not None:
-        minimum = np.percentile(valid, cheat_low).astype(image.dtype)
+    if isinstance(image, np.ma.MaskedArray):
+        minimum, maximum = find_masked_bounds(image, cheat_low, cheat_high)
     else:
-        minimum = valid.min()
-    if cheat_high is not None:
-        maximum = np.percentile(valid, 100 - cheat_high).astype(image.dtype)
-    else:
-        maximum = valid.max()
+        minimum, maximum = find_unmasked_bounds(cheat_high, cheat_low, image)
     if not ((cheat_high is None) and (cheat_low is None)):
-        working = np.clip(working, minimum, maximum)
-    return range_min + (working - minimum) * (range_max - range_min) / (
+        if inplace is True:
+            image = np.clip(image, minimum, maximum, out=image)
+        else:
+            image = np.clip(image, minimum, maximum)
+    if inplace is True:
+        # try to perform the operation in-place...
+        try:
+            image -= minimum
+            image *= range_max - range_min
+            image /= maximum - minimum
+            image += range_min
+            return image
+        # ...but perhaps we can't.
+        except TypeError:
+            pass
+    return (image - minimum) * (range_max - range_min) / (
         maximum - minimum
-    )
+    ) + range_min
 
 
 def eightbit(
-    array: np.array, clip: Union[float, tuple[float, float]] = 0
+    array: np.array,
+    clip: Union[float, tuple[float, float]] = 0,
+    inplace: bool = False,
 ) -> np.ndarray:
     """
     return an eight-bit version of an array, optionally clipped at min/max
-    percentiles
+    percentiles. if inplace is True, normalization may transform the original
+    array, with attendant memory savings and destructiveness.
     """
-    return np.round(normalize_range(array, (0, 255), clip)).astype(np.uint8)
+    return np.round(normalize_range(array, (0, 255), clip, inplace)).astype(
+        np.uint8
+    )
 
 
 def colorfill_maskedarray(
@@ -78,6 +131,7 @@ def colorfill_maskedarray(
 def browsify(
     obj: Any,
     outbase: Union[str, Path],
+    purge: bool = False,
     image_clip: Union[float, tuple[float, float]] = (1, 1),
     mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
 ):
@@ -92,7 +146,7 @@ def browsify(
     elif isinstance(obj, np.recarray):
         _browsify_recarray(obj, outbase)
     elif isinstance(obj, np.ndarray):
-        _browsify_array(obj, outbase, image_clip, mask_color)
+        _browsify_array(obj, outbase, purge, image_clip, mask_color)
     elif isinstance(obj, pd.DataFrame):
         # noinspection PyTypeChecker
         obj.to_csv(outbase + ".csv"),
@@ -121,29 +175,35 @@ def _browsify_pds3_label(obj: pvl.collections.OrderedMultiDict, outbase: str):
     try:
         pvl.dump(obj, open(outbase + ".lbl", "w"), grammar=OmniGrammar())
     except (ValueError, TypeError) as e:
-        # warnings.warn(
-        #     f"pvl will not dump; {e}; writing to {outbase}.badpvl.txt"
-        # )
-        # # if that fails, just dump them as text
-        # with open(outbase + ".badpvl.txt", "w") as file:
-        #     file.write(str(obj))
+        warnings.warn(
+            f"pvl will not dump; {e}; writing to {outbase}.badpvl.txt"
+        )
+        # if that fails, just dump them as text
+        with open(outbase + ".badpvl.txt", "w") as file:
+            file.write(str(obj))
         pass
 
 
 def _browsify_array(
     obj: np.ndarray,
     outbase: str,
+    purge: bool = False,
     image_clip: Union[float, tuple[float, float]] = (1, 1),
     mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
+    band_ix: Optional[int] = None,
 ):
-    # attempt to turn arrays into .jpg image files
+    """
+    attempt to save array as a jpeg
+    """
     if len(obj.shape) == 3:
         # for multiband arrays that are not three-band, only export a
-        # single band, the "middle" one
+        # single band. this is by default the "middle" one, unless the band_ix
+        # kwarg has been passed.
         if obj.shape[0] != 3:
-            warnings.warn("dumping only middle band of this image")
-            middle_band_index = round(obj.shape[0] / 2)
-            obj = obj[middle_band_index]
+            if band_ix is None:
+                band_ix = round(obj.shape[0] / 2)
+            warnings.warn(f"dumping only band {band_ix} of this image")
+            obj = obj[band_ix]
         # treat three-band arrays as RGB images
         else:
             obj = np.dstack([channel for channel in obj])
@@ -151,9 +211,9 @@ def _browsify_array(
     if obj.dtype in (np.uint8, np.int16):
         obj = obj.astype(np.int32)
     # convert to unsigned eight-bit integer to make it easy to write
-    uint_array = eightbit(obj, image_clip)
+    obj = eightbit(obj, image_clip, purge)
     # unless color_fill is set to None, fill masked elements -- probably
     # special constants -- with RGB value defined by mask_color
-    if isinstance(uint_array, np.ma.MaskedArray) and (mask_color is not None):
-        uint_array = colorfill_maskedarray(uint_array, mask_color)
-    Image.fromarray(uint_array).save(outbase + ".jpg")
+    if isinstance(obj, np.ma.MaskedArray) and (mask_color is not None):
+        obj = colorfill_maskedarray(obj, mask_color)
+    Image.fromarray(obj).save(outbase + ".jpg")
