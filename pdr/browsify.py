@@ -203,7 +203,11 @@ def _browsify_array(
             if band_ix is None:
                 band_ix = round(obj.shape[0] / 2)
             warnings.warn(f"dumping only band {band_ix} of this image")
-            obj = obj[band_ix]
+            try:
+                obj = obj[band_ix]
+            except IndexError:
+                band_ix = round(obj.shape[0] / 2)
+                obj = obj[band_ix]
         # treat three-band arrays as RGB images
         else:
             obj = np.dstack([channel for channel in obj])
