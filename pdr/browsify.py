@@ -216,4 +216,11 @@ def _browsify_array(
     # special constants -- with RGB value defined by mask_color
     if isinstance(obj, np.ma.MaskedArray) and (mask_color is not None):
         obj = colorfill_maskedarray(obj, mask_color)
-    Image.fromarray(obj).save(outbase + ".jpg")
+    image = Image.fromarray(obj)
+    if max(obj.shape) > 65500:
+        warnings.warn(
+            f"Axis length {max(obj.shape)} > JPEG encoder threshold of "
+            f"65500; downsampling image by 50% to write browse version."
+        )
+    image.thumbnail([axis / 2 for axis in image.size])
+    image.save(outbase + ".jpg")
