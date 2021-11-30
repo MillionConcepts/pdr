@@ -1,14 +1,15 @@
 """functions for producing browse versions of products"""
-from pathlib import Path
 import pickle
-from typing import Any, Sequence, Union, Optional
 import warnings
+from pathlib import Path
+from typing import Any, Sequence, Union, Optional
 
 import numpy as np
 import pandas as pd
-from PIL import Image
 import pvl
-from pvl.grammar import OmniGrammar, PVLGrammar, ODLGrammar
+from PIL import Image
+from dustgoggles.func import naturals
+from pvl.grammar import OmniGrammar
 
 
 # noinspection PyArgumentList
@@ -134,7 +135,7 @@ def browsify(
     purge: bool = False,
     image_clip: Union[float, tuple[float, float]] = (1, 1),
     mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
-    band_ix: Optional[int] = None
+    band_ix: Optional[int] = None,
 ):
     """
     attempts to dump a browse version of a data object, writing it into a file
@@ -223,9 +224,14 @@ def _browsify_array(
         obj = colorfill_maskedarray(obj, mask_color)
     image = Image.fromarray(obj)
     if max(obj.shape) > 65500:
+        scale = 1
+        for n in naturals():
+            scale = 1 / n
+            if max(obj.shape) * scale <= 65500:
+                break
         warnings.warn(
             f"Axis length {max(obj.shape)} > JPEG encoder threshold of "
-            f"65500; downsampling image by 50% to write browse version."
+            f"65500; downsampling browse image to {scale * 100}%."
         )
-    image.thumbnail([axis / 2 for axis in image.size])
+        image.thumbnail([int(axis * scale) for axis in image.size])
     image.save(outbase + ".jpg")
