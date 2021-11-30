@@ -134,6 +134,7 @@ def browsify(
     purge: bool = False,
     image_clip: Union[float, tuple[float, float]] = (1, 1),
     mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
+    band_ix: Optional[int] = None
 ):
     """
     attempts to dump a browse version of a data object, writing it into a file
@@ -146,7 +147,7 @@ def browsify(
     elif isinstance(obj, np.recarray):
         _browsify_recarray(obj, outbase)
     elif isinstance(obj, np.ndarray):
-        _browsify_array(obj, outbase, purge, image_clip, mask_color)
+        _browsify_array(obj, outbase, purge, image_clip, mask_color, band_ix)
     elif isinstance(obj, pd.DataFrame):
         # noinspection PyTypeChecker
         obj.to_csv(outbase + ".csv"),
@@ -203,7 +204,11 @@ def _browsify_array(
             if band_ix is None:
                 band_ix = round(obj.shape[0] / 2)
             warnings.warn(f"dumping only band {band_ix} of this image")
-            obj = obj[band_ix]
+            try:
+                obj = obj[band_ix]
+            except IndexError:
+                band_ix = round(obj.shape[0] / 2)
+                obj = obj[band_ix]
         # treat three-band arrays as RGB images
         else:
             obj = np.dstack([channel for channel in obj])

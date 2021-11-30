@@ -180,3 +180,4 @@ def pointerize(string: str) -> str:
 def depointerize(string: str) -> str:
     """prevent a string from starting with ^"""
     return string[1:] if string.startswith("^") else string
+
