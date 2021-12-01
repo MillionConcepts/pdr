@@ -1,7 +1,12 @@
+"""assorted utility functions"""
+
 import os
 import sys
+from typing import Optional
+
 import pandas as pd
-import numpy as np
+import pvl
+from dustgoggles.structures import dig_for
 
 """
 The following three functions are substantially derived from code in
@@ -18,9 +23,11 @@ from urllib.request import urlopen
 from urllib.error import HTTPError
 from io import BytesIO
 
+
 def url_content_length(fhandle):
     length = dict(fhandle.info())["Content-Length"]
     return int(length.strip())
+
 
 def bytes_to_string(nbytes):
     if nbytes < 1024:
@@ -69,7 +76,8 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
                 "["
                 + nchunks * "="
                 + (num_units - 1 - nchunks) * " "
-                + "]  %s / %s   \r" % (bytes_to_string(buf.tell()), content_length_str)
+                + "]  %s / %s   \r"
+                % (bytes_to_string(buf.tell()), content_length_str)
             )
         else:
             sys.stdout.write("\n")
@@ -81,40 +89,95 @@ def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
     buf.seek(0)
     open(file_path, "wb").write(buf.getvalue())
     return 0
+
+
 ###
-### END code derived from astroML
+# END code derived from astroML
 ###
+
 
 def url_to_path(url, data_dir="."):
     try:
         dirstart = url.split("://")[1].find("/")
         file_path = data_dir + url.split("://")[1][dirstart:]
-        if file_path.split('/')[1] != 'data':
-            file_path = file_path.replace(file_path.split('/')[1], 'data/' + file_path.split('/')[1])
+        if file_path.split("/")[1] != "data":
+            file_path = file_path.replace(
+                file_path.split("/")[1], "data/" + file_path.split("/")[1]
+            )
             print(file_path)
-    except AttributeError: # for url==np.nan
-        file_path=""
+    except AttributeError:  # for url==np.nan
+        file_path = ""
     return file_path
 
-def download_data_and_label(url,data_dir=".",lbl=None):
-    """ Download an observational data file from the PDS.
-    Check for a detached label file and also download that, if it exists.
+
+def download_data_and_label(
+    url: str, data_dir: str = ".", lbl_url: Optional[str] = None
+) -> tuple[str, str]:
     """
-    _ = download_with_progress_bar(url,
-                                   url_to_path(url,data_dir=data_dir),quiet=True)
+    Download an observational data file from the PDS.
+    Check for a detached label file and also download that, if it exists.
+    Optionally specify known url of the label with lbl_url.
+    returns local paths to downloaded data and label files.
+    """
+    _ = download_with_progress_bar(
+        url, url_to_path(url, data_dir=data_dir), quiet=True
+    )
     try:
-        _ = download_with_progress_bar(lbl,
-                                       url_to_path(lbl,data_dir=data_dir),quiet=True)
+        _ = download_with_progress_bar(
+            lbl_url, url_to_path(lbl_url, data_dir=data_dir), quiet=True
+        )
     except (AttributeError, FileNotFoundError):
         # Attempt to guess the label URL (if there is a label)
-        for ext in [".LBL", ".lbl", ".xml", ".XML", ".HDR"]: # HDR? ENVI headers
-            lbl_ = url[:url.rfind(".")] + ext
+        for ext in [
+            ".LBL",
+            ".lbl",
+            ".xml",
+            ".XML",
+            ".HDR",
+        ]:  # HDR? ENVI headers
+            lbl_ = url[: url.rfind(".")] + ext
             if not download_with_progress_bar(
-                lbl_,url_to_path(lbl_,data_dir=data_dir),quiet=True):
-                lbl = lbl_
-    return url_to_path(url,data_dir=data_dir),url_to_path(lbl,data_dir=data_dir)
+                lbl_, url_to_path(lbl_, data_dir=data_dir), quiet=True
+            ):
+                lbl_url = lbl_
+    return url_to_path(url, data_dir=data_dir), url_to_path(
+        lbl_url, data_dir=data_dir
+    )
 
-def download_test_data(index, data_dir=".", refdatafile="pdr/tests/refdata.csv"):
+
+def download_test_data(
+    index: int, data_dir: str = ".", refdatafile: str = "pdr/tests/refdata.csv"
+) -> tuple[str, str]:
     refdata = pd.read_csv(f"{refdatafile}", comment="#")
-    return download_data_and_label(refdata["url"][index],
-                          labelurl=refdata["lbl"][index],data_dir=data_dir)
+    return download_data_and_label(
+        refdata["url"][index],
+        lbl_url=refdata["lbl"][index],
+        data_dir=data_dir,
+    )
+
+
+# TODO: excessively ugly
+def get_pds3_pointers(
+    label: Optional[pvl.collections.OrderedMultiDict] = None,
+    local_path: Optional[str] = None,
+) -> tuple[pvl.collections.OrderedMultiDict]:
+    """
+    attempt to get all PDS3 "pointers" -- PVL objects starting with "^" --
+    from a passed label or path to label file.
+    """
+    if label is None:
+        label = pvl.load(local_path)
+    # TODO: inadequate? see issue pdr#15 -- did I have a resolution for this
+    #  somewhere? do we really need to do a full recursion step...? gross
+    return dig_for(label, "^", lambda k, v: k.startswith(v))
+
+
+def pointerize(string: str) -> str:
+    """make a string start with ^ if it didn't already"""
+    return string if string.startswith("^") else "^" + string
+
+
+def depointerize(string: str) -> str:
+    """prevent a string from starting with ^"""
+    return string[1:] if string.startswith("^") else string
+

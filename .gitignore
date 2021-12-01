@@ -3,4 +3,14 @@
 /test_files
 /output_files
 /input_files
-*gitignore*
+/pdr.egg-info/
+/.idea/
+/pdrtestsuite/
+*scratch.py
+*scratch.ipynb
+/pdr/tests/data/
+/pdr/oldtests/
+**pdrtests.log**
+/pdr/tests/reference/temp/
+*.dot
+*.profile
