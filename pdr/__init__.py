@@ -3,7 +3,7 @@ import os.path as _osp
 from pdr.pdr import Data
 from pdr.utils import download_test_data, download_data_and_label
 
-__version__ = "0.4.2a"
+__version__ = "0.5.0"
 
 pkg_dir = _osp.abspath(_osp.dirname(__file__))
 test_dir = _osp.join(pkg_dir, 'oldtests')
