@@ -81,15 +81,11 @@ def normalize_range(
             image = np.clip(image, minimum, maximum)
     if inplace is True:
         # try to perform the operation in-place...
-        try:
-            image -= minimum
-            image *= range_max - range_min
-            image /= maximum - minimum
-            image += range_min
-            return image
-        # ...but perhaps we can't.
-        except TypeError:
-            pass
+        image -= minimum
+        image *= (range_max - range_min)
+        image //= (maximum - minimum)
+        image += range_min
+        return image
     return (image - minimum) * (range_max - range_min) / (
         maximum - minimum
     ) + range_min
@@ -143,6 +139,7 @@ def browsify(
     for tables, .txt for most other things. if it can't find a reasonable
     translation, it dumps as .pkl (pickled binary blob).
     """
+    outbase = str(outbase)
     if isinstance(obj, pvl.collections.OrderedMultiDict):
         _browsify_pds3_label(obj, outbase)
     elif isinstance(obj, np.recarray):

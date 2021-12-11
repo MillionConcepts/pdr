@@ -1,8 +1,11 @@
 """assorted utility functions"""
 
 import os
+import struct
 import sys
-from typing import Optional
+from itertools import chain
+from numbers import Number
+from typing import Optional, Collection
 
 import pandas as pd
 import pvl
@@ -180,4 +183,27 @@ def pointerize(string: str) -> str:
 def depointerize(string: str) -> str:
     """prevent a string from starting with ^"""
     return string[1:] if string.startswith("^") else string
+
+
+# TODO: replace this with regularizing case of filenames upstream per Michael
+#  Aye's recommendation
+def in_both_cases(strings: Collection[str]) -> tuple[str]:
+    """
+    given a collection of strings, return a tuple containing each string in
+    that collection in both upper and lower case.
+    """
+    return tuple(
+        chain.from_iterable(
+            [(string.upper(), string.lower()) for string in strings]
+        )
+    )
+
+
+def read_hex(hex_string: str, fmt: str = ">I") -> Number:
+    """
+    return the decimal representation of a hexadecimal number in a given
+    number format (expressed as a struct-style format string, default is
+    unsigned 32-bit integer)
+    """
+    return struct.unpack(fmt, bytes.fromhex(hex_string))[0]
 

@@ -2,59 +2,10 @@
 definitions of sample types / data types / dtypes / ctypes, file formats
 and extensions, associated special constants, and so on.
 """
-from functools import partial
-from itertools import product, chain
-from numbers import Number
-from operator import contains
-from pathlib import Path
-import struct
+from itertools import product
 from types import MappingProxyType
-from typing import Collection
 
-
-# TODO: replace this with regularizing case of filenames upstream per Michael
-#  Aye's recommendation
-def in_both_cases(strings: Collection[str]) -> tuple[str]:
-    """
-    given a collection of strings, return a tuple containing each string in
-    that collection in both upper and lower case.
-    """
-    return tuple(
-        chain.from_iterable(
-            [(string.upper(), string.lower()) for string in strings]
-        )
-    )
-
-
-LABEL_EXTENSIONS = in_both_cases((".xml", ".lbl"))
-DATA_EXTENSIONS = in_both_cases(
-    (
-        ".img",
-        ".fit",
-        ".fits",
-        ".dat",
-        ".tab",
-        ".qub",
-        # Compressed data... not PDS-compliant, but...
-        ".gz",
-        # And then the really unusual ones...
-        ".n06",
-        ".grn",  # Viking
-        ".rgb",  # MER
-        ".raw",  # Mars Express VMC, when capitalized
-        ".tif",
-        ".tiff",
-    )
-)
-
-
-def read_hex(hex_string: str, fmt: str = ">I") -> Number:
-    """
-    return the decimal representation of a hexadecimal number in a given
-    number format (expressed as a struct-style format string, default is
-    unsigned 32-bit integer)
-    """
-    return struct.unpack(fmt, bytes.fromhex(hex_string))[0]
+from pdr.utils import read_hex
 
 
 def sample_types(sample_type: str, sample_bytes: int) -> str:
@@ -97,60 +48,6 @@ def sample_types(sample_type: str, sample_bytes: int) -> str:
 
 
 # TODO: super incomplete, although hopefully not often needed
-IMAGE_EXTENSIONS = (".img", ".tif", ".tiff", ".rgb")
-TABLE_EXTENSIONS = (".tab", ".csv")
-TEXT_EXTENSIONS = (".txt", ".md")
-FITS_EXTENSIONS = (".fits", ".fit")
-
-
-def looks_like_this_kind_of_file(filename:str, kind_extensions) -> bool:
-    is_this_kind_of_extension = partial(contains, kind_extensions)
-    return any(
-        map(is_this_kind_of_extension, Path(filename.lower()).suffixes)
-    )
-
-
-def extension_to_method_name(filename: str) -> str:
-    """
-    attempt to select the correct method of pdr.Data for objects only
-    specified by a PDS3 FILE_NAME pointer (or by filename otherwise).
-    """
-    if looks_like_this_kind_of_file(filename, IMAGE_EXTENSIONS):
-        return "read_image"
-    if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
-        return "handle_fits_file"
-    if looks_like_this_kind_of_file(filename, TEXT_EXTENSIONS):
-        return "read_text"
-    if looks_like_this_kind_of_file(filename, TABLE_EXTENSIONS):
-        return "read_table"
-    return "tbd"
-
-
-def pointer_to_method_name(pointer: str, filename: str) -> str:
-    """
-    attempt to select the appropriate read method of pdr.Data based on a PDS3
-    pointer name.
-    """
-    if "DESC" in pointer:  # probably points to a reference file
-        return "read_text"
-    if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
-        return "read_header"
-    if ("IMAGE" in pointer) or ("QUB" in pointer):
-        # TODO: sloppy pt. 1. this will be problematic for
-        #  products with a 'secondary' fits file, etc.
-        if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
-            return "handle_fits_file"
-        return "read_image"
-    if "LINE_PREFIX_TABLE" in pointer:
-        return "tbd"
-    if "TABLE" in pointer:
-        return "read_table"
-    if "FILE_NAME" in pointer:
-        return extension_to_method_name(pointer)
-    # TODO: sloppy pt. 2
-    if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
-        return "handle_fits_file"
-    return "tbd"
 
 
 # special constants
@@ -259,3 +156,4 @@ IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
         },
     }
 )
+

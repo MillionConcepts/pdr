@@ -2,6 +2,7 @@ import bz2
 import gzip
 import struct
 import warnings
+from functools import partial
 from pathlib import Path, PurePath
 from typing import Mapping, Optional, Union
 from zipfile import ZipFile
@@ -13,6 +14,7 @@ import pds4_tools as pds4
 import pvl
 import rasterio
 from astropy.io import fits
+from cytoolz import groupby
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
@@ -21,18 +23,87 @@ from rasterio.errors import NotGeoreferencedWarning
 from pdr.browsify import browsify
 
 from pdr.datatypes import (
-    LABEL_EXTENSIONS,
-    DATA_EXTENSIONS,
     sample_types,
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
-    pointer_to_method_name,
+)
+from pdr.formats import (
+    LABEL_EXTENSIONS,
+    DATA_EXTENSIONS,
+    pointer_to_loader,
+    generic_image_properties,
 )
 from pdr.utils import depointerize, get_pds3_pointers, pointerize
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
+
+
+def make_format_specifications(props):
+    endian, ctype = props["sample_type"][0], props["sample_type"][-1]
+    struct_fmt = f"{endian}{props['pixels']}{ctype}"
+    dtype = np.dtype(f"{endian}{ctype}")
+    return struct_fmt, dtype
+
+
+def process_single_band_image(f, props):
+    struct_fmt, numpy_dtype = make_format_specifications(props)
+    image = np.array(
+        struct.unpack(
+            struct_fmt, f.read(props["pixels"] * props["BYTES_PER_PIXEL"])
+        ),
+        dtype=numpy_dtype,
+    )
+    image = image.reshape(
+        (props["nrows"], props["ncols"] + props["prefix_cols"])
+    )
+    if props["prefix_cols"] > 0:
+        prefix = image[:, : props["prefix_cols"]]
+        image = image[:, props["prefix_cols"] :]
+    else:
+        prefix = None
+    return image, prefix
+
+
+# TODO: I think this may be wrong.
+def process_band_sequential_image(f, props):
+    struct_fmt, numpy_dtype = make_format_specifications(props)
+    image = np.array(
+        struct.unpack(
+            struct_fmt, f.read(props["pixels"] * props["BYTES_PER_PIXEL"])
+        ),
+        dtype=numpy_dtype,
+    )
+    image = image.reshape(
+        (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
+    )
+    if props["prefix_cols"] > 0:
+        prefix = image[:, : props["prefix_cols"]]
+        image = image[:, props["prefix_cols"] :]
+    else:
+        prefix = None
+    return image, prefix
+
+
+def process_line_interleaved_image(f, props):
+    # pixels per frame
+    props["pixels"] = props["BANDS"] * props["ncols"]
+    struct_fmt, numpy_dtype = make_format_specifications(props)
+    image, prefix = [], []
+    for _ in np.arange(props["nrows"]):
+        prefix.append(f.read(props["prefix_bytes"]))
+        frame = np.array(
+            struct.unpack(
+                struct_fmt,
+                f.read(props["pixels"] * props["BYTES_PER_PIXEL"]),
+            ),
+            dtype=numpy_dtype,
+        ).reshape(props["BANDS"], props["ncols"])
+        image.append(frame)
+        del frame
+    image = np.ascontiguousarray(np.array(image).swapaxes(0,1))
+    return image, prefix
 
 
 def skeptically_load_header(path, object_name="header"):
@@ -140,17 +211,23 @@ class Data:
         if LABEL:
             setattr(self, "LABEL", LABEL)
             self.index += ["LABEL"]
-            pointer_targets = get_pds3_pointers(LABEL)
-            setattr(self, "pointers", [p_t[0] for p_t in pointer_targets])
+            pt_groups = groupby(lambda pt: pt[0], get_pds3_pointers(LABEL))
+            pointers = []
+            for pointer, group in pt_groups.items():
+                if len(group) > 1:
+                    warnings.warn(
+                        f"Duplicate handling for {pointer} not yet "
+                        f"implemented, ignoring"
+                    )
+                else:
+                    pointers.append(group[0][0])
+            setattr(self, "pointers", pointers)
             for pointer in self.pointers:
                 object_name = depointerize(pointer)
                 self.index.append(object_name)
                 setattr(
-                    self,
-                    object_name,
-                    self.load_from_pointer(object_name),
+                    self, object_name, self.load_from_pointer(object_name)
                 )
-
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
         # Must exclude QUB files or it will reread them as an IMAGE
@@ -183,191 +260,70 @@ class Data:
                 return pds4.read(self.labelname, quiet=True).label.to_dict()
             return pvl.load(self.labelname)
         try:
-
-            return pvl.load(
-                decompress(self.filename)
-            )  # check for an attached label
+            # look for attached label
+            return pvl.load(decompress(self.filename))
+        # TODO: specify
         except:
             return
 
     def load_from_pointer(self, pointer):
-        loader = getattr(self, pointer_to_method_name(pointer, self.filename))
-        return loader(pointer)
+        return pointer_to_loader(pointer, self)(pointer)
 
-    def read_image(self, object_name="IMAGE", userasterio=True):  # ^IMAGE
-        """Read a PDS IMG formatted file into an array. Defaults to using
+    def open_with_rasterio(self):
+        dataset = rasterio.open(self.filename)
+        if len(dataset.indexes) == 1:
+            # Make 2D images actually 2D
+            return dataset.read()[0, :, :]
+        else:
+            return dataset.read()
+
+    def read_image(
+        self, object_name="IMAGE", userasterio=True, special_properties=None
+    ):  # ^IMAGE
+        """
+        Read a PDS IMG formatted file into an array. Defaults to using
         `rasterio`, and then tries to parse the file directly.
         """
-        # TODO: Check for and account for LINE_PREFIX.
         # TODO: Check for and apply BIT_MASK.
-        """
-        rasterio will read an ENVI file if the HDR metadata is present...
-        However, it seems to read M3 L0 images incorrectly because it does
-        not account for the L0_LINE_PREFIX_TABLE. So I am deprecating
-        the use of rasterio until I can figure out how to produce consistent
-        output."""
         object_name = depointerize(object_name)
-        try:
-            if "INSTRUMENT_ID" in self.LABEL.keys():
-                if (
-                    self.LABEL["INSTRUMENT_ID"] == "M3"
-                    and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
-                ):
-                    # because rasterio doesn't read M3 L0 data correctly
-                    userasterio = False
-        except (KeyError, AttributeError):
-            pass
         if object_name == "IMAGE" or self.filename.lower().endswith("qub"):
-            try:
-                if not userasterio:
-                    raise
-                dataset = rasterio.open(self.filename)
-                if len(dataset.indexes) == 1:
-                    return dataset.read()[
-                        0, :, :
-                    ]  # Make 2D images actually 2D
-                else:
-                    return dataset.read()
-            except rasterio.errors.RasterioIOError:
-                pass
-        block = self.labelblock(object_name)
-        if block:
-            if object_name == "QUBE":  # ISIS2 QUBE format
-                BYTES_PER_PIXEL = int(block["CORE_ITEM_BYTES"])  # / 8)
-                sample_type = sample_types(
-                    block["CORE_ITEM_TYPE"], BYTES_PER_PIXEL
-                )
-                nrows = block["CORE_ITEMS"][2]
-                ncols = block["CORE_ITEMS"][0]
-                prefix_cols, prefix_bytes = 0, 0
-                # TODO: Handle the QUB suffix data
-                BANDS = block["CORE_ITEMS"][1]
-                band_storage_type = "ISIS2_QUBE"
-            else:
-                BYTES_PER_PIXEL = int(block["SAMPLE_BITS"] / 8)
-                sample_type = sample_types(
-                    block["SAMPLE_TYPE"], BYTES_PER_PIXEL
-                )
-                nrows = block["LINES"]
-                ncols = block["LINE_SAMPLES"]
-                if "LINE_PREFIX_BYTES" in block.keys():
-                    prefix_cols = int(
-                        block["LINE_PREFIX_BYTES"] / BYTES_PER_PIXEL
-                    )
-                    prefix_bytes = prefix_cols * BYTES_PER_PIXEL
-                else:
-                    prefix_cols = 0
-                    prefix_bytes = 0
+            # TODO: we could generalize this more by trying to find filenames.
+            if userasterio is True:
                 try:
-                    BANDS = block["BANDS"]
-                    band_storage_type = block["BAND_STORAGE_TYPE"]
-                except KeyError:
-                    BANDS = 1
-                    band_storage_type = None
-            pixels = nrows * (ncols + prefix_cols) * BANDS
-            # TODO: handle cases where image blocks are nested inside file
-            #  blocks and info such as RECORD_BYTES is found only there
-            #  -- previously I did this by making pointers lists, but this may
-            #  be an unwieldy solution
-            start_byte = self.data_start_byte(object_name)
-        elif (
-            self.LABEL["INSTRUMENT_ID"] == "M3"
-            and self.LABEL["PRODUCT_TYPE"] == "RAW_IMAGE"
-        ):
-            # This is handling the special case of Chandrayaan M3 L0 data,
-            # which are in a deprecated ENVI format that uses "line prefixes"
-            BYTES_PER_PIXEL = int(
-                self.LABEL["L0_FILE"]["L0_IMAGE"]["SAMPLE_BITS"] / 8
-            )
-            sample_type = sample_types(
-                self.LABEL["L0_FILE"]["L0_IMAGE"]["SAMPLE_TYPE"],
-                BYTES_PER_PIXEL,
-            )
-            nrows = self.LABEL["L0_FILE"]["L0_IMAGE"]["LINES"]
-            ncols = self.LABEL["L0_FILE"]["L0_IMAGE"]["LINE_SAMPLES"]
-            prefix_bytes = int(
-                self.LABEL["L0_FILE"]["L0_IMAGE"]["LINE_PREFIX_BYTES"]
-            )
-            prefix_cols = (
-                prefix_bytes / BYTES_PER_PIXEL
-            )  # M3 has a prefix, but it's not image-shaped
-            BANDS = self.LABEL["L0_FILE"]["L0_IMAGE"]["BANDS"]
-            pixels = nrows * (ncols + prefix_cols) * BANDS
-            start_byte = 0
-            band_storage_type = self.LABEL["L0_FILE"]["L0_IMAGE"][
-                "BAND_STORAGE_TYPE"
-            ]
+                    return self.open_with_rasterio()
+                except rasterio.errors.RasterioIOError:
+                    pass
+        if special_properties is not None:
+            props = special_properties
         else:
-            return None
-
-        fmt = "{endian}{pixels}{fmt}".format(
-            endian=sample_type[0], pixels=pixels, fmt=sample_type[-1]
-        )
-        numpy_dtype = np.dtype(f"{sample_type[0]}{sample_type[-1]}")
-        try:  # a little decision tree to seamlessly deal with compression
-            if isinstance(self.labelget(pointerize(object_name)), str):
-                f = decompress(
-                    self.get_absolute_path(
-                        self.labelget(pointerize(object_name))
-                    )
-                )
-            else:
-                f = decompress(self.filename)
+            block = self.labelblock(object_name)
+            if block is None:
+                return None  # not much we can do with this!
+            props = generic_image_properties(object_name, block, self)
+        # a little decision tree to seamlessly deal with compression
+        if isinstance(self.labelget(pointerize(object_name)), str):
+            fn = self.get_absolute_path(self.labelget(pointerize(object_name)))
+        else:
+            fn = self.filename
+        f = decompress(fn)
+        f.seek(props["start_byte"])
+        try:
             # Make sure that single-band images are 2-dim arrays.
-            f.seek(start_byte)
-            prefix = None
-            if BANDS == 1:
-                image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
-                    dtype=numpy_dtype,
-                )
-                image = image.reshape((nrows, ncols + prefix_cols))
-                if prefix_cols:
-                    # Ignore the prefix data, if any.
-                    # TODO: Also return the prefix
-                    prefix = image[:, :prefix_cols]
-                    if object_name == "LINE_PREFIX_TABLE":
-                        return prefix
-                    image = image[:, prefix_cols:]
-            # TODO: I think the ndarray.reshape calls in the next
-            #  three cases may be wrong.
-            elif band_storage_type == "BAND_SEQUENTIAL":
-                image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
-                    dtype=numpy_dtype,
-                )
-                image = image.reshape((BANDS, nrows, ncols + prefix_cols))
-            elif band_storage_type == "LINE_INTERLEAVED":
-                pixels_per_frame = BANDS * ncols
-                endian, length = (sample_type[0], sample_type[-1])
-                fmt = f"{endian}{pixels_per_frame}{length}"
-                image, prefix = [], []
-                for _ in np.arange(nrows):
-                    prefix.append(f.read(prefix_bytes))
-                    frame = np.array(
-                        struct.unpack(
-                            fmt,
-                            f.read(pixels_per_frame * BYTES_PER_PIXEL),
-                        ),
-                        dtype=numpy_dtype,
-                    ).reshape(BANDS, ncols)
-                    image.append(frame)
-                    del frame
-                image = np.swapaxes(
-                    np.stack([frame for frame in image], axis=2), 1, 2
-                )
+            if props["BANDS"] == 1:
+                image, prefix = process_single_band_image(f, props)
+            # TODO: I think the ndarray.reshape call in this case may be wrong
+            elif props["band_storage_type"] == "BAND_SEQUENTIAL":
+                image, prefix = process_band_sequential_image(f, props)
+            elif props["band_storage_type"] == "LINE_INTERLEAVED":
+                image, prefix = process_line_interleaved_image(f, props)
             else:
                 warnings.warn(
-                    f"Unknown BAND_STORAGE_TYPE={band_storage_type}. "
+                    f"Unknown BAND_STORAGE_TYPE={props['band_storage_type']}. "
                     f"Guessing BAND_SEQUENTIAL."
                 )
-                image = np.array(
-                    struct.unpack(fmt, f.read(pixels * BYTES_PER_PIXEL)),
-                    dtype=numpy_dtype,
-                )
-                image = image.reshape((BANDS, nrows, ncols + prefix_cols))
-        except:
-            raise
+                image, prefix = process_band_sequential_image(f, props)
+        except Exception as ex:
+            raise ex
         finally:
             f.close()
         if "PREFIX" in object_name:
@@ -478,6 +434,7 @@ class Data:
 
         return np.dtype(dt), fmtdef
 
+    # TODO: refactor this. see issue #27.
     def read_table(self, pointer="TABLE"):
         """
         Read a table. Will first attempt to parse it as generic CSV
@@ -488,12 +445,9 @@ class Data:
         except KeyError:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self.labelget(pointer)
-        # TODO: mess with this control flow to allow graceful failure in
-        #  format-finding but also passing names to read_csv
         # Check if this is just a CSV file
         try:
             return pd.read_csv(self.filename, names=fmtdef.NAME.tolist())
-        # TODO: write read_csv as it appears to not be in the code
         except (UnicodeDecodeError, AttributeError, ParserError):
             pass  # This is not parseable as a CSV file
         table = pd.DataFrame(
@@ -700,8 +654,7 @@ class Data:
         else:
             try:
                 # This is to handle the PVL "Quantity" object... should
-                # probably
-                # do this better
+                # probably do this better
                 return target.value
             except:
                 raise ParseError(f"Unknown data pointer format: {target}")
@@ -719,6 +672,12 @@ class Data:
             return str(Path(Path(self.filename).parent, file))
         else:
             return file
+
+    def _dump_scaled_array(
+        self, object_name, purge, outfile, **browse_kwargs
+    ):
+        obj = self.get_scaled(object_name, inplace=purge)
+        browsify(obj, outfile, purge, **browse_kwargs)
 
     def dump_browse(
         self,
@@ -741,16 +700,25 @@ class Data:
             prefix = Path(self.filename).stem
         if outpath is None:
             outpath = Path(".")
-        for object_name in self.index:
-            if isinstance(self[object_name], np.ndarray) and (scaled is True):
-                obj = self.get_scaled(object_name, inplace=purge)
+        for obj in self.index:
+            outfile = str(Path(outpath, f"{prefix}_{obj}"))
+            dump_it = partial(browsify, purge=purge, **browse_kwargs)
+            if isinstance(self[obj], np.ndarray):
+                if scaled == "both":
+                    dump_it(
+                        self.get_scaled(obj), outfile + "_scaled", purge=False
+                    )
+                    dump_it(self[obj], outfile + "_unscaled")
+                elif scaled is True:
+                    dump_it(self.get_scaled(obj, inplace=purge), outfile)
+                elif scaled is False:
+                    dump_it(self[obj], outfile)
+                else:
+                    raise ValueError(f"unknown scaling argument {scaled}")
             else:
-                obj = self[object_name]
-            outfile = str(Path(outpath, f"{prefix}_{object_name}"))
-            browsify(obj, outfile, purge, **browse_kwargs)
-            del obj
-            if (purge is True) and (object_name != "LABEL"):
-                self.__delattr__(object_name)
+                dump_it(self[obj], outfile)
+            if (purge is True) and (obj != "LABEL"):
+                self.__delattr__(obj)
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
