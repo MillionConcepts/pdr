@@ -1,15 +1,16 @@
 """assorted utility functions"""
 
-import os
-import struct
-import sys
 from itertools import chain
 from numbers import Number
+import os
+import re
+import struct
+import sys
 from typing import Optional, Collection
 
+from dustgoggles.structures import dig_for
 import pandas as pd
 import pvl
-from dustgoggles.structures import dig_for
 
 """
 The following three functions are substantially derived from code in
@@ -207,3 +208,33 @@ def read_hex(hex_string: str, fmt: str = ">I") -> Number:
     """
     return struct.unpack(fmt, bytes.fromhex(hex_string))[0]
 
+
+# heuristic for max label size. we know it's not a real rule.
+MAX_LABEL_SIZE = 500 * 1024
+
+
+def head_file(fn_or_reader, nbytes):
+    head_buffer = BytesIO()
+    if not hasattr(fn_or_reader, "read"):
+        fn_or_reader = open(fn_or_reader, 'rb')
+    head_buffer.write(fn_or_reader.read(nbytes))
+    fn_or_reader.close()
+    head_buffer.seek(0)
+    return head_buffer
+
+
+KNOWN_LABEL_ENDINGS = (
+    b'END\r\n',  # PVL
+    b'\x00{3}',  # just null bytes
+)
+
+
+def trim_label(fn, max_size = MAX_LABEL_SIZE, raise_for_failure=False):
+    head = head_file(fn, max_size).read()
+    # TODO: add some logging or whatever i guess
+    for ending in KNOWN_LABEL_ENDINGS:
+        if (endmatch := re.search(ending, head)) is not None:
+            return head[:endmatch.span()[1]]
+    if raise_for_failure:
+        raise ValueError("couldn't find a label ending")
+    return head

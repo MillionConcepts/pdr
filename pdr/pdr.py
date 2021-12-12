@@ -33,7 +33,7 @@ from pdr.formats import (
     pointer_to_loader,
     generic_image_properties,
 )
-from pdr.utils import depointerize, get_pds3_pointers, pointerize
+from pdr.utils import depointerize, get_pds3_pointers, pointerize, trim_label
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
@@ -261,9 +261,9 @@ class Data:
             return pvl.load(self.labelname)
         try:
             # look for attached label
-            return pvl.load(decompress(self.filename))
+            return pvl.loads(trim_label(decompress(self.filename)))
         # TODO: specify
-        except:
+        except Exception as ex:
             return
 
     def load_from_pointer(self, pointer):
