@@ -33,7 +33,8 @@ from pdr.formats import (
     pointer_to_loader,
     generic_image_properties,
 )
-from pdr.utils import depointerize, get_pds3_pointers, pointerize, trim_label
+from pdr.utils import depointerize, get_pds3_pointers, pointerize, trim_label, \
+    casting_to_float
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
@@ -531,7 +532,10 @@ class Data:
         specials = {
             name: block[name]
             for name in PDS3_CONSTANT_NAMES
-            if name in block.keys()
+            if (
+                (name in block.keys())
+                and not (block[name] == 'N/A')
+            )
         }
         # check for implicit constants appropriate to the sample type
         implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[obj.dtype.name]
@@ -568,15 +572,16 @@ class Data:
         # meaningfully better for enormous unscaled arrays
         if (scale == 1) and (offset == 0):
             return obj
-        if inplace is True:
-            # try to perform the operation in-place...
-            try:
-                obj *= scale
-                obj += offset
-                return obj
-            # ...but perhaps we can't.
-            except TypeError:
-                pass
+        # try to perform the operation in-place if requested, although if
+        # we're casting to float, we can't
+        # TODO: detect rollover cases, etc.
+        if (
+            (inplace is True)
+            and not casting_to_float(obj, scale, offset)
+        ):
+            obj *= scale
+            obj += offset
+            return obj
         return obj * scale + offset
 
     def _init_array_method(

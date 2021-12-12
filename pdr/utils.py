@@ -8,6 +8,7 @@ import struct
 import sys
 from typing import Optional, Collection
 
+import numpy as np
 from dustgoggles.structures import dig_for
 import pandas as pd
 import pvl
@@ -238,3 +239,13 @@ def trim_label(fn, max_size = MAX_LABEL_SIZE, raise_for_failure=False):
     if raise_for_failure:
         raise ValueError("couldn't find a label ending")
     return head
+
+
+def casting_to_float(array, *operands):
+    """
+    return True if array is integer-valued and any operands are not integers
+    """
+    return (
+        (array.dtype.char in np.typecodes['AllInteger'])
+        and not all([isinstance(operand, int) for operand in operands])
+    )

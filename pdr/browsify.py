@@ -40,7 +40,7 @@ def find_masked_bounds(image, cheat_low, cheat_high):
 
 
 # noinspection PyArgumentList
-def find_unmasked_bounds(cheat_high, cheat_low, image):
+def find_unmasked_bounds(image, cheat_low, cheat_high):
     """straightforward way to find unmasked array bounds for normalize_range"""
     if cheat_low != 0:
         minimum = np.percentile(image, cheat_low).astype(image.dtype)
@@ -73,17 +73,23 @@ def normalize_range(
     if isinstance(image, np.ma.MaskedArray):
         minimum, maximum = find_masked_bounds(image, cheat_low, cheat_high)
     else:
-        minimum, maximum = find_unmasked_bounds(cheat_high, cheat_low, image)
+        minimum, maximum = find_unmasked_bounds(image, cheat_low, cheat_high)
     if not ((cheat_high is None) and (cheat_low is None)):
         if inplace is True:
             image = np.clip(image, minimum, maximum, out=image)
         else:
             image = np.clip(image, minimum, maximum)
     if inplace is True:
-        # try to perform the operation in-place...
+        # perform the operation in-place
         image -= minimum
         image *= (range_max - range_min)
-        image //= (maximum - minimum)
+        if image.dtype.char in np.typecodes['AllInteger']:
+            # this loss of precision is probably better than
+            # automatically typecasting it.
+            # TODO: detect rollover cases, etc.
+            image //= (maximum - minimum)
+        else:
+            image /= (maximum - minimum)
         image += range_min
         return image
     return (image - minimum) * (range_max - range_min) / (
@@ -211,7 +217,7 @@ def _browsify_array(
         else:
             obj = np.dstack([channel for channel in obj])
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
-    if obj.dtype in (np.uint8, np.int16):
+    if (obj.dtype.char in np.typecodes['AllInteger']) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
     # convert to unsigned eight-bit integer to make it easy to write
     obj = eightbit(obj, image_clip, purge)
