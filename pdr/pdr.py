@@ -20,7 +20,7 @@ from pandas.errors import ParserError
 from pvl.exceptions import ParseError
 from rasterio.errors import NotGeoreferencedWarning
 
-from pdr.browsify import browsify
+from pdr.browsify import browsify, _browsify_array
 
 from pdr.datatypes import (
     sample_types,
@@ -677,6 +677,24 @@ class Data:
             return str(Path(Path(self.filename).parent, file))
         else:
             return file
+
+    # TODO: reorganize this -- common dispatch funnel with dump_browse,
+    #  split up the image-gen part of _browsify_array, something like that
+    def show(self, object_name=None, scaled=True, **browse_kwargs):
+        if object_name is None:
+            object_name = [
+                obj for obj in self.index if "IMAGE" in obj
+            ]
+            if object_name is None:
+                raise ValueError("please specify the name of an image object.")
+            object_name = object_name[0]
+        if not isinstance(self[object_name], np.ndarray):
+            raise TypeError("Data.show only works on array data.")
+        if scaled is True:
+            obj = self.get_scaled(object_name)
+        else:
+            obj = self[object_name]
+        return _browsify_array(obj, save=False, outbase="", **browse_kwargs)
 
     def _dump_scaled_array(
         self, object_name, purge, outfile, **browse_kwargs

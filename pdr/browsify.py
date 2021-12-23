@@ -196,6 +196,7 @@ def _browsify_array(
     image_clip: Union[float, tuple[float, float]] = (1, 1),
     mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
     band_ix: Optional[int] = None,
+    save: bool = True
 ):
     """
     attempt to save array as a jpeg
@@ -226,6 +227,11 @@ def _browsify_array(
     if isinstance(obj, np.ma.MaskedArray) and (mask_color is not None):
         obj = colorfill_maskedarray(obj, mask_color)
     image = Image.fromarray(obj)
+    # TODO: this might be an excessively hacky way to implement Data.show(),
+    #  probably split off the image-generating stuff above into a separate
+    #  function
+    if save is False:
+        return image
     if max(obj.shape) > 65500:
         scale = 1
         for n in naturals():
