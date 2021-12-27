@@ -100,6 +100,7 @@ PDS3_CONSTANT_NAMES = tuple(PDS3_ISIS_CONSTANT_NAMES + PDS3_CONSTANT_NAMES)
 
 IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
     {
+        # TODO: these are simply ignored atm; too problematic in too many cases
         "uint8": {"NULL": 0, "ISIS_SAT_HIGH": 255},
         "int16": {
             "N/A": -32768,

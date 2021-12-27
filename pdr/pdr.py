@@ -537,6 +537,11 @@ class Data:
                 and not (block[name] == 'N/A')
             )
         }
+        # ignore uint8 implicit constants (0, 255) for now -- too problematic
+        # TODO: maybe add an override
+        if obj.dtype.name == 'uint8':
+            self.specials[key] = specials
+            return
         # check for implicit constants appropriate to the sample type
         implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[obj.dtype.name]
         specials |= {
