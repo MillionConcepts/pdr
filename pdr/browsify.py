@@ -19,6 +19,8 @@ def find_masked_bounds(image, cheat_low, cheat_high):
     normalize_range on a masked array.
     """
     valid = image[~image.mask]
+    if valid.size == 0:
+        return None, None  # TODO: perhaps a silly hack?
     if (cheat_low != 0) and (cheat_high != 0):
         minimum, maximum = np.percentile(
             valid, [cheat_low, 100 - cheat_high], overwrite_input=True
@@ -40,7 +42,7 @@ def find_masked_bounds(image, cheat_low, cheat_high):
 
 
 # noinspection PyArgumentList
-def find_unmasked_bounds(cheat_high, cheat_low, image):
+def find_unmasked_bounds(image, cheat_low, cheat_high):
     """straightforward way to find unmasked array bounds for normalize_range"""
     if cheat_low != 0:
         minimum = np.percentile(image, cheat_low).astype(image.dtype)
@@ -72,24 +74,28 @@ def normalize_range(
     range_min, range_max = bounds
     if isinstance(image, np.ma.MaskedArray):
         minimum, maximum = find_masked_bounds(image, cheat_low, cheat_high)
+        if minimum is None:
+            return image
     else:
-        minimum, maximum = find_unmasked_bounds(cheat_high, cheat_low, image)
+        minimum, maximum = find_unmasked_bounds(image, cheat_low, cheat_high)
     if not ((cheat_high is None) and (cheat_low is None)):
         if inplace is True:
             image = np.clip(image, minimum, maximum, out=image)
         else:
             image = np.clip(image, minimum, maximum)
     if inplace is True:
-        # try to perform the operation in-place...
-        try:
-            image -= minimum
-            image *= range_max - range_min
-            image /= maximum - minimum
-            image += range_min
-            return image
-        # ...but perhaps we can't.
-        except TypeError:
-            pass
+        # perform the operation in-place
+        image -= minimum
+        image *= (range_max - range_min)
+        if image.dtype.char in np.typecodes['AllInteger']:
+            # this loss of precision is probably better than
+            # automatically typecasting it.
+            # TODO: detect rollover cases, etc.
+            image //= (maximum - minimum)
+        else:
+            image /= (maximum - minimum)
+        image += range_min
+        return image
     return (image - minimum) * (range_max - range_min) / (
         maximum - minimum
     ) + range_min
@@ -132,10 +138,7 @@ def colorfill_maskedarray(
 def browsify(
     obj: Any,
     outbase: Union[str, Path],
-    purge: bool = False,
-    image_clip: Union[float, tuple[float, float]] = (1, 1),
-    mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
-    band_ix: Optional[int] = None,
+    **dump_kwargs
 ):
     """
     attempts to dump a browse version of a data object, writing it into a file
@@ -143,12 +146,13 @@ def browsify(
     for tables, .txt for most other things. if it can't find a reasonable
     translation, it dumps as .pkl (pickled binary blob).
     """
+    outbase = str(outbase)
     if isinstance(obj, pvl.collections.OrderedMultiDict):
-        _browsify_pds3_label(obj, outbase)
+        _browsify_pds3_label(obj, outbase, **dump_kwargs)
     elif isinstance(obj, np.recarray):
-        _browsify_recarray(obj, outbase)
+        _browsify_recarray(obj, outbase, **dump_kwargs)
     elif isinstance(obj, np.ndarray):
-        _browsify_array(obj, outbase, purge, image_clip, mask_color, band_ix)
+        _browsify_array(obj, outbase, **dump_kwargs)
     elif isinstance(obj, pd.DataFrame):
         # noinspection PyTypeChecker
         obj.to_csv(outbase + ".csv"),
@@ -161,7 +165,7 @@ def browsify(
             stream.write(str(obj))
 
 
-def _browsify_recarray(obj: np.recarray, outbase: str):
+def _browsify_recarray(obj: np.recarray, outbase: str, **_):
     # some tabular data with column groups ends up as numpy recarray, which is
     # challenging to turn into a useful .csv file in some cases
     try:
@@ -172,7 +176,9 @@ def _browsify_recarray(obj: np.recarray, outbase: str):
         pickle.dump(obj, open(outbase + "_nested_recarray.pkl", "wb"))
 
 
-def _browsify_pds3_label(obj: pvl.collections.OrderedMultiDict, outbase: str):
+def _browsify_pds3_label(
+    obj: pvl.collections.OrderedMultiDict, outbase: str, **_
+):
     # try to dump PDS3 labels as formal pvl
     try:
         pvl.dump(obj, open(outbase + ".lbl", "w"), grammar=OmniGrammar())
@@ -193,28 +199,17 @@ def _browsify_array(
     image_clip: Union[float, tuple[float, float]] = (1, 1),
     mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
     band_ix: Optional[int] = None,
+    save: bool = True,
+    override_rgba: bool = False,
+    **_
 ):
     """
     attempt to save array as a jpeg
     """
     if len(obj.shape) == 3:
-        # for multiband arrays that are not three-band, only export a
-        # single band. this is by default the "middle" one, unless the band_ix
-        # kwarg has been passed.
-        if obj.shape[0] != 3:
-            if band_ix is None:
-                band_ix = round(obj.shape[0] / 2)
-            warnings.warn(f"dumping only band {band_ix} of this image")
-            try:
-                obj = obj[band_ix]
-            except IndexError:
-                band_ix = round(obj.shape[0] / 2)
-                obj = obj[band_ix]
-        # treat three-band arrays as RGB images
-        else:
-            obj = np.dstack([channel for channel in obj])
+        obj = _format_multiband_image(obj, band_ix, override_rgba)
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
-    if obj.dtype in (np.uint8, np.int16):
+    if (obj.dtype.char in np.typecodes['AllInteger']) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
     # convert to unsigned eight-bit integer to make it easy to write
     obj = eightbit(obj, image_clip, purge)
@@ -223,6 +218,11 @@ def _browsify_array(
     if isinstance(obj, np.ma.MaskedArray) and (mask_color is not None):
         obj = colorfill_maskedarray(obj, mask_color)
     image = Image.fromarray(obj)
+    # TODO: this might be an excessively hacky way to implement Data.show(),
+    #  probably split off the image-generating stuff above into a separate
+    #  function
+    if save is False:
+        return image
     if max(obj.shape) > 65500:
         scale = 1
         for n in naturals():
@@ -235,3 +235,45 @@ def _browsify_array(
         )
         image.thumbnail([int(axis * scale) for axis in image.size])
     image.save(outbase + ".jpg")
+
+
+def _format_multiband_image(obj, band_ix, override_rgba):
+    """
+    helper function for _browsify_array -- truncate or stack multiband images
+    for further processing.
+    """
+
+    if (obj.shape[0] not in (3, 4)) or (override_rgba is True):
+        return _export_single_band(band_ix, obj)
+    # treat 3/4 band arrays as rgb(a) images
+    if band_ix is not None:
+        warnings.warn(
+            "treating image as RGB & ignoring band_ix argument; if "
+            "you really want to dump only a single band, pass "
+            "override_rgba=True"
+        )
+    if obj.shape[0] == 4:
+        warnings.warn(
+            "transparency not supported, removing 4th (alpha) channel"
+        )
+    return np.dstack([channel for channel in obj[0:3]])
+
+
+def _export_single_band(band_ix, obj):
+    """
+    for multiband arrays that are not presumably rgb(a), or if we have been
+    instructed to by the override_rgba argument, only export a single band.
+    """
+    middle_ix = round(obj.shape[0] / 2)
+    if band_ix is None:
+        # by default, dump the middle band.
+        warnings.warn(f"dumping only band {middle_ix} of this image")
+        return obj[middle_ix]
+    # if the band_ix argument has been passed, dump that band if possible
+    try:
+        return obj[band_ix]
+    except IndexError:
+        warnings.warn(
+            f"band_ix={band_ix} does not exist, dumping band {middle_ix}"
+        )
+        return obj[middle_ix]
