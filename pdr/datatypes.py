@@ -47,6 +47,12 @@ def sample_types(sample_type: str, sample_bytes: int) -> str:
     }[sample_type]
 
 
+def generic_image_constants(data):
+    consts = {}
+    if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
+        consts["NULL"] = 65535
+    return consts
+
 # TODO: super incomplete, although hopefully not often needed
 
 
@@ -157,4 +163,3 @@ IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
         },
     }
 )
-

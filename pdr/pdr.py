@@ -26,6 +26,7 @@ from pdr.datatypes import (
     sample_types,
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
+    generic_image_constants,
 )
 from pdr.formats import (
     LABEL_EXTENSIONS,
@@ -564,7 +565,10 @@ class Data:
         """
         obj, block = self._init_array_method(key)
         if key not in self.specials:
-            self.find_special_constants(key)
+            consts = generic_image_constants(self)
+            self.specials[key] = consts
+            if not consts:
+                self.find_special_constants(key)
         if self.specials[key] != {}:
             obj = np.ma.MaskedArray(obj)
             obj.mask = np.isin(obj.data, list(self.specials[key].values()))
