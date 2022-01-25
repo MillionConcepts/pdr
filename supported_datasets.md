@@ -9,6 +9,8 @@ If you encounter a file of this type that does not open with pdr, please open an
 Some of these do not conform to PDS standards (such as missing label files) and cannot be tested fully.
 Others in this category will be moved to officially supported upon completion of the testing procedure.
 
+Many data sets that do not fall into these categories may nonetheless work just fine, and we have simply not had a chance to test them yet.
+
 ## Officially Supported Datasets:
 
 - LROC
@@ -16,7 +18,7 @@ Others in this category will be moved to officially supported upon completion of
   - WAC EDR
   - NAC CDR
   - NAC EDR
-  - NAC raw image data (NACR and NACL in image name): Note: We think thi sowrks, but couldn't validate the output because it would require recreating portions of the ground processing pipeline.
+  - NAC raw image data (NACR and NACL in image name): Note: We think this works, but couldn't validate the output because it would require recreating portions of the ground processing pipeline.
   - NAC DTM
   - WAC EMP
   - WAC HAPKE
