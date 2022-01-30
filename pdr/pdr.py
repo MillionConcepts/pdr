@@ -227,9 +227,13 @@ class Data:
             for pointer in self.pointers:
                 object_name = depointerize(pointer)
                 self.index.append(object_name)
-                setattr(
-                    self, object_name, self.load_from_pointer(object_name)
-                )
+                try:
+                    setattr(
+                        self, object_name, self.load_from_pointer(object_name)
+                    )
+                except FileNotFoundError:
+                    warnings.warn(f"Unable to find {object_name}.")
+                    setattr(self, object_name, self.labelget(pointerize(object_name)))
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
         # Must exclude QUB files or it will reread them as an IMAGE
@@ -378,7 +382,7 @@ class Data:
             objdef = structure[
                 i
             ]  # use the index because the keys are not unique
-            if objdef[0] == "COLUMN":
+            if objdef[0] in ("COLUMN", "FIELD"):
                 if objdef[1]["NAME"] == "RESERVED":
                     name = "RESERVED_" + str(objdef[1]["START_BYTE"])
                 else:
@@ -393,11 +397,16 @@ class Data:
         return fmtdef
 
     def parse_table_structure(self, pointer):
-        """Generate an dtype array to later pass to numpy.fromfile
+        """
+        Generate a dtype array to later pass to numpy.fromfile
         to unpack the table data according to the format given in the
         label.
         """
         fmtdef = self.read_table_structure(pointer)
+        if fmtdef['DATA_TYPE'].str.contains('ASCII').any():
+            # don't try to load it as a binary file
+            # TODO: kind of a hack
+            return None, fmtdef
         dt = []
         if fmtdef is None:
             return np.dtype(dt), fmtdef
@@ -442,6 +451,10 @@ class Data:
         Read a table. Will first attempt to parse it as generic CSV
         and then fall back to parsing it based on the label format definition.
         """
+        if isinstance(self.labelget(pointerize(pointer)), str):
+            fn = self.get_absolute_path(self.labelget(pointerize(pointer)))
+        else:
+            fn = self.filename
         try:
             dt, fmtdef = self.parse_table_structure(pointer)
         except KeyError:
@@ -449,12 +462,18 @@ class Data:
             return self.labelget(pointer)
         # Check if this is just a CSV file
         try:
-            return pd.read_csv(self.filename, names=fmtdef.NAME.tolist())
+            # TODO: look for commas more intelligently or dispatch to astropy
+            #  or whatever
+            table = pd.read_csv(fn)
+            if len(table.columns) < len(fmtdef.NAME.tolist()):
+                table = pd.read_fwf(fn)
+            table.columns = fmtdef.NAME.tolist()
+            return table
         except (UnicodeDecodeError, AttributeError, ParserError):
             pass  # This is not parseable as a CSV file
         table = pd.DataFrame(
             np.fromfile(
-                self.filename,
+                fn,
                 dtype=dt,
                 offset=self.data_start_byte(pointer),
                 count=self.labelblock(pointer)["ROWS"],
