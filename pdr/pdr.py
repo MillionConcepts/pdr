@@ -389,7 +389,7 @@ class Data:
                         obj["NAME"] = f"{name}_{n}"  # rename duplicate columns
                 except KeyError:
                     obj = dict(objdef[1])
-                fmtdef = fmtdef.append(obj, ignore_index=True)
+                fmtdef = pd.concat([fmtdef, obj], axis=0, ignore_index=True)
         return fmtdef
 
     def parse_table_structure(self, pointer):
