@@ -1,13 +1,13 @@
 """assorted utility functions"""
 
-from itertools import chain
+from itertools import chain, product
 from numbers import Number
 import os
 import re
 import struct
 import sys
 from pathlib import Path
-from typing import Optional, Collection
+from typing import Optional, Collection, Literal
 
 import numpy as np
 from dustgoggles.structures import dig_for
@@ -218,7 +218,7 @@ MAX_LABEL_SIZE = 500 * 1024
 def head_file(fn_or_reader, nbytes):
     head_buffer = BytesIO()
     if not hasattr(fn_or_reader, "read"):
-        fn_or_reader = open(fn_or_reader, 'rb')
+        fn_or_reader = open(fn_or_reader, "rb")
     head_buffer.write(fn_or_reader.read(nbytes))
     fn_or_reader.close()
     head_buffer.seek(0)
@@ -226,17 +226,17 @@ def head_file(fn_or_reader, nbytes):
 
 
 KNOWN_LABEL_ENDINGS = (
-    b'END\r\n',  # PVL
-    b'\x00{3}',  # just null bytes
+    b"END\r\n",  # PVL
+    b"\x00{3}",  # just null bytes
 )
 
 
-def trim_label(fn, max_size = MAX_LABEL_SIZE, raise_for_failure=False):
+def trim_label(fn, max_size=MAX_LABEL_SIZE, raise_for_failure=False):
     head = head_file(fn, max_size).read()
     # TODO: add some logging or whatever i guess
     for ending in KNOWN_LABEL_ENDINGS:
         if (endmatch := re.search(ending, head)) is not None:
-            return head[:endmatch.span()[1]]
+            return head[: endmatch.span()[1]]
     if raise_for_failure:
         raise ValueError("couldn't find a label ending")
     return head
@@ -246,10 +246,20 @@ def casting_to_float(array, *operands):
     """
     return True if array is integer-valued and any operands are not integers
     """
-    return (
-        (array.dtype.char in np.typecodes['AllInteger'])
-        and not all([isinstance(operand, int) for operand in operands])
+    return (array.dtype.char in np.typecodes["AllInteger"]) and not all(
+        [isinstance(operand, int) for operand in operands]
     )
+
+
+def change_filename_case(
+    filename, string_method, which_part=Literal["both", "extension", "stem"]
+):
+    if which_part == "both":
+        return string_method(filename)
+    stem, suffix = Path(filename).stem, Path(filename).suffix
+    if which_part == "extension":
+        return stem + string_method(suffix)
+    return string_method(stem) + suffix
 
 
 # noinspection PyArgumentList
@@ -257,8 +267,10 @@ def check_cases(filename):
     if Path(filename).exists():
         return filename
     orthographies = (str.upper, str.lower, str.title)
-    for orthographizer in orthographies:
+    fn_parts = ("both", "extension", "stem")
+    for orthography, part in product(orthographies, fn_parts):
         parent, basename = Path(filename).parent, Path(filename).name
-        if Path(parent, orthographizer(basename)).exists():
-            return str(Path(parent, orthographizer(basename)))
+        case = Path(parent, change_filename_case(basename, orthography, part))
+        if case.exists():
+            return str(case)
     raise FileNotFoundError
