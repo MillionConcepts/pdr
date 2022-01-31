@@ -3,7 +3,7 @@ import gzip
 import struct
 import warnings
 from functools import partial
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Mapping, Optional, Union
 from zipfile import ZipFile
 
@@ -35,7 +35,7 @@ from pdr.formats import (
     generic_image_properties,
 )
 from pdr.utils import depointerize, get_pds3_pointers, pointerize, trim_label, \
-    casting_to_float
+    casting_to_float, check_cases
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
@@ -111,9 +111,9 @@ def process_line_interleaved_image(f, props):
 def skeptically_load_header(path, object_name="header"):
     try:
         try:
-            return pvl.load(path)
+            return pvl.load(check_cases(path))
         except ValueError:
-            with open(path, "r") as file:
+            with open(check_cases(path), "r") as file:
                 return file.read()
     except (ParseError, ValueError, OSError):
         warnings.warn(f"unable to parse {object_name}")
@@ -147,6 +147,7 @@ def pointer_to_fits_key(pointer, hdulist):
 
 
 def decompress(filename):
+    filename = check_cases(filename)
     if filename.endswith(".gz"):
         f = gzip.open(filename, "rb")
     elif filename.endswith(".bz2"):
@@ -232,7 +233,7 @@ class Data:
                         self, object_name, self.load_from_pointer(object_name)
                     )
                 except FileNotFoundError:
-                    warnings.warn(f"Unable to find {object_name}.")
+                    warnings.warn(f"Unable to find or load {object_name}.")
                     setattr(self, object_name, self.labelget(pointerize(object_name)))
         # Sometimes images do not have explicit pointers, so just always try
         #  to read an image out of the file no matter what.
@@ -276,7 +277,7 @@ class Data:
         return pointer_to_loader(pointer, self)(pointer)
 
     def open_with_rasterio(self):
-        dataset = rasterio.open(self.filename)
+        dataset = rasterio.open(check_cases(self.filename))
         if len(dataset.indexes) == 1:
             # Make 2D images actually 2D
             return dataset.read()[0, :, :]
@@ -355,28 +356,22 @@ class Data:
         #  to be called?
         block = self.labelblock(depointerize(object_name))
         if "^STRUCTURE" in block:
-            if Path(
-                fmtpath := self.filename.replace(
-                    PurePath(self.filename).name, block["^STRUCTURE"]
+            try:
+                fmtpath = check_cases(
+                    self.get_absolute_path(block["^STRUCTURE"])
                 )
-            ).exists():
                 structure = pvl.load(fmtpath)
-            elif Path(
-                fmtpath := self.filename.replace(
-                    PurePath(self.filename).name, block["^STRUCTURE"].lower()
-                )
-            ).exists():
-                structure = pvl.load(fmtpath)
-            else:
+            except FileNotFoundError:
                 warnings.warn(
-                    f"Unable to locate external table format "
-                    f'file:\n\t{block["^STRUCTURE"]}'
+                    f"Unable to locate external table format file:\n\t"
+                    f"{block['^STRUCTURE']}. Try retrieving this file and "
+                    f"placing it in the same path as the {object_name} file."
                 )
-                return None
+                raise FileNotFoundError
             # print(f"Reading external format file:\n\t{fmtpath}")
         else:
             structure = block
-        fmtdef = pd.DataFrame()
+        fields = []
         for i, k in enumerate(structure.keys()):
             obj = {}  # reinitialize... probably unnecessary
             objdef = structure[
@@ -393,7 +388,9 @@ class Data:
                         obj["NAME"] = f"{name}_{n}"  # rename duplicate columns
                 except KeyError:
                     obj = dict(objdef[1])
-                fmtdef = pd.concat([fmtdef, obj], axis=0, ignore_index=True)
+                # fmtdef = pd.concat([fmtdef, obj], axis=0, ignore_index=True)
+                fields.append(obj)
+        fmtdef = pd.DataFrame.from_records(fields)
         return fmtdef
 
     def parse_table_structure(self, pointer):
@@ -452,9 +449,11 @@ class Data:
         and then fall back to parsing it based on the label format definition.
         """
         if isinstance(self.labelget(pointerize(pointer)), str):
-            fn = self.get_absolute_path(self.labelget(pointerize(pointer)))
+            fn = check_cases(
+                self.get_absolute_path(self.labelget(pointerize(pointer)))
+            )
         else:
-            fn = self.filename
+            fn = check_cases(self.filename)
         try:
             dt, fmtdef = self.parse_table_structure(pointer)
         except KeyError:
@@ -495,7 +494,7 @@ class Data:
             self.labelget(pointerize(object_name))
         )
         try:
-            return open(local_path).read()
+            return open(check_cases(local_path)).read()
         except FileNotFoundError:
             warnings.warn(f"couldn't find {target}")
         except UnicodeDecodeError:
@@ -529,7 +528,7 @@ class Data:
           to handle compressed FITS files too often anyway.
         """
         try:
-            hdulist = fits.open(self.filename)
+            hdulist = fits.open(check_cases(self.filename))
             if "HEADER" in pointer:
                 return hdulist[pointer_to_fits_key(pointer, hdulist)].header
             return hdulist[pointer_to_fits_key(pointer, hdulist)].data

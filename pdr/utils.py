@@ -6,6 +6,7 @@ import os
 import re
 import struct
 import sys
+from pathlib import Path
 from typing import Optional, Collection
 
 import numpy as np
@@ -249,3 +250,15 @@ def casting_to_float(array, *operands):
         (array.dtype.char in np.typecodes['AllInteger'])
         and not all([isinstance(operand, int) for operand in operands])
     )
+
+
+# noinspection PyArgumentList
+def check_cases(filename):
+    if Path(filename).exists():
+        return filename
+    orthographies = (str.upper, str.lower, str.title)
+    for orthographizer in orthographies:
+        parent, basename = Path(filename).parent, Path(filename).name
+        if Path(parent, orthographizer(basename)).exists():
+            return str(Path(parent, orthographizer(basename)))
+    raise FileNotFoundError
