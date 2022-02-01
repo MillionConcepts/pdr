@@ -635,7 +635,6 @@ class Data:
         """This is a trivial loader. It does not load. The purpose is to use
         for any pointers we don't want to load and instead simply want ignored."""
         pass
-        return self.labelget(pointer)
 
     def labelget(self, text):
         """
