@@ -95,6 +95,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_table
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
+    if "STRUCTURE" in pointer:
+        return data.trivial
     # TODO: sloppy pt. 2
     if looks_like_this_kind_of_file(data.filename, FITS_EXTENSIONS):
         return data.handle_fits_file

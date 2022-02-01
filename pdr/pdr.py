@@ -631,6 +631,12 @@ class Data:
         warnings.warn(f"The {pointer} pointer is not yet fully supported.")
         return self.labelget(pointer)
 
+    def trivial(self, pointer=""):
+        """This is a trivial loader. It does not load. The purpose is to use
+        for any pointers we don't want to load and instead simply want ignored."""
+        pass
+        return self.labelget(pointer)
+
     def labelget(self, text):
         """
         get the first value from this object's label whose key exactly matches
