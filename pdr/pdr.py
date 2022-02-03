@@ -9,6 +9,7 @@ from zipfile import ZipFile
 
 import Levenshtein as lev
 import numpy as np
+import os
 import pandas as pd
 import pds4_tools as pds4
 import pvl
@@ -464,22 +465,30 @@ class Data:
             # TODO: look for commas more intelligently or dispatch to astropy
             #  or whatever
             table = pd.read_csv(fn)
-            if len(table.columns) < len(fmtdef.NAME.tolist()):
-                table = pd.read_fwf(fn)
-            table.columns = fmtdef.NAME.tolist()
-            return table
         except (UnicodeDecodeError, AttributeError, ParserError):
-            pass  # This is not parseable as a CSV file
-        table = pd.DataFrame(
-            np.fromfile(
-                fn,
-                dtype=dt,
-                offset=self.data_start_byte(pointer),
-                count=self.labelblock(pointer)["ROWS"],
-            )
-            .byteswap()
-            .newbyteorder()  # Pandas doesn't do non-native endian
-        )
+            if dt is not None:
+                table = pd.DataFrame(
+                    np.fromfile(
+                        fn,
+                        dtype=dt,
+                        offset=self.data_start_byte(pointer),
+                        count=self.labelblock(pointer)["ROWS"],
+                    )
+                    .byteswap()
+                    .newbyteorder()  # Pandas doesn't do non-native endian
+                )
+            else:
+                table = pd.DataFrame(
+                    np.loadtxt(fn,
+                               delimiter=',',
+                               skiprows=self.labelget("LABEL_RECORDS"),
+                            )
+                    .byteswap()
+                    .newbyteorder()
+                )
+        if len(table.columns) < len(fmtdef.NAME.tolist()):
+            table = pd.read_fwf(fn)
+        table.columns = fmtdef.NAME.tolist()
         try:
             # If there were any cruft "placeholder" columns, discard them
             return table.drop(
@@ -677,7 +686,14 @@ class Data:
             record_bytes = labelblock["RECORD_BYTES"]
         else:
             record_bytes = self.labelget("RECORD_BYTES")
-        if isinstance(target, int):
+            if record_bytes is None and isinstance(target, int):
+                # Counts up from the bottom of the file
+                rows = self.labelget("ROWS")
+                row_bytes = self.labelget("ROW_BYTES")
+                tab_size = rows * row_bytes
+                file_size = os.path.getsize(self.filename)
+                return file_size-tab_size
+        if record_bytes is not None and isinstance(target, int):
             return record_bytes * (target - 1)
         elif isinstance(target, list):
             if isinstance(target[0], int):
