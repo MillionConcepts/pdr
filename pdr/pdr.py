@@ -466,6 +466,7 @@ class Data:
             #  or whatever
             table = pd.read_csv(fn)
         except (UnicodeDecodeError, AttributeError, ParserError):
+            #
             if dt is not None:
                 table = pd.DataFrame(
                     np.fromfile(
@@ -482,7 +483,7 @@ class Data:
                     np.loadtxt(fn,
                                delimiter=',',
                                skiprows=self.labelget("LABEL_RECORDS"),
-                            )
+                               )
                     .byteswap()
                     .newbyteorder()
                 )
