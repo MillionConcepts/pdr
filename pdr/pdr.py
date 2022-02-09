@@ -476,7 +476,7 @@ class Data:
                         count=self.labelblock(pointer)["ROWS"],
                     )
                     .byteswap()
-                    .newbyteorder()  # Pandas doesn't do non-native endian
+                    .newbyteorder('=')  # Pandas doesn't do non-native endian
                 )
             else:
                 table = pd.DataFrame(
@@ -485,7 +485,7 @@ class Data:
                                skiprows=self.labelget("LABEL_RECORDS"),
                                )
                     .byteswap()
-                    .newbyteorder()
+                    .newbyteorder('=')
                 )
         if len(table.columns) < len(fmtdef.NAME.tolist()):
             table = pd.read_fwf(fn)
