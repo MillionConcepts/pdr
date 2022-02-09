@@ -475,7 +475,7 @@ class Data:
                         offset=self.data_start_byte(pointer),
                         count=self.labelblock(pointer)["ROWS"],
                     )
-                    .byteswap()
+                    .copy()
                     .newbyteorder('=')  # Pandas doesn't do non-native endian
                 )
             else:
@@ -484,7 +484,7 @@ class Data:
                                delimiter=',',  # this is probably a poor assumption to hard code.
                                skiprows=self.labelget("LABEL_RECORDS"),
                                )
-                    .byteswap()
+                    .copy()
                     .newbyteorder('=')
                 )
         if len(table.columns) < len(fmtdef.NAME.tolist()):
