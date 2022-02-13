@@ -2,7 +2,7 @@ import bz2
 import gzip
 import struct
 import warnings
-from functools import partial, reduce
+from functools import partial, reduce, cache
 from operator import add
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
@@ -42,13 +42,15 @@ from pdr.utils import (
     pointerize,
     trim_label,
     casting_to_float,
-    check_cases, byte_columns_to_object, enforce_byteorder
+    check_cases, byte_columns_to_object, enforce_byteorder, TimelessOmniDecoder
 )
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
+# cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
+cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
 
 def make_format_specifications(props):
     endian, ctype = props["sample_type"][0], props["sample_type"][-1]
@@ -119,7 +121,7 @@ def process_line_interleaved_image(f, props):
 def skeptically_load_header(path, object_name="header"):
     try:
         try:
-            return pvl.load(check_cases(path))
+            return cached_pvl_load(check_cases(path))
         except ValueError:
             with open(check_cases(path), "r") as file:
                 return file.read()
@@ -273,7 +275,7 @@ class Data:
         if self.labelname:  # a detached label exists
             if Path(self.labelname).suffix.lower() == ".xml":
                 return pds4.read(self.labelname, quiet=True).label.to_dict()
-            return pvl.load(self.labelname)
+            return cached_pvl_load(self.labelname)
         try:
             # look for attached label
             return pvl.loads(trim_label(decompress(self.filename)))
@@ -386,7 +388,7 @@ class Data:
             fmtpath = check_cases(
                 self.get_absolute_path(format_file)
             )
-            return pvl.load(fmtpath)
+            return cached_pvl_load(fmtpath)
         except FileNotFoundError:
             warnings.warn(
                 f"Unable to locate external table format file:\n\t"

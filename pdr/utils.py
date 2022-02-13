@@ -1,18 +1,20 @@
 """assorted utility functions"""
-import warnings
-from itertools import chain, product
-from numbers import Number
 import os
 import re
 import struct
 import sys
+import warnings
+from itertools import chain
+from numbers import Number
 from pathlib import Path
-from typing import Optional, Collection, Literal, Union
+from typing import Optional, Collection, Union
 
 import numpy as np
-from dustgoggles.structures import dig_for
 import pandas as pd
 import pvl
+import pvl.grammar
+import pvl.decoder
+from dustgoggles.structures import dig_for
 
 """
 The following three functions are substantially derived from code in
@@ -320,3 +322,11 @@ def enforce_byteorder(array: np.ndarray, inplace=True):
     array[swap_targets] = array[swap_targets].byteswap()
     array.dtype = swapped_dtype
     return array
+
+
+class TimelessOmniDecoder(pvl.decoder.OmniDecoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, grammar=pvl.grammar.OmniGrammar(), **kwargs)
+
+    def decode_datetime(self, value: str):
+        raise ValueError
