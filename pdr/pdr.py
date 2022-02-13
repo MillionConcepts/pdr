@@ -2,7 +2,8 @@ import bz2
 import gzip
 import struct
 import warnings
-from functools import partial
+from functools import partial, reduce
+from operator import add
 from pathlib import Path
 from typing import Mapping, Optional, Union
 from zipfile import ZipFile
@@ -15,7 +16,7 @@ import pds4_tools as pds4
 import pvl
 import rasterio
 from astropy.io import fits
-from cytoolz import groupby
+from cytoolz import groupby, valfilter
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
@@ -356,43 +357,95 @@ class Data:
         # TODO: this will generally fail for PDS4 -- but maybe it never needs
         #  to be called?
         block = self.labelblock(depointerize(object_name))
-        if "^STRUCTURE" in block:
-            try:
-                fmtpath = check_cases(
-                    self.get_absolute_path(block["^STRUCTURE"])
-                )
-                structure = pvl.load(fmtpath)
-            except FileNotFoundError:
-                warnings.warn(
-                    f"Unable to locate external table format file:\n\t"
-                    f"{block['^STRUCTURE']}. Try retrieving this file and "
-                    f"placing it in the same path as the {object_name} file."
-                )
-                raise FileNotFoundError
-            # print(f"Reading external format file:\n\t{fmtpath}")
-        else:
-            structure = block
-        fields = []
-        for i, k in enumerate(structure.keys()):
-            obj = {}  # reinitialize... probably unnecessary
-            objdef = structure[
-                i
-            ]  # use the index because the keys are not unique
-            if objdef[0] in ("COLUMN", "FIELD"):
-                if objdef[1]["NAME"] == "RESERVED":
-                    name = "RESERVED_" + str(objdef[1]["START_BYTE"])
-                else:
-                    name = objdef[1]["NAME"]
-                try:  # Some "columns" contain a lot of columns
-                    for n in range(objdef[1]["ITEMS"]):
-                        obj = dict(objdef[1])
-                        obj["NAME"] = f"{name}_{n}"  # rename duplicate columns
-                except KeyError:
-                    obj = dict(objdef[1])
-                # fmtdef = pd.concat([fmtdef, obj], axis=0, ignore_index=True)
-                fields.append(obj)
+        fields, override_allocation_check = self.read_format_block(
+            block, object_name
+        )
+        # give columns unique names so that none of our table handling explodes
+        repeated_names = valfilter(
+            lambda val: len(val) > 1,
+            groupby(lambda record: record["NAME"], fields)
+        )
+        for name, column_group in repeated_names.items():
+            if name == "RESERVED":
+                name = f"RESERVED_{column_group[0]['START_BYTE']}"
+            for ix, column in enumerate(column_group):
+                column["NAME"] = f"{name}_{ix}"
         fmtdef = pd.DataFrame.from_records(fields)
-        return fmtdef
+        return fmtdef, override_allocation_check
+
+    def load_format(self, structure_file, object_name):
+        try:
+            fmtpath = check_cases(
+                self.get_absolute_path(structure_file)
+            )
+            return pvl.load(fmtpath)
+        except FileNotFoundError:
+            warnings.warn(
+                f"Unable to locate external table format file:\n\t"
+                f"{structure_file}. Try retrieving this file and "
+                f"placing it in the same path as the {object_name} "
+                f"file."
+            )
+            raise FileNotFoundError
+
+    def read_format_block(self, block, object_name):
+        # load external structure specifications
+        format_block = list(block.items())
+        while "^STRUCTURE" in [obj[0] for obj in format_block]:
+            format_block = self.inject_format_files(format_block, object_name)
+        fields = []
+        override_allocation_checks = False
+        for item_type, definition in format_block:
+            if item_type in ("COLUMN", "FIELD"):
+                obj = dict(definition)
+                repeat_count = definition.get("ITEMS")
+            elif item_type == "CONTAINER":
+                obj, _ = self.read_format_block(definition, object_name)
+                repeat_count = definition.get("REPETITIONS")
+                override_allocation_checks = True
+            else:
+                continue
+            # TODO: what is our working example of a table that
+            #  uses ITEMS that isn't being punted to a FITS
+            #  library?
+            # containers can have REPETITIONS,
+            # and some "columns" contain a lot of columns (ITEMS)
+            # repeat the definition, renaming duplicates, for these cases
+            # TODO, maybe: index containers appropriately so that we can check
+            #  for accuracy of start byte values...but I am not very confident
+            #  that files like this will be formatted consistently enough
+            #  that checking to insert placeholders will be useful
+            if repeat_count is not None:
+                # copy while doing these things so that we can modify them
+                # individually later (e.g., for reindexing names)
+                # sum lists (from containers) together and add to fields
+                if hasattr(obj, "__add__"):
+                    fields += reduce(
+                        add, [obj.copy() for _ in range(repeat_count)]
+                    )
+                # put dictionaries in a repeated list and add to fields
+                else:
+                    fields += [obj.copy() for _ in range(repeat_count)]
+            else:
+                fields.append(obj)
+        return fields, override_allocation_checks
+
+    def inject_format_files(self, block, object_name):
+        format_filenames = {
+            ix: kv[1]
+            for ix, kv in enumerate(block)
+            if kv[0] == "^STRUCTURE"
+        }
+        # make sure to insert the structure blocks in the correct order --
+        # and remember that keys are not unique, so we have to use the index
+        assembled_structure = []
+        last_ix = 0
+        for ix, filename in format_filenames.items():
+            fmt = list(self.load_format(filename, object_name).items())
+            assembled_structure = block[last_ix:ix] + fmt
+            last_ix = ix + 1
+        assembled_structure += block[last_ix:]
+        return assembled_structure
 
     def parse_table_structure(self, pointer):
         """
@@ -400,7 +453,7 @@ class Data:
         to unpack the table data according to the format given in the
         label.
         """
-        fmtdef = self.read_table_structure(pointer)
+        fmtdef, override_allocation_check = self.read_table_structure(pointer)
         if fmtdef['DATA_TYPE'].str.contains('ASCII').any():
             # don't try to load it as a binary file
             # TODO: kind of a hack
@@ -408,39 +461,42 @@ class Data:
         dt = []
         if fmtdef is None:
             return np.dtype(dt), fmtdef
-        for i in range(len(fmtdef)):
+        fmtdef['dt'] = None
+        data_types = tuple(
+            fmtdef.groupby(['DATA_TYPE', 'ITEM_BYTES', 'BYTES'], dropna=False)
+        )
+        for data_type, group in data_types:
+            dt, item_bytes, total_bytes = data_type
+            sample_bytes = total_bytes if np.isnan(item_bytes) else item_bytes
             try:
-                data_type = sample_types(
-                    fmtdef.iloc[i].DATA_TYPE, int(fmtdef.iloc[i].BYTES)
-                )
+                fmtdef.loc[group.index, 'dt'] = sample_types(dt, sample_bytes)
             except KeyError:
                 raise KeyError(
-                    f"{fmtdef.iloc[i].DATA_TYPE} "
-                    f"is not a currently-supported data type."
+                    f"{data_type} is not a currently-supported data type."
                 )
-            dt += [(fmtdef.iloc[i].NAME, data_type)]
-            try:
-                allocation = (
-                    fmtdef.iloc[i + 1].START_BYTE - fmtdef.iloc[i].START_BYTE
-                )
-            except IndexError:
-                # The +1 is for the carriage return... these files are badly
-                # formatted...
-                allocation = (
-                    dig_for_value(self.LABEL, pointer)["ROW_BYTES"]
-                    - fmtdef.iloc[i].START_BYTE
-                    + 1
-                )
-            if allocation > fmtdef.iloc[i].BYTES:
-                dt += [
-                    (
-                        f"PLACEHOLDER_{i}",
-                        sample_types(
-                            "CHARACTER", int(allocation - fmtdef.iloc[i].BYTES)
-                        ),
-                    )
-                ]
-
+        dt = fmtdef[['NAME', 'dt']].to_records(index=False).tolist()
+        if override_allocation_check is False:
+            start_bytes = fmtdef.START_BYTE.tolist()
+            field_bytes = fmtdef.BYTES.tolist()
+            row_bytes = dig_for_value(self.LABEL, pointer)["ROW_BYTES"]
+            allocated_dt = []
+            for ix in range(len(start_bytes)):
+                allocated_dt += dt[ix]
+                try:
+                    allocation = (start_bytes[ix + 1] - start_bytes[ix])
+                except IndexError:
+                    # The +1 is for the carriage return... these files are badly
+                    # formatted...
+                    allocation = row_bytes + 1 - start_bytes[ix]
+                if allocation > field_bytes[ix]:
+                    allocated_dt += [
+                        (
+                            f"PLACEHOLDER_{ix}",
+                            sample_types(
+                                "CHARACTER", int(allocation - field_bytes[ix])
+                            ),
+                        )
+                    ]
         return np.dtype(dt), fmtdef
 
     # TODO: refactor this. see issue #27.
@@ -449,6 +505,8 @@ class Data:
         Read a table. Will first attempt to parse it as generic CSV
         and then fall back to parsing it based on the label format definition.
         """
+        # TODO: this is not correctly loading the table fn when passed the
+        #  label in the CCAM case, and probably some others
         if isinstance(self.labelget(pointerize(pointer)), str):
             fn = check_cases(
                 self.get_absolute_path(self.labelget(pointerize(pointer)))
@@ -480,23 +538,26 @@ class Data:
                 )
             else:
                 table = pd.DataFrame(
-                    np.loadtxt(fn,
-                               delimiter=',',  # this is probably a poor assumption to hard code.
-                               skiprows=self.labelget("LABEL_RECORDS"),
-                               )
+                    np.loadtxt(
+                        fn,
+                        delimiter=',',  # this is probably a poor assumption to hard code.
+                        skiprows=self.labelget("LABEL_RECORDS"),
+                    )
                     .copy()
                     .newbyteorder('=')
                 )
         if len(table.columns) < len(fmtdef.NAME.tolist()):
             table = pd.read_fwf(fn)
-        table.columns = fmtdef.NAME.tolist()
         try:
             # If there were any cruft "placeholder" columns, discard them
-            return table.drop(
+            table = table.drop(
                 [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
             )
         except TypeError:  # Failed to read the table
             return self.labelget(pointer)
+        table.columns = fmtdef.NAME.tolist()
+        return table
+
 
     def read_text(self, object_name):
         target = self.labelget(pointerize(object_name))
@@ -692,6 +753,7 @@ class Data:
                 rows = self.labelget("ROWS")
                 row_bytes = self.labelget("ROW_BYTES")
                 tab_size = rows * row_bytes
+                # TODO: should be the filename of the target
                 file_size = os.path.getsize(self.filename)
                 return file_size-tab_size
         if record_bytes is not None and isinstance(target, int):

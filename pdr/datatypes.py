@@ -8,34 +8,52 @@ from types import MappingProxyType
 from pdr.utils import read_hex
 
 
-def sample_types(sample_type: str, sample_bytes: int) -> str:
+def integer_bytes(
+    endian: str,
+    signed: bool,
+    sample_bytes: int,
+    for_numpy: bool = False
+) -> str:
     """
-    Defines a translation from PDS data types to Python struct format strings,
-    using both the type and bytes specified (because the mapping to type alone
-    is not consistent across PDS3).
+    translation for inconsistent integer types
     """
+    if sample_bytes == 4:
+        letter = "l"
+    elif sample_bytes == 2:
+        letter = "h"
+    else:
+        letter = "b"
+    if signed is False:
+        letter = letter.upper()
+    if for_numpy is True and sample_bytes == 4:
+        letter = "i4" if signed is True else "u4"
+    return f"{endian}{letter}"
+
+
+def sample_types(
+    sample_type: str, sample_bytes: int, for_numpy: bool=False
+) -> str:
+    """
+    Defines a translation from PDS data types to Python struct or numpy dtype
+    format strings, using both the type and bytes specified (because the
+    mapping to type alone is not consistent across PDS3).
+    """
+    if ("INTEGER" in sample_type) and ("ASCII" not in sample_type):
+        if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
+            endian = "<"
+        else:
+            endian = ">"
+        signed = "UNSIGNED" not in sample_type
+        return integer_bytes(endian, signed, sample_bytes, for_numpy)
+    char = "V" if for_numpy is True else "s"
     return {
-        "MSB_INTEGER": ">h",
-        "INTEGER": ">h",
-        "MAC_INTEGER": ">h",
-        "SUN_INTEGER": ">h",
-        "MSB_UNSIGNED_INTEGER": ">h" if sample_bytes == 2 else ">B",
-        "UNSIGNED_INTEGER": ">B",
-        "MAC_UNSIGNED_INTEGER": ">B",
-        "SUN_UNSIGNED_INTEGER": ">B",
-        "LSB_INTEGER": "<h" if sample_bytes == 2 else "<B",
-        "PC_INTEGER": "<h",
-        "VAX_INTEGER": "<h",
-        "LSB_UNSIGNED_INTEGER": "<h" if sample_bytes == 2 else "<B",
-        "PC_UNSIGNED_INTEGER": "<B",
-        "VAX_UNSIGNED_INTEGER": "<B",
         "IEEE_REAL": ">f",
         "PC_REAL": "<d" if sample_bytes == 8 else "<f",
         "FLOAT": ">f",
         "REAL": ">f",
         "MAC_REAL": ">f",
         "SUN_REAL": ">f",
-        "MSB_BIT_STRING": ">B",
+        "MSB_BIT_STRING": f"{char}{sample_bytes}",
         # "Character string representing a real number"
         "ASCII_REAL": f"S{sample_bytes}",
         # ASCII character string representing an integer
