@@ -1,5 +1,5 @@
 """assorted utility functions"""
-
+import warnings
 from itertools import chain, product
 from numbers import Number
 import os
@@ -7,7 +7,7 @@ import re
 import struct
 import sys
 from pathlib import Path
-from typing import Optional, Collection, Literal
+from typing import Optional, Collection, Literal, Union
 
 import numpy as np
 from dustgoggles.structures import dig_for
@@ -242,35 +242,81 @@ def trim_label(fn, max_size=MAX_LABEL_SIZE, raise_for_failure=False):
     return head
 
 
-def casting_to_float(array, *operands):
+def casting_to_float(array: np.ndarray, *operands: Collection[Number]) -> bool:
     """
-    return True if array is integer-valued and any operands are not integers
+    check: will this operation cast the array to float?
+    return True if array is integer-valued and any operands are not integers.
     """
     return (array.dtype.char in np.typecodes["AllInteger"]) and not all(
         [isinstance(operand, int) for operand in operands]
     )
 
 
-def change_filename_case(
-    filename, string_method, which_part=Literal["both", "extension", "stem"]
-):
-    if which_part == "both":
-        return string_method(filename)
-    stem, suffix = Path(filename).stem, Path(filename).suffix
-    if which_part == "extension":
-        return stem + string_method(suffix)
-    return string_method(stem) + suffix
-
-
-# noinspection PyArgumentList
-def check_cases(filename):
+def check_cases(filename: Union[Path, str]) -> str:
+    """
+    check for oddly-cased versions of a specified filename in local path --
+    very common to have case mismatches between PDS3 labels and actual archive
+    contents.
+    """
     if Path(filename).exists():
         return filename
-    orthographies = (str.upper, str.lower, str.title)
-    fn_parts = ("both", "extension", "stem")
-    for orthography, part in product(orthographies, fn_parts):
-        parent, basename = Path(filename).parent, Path(filename).name
-        case = Path(parent, change_filename_case(basename, orthography, part))
-        if case.exists():
-            return str(case)
-    raise FileNotFoundError
+    matches = tuple(
+        filter(
+            lambda path: path.name.lower() == filename.lower(),
+            Path(filename).parent.iterdir(),
+        )
+    )
+    if len(matches) == 0:
+        raise FileNotFoundError
+    if len(matches) > 1:
+        warning_list = ", ".join([path.name for path in matches])
+        warnings.warn(
+            f"Multiple off-case versions of {filename} found in search path: "
+            f"{warning_list}. Using {matches[0].name}."
+        )
+    return str(matches[0])
+
+
+def byte_columns_to_object(df):
+    """
+    pandas does not support numpy void ('V') types, which are sometimes
+    required to deal with unstructured padding containing null bytes, etc.,
+    and are probably the appropriate representation for binary blobs like
+    bit strings. cast them to object so it does not explode.
+
+    TODO: maybe find a more efficient way to do this upstream, like in the
+     DataFrame constructor?
+    """
+    void_columns = df.dtypes.loc[
+        df.dtypes.astype("str").str.contains("V")
+    ].index
+    # using a selector -- or anything at all more complicated than casting
+    # to another data type -- appears to make it explode
+    for column in void_columns:
+        df[column] = df[column].astype(object)
+    return df
+
+
+def enforce_byteorder(array: np.ndarray, inplace=True):
+    """
+    determine which, if any, of an array's fields are in nonnative byteorder
+    and swap them
+    TODO: benchmark
+    """
+    if inplace is False:
+        array = array.copy()
+    if len(array.dtype) == 1:
+        if array.dtype.isnative:
+            return array
+        return array.byteswap().newbyteorder("=")
+    swap_targets = []
+    swapped_dtype = []
+    for name, field in array.dtype.fields.items():
+        if field[0].isnative is False:
+            swap_targets.append(name)
+            swapped_dtype.append((name, field[0].newbyteorder('=')))
+        else:
+            swapped_dtype.append((name, field[0]))
+    array[swap_targets] = array[swap_targets].byteswap()
+    array.dtype = swapped_dtype
+    return array

@@ -5,7 +5,7 @@ import warnings
 from functools import partial, reduce
 from operator import add
 from pathlib import Path
-from typing import Mapping, Optional, Union
+from typing import Mapping, Optional, Union, Sequence
 from zipfile import ZipFile
 
 import Levenshtein as lev
@@ -36,8 +36,14 @@ from pdr.formats import (
     pointer_to_loader,
     generic_image_properties,
 )
-from pdr.utils import depointerize, get_pds3_pointers, pointerize, trim_label, \
-    casting_to_float, check_cases
+from pdr.utils import (
+    depointerize,
+    get_pds3_pointers,
+    pointerize,
+    trim_label,
+    casting_to_float,
+    check_cases, byte_columns_to_object, enforce_byteorder
+)
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
@@ -357,6 +363,8 @@ class Data:
         # TODO: this will generally fail for PDS4 -- but maybe it never needs
         #  to be called?
         block = self.labelblock(depointerize(object_name))
+        # TODO: override probably breaks some loaders b/c signature -- maybe
+        #  (hopefully?) temporary
         fields, override_allocation_check = self.read_format_block(
             block, object_name
         )
@@ -373,16 +381,16 @@ class Data:
         fmtdef = pd.DataFrame.from_records(fields)
         return fmtdef, override_allocation_check
 
-    def load_format(self, structure_file, object_name):
+    def load_format_file(self, format_file, object_name):
         try:
             fmtpath = check_cases(
-                self.get_absolute_path(structure_file)
+                self.get_absolute_path(format_file)
             )
             return pvl.load(fmtpath)
         except FileNotFoundError:
             warnings.warn(
                 f"Unable to locate external table format file:\n\t"
-                f"{structure_file}. Try retrieving this file and "
+                f"{format_file}. Try retrieving this file and "
                 f"placing it in the same path as the {object_name} "
                 f"file."
             )
@@ -441,8 +449,8 @@ class Data:
         assembled_structure = []
         last_ix = 0
         for ix, filename in format_filenames.items():
-            fmt = list(self.load_format(filename, object_name).items())
-            assembled_structure = block[last_ix:ix] + fmt
+            fmt = list(self.load_format_file(filename, object_name).items())
+            assembled_structure += block[last_ix:ix] + fmt
             last_ix = ix + 1
         assembled_structure += block[last_ix:]
         return assembled_structure
@@ -455,8 +463,7 @@ class Data:
         """
         fmtdef, override_allocation_check = self.read_table_structure(pointer)
         if fmtdef['DATA_TYPE'].str.contains('ASCII').any():
-            # don't try to load it as a binary file
-            # TODO: kind of a hack
+            # don't try to load it as a binary file -- TODO: kind of a hack
             return None, fmtdef
         dt = []
         if fmtdef is None:
@@ -469,35 +476,46 @@ class Data:
             dt, item_bytes, total_bytes = data_type
             sample_bytes = total_bytes if np.isnan(item_bytes) else item_bytes
             try:
-                fmtdef.loc[group.index, 'dt'] = sample_types(dt, sample_bytes)
+                fmtdef.loc[group.index, 'dt'] = sample_types(
+                    dt, sample_bytes, for_numpy=True
+                )
             except KeyError:
                 raise KeyError(
                     f"{data_type} is not a currently-supported data type."
                 )
         dt = fmtdef[['NAME', 'dt']].to_records(index=False).tolist()
         if override_allocation_check is False:
-            start_bytes = fmtdef.START_BYTE.tolist()
-            field_bytes = fmtdef.BYTES.tolist()
-            row_bytes = dig_for_value(self.LABEL, pointer)["ROW_BYTES"]
-            allocated_dt = []
-            for ix in range(len(start_bytes)):
-                allocated_dt += dt[ix]
-                try:
-                    allocation = (start_bytes[ix + 1] - start_bytes[ix])
-                except IndexError:
-                    # The +1 is for the carriage return... these files are badly
-                    # formatted...
-                    allocation = row_bytes + 1 - start_bytes[ix]
-                if allocation > field_bytes[ix]:
-                    allocated_dt += [
-                        (
-                            f"PLACEHOLDER_{ix}",
-                            sample_types(
-                                "CHARACTER", int(allocation - field_bytes[ix])
-                            ),
-                        )
-                    ]
+            # TODO: this needs to also insert rows into the format definition
+            #  if we want to retain the populate-from-fmtdef-name behavior
+            #  in read_table (which perhaps we do not)
+            dt = self._allocate_placeholders(dt, fmtdef, pointer)
         return np.dtype(dt), fmtdef
+
+    def _allocate_placeholders(self, dt, fmtdef, pointer):
+        start_bytes = fmtdef.START_BYTE.tolist()
+        field_bytes = fmtdef.BYTES.tolist()
+        row_bytes = dig_for_value(self.LABEL, pointer)["ROW_BYTES"]
+        allocated_dt = []
+        for ix in range(len(start_bytes)):
+            allocated_dt += dt[ix]
+            try:
+                allocation = (start_bytes[ix + 1] - start_bytes[ix])
+            except IndexError:
+                # The +1 is for the carriage return... these files are
+                # badly formatted...
+                allocation = row_bytes + 1 - start_bytes[ix]
+            if allocation > field_bytes[ix]:
+                allocated_dt += [
+                    (
+                        f"PLACEHOLDER_{ix}",
+                        # should this be char/void/something rather than
+                        # ASCII character? does it even matter?
+                        sample_types(
+                            "CHARACTER", int(allocation - field_bytes[ix])
+                        ),
+                    )
+                ]
+        return allocated_dt
 
     # TODO: refactor this. see issue #27.
     def read_table(self, pointer="TABLE"):
@@ -507,10 +525,12 @@ class Data:
         """
         # TODO: this is not correctly loading the table fn when passed the
         #  label in the CCAM case, and probably some others
-        if isinstance(self.labelget(pointerize(pointer)), str):
-            fn = check_cases(
-                self.get_absolute_path(self.labelget(pointerize(pointer)))
-            )
+        target = self.labelget(pointerize(pointer))
+        if isinstance(target, Sequence):
+            if isinstance(target[0], str):
+                target = target[0]
+        if isinstance(target, str):
+            fn = check_cases(self.get_absolute_path(target))
         else:
             fn = check_cases(self.filename)
         try:
@@ -526,16 +546,15 @@ class Data:
         except (UnicodeDecodeError, AttributeError, ParserError):
             # This is not parseable as a CSV file
             if dt is not None:
-                table = pd.DataFrame(
-                    np.fromfile(
-                        fn,
-                        dtype=dt,
-                        offset=self.data_start_byte(pointer),
-                        count=self.labelblock(pointer)["ROWS"],
-                    )
-                    .copy()
-                    .newbyteorder('=')  # Pandas doesn't do non-native endian
+                array = np.fromfile(
+                    fn,
+                    dtype=dt,
+                    offset=self.data_start_byte(pointer),
+                    count=self.labelblock(pointer)["ROWS"],
                 )
+                swapped = enforce_byteorder(array, inplace=False)
+                table = pd.DataFrame(swapped)
+                table = byte_columns_to_object(table)
             else:
                 table = pd.DataFrame(
                     np.loadtxt(
@@ -557,7 +576,6 @@ class Data:
             return self.labelget(pointer)
         table.columns = fmtdef.NAME.tolist()
         return table
-
 
     def read_text(self, object_name):
         target = self.labelget(pointerize(object_name))
