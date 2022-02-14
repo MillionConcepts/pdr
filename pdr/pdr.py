@@ -16,7 +16,7 @@ import pds4_tools as pds4
 import pvl
 import rasterio
 from astropy.io import fits
-from cytoolz import groupby, valfilter
+from cytoolz import groupby
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
@@ -45,12 +45,15 @@ from pdr.utils import (
     check_cases, byte_columns_to_object, enforce_byteorder, TimelessOmniDecoder
 )
 
+from line_profiler.line_profiler import LineProfiler
+lp = LineProfiler()
+
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
-# cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
 cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
+# cached_pvl_load = partial(pvl.load, decoder=TimelessOmniDecoder())
 
 def make_format_specifications(props):
     endian, ctype = props["sample_type"][0], props["sample_type"][-1]
@@ -227,7 +230,7 @@ class Data:
             pt_groups = groupby(lambda pt: pt[0], get_pds3_pointers(LABEL))
             pointers = []
             for pointer, group in pt_groups.items():
-                if len(group) > 1:
+                if (len(group) > 1) and (pointer != "^STRUCTURE"):
                     warnings.warn(
                         f"Duplicate handling for {pointer} not yet "
                         f"implemented, ignoring"
@@ -371,16 +374,15 @@ class Data:
             block, object_name
         )
         # give columns unique names so that none of our table handling explodes
-        repeated_names = valfilter(
-            lambda val: len(val) > 1,
-            groupby(lambda record: record["NAME"], fields)
-        )
-        for name, column_group in repeated_names.items():
-            if name == "RESERVED":
-                name = f"RESERVED_{column_group[0]['START_BYTE']}"
-            for ix, column in enumerate(column_group):
-                column["NAME"] = f"{name}_{ix}"
         fmtdef = pd.DataFrame.from_records(fields)
+        namegroups = fmtdef.groupby("NAME")
+        for name, field_group in namegroups:
+            if len(field_group) == 1:
+                continue
+            if name == "RESERVED":
+                name = f"RESERVED_{field_group['START_BYTE'].iloc[0]}"
+            names = [f"{name}_{ix}" for ix in range(len(field_group))]
+            fmtdef.loc[field_group.index, "NAME"] = names
         return fmtdef, override_allocation_check
 
     def load_format_file(self, format_file, object_name):
@@ -425,17 +427,22 @@ class Data:
             #  for accuracy of start byte values...but I am not very confident
             #  that files like this will be formatted consistently enough
             #  that checking to insert placeholders will be useful
+            # TODO: this tree is the ugliest
             if repeat_count is not None:
-                # copy while doing these things so that we can modify them
-                # individually later (e.g., for reindexing names)
                 # sum lists (from containers) together and add to fields
                 if hasattr(obj, "__add__"):
-                    fields += reduce(
-                        add, [obj.copy() for _ in range(repeat_count)]
-                    )
+                    if repeat_count > 1:
+                        fields += reduce(
+                            add, [obj for _ in range(repeat_count)]
+                        )
+                    else:
+                        fields += obj
                 # put dictionaries in a repeated list and add to fields
                 else:
-                    fields += [obj.copy() for _ in range(repeat_count)]
+                    if repeat_count > 1:
+                        fields += [obj for _ in range(repeat_count)]
+                    else:
+                        fields.append(obj)
             else:
                 fields.append(obj)
         return fields, override_allocation_checks
@@ -471,6 +478,8 @@ class Data:
         if fmtdef is None:
             return np.dtype(dt), fmtdef
         fmtdef['dt'] = None
+        if 'ITEM_BYTES' not in fmtdef.columns:
+            fmtdef['ITEM_BYTES'] = np.nan
         data_types = tuple(
             fmtdef.groupby(['DATA_TYPE', 'ITEM_BYTES', 'BYTES'], dropna=False)
         )
@@ -490,7 +499,8 @@ class Data:
             # TODO: this needs to also insert rows into the format definition
             #  if we want to retain the populate-from-fmtdef-name behavior
             #  in read_table (which perhaps we do not)
-            dt = self._allocate_placeholders(dt, fmtdef, pointer)
+            # dt = self._allocate_placeholders(dt, fmtdef, pointer)
+            pass
         return np.dtype(dt), fmtdef
 
     def _allocate_placeholders(self, dt, fmtdef, pointer):
@@ -520,6 +530,7 @@ class Data:
         return allocated_dt
 
     # TODO: refactor this. see issue #27.
+    # @lp
     def read_table(self, pointer="TABLE"):
         """
         Read a table. Will first attempt to parse it as generic CSV
@@ -577,6 +588,7 @@ class Data:
         except TypeError:  # Failed to read the table
             return self.labelget(pointer)
         table.columns = fmtdef.NAME.tolist()
+        # lp.print_stats()
         return table
 
     def read_text(self, object_name):
@@ -777,12 +789,12 @@ class Data:
                 file_size = os.path.getsize(self.filename)
                 return file_size-tab_size
         if record_bytes is not None and isinstance(target, int):
-            return record_bytes * (target - 1)
+            return record_bytes * max(target - 1, 0)
         elif isinstance(target, list):
             if isinstance(target[0], int):
                 return target[0]
             elif isinstance(target[-1], int):
-                return record_bytes * (target[-1] - 1)
+                return record_bytes * max(target[-1] - 1, 0)
             else:
                 return 0
         elif type(target) is str:

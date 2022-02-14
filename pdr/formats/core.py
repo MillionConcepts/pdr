@@ -83,16 +83,19 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_text
     if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
         return data.read_header
+    if "LINE_PREFIX_TABLE" in pointer:
+        return data.tbd
+    if "TABLE" in pointer:
+        return data.read_table
+    # I have moved this below "table" due to the presence of a number of
+    # binary tables named things like "Image Time Table". If there are pictures
+    # of tables, we will need to do something more sophisticated.
     if ("IMAGE" in pointer) or ("QUB" in pointer):
         # TODO: sloppy pt. 1. this will be problematic for
         #  products with a 'secondary' fits file, etc.
         if looks_like_this_kind_of_file(data.filename, FITS_EXTENSIONS):
             return data.handle_fits_file
         return data.read_image
-    if "LINE_PREFIX_TABLE" in pointer:
-        return data.tbd
-    if "TABLE" in pointer:
-        return data.read_table
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
     if "STRUCTURE" in pointer:

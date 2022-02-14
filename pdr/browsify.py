@@ -9,10 +9,14 @@ import pandas as pd
 import pvl
 from PIL import Image
 from dustgoggles.func import naturals
+from matplotlib import pyplot as plt
 from pvl.grammar import OmniGrammar
 
 
 # noinspection PyArgumentList
+from pdr.utils import numeric_columns
+
+
 def find_masked_bounds(image, cheat_low, cheat_high):
     """
     relatively memory-efficient way to perform bound calculations for
@@ -156,6 +160,9 @@ def browsify(
     elif isinstance(obj, pd.DataFrame):
         # noinspection PyTypeChecker
         obj.to_csv(outbase + ".csv"),
+        # TODO: experimental, add more handles
+        if any(("spectrum" in c.lower() for c in obj.columns)):
+            save_sparklines(obj, outbase)
     elif obj is None:
         return
     else:
@@ -277,3 +284,26 @@ def _export_single_band(band_ix, obj):
             f"band_ix={band_ix} does not exist, dumping band {middle_ix}"
         )
         return obj[middle_ix]
+
+
+def save_sparklines(
+    df: pd.DataFrame,
+    outbase,
+    sparkline_column_key = lambda c: 'spectrum' in c.lower(),
+    orientation = 'rows'
+):
+    sparkframe = df[
+        [c for c in df.columns if sparkline_column_key(c)]
+    ].copy().reset_index(drop=True)
+
+    fig, ax = plt.subplots()
+    if orientation == 'rows':
+        height = (sparkframe.max(axis=1) - sparkframe.min(axis=1)).iloc[0]
+        for ix, row in sparkframe.iterrows():
+            ax.plot(row.values + height * ix)
+    else:
+        height = (sparkframe.max(axis=0) - sparkframe.min(axis=0)).iloc[0]
+        for ix, colvals in enumerate(sparkframe.iteritems()):
+            ax.plot(colvals[1].values + height * ix)
+    fig.savefig(outbase + "_sparklines.jpg")
+    plt.close('all')

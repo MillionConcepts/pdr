@@ -7,10 +7,11 @@ import warnings
 from itertools import chain
 from numbers import Number
 from pathlib import Path
-from typing import Optional, Collection, Union
+from typing import Optional, Collection, Union, Hashable
 
 import numpy as np
 import pandas as pd
+import pandas.api.types
 import pvl
 import pvl.grammar
 import pvl.decoder
@@ -330,3 +331,10 @@ class TimelessOmniDecoder(pvl.decoder.OmniDecoder):
 
     def decode_datetime(self, value: str):
         raise ValueError
+
+
+def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
+    return [
+        col for col, dtype in df.dtypes.iteritems()
+        if pandas.api.types.is_numeric_dtype(dtype)
+    ]
