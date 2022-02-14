@@ -42,7 +42,8 @@ from pdr.utils import (
     pointerize,
     trim_label,
     casting_to_float,
-    check_cases, byte_columns_to_object, enforce_byteorder, TimelessOmniDecoder
+    check_cases, byte_columns_to_object, enforce_byteorder,
+    TimelessOmniDecoder, booleanize_booleans
 )
 
 
@@ -51,7 +52,7 @@ from pdr.utils import (
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
 cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
-# cached_pvl_load = partial(pvl.load, decoder=TimelessOmniDecoder())
+
 
 def make_format_specifications(props):
     endian, ctype = props["sample_type"][0], props["sample_type"][-1]
@@ -173,11 +174,12 @@ def decompress(filename):
 
 
 class Data:
-    def __init__(self, fn):
+    def __init__(self, fn, debug = False):
         # TODO: products can have multiple data files, and in some cases one
         #  of those data files also contains the attached label -- basically,
         #  these can't be strings
         self.filename = fn
+        self.debug = debug
         self.labelname = None
         # index of all of the pointers to data
         self.index = []
@@ -366,8 +368,7 @@ class Data:
         # TODO: this will generally fail for PDS4 -- but maybe it never needs
         #  to be called?
         block = self.labelblock(depointerize(object_name))
-        fields = self.read_format_block(block, object_name
-        )
+        fields = self.read_format_block(block, object_name)
         # give columns unique names so that none of our table handling explodes
         fmtdef = pd.DataFrame.from_records(fields)
         namegroups = fmtdef.groupby("NAME")
@@ -401,7 +402,6 @@ class Data:
         while "^STRUCTURE" in [obj[0] for obj in format_block]:
             format_block = self.inject_format_files(format_block, object_name)
         fields = []
-        override_allocation_checks = False
         for item_type, definition in format_block:
             if item_type in ("COLUMN", "FIELD"):
                 obj = dict(definition)
@@ -529,6 +529,7 @@ class Data:
                 swapped = enforce_byteorder(array, inplace=False)
                 table = pd.DataFrame(swapped)
                 table = byte_columns_to_object(table)
+                table = booleanize_booleans(table, fmtdef)
             else:
                 table = pd.DataFrame(
                     np.loadtxt(
@@ -596,11 +597,20 @@ class Data:
             if "HEADER" in pointer:
                 return hdulist[pointer_to_fits_key(pointer, hdulist)].header
             return hdulist[pointer_to_fits_key(pointer, hdulist)].data
-        except:
+        except Exception as ex:
             # TODO: assuming this does not need to be specified as f-string
             #  (like in read_header/tbd) -- maybe! must determine and specify
             #  what cases this exception was needed to handle
-            return self.labelget(pointer)
+            self._catch_return_default(self.labelget(pointer), ex)
+
+    def _catch_return_default(self, pointer: str, exception: Exception):
+        """
+        if we are in debug mode, reraise an exception. otherwise, return
+        the label block only.
+        """
+        if self.debug is True:
+            raise exception
+        return self.labelget(pointer)
 
     def find_special_constants(self, key):
         """
@@ -689,15 +699,19 @@ class Data:
         return obj, self.labelblock(object_name)
 
     def tbd(self, pointer=""):
-        """This is a placeholder function for pointers that are
+        """
+        This is a placeholder function for pointers that are
         not explicitly supported elsewhere. It throws a warning and
-        passes just the value of the pointer."""
+        passes just the value of the pointer.
+        """
         warnings.warn(f"The {pointer} pointer is not yet fully supported.")
         return self.labelget(pointer)
 
     def trivial(self, pointer=""):
-        """This is a trivial loader. It does not load. The purpose is to use
-        for any pointers we don't want to load and instead simply want ignored."""
+        """
+        This is a trivial loader. It does not load. The purpose is to use
+        for any pointers we don't want to load and instead simply want ignored.
+        """
         pass
 
     def labelget(self, text):
@@ -765,6 +779,7 @@ class Data:
                 # This is to handle the PVL "Quantity" object... should
                 # probably do this better
                 return target.value
+            # TODO: what exception types does this hit
             except:
                 raise ParseError(f"Unknown data pointer format: {target}")
 
@@ -799,12 +814,6 @@ class Data:
         else:
             obj = self[object_name]
         return _browsify_array(obj, save=False, outbase="", **browse_kwargs)
-
-    def _dump_scaled_array(
-        self, object_name, purge, outfile, **browse_kwargs
-    ):
-        obj = self.get_scaled(object_name, inplace=purge)
-        browsify(obj, outfile, purge, **browse_kwargs)
 
     def dump_browse(
         self,

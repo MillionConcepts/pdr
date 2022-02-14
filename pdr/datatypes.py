@@ -9,10 +9,7 @@ from pdr.utils import read_hex
 
 
 def integer_bytes(
-    endian: str,
-    signed: bool,
-    sample_bytes: int,
-    for_numpy: bool = False
+    endian: str, signed: bool, sample_bytes: int, for_numpy: bool = False
 ) -> str:
     """
     translation for inconsistent integer types
@@ -31,14 +28,16 @@ def integer_bytes(
 
 
 def sample_types(
-    sample_type: str, sample_bytes: int, for_numpy: bool=False
+    sample_type: str, sample_bytes: int, for_numpy: bool = False
 ) -> str:
     """
     Defines a translation from PDS data types to Python struct or numpy dtype
     format strings, using both the type and bytes specified (because the
     mapping to type alone is not consistent across PDS3).
     """
-    if ("INTEGER" in sample_type) and ("ASCII" not in sample_type):
+    if (("INTEGER" in sample_type) or (sample_type == "BOOLEAN")) and (
+        "ASCII" not in sample_type
+    ):
         if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
             endian = "<"
         else:
@@ -70,6 +69,7 @@ def generic_image_constants(data):
     if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
         consts["NULL"] = 65535
     return consts
+
 
 # TODO: super incomplete, although hopefully not often needed
 

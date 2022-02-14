@@ -338,3 +338,11 @@ def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
         col for col, dtype in df.dtypes.iteritems()
         if pandas.api.types.is_numeric_dtype(dtype)
     ]
+
+
+def booleanize_booleans(table, fmtdef):
+    boolean_columns = fmtdef.loc[
+        fmtdef['DATA_TYPE'] == 'BOOLEAN', 'NAME'
+    ]
+    table[boolean_columns] = table[boolean_columns].astype(bool)
+    return table
