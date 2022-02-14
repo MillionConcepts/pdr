@@ -293,9 +293,20 @@ class Data:
                 )
         try:
             setattr(self, object_name, self.load_from_pointer(object_name))
-        except FileNotFoundError:
-            warnings.warn(f"Unable to find or load {object_name}.")
-            setattr(self, object_name, self.labelget(pointerize(object_name)))
+        except KeyboardInterrupt:
+            raise
+        except FileNotFoundError as ex:
+            warnings.warn(f"Unable to find some requirement of {object_name}.")
+            setattr(
+                self, object_name, self._catch_return_default(object_name, ex)
+            )
+        except Exception as ex:
+            warnings.warn(f"Unable to load {object_name}.")
+            setattr(
+                self, object_name, self._catch_return_default(object_name, ex)
+            )
+
+
 
     def read_label(self):
         """
@@ -531,9 +542,9 @@ class Data:
             fn = check_cases(self.filename)
         try:
             dt, fmtdef = self.parse_table_structure(pointer)
-        except KeyError:
+        except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
-            return self.labelget(pointer)
+            return self._catch_return_default(pointer, ex)
         # Check if this is just a CSV file
         try:
             # TODO: look for commas more intelligently or dispatch to astropy
@@ -570,8 +581,8 @@ class Data:
             table = table.drop(
                 [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
             )
-        except TypeError:  # Failed to read the table
-            return self.labelget(pointer)
+        except TypeError as ex:  # Failed to read the table
+            return self._catch_return_default(pointer, ex)
         table.columns = fmtdef.NAME.tolist()
         # lp.print_stats()
         return table
@@ -583,15 +594,18 @@ class Data:
         )
         try:
             return open(check_cases(local_path)).read()
-        except FileNotFoundError:
+        except FileNotFoundError as ex:
+            exception = ex
             warnings.warn(f"couldn't find {target}")
-        except UnicodeDecodeError:
+        except UnicodeDecodeError as ex:
+            exception = ex
             warnings.warn(f"couldn't parse {target}")
-        return self.labelget(object_name)
+        return self._catch_return_default(object_name, exception)
 
     def read_header(self, object_name="HEADER"):
         """Attempt to read a file header."""
         target = self.labelget(pointerize(object_name))
+        # TODO: not currently raising this in debug mode
         if isinstance(target, (list, int)):
             warnings.warn(
                 "headers with specified byte/record offsets are not presently "
@@ -881,10 +895,7 @@ class Data:
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
-        try:
-            return getattr(self, item)
-        except AttributeError:
-            raise KeyError(f"{item} has not been loaded.")
+        return getattr(self, item)
 
     # TODO, maybe: do __str__ and __repr__ better
 
