@@ -45,8 +45,6 @@ from pdr.utils import (
     check_cases, byte_columns_to_object, enforce_byteorder, TimelessOmniDecoder
 )
 
-from line_profiler.line_profiler import LineProfiler
-lp = LineProfiler()
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
@@ -368,10 +366,7 @@ class Data:
         # TODO: this will generally fail for PDS4 -- but maybe it never needs
         #  to be called?
         block = self.labelblock(depointerize(object_name))
-        # TODO: override probably breaks some loaders b/c signature -- maybe
-        #  (hopefully?) temporary
-        fields, override_allocation_check = self.read_format_block(
-            block, object_name
+        fields = self.read_format_block(block, object_name
         )
         # give columns unique names so that none of our table handling explodes
         fmtdef = pd.DataFrame.from_records(fields)
@@ -383,7 +378,7 @@ class Data:
                 name = f"RESERVED_{field_group['START_BYTE'].iloc[0]}"
             names = [f"{name}_{ix}" for ix in range(len(field_group))]
             fmtdef.loc[field_group.index, "NAME"] = names
-        return fmtdef, override_allocation_check
+        return fmtdef
 
     def load_format_file(self, format_file, object_name):
         try:
@@ -414,7 +409,6 @@ class Data:
             elif item_type == "CONTAINER":
                 obj, _ = self.read_format_block(definition, object_name)
                 repeat_count = definition.get("REPETITIONS")
-                override_allocation_checks = True
             else:
                 continue
             # TODO: what is our working example of a table that
@@ -445,7 +439,7 @@ class Data:
                         fields.append(obj)
             else:
                 fields.append(obj)
-        return fields, override_allocation_checks
+        return fields
 
     def inject_format_files(self, block, object_name):
         format_filenames = {
@@ -470,7 +464,7 @@ class Data:
         to unpack the table data according to the format given in the
         label.
         """
-        fmtdef, override_allocation_check = self.read_table_structure(pointer)
+        fmtdef = self.read_table_structure(pointer)
         if fmtdef['DATA_TYPE'].str.contains('ASCII').any():
             # don't try to load it as a binary file -- TODO: kind of a hack
             return None, fmtdef
@@ -495,42 +489,9 @@ class Data:
                     f"{data_type} is not a currently-supported data type."
                 )
         dt = fmtdef[['NAME', 'dt']].to_records(index=False).tolist()
-        if override_allocation_check is False:
-            # TODO: this needs to also insert rows into the format definition
-            #  if we want to retain the populate-from-fmtdef-name behavior
-            #  in read_table (which perhaps we do not)
-            # dt = self._allocate_placeholders(dt, fmtdef, pointer)
-            pass
         return np.dtype(dt), fmtdef
 
-    def _allocate_placeholders(self, dt, fmtdef, pointer):
-        start_bytes = fmtdef.START_BYTE.tolist()
-        field_bytes = fmtdef.BYTES.tolist()
-        row_bytes = dig_for_value(self.LABEL, pointer)["ROW_BYTES"]
-        allocated_dt = []
-        for ix in range(len(start_bytes)):
-            allocated_dt += dt[ix]
-            try:
-                allocation = (start_bytes[ix + 1] - start_bytes[ix])
-            except IndexError:
-                # The +1 is for the carriage return... these files are
-                # badly formatted...
-                allocation = row_bytes + 1 - start_bytes[ix]
-            if allocation > field_bytes[ix]:
-                allocated_dt += [
-                    (
-                        f"PLACEHOLDER_{ix}",
-                        # should this be char/void/something rather than
-                        # ASCII character? does it even matter?
-                        sample_types(
-                            "CHARACTER", int(allocation - field_bytes[ix])
-                        ),
-                    )
-                ]
-        return allocated_dt
-
     # TODO: refactor this. see issue #27.
-    # @lp
     def read_table(self, pointer="TABLE"):
         """
         Read a table. Will first attempt to parse it as generic CSV
