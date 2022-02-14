@@ -4,10 +4,20 @@ import re
 import struct
 import sys
 import warnings
+from functools import reduce
 from itertools import chain
 from numbers import Number
+from operator import add
 from pathlib import Path
-from typing import Optional, Collection, Union, Hashable
+from typing import (
+    Optional,
+    Collection,
+    Union,
+    Hashable,
+    Sequence,
+    Mapping,
+    MutableSequence,
+)
 
 import numpy as np
 import pandas as pd
@@ -16,6 +26,7 @@ import pvl
 import pvl.grammar
 import pvl.decoder
 from dustgoggles.structures import dig_for
+from typing.io import IO
 
 """
 The following three functions are substantially derived from code in
@@ -218,7 +229,7 @@ def read_hex(hex_string: str, fmt: str = ">I") -> Number:
 MAX_LABEL_SIZE = 500 * 1024
 
 
-def head_file(fn_or_reader, nbytes):
+def head_file(fn_or_reader: Union[IO, Path, str], nbytes):
     head_buffer = BytesIO()
     if not hasattr(fn_or_reader, "read"):
         fn_or_reader = open(fn_or_reader, "rb")
@@ -234,7 +245,11 @@ KNOWN_LABEL_ENDINGS = (
 )
 
 
-def trim_label(fn, max_size=MAX_LABEL_SIZE, raise_for_failure=False):
+def trim_label(
+    fn: Union[IO, Path, str],
+    max_size: int = MAX_LABEL_SIZE,
+    raise_for_failure: bool = False,
+) -> Union[str, bytes]:
     head = head_file(fn, max_size).read()
     # TODO: add some logging or whatever i guess
     for ending in KNOWN_LABEL_ENDINGS:
@@ -280,7 +295,7 @@ def check_cases(filename: Union[Path, str]) -> str:
     return str(matches[0])
 
 
-def byte_columns_to_object(df):
+def byte_columns_to_object(df: pd.DataFrame) -> pd.DataFrame:
     """
     pandas does not support numpy void ('V') types, which are sometimes
     required to deal with unstructured padding containing null bytes, etc.,
@@ -300,7 +315,7 @@ def byte_columns_to_object(df):
     return df
 
 
-def enforce_byteorder(array: np.ndarray, inplace=True):
+def enforce_byteorder(array: np.ndarray, inplace=True) -> np.ndarray:
     """
     determine which, if any, of an array's fields are in nonnative byteorder
     and swap them
@@ -317,7 +332,7 @@ def enforce_byteorder(array: np.ndarray, inplace=True):
     for name, field in array.dtype.fields.items():
         if field[0].isnative is False:
             swap_targets.append(name)
-            swapped_dtype.append((name, field[0].newbyteorder('=')))
+            swapped_dtype.append((name, field[0].newbyteorder("=")))
         else:
             swapped_dtype.append((name, field[0]))
     array[swap_targets] = array[swap_targets].byteswap()
@@ -335,14 +350,49 @@ class TimelessOmniDecoder(pvl.decoder.OmniDecoder):
 
 def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
     return [
-        col for col, dtype in df.dtypes.iteritems()
+        col
+        for col, dtype in df.dtypes.iteritems()
         if pandas.api.types.is_numeric_dtype(dtype)
     ]
 
 
-def booleanize_booleans(table, fmtdef):
-    boolean_columns = fmtdef.loc[
-        fmtdef['DATA_TYPE'] == 'BOOLEAN', 'NAME'
-    ]
+def booleanize_booleans(
+    table: pd.DataFrame, fmtdef: pd.DataFrame
+) -> pd.DataFrame:
+    boolean_columns = fmtdef.loc[fmtdef["DATA_TYPE"] == "BOOLEAN", "NAME"]
     table[boolean_columns] = table[boolean_columns].astype(bool)
     return table
+
+
+def append_repeated_object(
+    obj: Union[Sequence[Mapping], Mapping],
+    fields: MutableSequence[Mapping],
+    repeat_count: int,
+) -> Sequence[Mapping]:
+    # sum lists (from containers) together and add to fields
+    if hasattr(obj, "__add__"):
+        if repeat_count > 1:
+            fields += reduce(add, [obj for _ in range(repeat_count)])
+        else:
+            fields += obj
+    # put dictionaries in a repeated list and add to fields
+    else:
+        if repeat_count > 1:
+            fields += [obj for _ in range(repeat_count)]
+        else:
+            fields.append(obj)
+    return fields
+
+
+def filter_duplicate_pointers(pointers, pt_groups):
+    for pointer, group in pt_groups.items():
+        if (len(group) > 1) and (pointer != "^STRUCTURE"):
+            warnings.warn(
+                f"Duplicate handling for {pointer} not yet "
+                f"implemented, ignoring"
+            )
+        else:
+            pointers.append(group[0][0])
+    return pointers
+
+

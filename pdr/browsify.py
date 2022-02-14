@@ -22,7 +22,7 @@ def find_masked_bounds(image, cheat_low, cheat_high):
     relatively memory-efficient way to perform bound calculations for
     normalize_range on a masked array.
     """
-    valid = image[~image.mask]
+    valid = image[~image.mask].data
     if valid.size == 0:
         return None, None  # TODO: perhaps a silly hack?
     if (cheat_low != 0) and (cheat_high != 0):

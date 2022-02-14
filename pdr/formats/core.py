@@ -12,25 +12,6 @@ if TYPE_CHECKING:
     from pdr import Data
 
 LABEL_EXTENSIONS = in_both_cases((".xml", ".lbl"))
-DATA_EXTENSIONS = in_both_cases(
-    (
-        ".img",
-        ".fit",
-        ".fits",
-        ".dat",
-        ".tab",
-        ".qub",
-        # Compressed data... not PDS-compliant, but...
-        ".gz",
-        # And then the really unusual ones...
-        ".n06",
-        ".grn",  # Viking
-        ".rgb",  # MER
-        ".raw",  # Mars Express VMC, when capitalized
-        ".tif",
-        ".tiff",
-    )
-)
 IMAGE_EXTENSIONS = (".img", ".tif", ".tiff", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")

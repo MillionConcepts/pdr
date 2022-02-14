@@ -9,12 +9,12 @@ pkg_dir = _osp.abspath(_osp.dirname(__file__))
 test_dir = _osp.join(pkg_dir, 'oldtests')
 
 
-def read(fp):
-    return Data(fp)
+def read(fp, **kwargs):
+    return Data(fp, **kwargs)
 
 
-def open(fp):
-    return read(fp)
+def open(fp, **kwargs):
+    return read(fp, **kwargs)
 
 
 def get(url):

@@ -1,16 +1,15 @@
 import bz2
 import gzip
+import os
 import struct
 import warnings
-from functools import partial, reduce, cache
-from operator import add
+from functools import partial, cache
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
 from zipfile import ZipFile
 
 import Levenshtein as lev
 import numpy as np
-import os
 import pandas as pd
 import pds4_tools as pds4
 import pvl
@@ -23,7 +22,6 @@ from pvl.exceptions import ParseError
 from rasterio.errors import NotGeoreferencedWarning
 
 from pdr.browsify import browsify, _browsify_array
-
 from pdr.datatypes import (
     sample_types,
     PDS3_CONSTANT_NAMES,
@@ -31,10 +29,7 @@ from pdr.datatypes import (
     generic_image_constants,
 )
 from pdr.formats import (
-    LABEL_EXTENSIONS,
-    DATA_EXTENSIONS,
-    pointer_to_loader,
-    generic_image_properties,
+    LABEL_EXTENSIONS, pointer_to_loader, generic_image_properties,
 )
 from pdr.utils import (
     depointerize,
@@ -42,10 +37,14 @@ from pdr.utils import (
     pointerize,
     trim_label,
     casting_to_float,
-    check_cases, byte_columns_to_object, enforce_byteorder,
-    TimelessOmniDecoder, booleanize_booleans
+    check_cases,
+    byte_columns_to_object,
+    enforce_byteorder,
+    TimelessOmniDecoder,
+    booleanize_booleans,
+    append_repeated_object,
+    filter_duplicate_pointers
 )
-
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
@@ -174,117 +173,152 @@ def decompress(filename):
 
 
 class Data:
-    def __init__(self, fn, debug = False):
+    def __init__(
+        self,
+        fn: Union[Path, str],
+        *,
+        debug: bool = False,
+        lazy: Optional[bool] = None,
+        label_fn: Optional[Union[Path, str]] = None
+    ):
         # TODO: products can have multiple data files, and in some cases one
         #  of those data files also contains the attached label -- basically,
         #  these can't be strings
-        self.filename = fn
         self.debug = debug
+        self.filename = fn
+        self.file_mapping = {}
         self.labelname = None
         # index of all of the pointers to data
         self.index = []
         # known special constants per pointer
         self.specials = {}
-        # Attempt to identify and assign the data and label files
-        if fn.endswith(LABEL_EXTENSIONS):
-            setattr(self, "labelname", fn)
-            for dext in DATA_EXTENSIONS:
-                if Path(
-                    filename := fn.replace(Path(fn).suffix, dext)
-                ).exists():
-                    setattr(self, "filename", filename)
-                    break
-        elif fn.endswith(DATA_EXTENSIONS):
-            setattr(self, "filename", fn)
-            for lext in LABEL_EXTENSIONS:
-                if Path(
-                    labelname := fn.replace(Path(fn).suffix, lext)
-                ).exists():
-                    setattr(self, "labelname", labelname)
-                    break
+        implicit_lazy_exception  = None
+        # Attempt to identify and assign a label file
+        if label_fn is not None:
+            self.labelname = label_fn
+            lazy = False if lazy is None else lazy
+        elif fn.endswith(LABEL_EXTENSIONS):
+            self.labelname = fn
+            lazy = False if lazy is None else lazy
         else:
-            warnings.warn(f"Unknown filetype: {Path(fn).suffix}")
-            setattr(self, "filename", fn)
-            # TODO: Can you have an unknown filetype and a known label?
-            #  Should we define attribute labelname here? I guess you
-            #  couldn't know if it was a file or a label because the
-            #  extension didn't fit...So this will break with all M3 data or
-            #  anything else that uses weird extensions...
-
-        # Just use pds4_tools if this is a PDS4 file
-        # TODO: redundant and confusing w/read_label
-        try:
-            data = pds4.read(self.labelname, quiet=True)
-            for structure in data.structures:
-                setattr(self, structure.id.replace(" ", "_"), struct.data)
-                self.index += [structure.id.replace(" ", "_")]
-            return
-        except:
-            # Presume that this is not a PDS4 file
-            pass
-
-        LABEL = self.read_label()
-        if LABEL:
-            setattr(self, "LABEL", LABEL)
-            self.index += ["LABEL"]
-            pt_groups = groupby(lambda pt: pt[0], get_pds3_pointers(LABEL))
-            pointers = []
-            for pointer, group in pt_groups.items():
-                if (len(group) > 1) and (pointer != "^STRUCTURE"):
-                    warnings.warn(
-                        f"Duplicate handling for {pointer} not yet "
-                        f"implemented, ignoring"
-                    )
-                else:
-                    pointers.append(group[0][0])
-            setattr(self, "pointers", pointers)
-            for pointer in self.pointers:
-                object_name = depointerize(pointer)
-                self.index.append(object_name)
+            implicit_lazy_exception = fn
+            lazy = True if lazy is None else lazy
+        while self.labelname is None:
+            for lext in LABEL_EXTENSIONS:
                 try:
-                    setattr(
-                        self, object_name, self.load_from_pointer(object_name)
+                    self.labelname = check_cases(
+                        fn.replace(Path(fn).suffix, lext)
                     )
                 except FileNotFoundError:
-                    warnings.warn(f"Unable to find or load {object_name}.")
-                    setattr(self, object_name, self.labelget(pointerize(object_name)))
-        # Sometimes images do not have explicit pointers, so just always try
-        #  to read an image out of the file no matter what.
-        # Must exclude QUB files or it will reread them as an IMAGE
-        if not any(
-            "IMAGE" in key for key in self.index
-        ) and not self.filename.lower().endswith("qub"):
-            try:
-                if self.looks_like_a_fits_file():
-                    image = self.handle_fits_file()
-                else:
-                    # TODO: this will presently break if passed an unlabeled
-                    #  image file. read_image() should probably be made more
-                    #  permissive in some way to handle this, or we should at
-                    #  least give a useful error message.
-                    image = self.read_image()
-                if image is not None:
-                    setattr(self, "IMAGE", image)
-                    self.index += ["IMAGE"]
-            except:
-                pass
+                    continue
+            break
+        label = self.read_label()
+        setattr(self, "LABEL", label)
+        self.index += ["LABEL"]
+        if self.labelname.endswith(".xml"):
+            # Just use pds4_tools if this is a PDS4 file
+            # TODO: do this better, including lazy
+            data = pds4.read(self.labelname, quiet=True)
+            for structure in data.structures:
+                setattr(self, structure.id.replace(" ", "_"), structure.data)
+                self.index += [structure.id.replace(" ", "_")]
+            return
+
+        pt_groups = groupby(lambda pt: pt[0], get_pds3_pointers(label))
+        pointers = []
+        # noinspection PyArgumentList
+        pointers = filter_duplicate_pointers(pointers, pt_groups)
+        setattr(self, "pointers", pointers)
+        self._handle_initial_load(lazy, implicit_lazy_exception)
+        if (lazy is False) or (implicit_lazy_exception == fn):
+            if not any(("image" in obj.lower() for obj in self.index)):
+                self._fallback_image_load()
+
+    def _handle_initial_load(self, lazy, implicit_lazy_exception):
+        for pointer in self.pointers:
+            object_name = depointerize(pointer)
+            # TODO: sloppy?
+            if 'STRUCTURE' in object_name:
+                continue
+            self.index.append(object_name)
+            fn = self._object_to_filename(object_name)
+            if lazy is False:
+                self.load(object_name)
+            elif (lazy is True) and (fn == implicit_lazy_exception):
+                self.load(object_name)
+            else:
+                setattr(self, object_name, None)
+            self.file_mapping[object_name] = fn
+
+    def _object_to_filename(self, object_name, raise_missing=False):
+        target = self.labelget(pointerize(object_name))
+        if isinstance(target, Sequence) and not (isinstance(target, str)):
+            if isinstance(target[0], str):
+                target = target[0]
+        try:
+            if isinstance(target, str):
+                return check_cases(self.get_absolute_path(target))
+            else:
+                return check_cases(self.filename)
+        except FileNotFoundError:
+            if raise_missing is True:
+                raise
+            return None
+
+    def _fallback_image_load(self):
+        """
+        sometimes images do not have explicit pointers, so we may want to
+        try to read an image out of the file anyway.
+        """
+        if self.looks_like_a_fits_file():
+            image = self.handle_fits_file()
+        else:
+            # TODO: this will presently break if passed an unlabeled
+            #  image file. read_image() should probably be made more
+            #  permissive in some way to handle this, or we should at
+            #  least give a useful error message.
+            image = self.read_image()
+        if image is not None:
+            setattr(self, "IMAGE", image)
+            self.index += ["IMAGE"]
+
+    def load(self, object_name, reload=False):
+        if object_name not in self.index:
+            raise KeyError(f"{object_name} not found in index: {self.index}.")
+        if hasattr(self, object_name):
+            if (self[object_name] is not None) and (reload is False):
+                raise ValueError(
+                    f"{object_name} is already loaded; pass reload=True to "
+                    f"force reload."
+                )
+        try:
+            setattr(self, object_name, self.load_from_pointer(object_name))
+        except FileNotFoundError:
+            warnings.warn(f"Unable to find or load {object_name}.")
+            setattr(self, object_name, self.labelget(pointerize(object_name)))
 
     def read_label(self):
-        """Attempts to read the data label, checking first whether this is a
+        """
+        Attempts to read the data label, checking first whether this is a
         PDS4 file, then whether it has a detached label, then whether it
         has an attached label. Returns None if all of these attempts are
         unsuccessful.
         """
         if self.labelname:  # a detached label exists
             if Path(self.labelname).suffix.lower() == ".xml":
-                return pds4.read(self.labelname, quiet=True).label.to_dict()
-            return cached_pvl_load(self.labelname)
-        try:
-            # look for attached label
-            return pvl.loads(trim_label(decompress(self.filename)))
-        # TODO: specify
-        except Exception as ex:
-            return
+                label = pds4.read(self.labelname, quiet=True).label.to_dict()
+            else:
+                label = cached_pvl_load(self.labelname)
+            self.file_mapping["LABEL"] = self.labelname
+            return label
+        # look for attached label
+        label = pvl.loads(
+            trim_label(decompress(self.filename)),
+            decoder = TimelessOmniDecoder()
+        )
+        self.file_mapping["LABEL"] = self.filename
+        self.labelname = self.filename
+        return label
 
     def load_from_pointer(self, pointer):
         return pointer_to_loader(pointer, self)(pointer)
@@ -299,10 +333,10 @@ class Data:
 
     def read_image(
         self, object_name="IMAGE", userasterio=True, special_properties=None
-    ):  # ^IMAGE
+    ):
         """
-        Read a PDS IMG formatted file into an array. Defaults to using
-        `rasterio`, and then tries to parse the file directly.
+        Read an image file as a numpy array. Defaults to using `rasterio`,
+        and then tries to parse the file directly.
         """
         # TODO: Check for and apply BIT_MASK.
         object_name = depointerize(object_name)
@@ -321,6 +355,8 @@ class Data:
                 return None  # not much we can do with this!
             props = generic_image_properties(object_name, block, self)
         # a little decision tree to seamlessly deal with compression
+        # TODO: does not work with referenced images with headers right now?
+        #  (works for images attached to the _specific header we're reading_)
         if isinstance(self.labelget(pointerize(object_name)), str):
             fn = self.get_absolute_path(self.labelget(pointerize(object_name)))
         else:
@@ -407,7 +443,7 @@ class Data:
                 obj = dict(definition)
                 repeat_count = definition.get("ITEMS")
             elif item_type == "CONTAINER":
-                obj, _ = self.read_format_block(definition, object_name)
+                obj = self.read_format_block(definition, object_name)
                 repeat_count = definition.get("REPETITIONS")
             else:
                 continue
@@ -421,22 +457,8 @@ class Data:
             #  for accuracy of start byte values...but I am not very confident
             #  that files like this will be formatted consistently enough
             #  that checking to insert placeholders will be useful
-            # TODO: this tree is the ugliest
             if repeat_count is not None:
-                # sum lists (from containers) together and add to fields
-                if hasattr(obj, "__add__"):
-                    if repeat_count > 1:
-                        fields += reduce(
-                            add, [obj for _ in range(repeat_count)]
-                        )
-                    else:
-                        fields += obj
-                # put dictionaries in a repeated list and add to fields
-                else:
-                    if repeat_count > 1:
-                        fields += [obj for _ in range(repeat_count)]
-                    else:
-                        fields.append(obj)
+                fields = append_repeated_object(obj, fields, repeat_count)
             else:
                 fields.append(obj)
         return fields
@@ -534,7 +556,8 @@ class Data:
                 table = pd.DataFrame(
                     np.loadtxt(
                         fn,
-                        delimiter=',',  # this is probably a poor assumption to hard code.
+                        # this is probably a poor assumption to hard code.
+                        delimiter=',',
                         skiprows=self.labelget("LABEL_RECORDS"),
                     )
                     .copy()
@@ -858,12 +881,17 @@ class Data:
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
-        return getattr(self, item)
+        try:
+            return getattr(self, item)
+        except AttributeError:
+            raise KeyError(f"{item} has not been loaded.")
 
     # TODO, maybe: do __str__ and __repr__ better
 
     def __repr__(self):
-        return f"pdr.Data({self.filename})\nkeys={self.keys()}"
+        not_loaded = [k for k in self.keys() if self[k] is None]
+        return f"pdr.Data({self.filename})\nkeys={self.keys()}" \
+               f"\nnot yet loaded: {not_loaded}"
 
     def __str__(self):
         return self.__repr__()
