@@ -539,7 +539,7 @@ class Data:
         # TODO: this is not correctly loading the table fn when passed the
         #  label in the CCAM case, and probably some others
         target = self.labelget(pointerize(pointer))
-        if isinstance(target, Sequence):
+        if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
         if isinstance(target, str):

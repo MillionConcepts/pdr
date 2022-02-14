@@ -265,7 +265,7 @@ def check_cases(filename: Union[Path, str]) -> str:
         return filename
     matches = tuple(
         filter(
-            lambda path: path.name.lower() == filename.lower(),
+            lambda path: path.name.lower() == Path(filename).name.lower(),
             Path(filename).parent.iterdir(),
         )
     )
