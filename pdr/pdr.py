@@ -271,14 +271,11 @@ class Data:
         sometimes images do not have explicit pointers, so we may want to
         try to read an image out of the file anyway.
         """
-        if self.looks_like_a_fits_file():
-            image = self.handle_fits_file()
-        else:
-            # TODO: this will presently break if passed an unlabeled
-            #  image file. read_image() should probably be made more
-            #  permissive in some way to handle this, or we should at
-            #  least give a useful error message.
-            image = self.read_image()
+        # TODO: this will presently break if passed an unlabeled
+        #  image file. read_image() should probably be made more
+        #  permissive in some way to handle this, or we should at
+        #  least give a useful error message.
+        image = self.read_image()
         if image is not None:
             setattr(self, "IMAGE", image)
             self.index += ["IMAGE"]
@@ -306,8 +303,6 @@ class Data:
             setattr(
                 self, object_name, self._catch_return_default(object_name, ex)
             )
-
-
 
     def read_label(self):
         """
