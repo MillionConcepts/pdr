@@ -43,9 +43,9 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     # just an ambiguous name: best to specify it
     if (
         data.LABEL.get("INSTRUMENT_ID") == "APXS"
-        and pointer == "SCI_HEADER_TABLE"
+        and "TABLE" in pointer
     ):
-        return True, data.read_table
+        return formats.msl_apxs.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
     if data.LABEL.get("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":
         return True, formats.m3.l0_image_loader(data)

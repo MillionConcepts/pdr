@@ -5,6 +5,7 @@ import struct
 import warnings
 from functools import partial, cache
 from io import StringIO
+from operator import contains
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
 from zipfile import ZipFile
@@ -122,15 +123,21 @@ def process_line_interleaved_image(f, props):
 
 
 def skeptically_load_header(
-    path, object_name="header", start_byte=0, length=None
+    path, object_name="header", start=0, length=None, as_rows=False
 ):
     try:
         try:
             return cached_pvl_load(check_cases(path))
         except ValueError:
             file = open(check_cases(path))
-            file.seek(start_byte)
-            text = file.read(length)
+            # TODO: somehow normalize this with read_table
+            if as_rows is True:
+                if start > 0:
+                    file.readlines(start)
+                text = "\r\n".join(file.readlines(length))
+            else:
+                file.seek(start)
+                text = file.read(length)
             file.close()
             return text
     except (ParseError, ValueError, OSError):
@@ -548,8 +555,6 @@ class Data:
         Read a table. Will first attempt to parse it as generic CSV
         and then fall back to parsing it based on the label format definition.
         """
-        # TODO: this is not correctly loading the table fn when passed the
-        #  label in the CCAM case, and probably some others
         target = self.labelget(pointerize(pointer))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
@@ -567,16 +572,25 @@ class Data:
         try:
             # TODO: look for commas more intelligently or dispatch to astropy
             #  or whatever
+            start, length, as_rows = self.table_position(pointer)
             sep = check_explicit_delimiter(self.labelblock(pointer))
-            start_byte = self.data_start_byte(pointer)
-            # TODO: handle length (here and elsewhere)
-            bytes_buffer = head_file(fn, nbytes=None, offset=start_byte)
-            string_buffer = StringIO(bytes_buffer.read().decode())
+            if as_rows is False:
+                bytes_buffer = head_file(fn, nbytes=length, offset=start)
+                string_buffer = StringIO(bytes_buffer.read().decode())
+            else:
+                with open(fn) as file:
+                    if start > 0:
+                        file.readlines(start)
+                    string_buffer = StringIO(
+                        "\r\n".join(file.readlines(length))
+                    )
             string_buffer.seek(0)
             table = pd.read_csv(string_buffer, sep=sep, header=None)
         except (UnicodeDecodeError, AttributeError, ParserError):
             # This is not parseable as a CSV file
             if dt is not None:
+                # TODO: this will always throw an exception for text files
+                #  because offset is only a legal argument for binary files
                 array = np.fromfile(
                     fn,
                     dtype=dt,
@@ -588,6 +602,7 @@ class Data:
                 table = byte_columns_to_object(table)
                 table = booleanize_booleans(table, fmtdef)
             else:
+                # TODO: I think we're basically never getting here successfully
                 table = pd.DataFrame(
                     np.loadtxt(
                         fn,
@@ -630,21 +645,34 @@ class Data:
     def read_header(self, object_name="HEADER"):
         """Attempt to read a file header."""
         # TODO: not currently raising this in debug mode. probably shouldn't
-        start_byte = self.data_start_byte(object_name)
-        block = self.labelblock(object_name)
-        if 'BYTES' in block.keys():
-            length = block['BYTES']
-        elif (
-            ('RECORDS' in block.keys())
-            and ('RECORD_BYTES' in self.LABEL.keys())
-        ):
-            length = block['RECORDS'] * self.LABEL['RECORD_BYTES']
-        else:
-            # TODO: I'm sure there are other cases to handle here.
-            length = None
+        start, length, as_rows = self.table_position(object_name)
+        # TODO: I'm sure there are other cases to handle here.
         return skeptically_load_header(
-            self.file_mapping[object_name], object_name, start_byte, length
+            self.file_mapping[object_name],
+            object_name,
+            start,
+            length,
+            as_rows
         )
+
+    def table_position(self, object_name):
+        target = self._get_target(object_name)
+        block = self.labelblock(object_name)
+        length = None
+        if (as_rows := self._check_delimiter_stream(object_name)) is True:
+            start = target[1] - 1
+            if 'RECORDS' in block.keys():
+                length = block['RECORDS']
+        else:
+            start = self.data_start_byte(object_name)
+            if 'BYTES' in block.keys():
+                length = block['BYTES']
+            elif (
+                    ('RECORDS' in block.keys())
+                    and ('RECORD_BYTES' in self.LABEL.keys())
+            ):
+                length = block['RECORDS'] * self.LABEL['RECORD_BYTES']
+        return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
         """
@@ -798,6 +826,23 @@ class Data:
             return self.LABEL
         return what_got_dug
 
+    def _check_delimiter_stream(self, object_name):
+        """
+        do I appear to point to a delimiter-separated file without
+        explicit record byte length?
+        """
+        if self.LABEL.get("RECORD_BYTES") is not None:
+            return False
+        # TODO: not sure this is a good assumption
+        if not self.LABEL.get("RECORD_TYPE") == "STREAM":
+            return False
+        textish = map(
+            partial(contains, object_name), ("ASCII", "SPREADSHEET", "HEADER")
+        )
+        if any(textish):
+            return True
+        return False
+
     def data_start_byte(self, object_name):
         """
         Determine the first byte of the data in an IMG file from its
@@ -808,9 +853,7 @@ class Data:
         #  first place :shrug: -- previously I did this by making pointers
         #  lists, but this may be unwieldy
         # TODO: like similar functions, this will currently break with PDS4
-        target = self.labelget(object_name)
-        if isinstance(target, Mapping):
-            target = self.labelget(pointerize(object_name))
+        target = self._get_target(object_name)
         labelblock = self.labelblock(object_name)
         # TODO: I am positive this will break sometimes; need to find the
         #  correct RECORD_BYTES in some cases...sequence pointers
@@ -818,31 +861,38 @@ class Data:
             record_bytes = labelblock["RECORD_BYTES"]
         else:
             record_bytes = self.labelget("RECORD_BYTES")
-        if record_bytes is None and isinstance(target, int):
-            # Counts up from the bottom of the file
-            rows = self.labelget("ROWS")
-            row_bytes = self.labelget("ROW_BYTES")
-            tab_size = rows * row_bytes
-            # TODO: should be the filename of the target
-            file_size = os.path.getsize(self.filename)
-            return file_size-tab_size
-        if record_bytes is not None and isinstance(target, int):
+        if record_bytes is None:
+            if isinstance(target, int):
+                # Counts up from the bottom of the file
+                rows = self.labelget("ROWS")
+                row_bytes = self.labelget("ROW_BYTES")
+                tab_size = rows * row_bytes
+                # TODO: should be the filename of the target
+                file_size = os.path.getsize(self.filename)
+                return file_size-tab_size
+            if isinstance(target, list):
+                if isinstance(target[0], int):
+                    return target[0]
+        if isinstance(target, int):
             return record_bytes * max(target - 1, 0)
-        elif isinstance(target, list):
-            if isinstance(target[0], int):
-                return target[0]
-            elif isinstance(target[-1], int):
+        if isinstance(target, list) and (record_bytes is not None):
+            if isinstance(target[-1], int):
                 return record_bytes * max(target[-1] - 1, 0)
-            elif isinstance(target[-1], pvl.Quantity):
+            if isinstance(target[-1], pvl.Quantity):
                 if target[-1].units == 'BYTES':
                     return target[-1].value
                 return record_bytes * max(target[-1].value - 1, 0)
-            else:
-                return 0
-        elif type(target) is str:
+            return 0
+        if isinstance(target, str):
             return 0
         else:
             raise ParseError(f"Unknown data pointer format: {target}")
+
+    def _get_target(self, object_name):
+        target = self.labelget(object_name)
+        if isinstance(target, Mapping):
+            target = self.labelget(pointerize(object_name))
+        return target
 
     # The following two functions make this object act sort of dict-like
     #  in useful ways for data exploration.
