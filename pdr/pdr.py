@@ -294,6 +294,10 @@ class Data:
             #  permissive in some way to handle this, or we should at
             #  least give a useful error message.
             image = self.read_image()
+        # TODO: this will presently break if passed an unlabeled
+        #  image file. read_image() should probably be made more
+        #  permissive in some way to handle this, or we should at
+        #  least give a useful error message.
         if image is not None:
             setattr(self, "IMAGE", image)
             self.index += ["IMAGE"]
