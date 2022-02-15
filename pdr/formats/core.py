@@ -66,7 +66,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_header
     if "LINE_PREFIX_TABLE" in pointer:
         return data.tbd
-    if "TABLE" in pointer:
+    if ("TABLE" in pointer) or ("SPREADSHEET" in pointer):
         return data.read_table
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures

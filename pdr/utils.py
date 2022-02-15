@@ -229,10 +229,18 @@ def read_hex(hex_string: str, fmt: str = ">I") -> Number:
 MAX_LABEL_SIZE = 500 * 1024
 
 
-def head_file(fn_or_reader: Union[IO, Path, str], nbytes):
+def head_file(
+    fn_or_reader: Union[IO, Path, str],
+    nbytes: Union[int, None] = None,
+    offset: int = 0,
+    tail: bool = False
+) -> BytesIO:
     head_buffer = BytesIO()
     if not hasattr(fn_or_reader, "read"):
         fn_or_reader = open(fn_or_reader, "rb")
+    whence = 2 if tail is True else False
+    offset = offset * -1 if tail is True else offset
+    fn_or_reader.seek(offset, whence)
     head_buffer.write(fn_or_reader.read(nbytes))
     fn_or_reader.close()
     head_buffer.seek(0)

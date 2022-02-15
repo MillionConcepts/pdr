@@ -190,9 +190,6 @@ def _browsify_pds3_label(
     try:
         pvl.dump(obj, open(outbase + ".lbl", "w"), grammar=OmniGrammar())
     except (ValueError, TypeError) as e:
-        warnings.warn(
-            f"pvl will not dump; {e}; writing to {outbase}.badpvl.txt"
-        )
         # if that fails, just dump them as text
         with open(outbase + ".badpvl.txt", "w") as file:
             file.write(str(obj))

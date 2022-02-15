@@ -4,6 +4,7 @@ import os
 import struct
 import warnings
 from functools import partial, cache
+from io import StringIO
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
 from zipfile import ZipFile
@@ -30,6 +31,7 @@ from pdr.datatypes import (
 )
 from pdr.formats import (
     LABEL_EXTENSIONS, pointer_to_loader, generic_image_properties,
+    looks_like_this_kind_of_file, FITS_EXTENSIONS,
 )
 from pdr.utils import (
     depointerize,
@@ -43,7 +45,7 @@ from pdr.utils import (
     TimelessOmniDecoder,
     booleanize_booleans,
     append_repeated_object,
-    filter_duplicate_pointers
+    filter_duplicate_pointers, head_file
 )
 
 # we do not want rasterio to shout about data not being georeferenced; most
@@ -119,13 +121,18 @@ def process_line_interleaved_image(f, props):
     return image, prefix
 
 
-def skeptically_load_header(path, object_name="header"):
+def skeptically_load_header(
+    path, object_name="header", start_byte=0, length=None
+):
     try:
         try:
             return cached_pvl_load(check_cases(path))
         except ValueError:
-            with open(check_cases(path), "r") as file:
-                return file.read()
+            file = open(check_cases(path))
+            file.seek(start_byte)
+            text = file.read(length)
+            file.close()
+            return text
     except (ParseError, ValueError, OSError):
         warnings.warn(f"unable to parse {object_name}")
 
@@ -172,6 +179,14 @@ def decompress(filename):
     return f
 
 
+def check_explicit_delimiter(block):
+    if "FIELD_DELIMITER" in block.keys():
+        return {
+            "COMMA": ",", "VERTICAL_BAR": "|", "SEMICOLON": ";", "TAB": "\t"
+        }[block["FIELD_DELIMITER"]]
+    return ","
+
+
 class Data:
     def __init__(
         self,
@@ -192,7 +207,7 @@ class Data:
         self.index = []
         # known special constants per pointer
         self.specials = {}
-        implicit_lazy_exception  = None
+        implicit_lazy_exception = None
         # Attempt to identify and assign a label file
         if label_fn is not None:
             self.labelname = label_fn
@@ -243,13 +258,13 @@ class Data:
                 continue
             self.index.append(object_name)
             fn = self._object_to_filename(object_name)
+            self.file_mapping[object_name] = fn
             if lazy is False:
                 self.load(object_name)
             elif (lazy is True) and (fn == implicit_lazy_exception):
                 self.load(object_name)
             else:
                 setattr(self, object_name, None)
-            self.file_mapping[object_name] = fn
 
     def _object_to_filename(self, object_name, raise_missing=False):
         target = self.labelget(pointerize(object_name))
@@ -271,8 +286,8 @@ class Data:
         sometimes images do not have explicit pointers, so we may want to
         try to read an image out of the file anyway.
         """
-        if self.looks_like_a_fits_file():
-            image = self.handle_fits_file()
+        if looks_like_this_kind_of_file(self.filename, FITS_EXTENSIONS):
+            image = self.handle_fits_file(self.filename)
         else:
             # TODO: this will presently break if passed an unlabeled
             #  image file. read_image() should probably be made more
@@ -307,8 +322,6 @@ class Data:
                 self, object_name, self._catch_return_default(object_name, ex)
             )
 
-
-
     def read_label(self):
         """
         Attempts to read the data label, checking first whether this is a
@@ -326,7 +339,7 @@ class Data:
         # look for attached label
         label = pvl.loads(
             trim_label(decompress(self.filename)),
-            decoder = TimelessOmniDecoder()
+            decoder=TimelessOmniDecoder()
         )
         self.file_mapping["LABEL"] = self.filename
         self.labelname = self.filename
@@ -546,11 +559,17 @@ class Data:
         except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
-        # Check if this is just a CSV file
+        # Check if this is just a DSV file
         try:
             # TODO: look for commas more intelligently or dispatch to astropy
             #  or whatever
-            table = pd.read_csv(fn)
+            sep = check_explicit_delimiter(self.labelblock(pointer))
+            start_byte = self.data_start_byte(pointer)
+            # TODO: handle length (here and elsewhere)
+            bytes_buffer = head_file(fn, nbytes=None, offset=start_byte)
+            string_buffer = StringIO(bytes_buffer.read().decode())
+            string_buffer.seek(0)
+            table = pd.read_csv(string_buffer, sep=sep, header=None)
         except (UnicodeDecodeError, AttributeError, ParserError):
             # This is not parseable as a CSV file
             if dt is not None:
@@ -577,6 +596,8 @@ class Data:
                 )
         if len(table.columns) < len(fmtdef.NAME.tolist()):
             table = pd.read_fwf(fn)
+        else:
+            table.columns = fmtdef.NAME.tolist()
         try:
             # If there were any cruft "placeholder" columns, discard them
             table = table.drop(
@@ -584,7 +605,6 @@ class Data:
             )
         except TypeError as ex:  # Failed to read the table
             return self._catch_return_default(pointer, ex)
-        table.columns = fmtdef.NAME.tolist()
         # lp.print_stats()
         return table
 
@@ -605,21 +625,22 @@ class Data:
 
     def read_header(self, object_name="HEADER"):
         """Attempt to read a file header."""
-        target = self.labelget(pointerize(object_name))
-        # TODO: not currently raising this in debug mode
-        if isinstance(target, (list, int)):
-            warnings.warn(
-                "headers with specified byte/record offsets are not presently "
-                "supported"
-            )
-            return self.labelget(object_name)
-        local_path = self.get_absolute_path(
-            self.labelget(pointerize(object_name))
+        # TODO: not currently raising this in debug mode. probably shouldn't
+        start_byte = self.data_start_byte(object_name)
+        block = self.labelblock(object_name)
+        if 'BYTES' in block.keys():
+            length = block['BYTES']
+        elif (
+            ('RECORDS' in block.keys())
+            and ('RECORD_BYTES' in self.LABEL.keys())
+        ):
+            length = block['RECORDS'] * self.LABEL['RECORD_BYTES']
+        else:
+            # TODO: I'm sure there are other cases to handle here.
+            length = None
+        return skeptically_load_header(
+            self.file_mapping[object_name], object_name, start_byte, length
         )
-        if Path(local_path).exists():
-            return skeptically_load_header(local_path, object_name)
-        warnings.warn(f"Unable to find {object_name}")
-        return self.labelget(pointerize(object_name))
 
     def handle_fits_file(self, pointer=""):
         """
@@ -793,14 +814,14 @@ class Data:
             record_bytes = labelblock["RECORD_BYTES"]
         else:
             record_bytes = self.labelget("RECORD_BYTES")
-            if record_bytes is None and isinstance(target, int):
-                # Counts up from the bottom of the file
-                rows = self.labelget("ROWS")
-                row_bytes = self.labelget("ROW_BYTES")
-                tab_size = rows * row_bytes
-                # TODO: should be the filename of the target
-                file_size = os.path.getsize(self.filename)
-                return file_size-tab_size
+        if record_bytes is None and isinstance(target, int):
+            # Counts up from the bottom of the file
+            rows = self.labelget("ROWS")
+            row_bytes = self.labelget("ROW_BYTES")
+            tab_size = rows * row_bytes
+            # TODO: should be the filename of the target
+            file_size = os.path.getsize(self.filename)
+            return file_size-tab_size
         if record_bytes is not None and isinstance(target, int):
             return record_bytes * max(target - 1, 0)
         elif isinstance(target, list):
@@ -808,18 +829,16 @@ class Data:
                 return target[0]
             elif isinstance(target[-1], int):
                 return record_bytes * max(target[-1] - 1, 0)
+            elif isinstance(target[-1], pvl.Quantity):
+                if target[-1].units == 'BYTES':
+                    return target[-1].value
+                return record_bytes * max(target[-1].value - 1, 0)
             else:
                 return 0
         elif type(target) is str:
             return 0
         else:
-            try:
-                # This is to handle the PVL "Quantity" object... should
-                # probably do this better
-                return target.value
-            # TODO: what exception types does this hit
-            except:
-                raise ParseError(f"Unknown data pointer format: {target}")
+            raise ParseError(f"Unknown data pointer format: {target}")
 
     # The following two functions make this object act sort of dict-like
     #  in useful ways for data exploration.
@@ -901,7 +920,12 @@ class Data:
     # TODO, maybe: do __str__ and __repr__ better
 
     def __repr__(self):
-        not_loaded = [k for k in self.keys() if self[k] is None]
+        not_loaded = []
+        for k in self.keys():
+            if not hasattr(self, k):
+                not_loaded.append(k)
+            elif self[k] is None:
+                not_loaded.append(k)
         return f"pdr.Data({self.filename})\nkeys={self.keys()}" \
                f"\nnot yet loaded: {not_loaded}"
 
