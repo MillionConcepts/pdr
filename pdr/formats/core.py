@@ -40,8 +40,16 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
+    # just an ambiguous name: best to specify it
+    if (
+        data.LABEL.get("INSTRUMENT_ID") == "APXS"
+        and pointer == "SCI_HEADER_TABLE"
+    ):
+        return True, data.read_table
+    # unusual line prefixes; rasterio happily reads it, but incorrectly
     if data.LABEL.get("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":
         return True, formats.m3.l0_image_loader(data)
+    # difficult table formats that are handled well by astropy.io.ascii
     if (
         data.LABEL.get("INSTRUMENT_NAME") == "TRIAXIAL FLUXGATE MAGNETOMETER"
         and pointer == "TABLE"
