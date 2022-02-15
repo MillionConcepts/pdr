@@ -4,10 +4,8 @@ import re
 import struct
 import sys
 import warnings
-from functools import reduce
 from itertools import chain
 from numbers import Number
-from operator import add
 from pathlib import Path
 from typing import (
     Optional,
@@ -23,8 +21,8 @@ import numpy as np
 import pandas as pd
 import pandas.api.types
 import pvl
-import pvl.grammar
 import pvl.decoder
+import pvl.grammar
 from dustgoggles.structures import dig_for
 from typing.io import IO
 
@@ -380,7 +378,7 @@ def append_repeated_object(
     # sum lists (from containers) together and add to fields
     if hasattr(obj, "__add__"):
         if repeat_count > 1:
-            fields += reduce(add, [obj for _ in range(repeat_count)])
+            fields += chain.from_iterable([obj for _ in range(repeat_count)])
         else:
             fields += obj
     # put dictionaries in a repeated list and add to fields
