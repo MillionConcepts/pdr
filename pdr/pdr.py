@@ -231,7 +231,8 @@ class Data:
         setattr(self, "pointers", pointers)
         self._handle_initial_load(lazy, implicit_lazy_exception)
         if (lazy is False) or (implicit_lazy_exception == fn):
-            if not any(("image" in obj.lower() for obj in self.index)):
+            non_labels = [i for i in self.index if i != "LABEL"]
+            if all((self[i] is None for i in non_labels)):
                 self._fallback_image_load()
 
     def _handle_initial_load(self, lazy, implicit_lazy_exception):
