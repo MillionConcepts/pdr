@@ -24,7 +24,6 @@ from rasterio.errors import NotGeoreferencedWarning, RasterioIOError
 
 from pdr.browsify import browsify, _browsify_array
 from pdr.datatypes import (
-    sample_types,
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
     generic_image_constants,
@@ -40,12 +39,13 @@ from pdr.utils import (
     trim_label,
     casting_to_float,
     check_cases,
-    enforce_order_and_object,
     TimelessOmniDecoder,
-    booleanize_booleans,
     append_repeated_object,
-    filter_duplicate_pointers, head_file
+    head_file
 )
+from pdr.parse_components import enforce_order_and_object, \
+    booleanize_booleans, \
+    filter_duplicate_pointers, reindex_df_values, insert_sample_types_into_df
 
 # we do not want rasterio to shout about data not being georeferenced; most
 # rasters are not _supposed_ to be georeferenced.
@@ -446,14 +446,7 @@ class Data:
         fields = self.read_format_block(block, object_name)
         # give columns unique names so that none of our table handling explodes
         fmtdef = pd.DataFrame.from_records(fields)
-        namegroups = fmtdef.groupby("NAME")
-        for name, field_group in namegroups:
-            if len(field_group) == 1:
-                continue
-            if name == "RESERVED":
-                name = f"RESERVED_{field_group['START_BYTE'].iloc[0]}"
-            names = [f"{name}_{ix}" for ix in range(len(field_group))]
-            fmtdef.loc[field_group.index, "NAME"] = names
+        fmtdef = reindex_df_values(fmtdef)
         return fmtdef
 
     def load_format_file(self, format_file, object_name):
@@ -529,28 +522,9 @@ class Data:
         if fmtdef['DATA_TYPE'].str.contains('ASCII').any():
             # don't try to load it as a binary file -- TODO: kind of a hack
             return None, fmtdef
-        dt = []
         if fmtdef is None:
-            return np.dtype(dt), fmtdef
-        fmtdef['dt'] = None
-        if 'ITEM_BYTES' not in fmtdef.columns:
-            fmtdef['ITEM_BYTES'] = np.nan
-        data_types = tuple(
-            fmtdef.groupby(['DATA_TYPE', 'ITEM_BYTES', 'BYTES'], dropna=False)
-        )
-        for data_type, group in data_types:
-            dt, item_bytes, total_bytes = data_type
-            sample_bytes = total_bytes if np.isnan(item_bytes) else item_bytes
-            try:
-                fmtdef.loc[group.index, 'dt'] = sample_types(
-                    dt, sample_bytes, for_numpy=True
-                )
-            except KeyError:
-                raise KeyError(
-                    f"{data_type} is not a currently-supported data type."
-                )
-        dt = fmtdef[['NAME', 'dt']].to_records(index=False).tolist()
-        return np.dtype(dt), fmtdef
+            return fmtdef, np.dtype([])
+        return insert_sample_types_into_df(fmtdef)
 
     def _interpret_as_dsv(self, fn, fmtdef, object_name):
         # TODO: look for commas more intelligently or dispatch to astropy
@@ -598,9 +572,7 @@ class Data:
         """
         target = self.labelget(pointerize(pointer))
         if "BIT_COLUMN" in str(self.labelblock(pointer)):
-            raise NotImplementedError(
-                "The BIT_COLUMN object is not yet supported."
-            )
+            raise NotImplementedError("BIT_COLUMNs are not yet supported.")
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -609,7 +581,7 @@ class Data:
         else:
             fn = check_cases(self.filename)
         try:
-            dt, fmtdef = self.parse_table_structure(pointer)
+            fmtdef, dt = self.parse_table_structure(pointer)
         except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
@@ -624,15 +596,7 @@ class Data:
             # TODO: this works poorly (from a usability and performance
             #  perspective; it's perfectly stable) for tables defined as
             #  a single row with tens or hundreds of thousands of columns
-            array = np.fromfile(
-                fn,
-                dtype=dt,
-                offset=self.data_start_byte(pointer),
-                count=self.labelblock(pointer)["ROWS"],
-            )
-            swapped = enforce_order_and_object(array, inplace=False)
-            table = pd.DataFrame(swapped)
-            table = booleanize_booleans(table, fmtdef)
+            table = self._interpret_as_binary(dt, fmtdef, fn, pointer)
         table.columns = fmtdef.NAME.tolist()
         try:
             # If there were any cruft "placeholder" columns, discard them
@@ -641,6 +605,38 @@ class Data:
             )
         except TypeError as ex:  # Failed to read the table
             return self._catch_return_default(pointer, ex)
+        return table
+
+    def read_histogram(self, object_name):
+        # TODO: build this out for text examples
+        block = self.labelblock(object_name)
+        if block.get("INTERCHANGE_FORMAT") != "BINARY":
+            raise NotImplementedError(
+                "ASCII histograms are not currently supported."
+            )
+        # TODO: this is currently a special-case version of the read_table
+        #  flow. maybe: find a way to sideload definitions like this into
+        #  the read_table flow after further refactoring.
+        fields = []
+        if (repeats := block.get("ITEMS")) is not None:
+            fields = append_repeated_object(dict(block), fields, repeats)
+        else:
+            fields = [dict(block)]
+        fmtdef = reindex_df_values(pd.DataFrame.from_records(fields))
+        fmtdef, dt = self.parse_table_structure(object_name)
+
+        pass
+
+    def _interpret_as_binary(self, dt, fmtdef, fn, pointer):
+        array = np.fromfile(
+            fn,
+            dtype=dt,
+            offset=self.data_start_byte(pointer),
+            count=self.labelblock(pointer)["ROWS"],
+        )
+        swapped = enforce_order_and_object(array, inplace=False)
+        table = pd.DataFrame(swapped)
+        table = booleanize_booleans(table, fmtdef)
         return table
 
     def read_text(self, object_name):

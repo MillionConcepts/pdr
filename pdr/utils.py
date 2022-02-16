@@ -231,7 +231,7 @@ def head_file(
     fn_or_reader: Union[IO, Path, str],
     nbytes: Union[int, None] = None,
     offset: int = 0,
-    tail: bool = False
+    tail: bool = False,
 ) -> BytesIO:
     head_buffer = BytesIO()
     if not hasattr(fn_or_reader, "read"):
@@ -321,42 +321,6 @@ def check_cases(filename: Union[Path, str]) -> str:
 #     return df
 
 
-def enforce_order_and_object(
-    array: np.ndarray, inplace=True
-) -> np.ndarray:
-    """
-    determine which, if any, of an array's fields are in nonnative byteorder
-    and swap them.
-
-    furthermore:
-    pandas does not support numpy void ('V') types, which are sometimes
-    required to deal with unstructured padding containing null bytes, etc.,
-    and are probably the appropriate representation for binary blobs like
-    bit strings. cast them to object so it does not explode. doing this here
-    is inelegant but is somewhat efficient.
-    TODO: still not that efficient
-    TODO: benchmark
-    """
-    if inplace is False:
-        array = array.copy()
-    if len(array.dtype) == 1:
-        if array.dtype.isnative:
-            return array
-        return array.byteswap().newbyteorder("=")
-    swap_targets = []
-    swapped_dtype = []
-    for name, field in array.dtype.fields.items():
-        if field[0].isnative is False:
-            swap_targets.append(name)
-            swapped_dtype.append((name, field[0].newbyteorder("=")))
-        elif 'V' not in str(field[0]):
-            swapped_dtype.append((name, field[0]))
-        else:
-            swapped_dtype.append((name, 'O'))
-    array[swap_targets] = array[swap_targets].byteswap()
-    return np.array(array, dtype=swapped_dtype)
-
-
 class TimelessOmniDecoder(pvl.decoder.OmniDecoder):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, grammar=pvl.grammar.OmniGrammar(), **kwargs)
@@ -371,14 +335,6 @@ def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
         for col, dtype in df.dtypes.iteritems()
         if pandas.api.types.is_numeric_dtype(dtype)
     ]
-
-
-def booleanize_booleans(
-    table: pd.DataFrame, fmtdef: pd.DataFrame
-) -> pd.DataFrame:
-    boolean_columns = fmtdef.loc[fmtdef["DATA_TYPE"] == "BOOLEAN", "NAME"]
-    table[boolean_columns] = table[boolean_columns].astype(bool)
-    return table
 
 
 def append_repeated_object(
@@ -399,17 +355,5 @@ def append_repeated_object(
         else:
             fields.append(obj)
     return fields
-
-
-def filter_duplicate_pointers(pointers, pt_groups):
-    for pointer, group in pt_groups.items():
-        if (len(group) > 1) and (pointer != "^STRUCTURE"):
-            warnings.warn(
-                f"Duplicate handling for {pointer} not yet "
-                f"implemented, ignoring"
-            )
-        else:
-            pointers.append(group[0][0])
-    return pointers
 
 
