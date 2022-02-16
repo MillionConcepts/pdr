@@ -54,8 +54,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and "TABLE" in pointer
     ):
         return True, formats.msl_apxs.table_loader(data, pointer)
-    if pointer == "CHMN_HSK_HEADER_TABLE":
-        # mangled object name
+    if (
+        data.LABEL.get("INSTRUMENT_ID") == "CHEMIN"
+        and (("HEADER" in pointer) or ("SPREADSHEET" in pointer))
+    ):
+        # mangled object names + positions
         return True, formats.msl_cmn.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
     if data.LABEL.get("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":

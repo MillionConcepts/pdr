@@ -670,6 +670,8 @@ class Data:
             as_rows
         )
 
+    # TODO, maybe: modify check_special_offset to speak to
+    #  these as well
     def table_position(self, object_name):
         target = self._get_target(object_name)
         block = self.labelblock(object_name)
@@ -840,6 +842,8 @@ class Data:
         do I appear to point to a delimiter-separated file without
         explicit record byte length?
         """
+        # TODO: not sure this is a good assumption -- it is a bad assumption
+        #  for the CHEMIN RDRs, but those labels are just wrong
         if self.LABEL.get("RECORD_BYTES") is not None:
             return False
         # TODO: not sure this is a good assumption
