@@ -42,11 +42,8 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
 def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
-    if (
-        data.LABEL.get("PRODUCT_TYPE") == "CHEMIN_EEA"
-        and pointer == "HISTOGRAM"
-    ):
-        return True, 300
+    if data.LABEL.get("INSTRUMENT_ID") == "CHEMIN":
+        return formats.msl_cmn.get_offset(data, pointer)
     return False, None
 
 
@@ -56,7 +53,10 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         data.LABEL.get("INSTRUMENT_ID") == "APXS"
         and "TABLE" in pointer
     ):
-        return formats.msl_apxs.table_loader(data, pointer)
+        return True, formats.msl_apxs.table_loader(data, pointer)
+    if pointer == "CHMN_HSK_HEADER_TABLE":
+        # mangled object name
+        return True, formats.msl_cmn.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
     if data.LABEL.get("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":
         return True, formats.m3.l0_image_loader(data)

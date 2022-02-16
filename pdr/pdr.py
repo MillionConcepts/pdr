@@ -894,7 +894,8 @@ class Data:
                 return record_bytes * max(target[-1] - 1, 0)
             if isinstance(target[-1], pvl.Quantity):
                 if target[-1].units == 'BYTES':
-                    return target[-1].value
+                    # TODO: are there cases in which _these_ aren't 1-indexed?
+                    return target[-1].value - 1
                 return record_bytes * max(target[-1].value - 1, 0)
             return 0
         if isinstance(target, str):
