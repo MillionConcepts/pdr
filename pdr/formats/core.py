@@ -70,8 +70,6 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return loader
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
-    if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
-        return data.read_header
     if "LINE_PREFIX_TABLE" in pointer:
         return data.tbd
     if ("TABLE" in pointer) or ("SPREADSHEET" in pointer):
@@ -85,10 +83,14 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         if looks_like_this_kind_of_file(data.filename, FITS_EXTENSIONS):
             return data.handle_fits_file
         return data.read_image
+    # we don't present STRUCTURES separately from their tables;
+    # TIFF tags / headers should always be parsed by the TIFF parser itself
+    if ("STRUCTURE" in pointer) or ("TIFF" in pointer):
+        return data.trivial
+    if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
+        return data.read_header
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
-    if "STRUCTURE" in pointer:
-        return data.trivial
     # TODO: sloppy pt. 2
     if looks_like_this_kind_of_file(data.filename, FITS_EXTENSIONS):
         return data.handle_fits_file

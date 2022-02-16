@@ -15,13 +15,12 @@ import numpy as np
 import pandas as pd
 import pds4_tools as pds4
 import pvl
-import rasterio
 from astropy.io import fits
 from cytoolz import groupby
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
-from rasterio.errors import NotGeoreferencedWarning
+from rasterio.errors import NotGeoreferencedWarning, RasterioIOError
 
 from pdr.browsify import browsify, _browsify_array
 from pdr.datatypes import (
@@ -139,8 +138,8 @@ def skeptically_load_header(
                 text = file.read(length)
             file.close()
             return text
-    except (ParseError, ValueError, OSError):
-        warnings.warn(f"unable to parse {object_name}")
+    except (ParseError, ValueError, OSError) as ex:
+        warnings.warn(f"unable to parse {object_name}: {ex}")
 
 
 # TODO: watch out for cases in which individual products may be scattered
@@ -259,8 +258,7 @@ class Data:
     def _handle_initial_load(self, lazy, implicit_lazy_exception):
         for pointer in self.pointers:
             object_name = depointerize(pointer)
-            # TODO: sloppy?
-            if 'STRUCTURE' in object_name:
+            if pointer_to_loader(object_name, self) == self.trivial:
                 continue
             self.index.append(object_name)
             fn = self._object_to_filename(object_name)
@@ -319,15 +317,20 @@ class Data:
                 )
         try:
             setattr(self, object_name, self.load_from_pointer(object_name))
+            return
         except KeyboardInterrupt:
             raise
-        except FileNotFoundError as ex:
-            warnings.warn(f"Unable to find some requirement of {object_name}.")
-            setattr(
-                self, object_name, self._catch_return_default(object_name, ex)
-            )
         except Exception as ex:
-            warnings.warn(f"Unable to load {object_name}.")
+            if isinstance(ex, NotImplementedError):
+                warnings.warn(
+                    f"This product's {object_name} is not yet supported: {ex}."
+                )
+            elif isinstance(ex, FileNotFoundError):
+                warnings.warn(
+                    f"Unable to find files required by {object_name}."
+                )
+            else:
+                warnings.warn(f"Unable to load {object_name}: {ex}")
             setattr(
                 self, object_name, self._catch_return_default(object_name, ex)
             )
@@ -359,6 +362,7 @@ class Data:
         return pointer_to_loader(pointer, self)(pointer)
 
     def open_with_rasterio(self):
+        import rasterio
         dataset = rasterio.open(check_cases(self.filename))
         if len(dataset.indexes) == 1:
             # Make 2D images actually 2D
@@ -380,7 +384,7 @@ class Data:
             if userasterio is True:
                 try:
                     return self.open_with_rasterio()
-                except rasterio.errors.RasterioIOError:
+                except RasterioIOError:
                     pass
         if special_properties is not None:
             props = special_properties
@@ -474,7 +478,7 @@ class Data:
             format_block = self.inject_format_files(format_block, object_name)
         fields = []
         for item_type, definition in format_block:
-            if item_type in ("COLUMN", "FIELD", "BIT_COLUMN"):
+            if item_type in ("COLUMN", "FIELD"):
                 obj = dict(definition)
                 repeat_count = definition.get("ITEMS")
             elif item_type == "CONTAINER":
@@ -586,14 +590,17 @@ class Data:
             table = pd.read_fwf(fn)
         return table
 
-
     # TODO: refactor this. see issue #27.
     def read_table(self, pointer="TABLE"):
         """
-        Read a table. Will first attempt to parse it as generic CSV
+        Read a table. Will first attempt to parse it as generic DSV
         and then fall back to parsing it based on the label format definition.
         """
         target = self.labelget(pointerize(pointer))
+        if "BIT_COLUMN" in str(self.labelblock(pointer)):
+            raise NotImplementedError(
+                "The BIT_COLUMN object is not yet supported."
+            )
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -614,6 +621,9 @@ class Data:
             # TODO: this will always throw an exception for text files
             #  because offset is only a legal argument for binary files
             #  --but arguably text files should never get here
+            # TODO: this works poorly (from a usability and performance
+            #  perspective; it's perfectly stable) for tables defined as
+            #  a single row with tens or hundreds of thousands of columns
             array = np.fromfile(
                 fn,
                 dtype=dt,
@@ -631,7 +641,6 @@ class Data:
             )
         except TypeError as ex:  # Failed to read the table
             return self._catch_return_default(pointer, ex)
-        # lp.print_stats()
         return table
 
     def read_text(self, object_name):
@@ -675,8 +684,8 @@ class Data:
             if 'BYTES' in block.keys():
                 length = block['BYTES']
             elif (
-                    ('RECORDS' in block.keys())
-                    and ('RECORD_BYTES' in self.LABEL.keys())
+                ('RECORDS' in block.keys())
+                and ('RECORD_BYTES' in self.LABEL.keys())
             ):
                 length = block['RECORDS'] * self.LABEL['RECORD_BYTES']
         return start, length, as_rows
@@ -723,10 +732,7 @@ class Data:
         specials = {
             name: block[name]
             for name in PDS3_CONSTANT_NAMES
-            if (
-                (name in block.keys())
-                and not (block[name] == 'N/A')
-            )
+            if (name in block.keys()) and not (block[name] == 'N/A')
         }
         # ignore uint8 implicit constants (0, 255) for now -- too problematic
         # TODO: maybe add an override
@@ -774,10 +780,7 @@ class Data:
         # try to perform the operation in-place if requested, although if
         # we're casting to float, we can't
         # TODO: detect rollover cases, etc.
-        if (
-            (inplace is True)
-            and not casting_to_float(obj, scale, offset)
-        ):
+        if (inplace is True) and not casting_to_float(obj, scale, offset):
             obj *= scale
             obj += offset
             return obj
@@ -852,8 +855,7 @@ class Data:
 
     def data_start_byte(self, object_name):
         """
-        Determine the first byte of the data in an IMG file from its
-        pointer.
+        Determine the first byte of the data in a file from its pointer.
         """
         # TODO: hacky, make this consistent -- actually this pointer notation
         #  is hacky across the module, primarily because it's horrible in the
@@ -987,8 +989,10 @@ class Data:
                 not_loaded.append(k)
             elif self[k] is None:
                 not_loaded.append(k)
-        return f"pdr.Data({self.filename})\nkeys={self.keys()}" \
-               f"\nnot yet loaded: {not_loaded}"
+        rep = f"pdr.Data({self.filename})\nkeys={self.keys()}"
+        if len(not_loaded) > 0:
+            rep += f"\nnot yet loaded: {not_loaded}"
+        return rep
 
     def __str__(self):
         return self.__repr__()
