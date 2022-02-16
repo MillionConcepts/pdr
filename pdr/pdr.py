@@ -30,7 +30,7 @@ from pdr.datatypes import (
 )
 from pdr.formats import (
     LABEL_EXTENSIONS, pointer_to_loader, generic_image_properties,
-    looks_like_this_kind_of_file, FITS_EXTENSIONS,
+    looks_like_this_kind_of_file, FITS_EXTENSIONS, check_special_offset,
 )
 from pdr.utils import (
     depointerize,
@@ -596,7 +596,7 @@ class Data:
             # TODO: this works poorly (from a usability and performance
             #  perspective; it's perfectly stable) for tables defined as
             #  a single row with tens or hundreds of thousands of columns
-            table = self._interpret_as_binary(dt, fmtdef, fn, pointer)
+            table = self._interpret_as_binary(fmtdef, dt, fn, pointer)
         table.columns = fmtdef.NAME.tolist()
         try:
             # If there were any cruft "placeholder" columns, discard them
@@ -622,17 +622,20 @@ class Data:
             fields = append_repeated_object(dict(block), fields, repeats)
         else:
             fields = [dict(block)]
-        fmtdef = reindex_df_values(pd.DataFrame.from_records(fields))
-        fmtdef, dt = self.parse_table_structure(object_name)
+        fmtdef = pd.DataFrame.from_records(fields)
+        if "NAME" not in fmtdef.columns:
+            fmtdef["NAME"] = object_name
+        fmtdef = reindex_df_values(fmtdef)
+        fmtdef, dt = insert_sample_types_into_df(fmtdef)
+        return self._interpret_as_binary(
+            fmtdef, dt, self.file_mapping[object_name], object_name
+        )
 
-        pass
-
-    def _interpret_as_binary(self, dt, fmtdef, fn, pointer):
+    def _interpret_as_binary(self, fmtdef, dt, fn, pointer):
+        count = self.labelblock(pointer).get("ROWS")
+        count = count if count is not None else 1
         array = np.fromfile(
-            fn,
-            dtype=dt,
-            offset=self.data_start_byte(pointer),
-            count=self.labelblock(pointer)["ROWS"],
+            fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
         )
         swapped = enforce_order_and_object(array, inplace=False)
         table = pd.DataFrame(swapped)
@@ -858,8 +861,14 @@ class Data:
         #  first place :shrug: -- previously I did this by making pointers
         #  lists, but this may be unwieldy
         # TODO: like similar functions, this will currently break with PDS4
+
+        # hook for defining internally-consistent-but-nonstandard special cases
+        is_special, special_byte = check_special_offset(object_name, self)
+        if is_special:
+            return special_byte
         target = self._get_target(object_name)
         labelblock = self.labelblock(object_name)
+
         # TODO: I am positive this will break sometimes; need to find the
         #  correct RECORD_BYTES in some cases...sequence pointers
         if "RECORD_BYTES" in labelblock.keys():

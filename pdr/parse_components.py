@@ -40,7 +40,6 @@ def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
             swapped_dtype.append((name, field[0]))
         else:
             swapped_dtype.append((name, "O"))
-    array[swap_targets] = array[swap_targets].byteswap()
     return np.array(array, dtype=swapped_dtype)
 
 

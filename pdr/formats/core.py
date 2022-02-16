@@ -39,6 +39,17 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
     return data.tbd
 
 
+def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
+    # these incorrectly specify object length rather than
+    # object offset in the ^HISTOGRAM pointer target
+    if (
+        data.LABEL.get("PRODUCT_TYPE") == "CHEMIN_EEA"
+        and pointer == "HISTOGRAM"
+    ):
+        return True, 300
+    return False, None
+
+
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     # just an ambiguous name: best to specify it
     if (
@@ -74,6 +85,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.tbd
     if ("TABLE" in pointer) or ("SPREADSHEET" in pointer):
         return data.read_table
+    if "HISTOGRAM" in pointer:
+        return data.read_histogram
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
