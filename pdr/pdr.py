@@ -41,8 +41,7 @@ from pdr.utils import (
     trim_label,
     casting_to_float,
     check_cases,
-    byte_columns_to_object,
-    enforce_byteorder,
+    enforce_order_and_object,
     TimelessOmniDecoder,
     booleanize_booleans,
     append_repeated_object,
@@ -475,7 +474,7 @@ class Data:
             format_block = self.inject_format_files(format_block, object_name)
         fields = []
         for item_type, definition in format_block:
-            if item_type in ("COLUMN", "FIELD"):
+            if item_type in ("COLUMN", "FIELD", "BIT_COLUMN"):
                 obj = dict(definition)
                 repeat_count = definition.get("ITEMS")
             elif item_type == "CONTAINER":
@@ -549,6 +548,45 @@ class Data:
         dt = fmtdef[['NAME', 'dt']].to_records(index=False).tolist()
         return np.dtype(dt), fmtdef
 
+    def _interpret_as_dsv(self, fn, fmtdef, object_name):
+        # TODO: look for commas more intelligently or dispatch to astropy
+        #  or whatever
+        start, length, as_rows = self.table_position(object_name)
+        sep = check_explicit_delimiter(self.labelblock(object_name))
+        if as_rows is False:
+            bytes_buffer = head_file(fn, nbytes=length, offset=start)
+            string_buffer = StringIO(bytes_buffer.read().decode())
+            bytes_buffer.close()
+        else:
+            with open(fn) as file:
+                if start > 0:
+                    file.readlines(start)
+                string_buffer = StringIO("\r\n".join(file.readlines(length)))
+            string_buffer.seek(0)
+        try:
+            table = pd.read_csv(string_buffer, sep=sep, header=None)
+        # TODO: I'm not sure this is a good idea
+        except (UnicodeError, AttributeError, ParserError):
+            table = pd.DataFrame(
+                np.loadtxt(
+                    fn,
+                    # this is probably a poor assumption to hard code.
+                    delimiter=',',
+                    skiprows=self.labelget("LABEL_RECORDS"),
+                )
+                .copy()
+                .newbyteorder('=')
+            )
+        finally:
+            string_buffer.close()
+        try:
+            assert len(table.columns) == len(fmtdef.NAME.tolist())
+        except AssertionError:
+            # TODO: handle this better
+            table = pd.read_fwf(fn)
+        return table
+
+
     # TODO: refactor this. see issue #27.
     def read_table(self, pointer="TABLE"):
         """
@@ -568,55 +606,24 @@ class Data:
         except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
-        # Check if this is just a DSV file
-        try:
-            # TODO: look for commas more intelligently or dispatch to astropy
-            #  or whatever
-            start, length, as_rows = self.table_position(pointer)
-            sep = check_explicit_delimiter(self.labelblock(pointer))
-            if as_rows is False:
-                bytes_buffer = head_file(fn, nbytes=length, offset=start)
-                string_buffer = StringIO(bytes_buffer.read().decode())
-            else:
-                with open(fn) as file:
-                    if start > 0:
-                        file.readlines(start)
-                    string_buffer = StringIO(
-                        "\r\n".join(file.readlines(length))
-                    )
-            string_buffer.seek(0)
-            table = pd.read_csv(string_buffer, sep=sep, header=None)
-        except (UnicodeDecodeError, AttributeError, ParserError):
-            # This is not parseable as a CSV file
-            if dt is not None:
-                # TODO: this will always throw an exception for text files
-                #  because offset is only a legal argument for binary files
-                array = np.fromfile(
-                    fn,
-                    dtype=dt,
-                    offset=self.data_start_byte(pointer),
-                    count=self.labelblock(pointer)["ROWS"],
-                )
-                swapped = enforce_byteorder(array, inplace=False)
-                table = pd.DataFrame(swapped)
-                table = byte_columns_to_object(table)
-                table = booleanize_booleans(table, fmtdef)
-            else:
-                # TODO: I think we're basically never getting here successfully
-                table = pd.DataFrame(
-                    np.loadtxt(
-                        fn,
-                        # this is probably a poor assumption to hard code.
-                        delimiter=',',
-                        skiprows=self.labelget("LABEL_RECORDS"),
-                    )
-                    .copy()
-                    .newbyteorder('=')
-                )
-        if len(table.columns) < len(fmtdef.NAME.tolist()):
-            table = pd.read_fwf(fn)
+        if (dt is None) or ("SPREADSHEET" in pointer) or ("ASCII" in pointer):
+            # Check if this is just a DSV file
+            # TODO: verify that this is not catching things it shouldn't
+            table = self._interpret_as_dsv(fn, fmtdef, pointer)
         else:
-            table.columns = fmtdef.NAME.tolist()
+            # TODO: this will always throw an exception for text files
+            #  because offset is only a legal argument for binary files
+            #  --but arguably text files should never get here
+            array = np.fromfile(
+                fn,
+                dtype=dt,
+                offset=self.data_start_byte(pointer),
+                count=self.labelblock(pointer)["ROWS"],
+            )
+            swapped = enforce_order_and_object(array, inplace=False)
+            table = pd.DataFrame(swapped)
+            table = booleanize_booleans(table, fmtdef)
+        table.columns = fmtdef.NAME.tolist()
         try:
             # If there were any cruft "placeholder" columns, discard them
             table = table.drop(

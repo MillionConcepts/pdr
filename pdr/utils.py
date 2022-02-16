@@ -301,30 +301,40 @@ def check_cases(filename: Union[Path, str]) -> str:
     return str(matches[0])
 
 
-def byte_columns_to_object(df: pd.DataFrame) -> pd.DataFrame:
+# def byte_columns_to_object(df: pd.DataFrame) -> pd.DataFrame:
+#     """
+#     pandas does not support numpy void ('V') types, which are sometimes
+#     required to deal with unstructured padding containing null bytes, etc.,
+#     and are probably the appropriate representation for binary blobs like
+#     bit strings. cast them to object so it does not explode.
+#
+#     TODO: maybe find a more efficient way to do this upstream, like in the
+#      DataFrame constructor?
+#     """
+#     void_columns = df.dtypes.loc[
+#         df.dtypes.astype("str").str.contains("V")
+#     ].index
+#     # using a selector -- or anything at all more complicated than casting
+#     # to another data type -- appears to make it explode
+#     for column in void_columns:
+#         df[column] = df[column].astype(object)
+#     return df
+
+
+def enforce_order_and_object(
+    array: np.ndarray, inplace=True
+) -> np.ndarray:
     """
+    determine which, if any, of an array's fields are in nonnative byteorder
+    and swap them.
+
+    furthermore:
     pandas does not support numpy void ('V') types, which are sometimes
     required to deal with unstructured padding containing null bytes, etc.,
     and are probably the appropriate representation for binary blobs like
-    bit strings. cast them to object so it does not explode.
-
-    TODO: maybe find a more efficient way to do this upstream, like in the
-     DataFrame constructor?
-    """
-    void_columns = df.dtypes.loc[
-        df.dtypes.astype("str").str.contains("V")
-    ].index
-    # using a selector -- or anything at all more complicated than casting
-    # to another data type -- appears to make it explode
-    for column in void_columns:
-        df[column] = df[column].astype(object)
-    return df
-
-
-def enforce_byteorder(array: np.ndarray, inplace=True) -> np.ndarray:
-    """
-    determine which, if any, of an array's fields are in nonnative byteorder
-    and swap them
+    bit strings. cast them to object so it does not explode. doing this here
+    is inelegant but is somewhat efficient.
+    TODO: still not that efficient
     TODO: benchmark
     """
     if inplace is False:
@@ -339,11 +349,12 @@ def enforce_byteorder(array: np.ndarray, inplace=True) -> np.ndarray:
         if field[0].isnative is False:
             swap_targets.append(name)
             swapped_dtype.append((name, field[0].newbyteorder("=")))
-        else:
+        elif 'V' not in str(field[0]):
             swapped_dtype.append((name, field[0]))
+        else:
+            swapped_dtype.append((name, 'O'))
     array[swap_targets] = array[swap_targets].byteswap()
-    array.dtype = swapped_dtype
-    return array
+    return np.array(array, dtype=swapped_dtype)
 
 
 class TimelessOmniDecoder(pvl.decoder.OmniDecoder):
