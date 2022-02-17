@@ -90,6 +90,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_table
     if "HISTOGRAM" in pointer:
         return data.read_histogram
+    if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
+        return data.read_header
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
@@ -103,8 +105,6 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     # TIFF tags / headers should always be parsed by the TIFF parser itself
     if ("STRUCTURE" in pointer) or ("TIFF" in pointer):
         return data.trivial
-    if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
-        return data.read_header
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
     # TODO: sloppy pt. 2
