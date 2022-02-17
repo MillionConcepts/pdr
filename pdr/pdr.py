@@ -361,9 +361,13 @@ class Data:
     def load_from_pointer(self, pointer):
         return pointer_to_loader(pointer, self)(pointer)
 
-    def open_with_rasterio(self):
+    def open_with_rasterio(self, object_name):
         import rasterio
-        dataset = rasterio.open(check_cases(self.filename))
+        if object_name in self.file_mapping.keys():
+            fn = self.file_mapping[object_name]
+        else:
+            fn = check_cases(self.filename)
+        dataset = rasterio.open(fn)
         if len(dataset.indexes) == 1:
             # Make 2D images actually 2D
             return dataset.read()[0, :, :]
@@ -383,7 +387,7 @@ class Data:
             # TODO: we could generalize this more by trying to find filenames.
             if userasterio is True:
                 try:
-                    return self.open_with_rasterio()
+                    return self.open_with_rasterio(object_name)
                 except RasterioIOError:
                     pass
         if special_properties is not None:

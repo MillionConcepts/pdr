@@ -260,6 +260,8 @@ def _format_multiband_image(obj, band_ix, override_rgba):
         warnings.warn(
             "transparency not supported, removing 4th (alpha) channel"
         )
+    if isinstance(obj, np.ma.MaskedArray):
+        return np.ma.dstack([channel for channel in obj[0:3]])
     return np.dstack([channel for channel in obj[0:3]])
 
 
