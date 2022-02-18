@@ -14,14 +14,11 @@ import numpy as np
 import pandas as pd
 import pds4_tools as pds4
 import pvl
-from astropy.io import fits
 from cytoolz import groupby
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
-from rasterio.errors import NotGeoreferencedWarning, RasterioIOError
 
-from pdr.browsify import browsify, _browsify_array
 from pdr.datatypes import (
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
@@ -46,9 +43,6 @@ from pdr.parse_components import enforce_order_and_object, \
     booleanize_booleans, \
     filter_duplicate_pointers, reindex_df_values, insert_sample_types_into_df
 
-# we do not want rasterio to shout about data not being georeferenced; most
-# rasters are not _supposed_ to be georeferenced.
-warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
 cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
 
@@ -365,13 +359,18 @@ class Data:
 
     def open_with_rasterio(self, object_name):
         import rasterio
+        from rasterio.errors import NotGeoreferencedWarning, RasterioIOError
+        # we do not want rasterio to shout about data not being
+        # georeferenced; most rasters are not _supposed_ to be georeferenced.
+        warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
         if object_name in self.file_mapping.keys():
             fn = self.file_mapping[object_name]
         else:
             fn = check_cases(self.filename)
-        # some rasterio drivers want an attached label, etc
         try:
             dataset = rasterio.open(fn)
+        # some rasterio drivers can only make sense of a label, attached
+        # or otherwise
         except RasterioIOError:
             dataset = rasterio.open(self.file_mapping['LABEL'])
         if len(dataset.indexes) == 1:
@@ -392,6 +391,7 @@ class Data:
         if object_name == "IMAGE" or self.filename.lower().endswith("qub"):
             # TODO: we could generalize this more by trying to find filenames.
             if userasterio is True:
+                from rasterio.errors import RasterioIOError
                 try:
                     return self.open_with_rasterio(object_name)
                 except RasterioIOError:
@@ -706,6 +706,8 @@ class Data:
           formats, but possibly not right here? hopefully we shouldn't need
           to handle compressed FITS files too often anyway.
         """
+        from astropy.io import fits
+
         try:
             hdulist = fits.open(check_cases(self.filename))
             if "HEADER" in pointer:
@@ -949,6 +951,8 @@ class Data:
             obj = self.get_scaled(object_name)
         else:
             obj = self[object_name]
+        # no need to have all this mpl stuff in the namespace normally
+        from pdr.browsify import _browsify_array
         return _browsify_array(obj, save=False, outbase="", **browse_kwargs)
 
     def dump_browse(
@@ -974,6 +978,8 @@ class Data:
             outpath = Path(".")
         for obj in self.index:
             outfile = str(Path(outpath, f"{prefix}_{obj}"))
+            # no need to have all this mpl stuff in the namespace normally
+            from pdr.browsify import browsify
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
             if isinstance(self[obj], np.ndarray):
                 if scaled == "both":
