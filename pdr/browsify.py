@@ -208,10 +208,24 @@ def _browsify_array(
     **_
 ):
     """
-    attempt to save array as a jpeg
+    attempt to save array as one or more jpegs
     """
     if len(obj.shape) == 3:
         obj = _format_multiband_image(obj, band_ix, override_rgba)
+    if not isinstance(obj, tuple):
+        return _render_and_save(
+            obj, outbase, purge, image_clip, mask_color, save
+        )
+    results = []
+    for ix, band in enumerate(obj):
+        result = _render_and_save(
+            band, outbase + f"_{ix}", purge, image_clip, mask_color, save
+        )
+        results.append(result)
+    return results
+
+
+def _render_and_save(obj, outbase, purge, image_clip, mask_color, save):
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
     if (obj.dtype.char in np.typecodes['AllInteger']) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
@@ -241,31 +255,36 @@ def _browsify_array(
     image.save(outbase + ".jpg")
 
 
+def _format_as_rgb(obj):
+    if isinstance(obj, np.ma.MaskedArray):
+        return np.ma.dstack([channel for channel in obj[0:3]])
+    else:
+        return np.dstack([channel for channel in obj[0:3]])
+
+
 def _format_multiband_image(obj, band_ix, override_rgba):
     """
-    helper function for _browsify_array -- truncate or stack multiband images
-    for further processing.
+    helper function for _browsify_array -- truncate, stack, or burst
+    multiband images and send for further processing.
     """
-
     if (obj.shape[0] not in (3, 4)) or (override_rgba is True):
-        return _export_single_band(band_ix, obj)
+        if band_ix == "burst":
+            return tuple([obj[ix] for ix in range(obj.shape[0])])
+        return _format_as_single_band(band_ix, obj)
     # treat 3/4 band arrays as rgb(a) images
     if band_ix is not None:
         warnings.warn(
-            "treating image as RGB & ignoring band_ix argument; if "
-            "you really want to dump only a single band, pass "
-            "override_rgba=True"
+            "treating image as RGB & ignoring band_ix argument; "
+            "pass override_rgba=True to override this behavior"
         )
     if obj.shape[0] == 4:
         warnings.warn(
             "transparency not supported, removing 4th (alpha) channel"
         )
-    if isinstance(obj, np.ma.MaskedArray):
-        return np.ma.dstack([channel for channel in obj[0:3]])
-    return np.dstack([channel for channel in obj[0:3]])
+    return _format_as_rgb(obj)
 
 
-def _export_single_band(band_ix, obj):
+def _format_as_single_band(band_ix, obj):
     """
     for multiband arrays that are not presumably rgb(a), or if we have been
     instructed to by the override_rgba argument, only export a single band.

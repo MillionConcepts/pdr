@@ -15,9 +15,8 @@ from typing import (
     Sequence,
     Mapping,
     MutableSequence,
+    IO
 )
-from typing.io import IO
-
 from dustgoggles.structures import dig_for
 import numpy as np
 import pandas as pd
