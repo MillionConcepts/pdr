@@ -1,10 +1,9 @@
 import bz2
 import gzip
 import os
-import struct
 import warnings
 from functools import partial, cache
-from io import StringIO, BytesIO
+from io import StringIO
 from operator import contains
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
