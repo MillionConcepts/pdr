@@ -50,11 +50,11 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     # just an ambiguous name: best to specify it
     if (
-        "MAST CAMERA" in data.LABEL.get("INSTRUMENT_ID")
+        data.LABEL.get("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
         and data.LABEL.get("MISSION_NAME") == "MARS SCIENCE LABORATORY"
         and pointer == "IMAGE"
     ):
-        return True, formats.msl_mst.image_loader(data, pointer)
+        return True, formats.msl_mmm.image_loader(data, pointer)
     if (
         data.LABEL.get("INSTRUMENT_ID") == "APXS"
         and "TABLE" in pointer
