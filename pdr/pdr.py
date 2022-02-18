@@ -4,7 +4,7 @@ import os
 import struct
 import warnings
 from functools import partial, cache
-from io import StringIO
+from io import StringIO, BytesIO
 from operator import contains
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
@@ -62,13 +62,8 @@ def make_format_specifications(props):
 
 
 def process_single_band_image(f, props):
-    struct_fmt, numpy_dtype = make_format_specifications(props)
-    image = np.array(
-        struct.unpack(
-            struct_fmt, f.read(props["pixels"] * props["BYTES_PER_PIXEL"])
-        ),
-        dtype=numpy_dtype,
-    )
+    _, numpy_dtype = make_format_specifications(props)
+    image = np.fromfile(f, dtype=numpy_dtype)
     image = image.reshape(
         (props["nrows"], props["ncols"] + props["prefix_cols"])
     )
@@ -80,15 +75,9 @@ def process_single_band_image(f, props):
     return image, prefix
 
 
-# TODO: I think this may be wrong.
 def process_band_sequential_image(f, props):
-    struct_fmt, numpy_dtype = make_format_specifications(props)
-    image = np.array(
-        struct.unpack(
-            struct_fmt, f.read(props["pixels"] * props["BYTES_PER_PIXEL"])
-        ),
-        dtype=numpy_dtype,
-    )
+    _, numpy_dtype = make_format_specifications(props)
+    image = np.fromfile(f, dtype=numpy_dtype)
     image = image.reshape(
         (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
     )
@@ -103,16 +92,12 @@ def process_band_sequential_image(f, props):
 def process_line_interleaved_image(f, props):
     # pixels per frame
     props["pixels"] = props["BANDS"] * props["ncols"]
-    struct_fmt, numpy_dtype = make_format_specifications(props)
+    _, numpy_dtype = make_format_specifications(props)
     image, prefix = [], []
     for _ in np.arange(props["nrows"]):
         prefix.append(f.read(props["prefix_bytes"]))
-        frame = np.array(
-            struct.unpack(
-                struct_fmt,
-                f.read(props["pixels"] * props["BYTES_PER_PIXEL"]),
-            ),
-            dtype=numpy_dtype,
+        frame = np.fromfile(
+            f, numpy_dtype, count=props["pixels"]
         ).reshape(props["BANDS"], props["ncols"])
         image.append(frame)
         del frame
@@ -261,20 +246,29 @@ class Data:
             if pointer_to_loader(object_name, self) == self.trivial:
                 continue
             self.index.append(object_name)
-            fn = self._object_to_filename(object_name)
-            self.file_mapping[object_name] = fn
+            self.file_mapping[object_name] = self._target_path(object_name)
             if lazy is False:
                 self.load(object_name)
-            elif (lazy is True) and (fn == implicit_lazy_exception):
+            elif (
+                (lazy is True)
+                and (self.file_mapping[object_name] == implicit_lazy_exception)
+            ):
                 self.load(object_name)
             else:
                 setattr(self, object_name, None)
 
-    def _object_to_filename(self, object_name, raise_missing=False):
+    def _object_to_filename(self, object_name):
         target = self.labelget(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
+        if isinstance(target, str):
+            return self.get_absolute_path(target)
+        else:
+            return self.filename
+
+    def _target_path(self, object_name, raise_missing=False):
+        target = self._object_to_filename(object_name)
         try:
             if isinstance(target, str):
                 return check_cases(self.get_absolute_path(target))
@@ -306,9 +300,14 @@ class Data:
             setattr(self, "IMAGE", image)
             self.index += ["IMAGE"]
 
-    def load(self, object_name, reload=False):
+    def load(self, object_name, reload=False, **load_kwargs):
         if object_name not in self.index:
             raise KeyError(f"{object_name} not found in index: {self.index}.")
+        if self.file_mapping.get(object_name) is None:
+            raise FileNotFoundError(
+                f"{object_name} file {self._object_to_filename(object_name)} "
+                f"not found in path."
+            )
         if hasattr(self, object_name):
             if (self[object_name] is not None) and (reload is False):
                 raise ValueError(
@@ -316,7 +315,11 @@ class Data:
                     f"force reload."
                 )
         try:
-            setattr(self, object_name, self.load_from_pointer(object_name))
+            setattr(
+                self,
+                object_name,
+                self.load_from_pointer(object_name, **load_kwargs)
+            )
             return
         except KeyboardInterrupt:
             raise
@@ -358,8 +361,8 @@ class Data:
         self.labelname = self.filename
         return label
 
-    def load_from_pointer(self, pointer):
-        return pointer_to_loader(pointer, self)(pointer)
+    def load_from_pointer(self, pointer, **load_kwargs):
+        return pointer_to_loader(pointer, self)(pointer, **load_kwargs)
 
     def open_with_rasterio(self, object_name):
         import rasterio
@@ -367,7 +370,11 @@ class Data:
             fn = self.file_mapping[object_name]
         else:
             fn = check_cases(self.filename)
-        dataset = rasterio.open(fn)
+        # some rasterio drivers want an attached label, etc
+        try:
+            dataset = rasterio.open(fn)
+        except RasterioIOError:
+            dataset = rasterio.open(self.file_mapping['LABEL'])
         if len(dataset.indexes) == 1:
             # Make 2D images actually 2D
             return dataset.read()[0, :, :]
@@ -398,12 +405,8 @@ class Data:
                 return None  # not much we can do with this!
             props = generic_image_properties(object_name, block, self)
         # a little decision tree to seamlessly deal with compression
-        # TODO: does not work with referenced images with headers right now?
-        #  (works for images attached to the _specific header we're reading_)
-        if isinstance(self.labelget(pointerize(object_name)), str):
-            fn = self.get_absolute_path(self.labelget(pointerize(object_name)))
-        else:
-            fn = self.filename
+        # TODO: make sure this generalizes
+        fn = self.file_mapping[object_name]
         f = decompress(fn)
         f.seek(props["start_byte"])
         try:
