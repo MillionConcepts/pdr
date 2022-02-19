@@ -48,7 +48,7 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
-    # just an ambiguous name: best to specify it
+    # just an ambiguous name: best to specify it)
     if (
         data.LABEL.get("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
         and data.LABEL.get("MISSION_NAME") == "MARS SCIENCE LABORATORY"
@@ -171,3 +171,15 @@ def generic_image_properties(object_name, block, data) -> dict:
     #  be an unwieldy solution
     props["start_byte"] = data.data_start_byte(object_name)
     return props
+
+
+def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
+    """
+    special-case handling for labels with nonstandard filename specifications
+    """
+    if (
+        "HIRISE" in data.LABEL.get("DATA_SET_ID")
+        and object_name == "IMAGE"
+    ):
+        return True, data.LABEL['COMPRESSED_FILE']['FILE_NAME']
+    return False, None

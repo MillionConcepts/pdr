@@ -27,6 +27,7 @@ from pdr.datatypes import (
 from pdr.formats import (
     LABEL_EXTENSIONS, pointer_to_loader, generic_image_properties,
     looks_like_this_kind_of_file, FITS_EXTENSIONS, check_special_offset,
+    check_special_fn,
 )
 from pdr.utils import (
     depointerize,
@@ -251,6 +252,9 @@ class Data:
                 setattr(self, object_name, None)
 
     def _object_to_filename(self, object_name):
+        is_special, special_target = check_special_fn(self, object_name)
+        if is_special is True:
+            return self.get_absolute_path(special_target)
         target = self.labelget(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
