@@ -297,10 +297,16 @@ class Data:
         if object_name not in self.index:
             raise KeyError(f"{object_name} not found in index: {self.index}.")
         if self.file_mapping.get(object_name) is None:
-            raise FileNotFoundError(
+            warnings.warn(
                 f"{object_name} file {self._object_to_filename(object_name)} "
                 f"not found in path."
             )
+            setattr(
+                self,
+                object_name,
+                self._catch_return_default(object_name, FileNotFoundError())
+            )
+            return
         if hasattr(self, object_name):
             if (self[object_name] is not None) and (reload is False):
                 raise ValueError(
