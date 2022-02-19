@@ -542,7 +542,7 @@ class Data:
         fmtdef = self.read_table_structure(pointer)
         if fmtdef['DATA_TYPE'].str.contains('ASCII').any():
             # don't try to load it as a binary file -- TODO: kind of a hack
-            return None, fmtdef
+            return fmtdef, None
         if fmtdef is None:
             return fmtdef, np.dtype([])
         return insert_sample_types_into_df(fmtdef)

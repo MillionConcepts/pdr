@@ -49,7 +49,7 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
-        ("JUNO JUPITER JIRAM REDUCED" in data.LABEL.get("DATA_SET_NAME"))
+        ("JUNO JUPITER JIRAM REDUCED" in data.LABEL.get("DATA_SET_NAME", ""))
         and (pointer == "IMAGE")
     ):
         return True, formats.juno.jiram_image_loader(data, pointer)
