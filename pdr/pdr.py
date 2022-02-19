@@ -578,10 +578,22 @@ class Data:
             )
         try:
             assert len(table.columns) == len(fmtdef.NAME.tolist())
+            string_buffer.close()
+            return table
         except AssertionError:
-            # TODO: handle this better
-            string_buffer.seek(0)
-            table = pd.read_fwf(string_buffer, header=None)
+            pass
+        # TODO: handle this better
+        string_buffer.seek(0)
+        if 'BYTES' in fmtdef.columns:
+            try:
+                table = pd.read_fwf(
+                    string_buffer, header=None, widths=fmtdef.BYTES.values
+                )
+                string_buffer.close()
+                return table
+            except (pd.errors.EmptyDataError, pd.errors.ParserError):
+                string_buffer.seek(0)
+        table = pd.read_fwf(string_buffer, header=None)
         string_buffer.close()
         return table
 
