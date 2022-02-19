@@ -565,23 +565,30 @@ class Data:
         try:
             table = pd.read_csv(string_buffer, sep=sep, header=None)
         # TODO: I'm not sure this is a good idea
+        # TODO: hacky, untangle this tree
         except (UnicodeError, AttributeError, ParserError):
-            table = pd.DataFrame(
-                np.loadtxt(
-                    fn,
-                    # this is probably a poor assumption to hard code.
-                    delimiter=',',
-                    skiprows=self.labelget("LABEL_RECORDS"),
+            table = None
+        if table is None:
+            try:
+                table = pd.DataFrame(
+                    np.loadtxt(
+                        fn,
+                        # this is probably a poor assumption to hard code.
+                        delimiter=',',
+                        skiprows=self.labelget("LABEL_RECORDS"),
+                    )
+                    .copy()
+                    .newbyteorder('=')
                 )
-                .copy()
-                .newbyteorder('=')
-            )
-        try:
-            assert len(table.columns) == len(fmtdef.NAME.tolist())
-            string_buffer.close()
-            return table
-        except AssertionError:
-            pass
+            except (TypeError, KeyError, ValueError):
+                pass
+        if table is not None:
+            try:
+                assert len(table.columns) == len(fmtdef.NAME.tolist())
+                string_buffer.close()
+                return table
+            except AssertionError:
+                pass
         # TODO: handle this better
         string_buffer.seek(0)
         if 'BYTES' in fmtdef.columns:
