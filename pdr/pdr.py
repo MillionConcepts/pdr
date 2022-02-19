@@ -920,6 +920,10 @@ class Data:
                     return target[-1].value - 1
                 return record_bytes * max(target[-1].value - 1, 0)
             return 0
+        elif isinstance(target, pvl.Quantity):
+            if target.units == "BYTES":
+                return target.value - 1
+            return record_bytes * max(target.value - 1, 0)
         if isinstance(target, str):
             return 0
         else:

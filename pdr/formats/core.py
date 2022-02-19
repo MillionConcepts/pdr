@@ -178,8 +178,10 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     special-case handling for labels with nonstandard filename specifications
     """
     if (
-        "HIRISE" in data.LABEL.get("DATA_SET_ID")
-        and object_name == "IMAGE"
+        ("HIRISE" in data.LABEL.get("DATA_SET_ID"))
+        and (object_name == "IMAGE")
+        and ("-EDR-" not in data.LABEL.get("DATA_SET_ID"))
+        and ("-EDR-" not in data.LABEL.get("DATA_SET_ID"))
     ):
         return True, data.LABEL['COMPRESSED_FILE']['FILE_NAME']
     return False, None
