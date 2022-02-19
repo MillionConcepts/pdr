@@ -48,7 +48,11 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
-    # just an ambiguous name: best to specify it)
+    if (
+        ("JUNO JUPITER JIRAM REDUCED" in data.LABEL.get("DATA_SET_NAME"))
+        and (pointer == "IMAGE")
+    ):
+        return True, formats.juno.jiram_image_loader(data, pointer)
     if (
         data.LABEL.get("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
         and data.LABEL.get("MISSION_NAME") == "MARS SCIENCE LABORATORY"
@@ -59,6 +63,7 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         data.LABEL.get("INSTRUMENT_ID") == "APXS"
         and "TABLE" in pointer
     ):
+        # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)
     if (
         data.LABEL.get("INSTRUMENT_ID") == "CHEMIN"

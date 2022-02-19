@@ -232,7 +232,12 @@ class Data:
         if (lazy is False) or (implicit_lazy_exception == fn):
             non_labels = [i for i in self.index if i != "LABEL"]
             if all((self[i] is None for i in non_labels)):
-                self._fallback_image_load()
+                try:
+                    self._fallback_image_load()
+                except KeyboardInterrupt:
+                    raise
+                except Exception:
+                    pass
 
     def _handle_initial_load(self, lazy, implicit_lazy_exception):
         for pointer in self.pointers:
