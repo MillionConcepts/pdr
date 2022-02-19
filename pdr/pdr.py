@@ -576,13 +576,13 @@ class Data:
                 .copy()
                 .newbyteorder('=')
             )
-        finally:
-            string_buffer.close()
         try:
             assert len(table.columns) == len(fmtdef.NAME.tolist())
         except AssertionError:
             # TODO: handle this better
-            table = pd.read_fwf(fn)
+            string_buffer.seek(0)
+            table = pd.read_fwf(string_buffer, header=None)
+        string_buffer.close()
         return table
 
     # TODO: refactor this. see issue #27.
@@ -865,6 +865,14 @@ class Data:
         do I appear to point to a delimiter-separated file without
         explicit record byte length?
         """
+        if isinstance(target := self._get_target(object_name), pvl.Quantity):
+            if target.units == 'BYTES':
+                return False
+        # TODO: untangle this, everywhere
+        if isinstance(target := self._get_target(object_name), list):
+            if isinstance(target[-1], pvl.Quantity):
+                if target[-1].units == 'BYTES':
+                    return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
         if self.LABEL.get("RECORD_BYTES") is not None:
@@ -925,6 +933,9 @@ class Data:
                     return target[-1].value - 1
                 return record_bytes * max(target[-1].value - 1, 0)
             return 0
+        elif isinstance(target, list) and isinstance(target[-1], pvl.Quantity):
+            if target[-1].units == 'BYTES':  # TODO: untangle this
+                return target[-1].value - 1
         elif isinstance(target, pvl.Quantity):
             if target.units == "BYTES":
                 return target.value - 1
