@@ -976,11 +976,11 @@ class Data:
         # Returns the keys for observational data and metadata objects
         return self.index
 
-    def get_absolute_path(self, file):
+    def get_absolute_patih(self, file):
         if self.labelname:
-            return str(Path(Path(self.labelname).parent, file))
+            return str(Path(Path(self.labelname).absolute().parent, file))
         elif self.filename:
-            return str(Path(Path(self.filename).parent, file))
+            return str(Path(Path(self.filename).absolute().parent, file))
         else:
             return file
 
