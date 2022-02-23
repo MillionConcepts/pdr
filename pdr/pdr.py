@@ -978,9 +978,13 @@ class Data:
 
     def get_absolute_path(self, file):
         if self.labelname:
-            return str(Path(Path(self.labelname).absolute().parent, file))
+            return str(
+                Path(Path(self.labelname).absolute().parent, Path(file).name)
+            )
         elif self.filename:
-            return str(Path(Path(self.filename).absolute().parent, file))
+            return str(
+                Path(Path(self.filename).absolute().parent, Path(file).name)
+            )
         else:
             return file
 
