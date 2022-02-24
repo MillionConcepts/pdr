@@ -184,7 +184,8 @@ class Data:
         #  of those data files also contains the attached label -- basically,
         #  these can't be strings
         self.debug = debug
-        self.filename = fn
+        self.filename = str(Path(fn).absolute())
+        fn = self.filename
         self.file_mapping = {}
         self.labelname = None
         # index of all of the pointers to data
@@ -194,7 +195,8 @@ class Data:
         implicit_lazy_exception = None
         # Attempt to identify and assign a label file
         if label_fn is not None:
-            self.labelname = label_fn
+            self.labelname = str(Path(label_fn).absolute())
+            label_fn = self.labelname
             lazy = False if lazy is None else lazy
         elif fn.endswith(LABEL_EXTENSIONS):
             self.labelname = fn
