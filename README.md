@@ -1,58 +1,160 @@
+README.md
 ## The Planetary Data Reader (pdr)
-This tool will provide a single command---`read([filename])`---for ingesting _all_ common planetary data types. It is currently in development. Any kind of "primary observational data" product currently archived in the PDS (under PDS3 or PDS4) should be covered eventually, as should many common data types used in research workflows that do not appear in the PDS (e.g. ISIS Cube, GeoTIFF, ...) The supported data types / sets are listed below. There might be data types / sets that work but are not listed. There are also likely to be some files in the 'supported' data types / sets that break. In either of these cases, please submit an issue with a link to the file and information about the error (if applicable).
+
+This tool provides a single command---`read(‘/path/to/file’)`---for ingesting
+_all_ common planetary data types. It is currently in development. Almost every kind
+of "primary observational data" product currently archived in the PDS
+(under PDS3 or PDS4) should be covered eventually. [Currently-supported datasets are listed here.](supported_datasets.md) 
+
+If the software fails while attempting to read from datasets that we have listed as supported, please submit an issue with a link to the file and information about the error (if applicable). There might also be datasets that work but are not listed. We would like to hear about those too. If a dataset is not yet supported that you would like us to consider prioritizing, [please fill out this request form](https://docs.google.com/forms/d/1JHyMDzC9LlXY4MOMcHqV5fbseSB096_PsLshAMqMWBw/viewform).
 
 ### Installation
-_pdr_ is not yet on `pip` or `conda`. You can install it with a command like the following:
-
-    pip install git+https://github.com/MillionConcepts/pdr.git
-
-The minimum supported version of Python is _3.8_. A fresh conda environment may prevent headaches.
+_pdr_ is not yet on `pip` or `conda`. We recommend cloning the repository and 
+installing it into a `conda`environment made from the provided `environment.yml` file, like:
+```
+git clone https://github.com/MillionConcepts/pdr.git
+cd pdr
+conda env create -f environment.yml
+conda activate pdr 
+pip install -e .
+```
+The minimum supported version of Python is _3.8_.
 
 ### Usage
-Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the full path to an data product _or_ a metadata / label file (e.g. with extensions of .LBL, .lbl, or .xml). The `read()` (or alias `open()`) function will look for the corresponding data or metadata file in the same path. It returns an object containing all of the data and metadata.
 
-The returned object uses the name of the data type as provided in the metadata. For example, PDS3 images are typically defined as "IMAGE" objects in the metadata, so it the data would be contained `pdr.read(filename).IMAGE`. The "LABEL" data is typically references (as a PVL object) in `pdr.read(filename).LABEL`. Some PDS3 files, especially older ones, contain multiple data types. Suggestions on how to improve the organization of these objects is welcomed.
-The object can also be treated _sort of_ like a `dict()` with the observational data and metadata attributes as keys. So, for example, `pdr.read(filename).keys()` might return `['IMAGE','LABEL']`, and then the image array can be accessed with `pdr.read(filename)['IMAGE']`. Checking the `keys()` of the returned object is often a good first thing to do.
+Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the
+full path to a data file _or_ a metadata / label file (extensions .LBL,
+.lbl, or .xml). `read()` will look for corresponding data or metadata
+files in the same path, or read metadata directly from the data file if it has
+an attached label.
+
+The function will return a `pdr.Data` object whose attributes include all of the data
+and metadata. These attributes are named according to the names of the data
+objects as given in the label. They can be accessed either as attributes or using
+`dict`-style \[\] index notation. For example, PDS3 image objects are often
+named "IMAGE", so you could examine a PDS3 image as an array with:
+```
+>>> data = pdr.read("/path/to/cr0_398560467edr_f0030004ccam02012m1.LBL")
+>>> data['IMAGE']
+array([[21, 21, 20, ..., 19, 19, 20],
+       [21, 21, 21, ..., 19, 20, 20],
+       [21, 21, 20, ..., 20, 20, 20],
+       ...,
+       [25, 25, 25, ..., 26, 26, 26],
+       [25, 25, 25, ..., 27, 26, 26],
+       [24, 25, 25, ..., 26, 26, 26]], dtype=int16)
+```
+You can usually find the primary metadata as a *pvl* object in 'LABEL':
+```
+>>> data['LABEL']['INSTRUMENT_HOST_NAME']
+'MARS SCIENCE LABORATORY'
+```
+Some PDS products (like this one) contain multiple data objects. You can look
+at all of the objects associated with a product with `.keys()`:
+```
+>>> data.keys()
+['LABEL',
+ 'IMAGE_HEADER',
+ 'ANCILLARY_TABLE',
+ 'CMD_REPLY_FRAME_SOHB_TABLE',
+ 'SOH_BEFORE_CHECKSUM_TABLE',
+ 'TAKE_IMAGE_TIME_TABLE',
+ 'CMD_REPLY_FRAME_SOHA_TABLE',
+ 'SOH_AFTER_CHECKSUM_TABLE',
+ 'MUHEADER_TABLE',
+ 'MUFOOTER_TABLE',
+ 'IMAGE_REPLY_TABLE',
+ 'IMAGE',
+ 'MODEL_DESC']
+ ```
 
 ### Output data types
 In general:
-+ Image data will be represented as `numpy` arrays.
-+ Table data will be represented as `pandas` DataFrames.
-+ Header and label data will be represented as _either_ `pvl` objects or fitsio objects, depending on the data type.
-+ Other data will be represented as simple python types (e.g. strings, tuples, dicts).
-+ There might be rare exceptions.
++ Image data are presented as `numpy` arrays.
++ Table data are presented as `pandas` DataFrames.
++ Header and label data are presented as `pvl` objects.
++ Other data are presented as simple python types (`str`, `tuple`, `dict`).
++ Data loaded from PDS4 .xml labels [are presented as whatever object
+  `pds4-tools` returns.](https://pdssbn.astro.umd.edu/tools/pds4_tools_docs/current/) We plan to normalize this behavior in the future.
++There might be rare exceptions.
 
-### Supported Data Types
-1. All data archived under PDS4 standards should be fully supported. This tool simply wraps `pds4_tools`.
-2. Flexible Image Transport (FITS) data should be fully supported. This tool simply wraps `astropy.io.fits`.
-3. Many but not all data archived under PDS3 are currently supported. Older files formats are less likely to work correctly.
-   + Some PDS3 table data are defined in external reference files (usually with a `.FMT` extension). If this file exists in the same directory as the data being read, then it should work. Future functionality will make this smoother.
-4. The **GeoTiff format is not supported**, but the plan is to include this functionality (and a lot of others!) by wrapping GDAL.
-5. The **ISIS Cube format is partly supported**, but maybe not reliably or correctly.
-    
-### Other Notes and Caveats
+### Notes and Caveats
 #### Additional processing
-Some data, especially calibrated image data, might require the application of additional offsets or scale factors to convert the storage units to meaningful physical units. The information on how and when to apply such adjustments is typically stored (as plain text) in the instrument SIS, and the scale factors themselves are usually stored in the label. This hasn't been implemented anywhere, because it will probably require digging into each data set individually. So **do not trust that the data output by `read()` is ready for analysis** without further processing. Contributions towards solving this problem are very much welcomed.
+Some data, especially calibrated image data, require the application of
+additional offsets or scale factors to convert the storage units to meaningful
+physical units. The information on how and when to apply such adjustments is
+typically stored (as plain text) in the instrument SIS, and the scale factors
+themselves are often (but not always) stored in the label. Many calibrated
+image files also contain special constants (like missing or invalid data),
+which are often not explicitly specified in the label. `pdr` is therefore not
+guaranteed to know anything about or correctly apply these constants.
+
+`pdr.Data` objects offer a convenience method that attempts to mask invalid
+values and apply any scaling and offset specified in the label. Use it like:
+`scaled_image = data.get_scaled('IMAGE')`. However, we do not perform science
+validation of these outputs, so **do not trust that they are ready for
+analysis** without further processing or validation. Contributions towards making this
+more effective for specific data product types are very much welcomed.
+
+#### PDS4 products
+All valid PDS4 products should be fully supported. `pdr.Data` simply wraps
+`pds4-tools`. They may not, however, behave in exactly the same way as objects
+loaded using *pdr*'s native functionality. In general, if a PDS3 label is
+available for a product, we recommend loading the product from it rather than
+the PDS4 label. We plan to implement a unified interface for PDS3 and PDS4
+metadata later on in the project.
+
+#### .FMT files
+Some PDS3 table data are defined in external reference files (usually with a
+`.FMT` extension). You can often find these in the LABEL or DOCUMENT
+subdirectories of the data archive volumes. If you place the relevant format
+files in the same directory as the data files you are trying to read, *pdr*
+will be able to find them. Otherwise, it will not and a warning will be thrown 
+with the name of the file needed to assist in locating it. Future functionality 
+may make this smoother.
 
 #### Data attribute naming
-The observational and metadata attributes (or keys) on the returned data object take their name directly from from how the data objects are defined within the files themselves. This is why the key for images will often be the capitalized "IMAGE" for PDS3 data; this is how it was defined in PDS3, even though this kind of capitalization is not typical in Python. There are also data object names with intercaps like "Mossbauer_Spectrum_3". I think that maintaining this strong correlation between the representation of the data in-langauge and the representation of the data in-file is important.
-There are two exception cases, at present.
-1. Some table data are defined with repeating column names. These are forced to be unique by suffixing an integer that just indexes the order in which the columns occurred in the format definition. So a table defined with column names of "COLUMN" and "COLUMN" in the file label will return a table with column names of "COLUMN_0" and "COLUMN_1."
-2. The data object names sometimes contain spaces. _pdr_ replaces the spaces with underscores in order to make them usable as attributes.
+The observational and metadata attributes (or keys) of `pdr.Data`
+objects take their names directly from the metadata files. We believe that
+maintaining this strong correlation between the representation of the data
+in-language and the representation of the data in-file is important, even when
+it causes us to break strict PEP-8 standards for attribute capitalization.
+There are three exceptions at present:
+1. Some table formats include repeated column names. For usability and
+compatibility, we force these to be unique by suffixing 0-indexed increasing
+integers. So a table definition with two separate columns named "COLUMN" will return a pandas DataFrame with columns named "COLUMN_0" and "COLUMN_1."
+2. PDS3 data object names sometimes contain spaces. _pdr_ replaces the spaces
+with underscores in order to make them usable as attributes.
+3. PDS4 labels loaded by `pds4-tools` are renamed "LABEL" for internal
+consistency. We plan to deprecate this behavior in the future.
 
-#### Mars Science Laboratory compressed EDR images: Currently broken.
-**This isn't supported at all right now. Temporarily broken!** The Mars Science Laboratory "raw" (EDR) images produced by the Malin Space Science Systems (MSSS) cameras, which include Mastcam, MAHLI, and the Mars Descent Imager, are archived in a bespoke compressed format. These images carry the extension '.DAT' which is typically reserved for "table" style data in PDS3. Software for converting these files to more typical PDS3-style .IMG format files has been provided in the archive. If the `dat2img` script is compiled in a directory called "MMM_DAT2IMG" under the "pdr" directory, then the `read()` action will run this script and read the resulting output. Otherwise it will just return an error. Functionality is planned to either include / compile this code with the installation of this package or (much better) to port `dat2img` to pure Python. Help is welcomed with either of these efforts! The MSL "calibrated" (RDR) files should all work fine, though.
+#### Lazy loading
+If you call `pdr.Data.read` on a data file rather than a label file, or if
+you pass it the `lazy=True` argument, it will only load data objects from the 
+individual file you passed -- and it will load no data objects, simply the label, 
+if you pass a detached label file with `lazy=True`. You can load other objects 
+later by using the `load` method, like `data.load("IMAGE")`. You might want to do this for a
+variety of reasons, but one common use case is loading products that have
+multiple large files (like Chandrayaan-1 M3 L1B and L2 products). It is likely 
+that in many cases you will only want to reference one or two of those files, 
+and not waste time and memory loading all of them on initialization.
 
-
-#### Detached table format files
-Some PDS3 table data are defined in external reference files (usually with a `.FMT` extension). If this file exists in the same directory as the data being read, then it should work. Future functionality will make this smoother.
-
-#### External description files
-Some PDS3 labels point to external metadata "description" files (usually a `.PDF`). The current functionality is to just return the name of this file as given by the pointer, not its contents.
+#### Missing files
+If a file referenced by a label is missing, *pdr* will throw warnings and
+populate the associated attribute from the portion of the label that mentions
+that file. You are most likely to encounter this for DESCRIPTION files in
+document formats (like .TXT). These warnings do not prevent you from using
+objects loaded from files that are actually present in your filesystem.
 
 #### Big files (like HiRISE)
-No sort of memory management or lazy-loading is implemented, so expect a crash or very slow response on most machines if you try to read very large files.
+`pdr` currently performs no special memory management, so use caution 
+when attempting to read very large files. We intend to implement memory
+management in the future.
 
 ---
 
 This work is supported by NASA grant No. 80NSSC21K0885.
+
+
+
+
