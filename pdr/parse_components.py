@@ -54,10 +54,13 @@ def booleanize_booleans(
 def filter_duplicate_pointers(pointers, pt_groups):
     for pointer, group in pt_groups.items():
         if (len(group) > 1) and (pointer != "^STRUCTURE"):
-            warnings.warn(
-                f"Duplicate handling for {pointer} not yet "
-                f"implemented, ignoring"
-            )
+            if pointer != "^DESCRIPTION":
+                # don't waste anyone's time mentioning that the label
+                # references both ODL.TXT and VICAR2.TXT
+                warnings.warn(
+                    f"Duplicate handling for {pointer} not yet "
+                    f"implemented, ignoring"
+                )
         else:
             pointers.append(group[0][0])
     return pointers

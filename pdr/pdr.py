@@ -248,6 +248,10 @@ class Data:
                 continue
             self.index.append(object_name)
             self.file_mapping[object_name] = self._target_path(object_name)
+            if object_name in (
+                "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC"
+            ):
+                continue
             if lazy is False:
                 self.load(object_name)
             elif (
