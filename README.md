@@ -76,7 +76,7 @@ In general:
 + Other data are presented as simple python types (`str`, `tuple`, `dict`).
 + Data loaded from PDS4 .xml labels [are presented as whatever object
   `pds4-tools` returns.](https://pdssbn.astro.umd.edu/tools/pds4_tools_docs/current/) We plan to normalize this behavior in the future.
-+There might be rare exceptions.
++ There might be rare exceptions.
 
 ### Notes and Caveats
 #### Additional processing
