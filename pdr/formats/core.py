@@ -109,7 +109,9 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     if ("IMAGE" in pointer) or ("QUB" in pointer):
         # TODO: sloppy pt. 1. this will be problematic for
         #  products with a 'secondary' fits file, etc.
-        if looks_like_this_kind_of_file(data.filename, FITS_EXTENSIONS):
+        if looks_like_this_kind_of_file(
+            data._target_path(pointer), FITS_EXTENSIONS
+        ):
             return data.handle_fits_file
         return data.read_image
     # we don't present STRUCTURES separately from their tables;

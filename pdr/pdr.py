@@ -749,7 +749,7 @@ class Data:
         from astropy.io import fits
 
         try:
-            hdulist = fits.open(check_cases(self.filename))
+            hdulist = fits.open(check_cases(self.file_mapping[pointer]))
             if "HEADER" in pointer:
                 return hdulist[pointer_to_fits_key(pointer, hdulist)].header
             return hdulist[pointer_to_fits_key(pointer, hdulist)].data
