@@ -192,3 +192,12 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     ):
         return True, data.LABEL['COMPRESSED_FILE']['FILE_NAME']
     return False, None
+
+
+# pointers we do not automatically load even when loading greedily --
+# generally these are reference files, usually throwaway ones, that are not
+# archived in the same place as the data products and add little, if any,
+# context to individual products
+OBJECTS_IGNORED_BY_DEFAULT = (
+    "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC", "ERROR_MODEL_DESC"
+)

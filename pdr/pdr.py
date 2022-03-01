@@ -27,7 +27,7 @@ from pdr.datatypes import (
 from pdr.formats import (
     LABEL_EXTENSIONS, pointer_to_loader, generic_image_properties,
     looks_like_this_kind_of_file, FITS_EXTENSIONS, check_special_offset,
-    check_special_fn,
+    check_special_fn, OBJECTS_IGNORED_BY_DEFAULT,
 )
 from pdr.utils import (
     depointerize,
@@ -248,9 +248,7 @@ class Data:
                 continue
             self.index.append(object_name)
             self.file_mapping[object_name] = self._target_path(object_name)
-            if object_name in (
-                "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC"
-            ):
+            if object_name in OBJECTS_IGNORED_BY_DEFAULT:
                 continue
             if lazy is False:
                 self.load(object_name)
