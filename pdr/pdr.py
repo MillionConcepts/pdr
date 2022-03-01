@@ -1034,6 +1034,8 @@ class Data:
         if outpath is None:
             outpath = Path(".")
         for obj in self.index:
+            if not hasattr(self, obj):
+                continue
             outfile = str(Path(outpath, f"{prefix}_{obj}"))
             # no need to have all this mpl stuff in the namespace normally
             from pdr.browsify import browsify
