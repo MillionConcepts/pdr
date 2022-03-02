@@ -685,6 +685,8 @@ class Data:
             fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
         )
         swapped = enforce_order_and_object(array, inplace=False)
+        if (swapped.size == 1) and (len(swapped.dtype) <= 1):
+            swapped = swapped[0]
         table = pd.DataFrame(swapped)
         table = booleanize_booleans(table, fmtdef)
         return table
