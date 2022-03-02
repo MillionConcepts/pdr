@@ -1,7 +1,7 @@
 import os.path as _osp
 
 from pdr.pdr import Data
-from pdr.utils import download_test_data, download_data_and_label
+from pdr.utils import download_test_data, download_data_and_label, check_cases
 
 __version__ = "0.5.0"
 
@@ -10,7 +10,10 @@ test_dir = _osp.join(pkg_dir, 'oldtests')
 
 
 def read(fp, **kwargs):
-    return Data(fp, **kwargs)
+    try:
+        return Data(fp, **kwargs)
+    except FileNotFoundError:
+        return Data(check_cases(fp), **kwargs)
 
 
 def open(fp, **kwargs):
