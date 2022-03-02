@@ -686,7 +686,8 @@ class Data:
         )
         swapped = enforce_order_and_object(array, inplace=False)
         if (swapped.size == 1) and (len(swapped.dtype) <= 1):
-            swapped = swapped[0]
+            while isinstance(swapped, (list, tuple)):
+                swapped = swapped[0]
         table = pd.DataFrame(swapped)
         table = booleanize_booleans(table, fmtdef)
         return table
