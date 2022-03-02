@@ -685,9 +685,10 @@ class Data:
             fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
         )
         swapped = enforce_order_and_object(array, inplace=False)
-        if (swapped.size == 1) and (len(swapped.dtype) <= 1):
-            while isinstance(swapped, (list, tuple)):
-                swapped = swapped[0]
+        # note that pandas treats complex and simple dtypes differently when
+        # initializing single-valued dataframes
+        if (swapped.size == 1) and (len(swapped.dtype) == 0):
+            swapped = swapped[0]
         table = pd.DataFrame(swapped)
         table = booleanize_booleans(table, fmtdef)
         return table
