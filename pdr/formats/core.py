@@ -93,6 +93,9 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     is_special, loader = check_special_case(pointer, data)
     if is_special is True:
         return loader
+    # TIFF tags / headers should always be parsed by the TIFF parser itself
+    if ("TIFF" in pointer) and ("IMAGE" not in pointer):
+        return data.trivial
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
     if "LINE_PREFIX_TABLE" in pointer:
@@ -115,8 +118,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
             return data.handle_fits_file
         return data.read_image
     # we don't present STRUCTURES separately from their tables;
-    # TIFF tags / headers should always be parsed by the TIFF parser itself
-    if ("STRUCTURE" in pointer) or ("TIFF" in pointer):
+    if "STRUCTURE" in pointer:
         return data.trivial
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
