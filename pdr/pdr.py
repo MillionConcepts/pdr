@@ -257,7 +257,7 @@ class Data:
                 self.load(object_name)
             elif (
                 (lazy is True)
-                and (self.file_mapping[object_name] == implicit_lazy_exception)
+                and (self.file_mapping[object_name].lower() == implicit_lazy_exception.lower())
             ):
                 self.load(object_name)
             else:
