@@ -1,0 +1,337 @@
+PDS_VERSION_ID               = "PDS3"
+RECORD_TYPE                  = FIXED_LENGTH
+RECORD_BYTES                 = 122
+FILE_RECORDS                 = 6217    
+^SHADR_HEADER_TABLE          = ("JGMRO_110B2_SHA.TAB",1)       
+^SHADR_COEFFICIENTS_TABLE    = ("JGMRO_110B2_SHA.TAB",3)       
+INSTRUMENT_HOST_NAME         = "MARS RECONNAISSANCE ORBITER"
+TARGET_NAME                  = "MARS"
+INSTRUMENT_NAME              = "RADIO SCIENCE SUBSYSTEM"
+DATA_SET_ID                  = "MRO-M-RSS-5-SDP-V1.0"
+OBSERVATION_TYPE             = "GRAVITY FIELD"
+ORIGINAL_PRODUCT_ID          = "MRO110B2"
+PRODUCT_ID                   = "JGMRO_110B2_SHA.TAB"
+PRODUCT_RELEASE_DATE         = 2009-08-13
+DESCRIPTION                  = "
+ This file contains coefficients and related data for the JPL Mars gravity
+ field MRO110B2, a 110th degree and order spherical harmonic model. This 
+ field is identical to MRO110B except a 35% looser gravity constraint is 
+ applied beginning at degree 80 (compared to degree 70 for MRO110B). The 
+ data included in the solution is same as MRO110B.
+
+ The summary of radio tracking data this gravity field is as follows:
+   MGS Science Phasing Orbit 1 (SPO1)          1998-03-28 to 1998-04-28
+       Science Phasing Orbit 2 (SPO2)          1998-06-04 to 1998-09-23
+       Gravity Calibration Orbit (GCO) including
+       fixed high-gain antenna mapping         1999-02-02 to 1999-03-29
+       Mapping Orbit (MAP)                     1999-03-29 to 2006-09-23
+       Note: This solution contains all useful MGS data prior to loss of
+             contact with the spacecraft in Nov., 2006.
+   Odyssey Transition Orbit (ODYT)             2002-01-11 to 2002-01-15
+           Mapping Orbit (ODYM)                2002-02-11 to 2008-10-28
+   MRO Transition Orbit (MROT)                 2006-08-30 to 2006-09-11
+       Mapping Orbit (MROM)                    2006-09-11 to 2008-10-31
+   Pathfinder                                  1997-07-04 to 1997-10-07
+   Viking 1 Lander                             1976-07-21 to 1982-11-13
+
+ Some details describing this model are:
+   The spherical harmonic coefficients are fully normalized.
+   The reference radius = 3396.0 km
+   The prime meridian of this model matches the IAU 2000 prime meridian
+       at the J2000 epoch to about 20 cm.
+   The Mars System GM (Mars+Phobs+Deimos) = 42828.3745268 km^3/sec^2
+       The GM of Mars = 42828.373716 km^3/sec^2
+       The GM of Phobos = 7.17x10^-4 km^3/sec^2
+       The GM of Deimos = 9.43x10^-5 km^3/sec^2
+   The Viking and Mariner 9 orbiter data are not included in this delivery
+       unlike some past deliveries which included this data. This data do
+       not seem to add any more information for the gravity although there 
+       is some Phobos and Deimos GM information in the data. The values for
+       the Phobos and Deimos GM given here do not include the Viking and 
+       Mariner 9 orbiter data.
+   The Mars-fixed reference frame is given by Konopliv et al. (2006) except
+       with updated orientation parameters that are either estimated in the
+       MRO110B2 solution or fixed to chosen values. The prime meridian of the
+       MRO110B2 coordinate was chosen so that it matches the prime meridian 
+       of the IAU 2000 coordinate frame to about 20 cm.
+       The rotation from the body-fixed position rBF to the inertial
+       postion rIN is:
+          rIN = Rz(-N) Rx(-J) Rz(-PSI) Rx(-I) Rz(-PHI) rBF
+       where N is the angle in the plane of the Earth-mean-equator of J2000
+       (EME2000) from the vernal equinox (intersection of the mean ecliptic
+       and EME2000 planes) to the intersection of the Mars-mean-orbit of 
+       J2000 and EME2000 planes; J is the inclination of the Mars-mean-orbit
+       plane relative to the EME2000 plane; PSI is the angle in the 
+       Mars-mean-orbit plane from the intersection of the EME2000 and 
+       Mars-mean-orbit planes to the intersection of the Mars-mean-orbit and 
+       Mars-true-equator of date planes; I is the inclination of the 
+       Mars-true-equator relative to the Mars-mean-orbit plane; PHI is the 
+       angle in the plane of the Mars-true-equator from the intersection of 
+       the Mars-mean-orbit plane and Mars-true-equator to the Mars prime 
+       meridian.
+       PSI, I, and PHI have J2000 epoch and secular values plus corrections
+       for nuations. PHI in addition has seasonal corrections for spin.
+       For example, PSI = PSI(t=J2000) + (dPSI/dt)*T + dPSI(nutations) where
+       T is time past J2000 in days.
+       For MRO110B2, the values of the orientation angles are:
+          N =  3.37919183 deg (fixed)
+          J = 24.67682669 deg (fixed)
+          PSI(t=J2000) = 81.9683722766 deg (estimated)
+          dPSI/dt      = -0.0000057723 deg/day (estimated)
+          I(t=J2000)   = 25.1893792629 deg (estimated)
+          dI/dt        =  -0.000000003 deg/day (estimated)
+          PHI(t=J2000) = 133.38462 deg (fixed)
+          dPHI/dt      = 350.891985303 deg/day (estimated)
+        The estimated seasonal spin amplitudes for PHI with periods equal to 
+        a Mars year, 1/2 year, 1/3 year, and 1/4 year and an epoch of 
+        Jan. 1999 are given by
+          PHI(  1yr,cosine) =  435 milliarcseconds
+          PHI(  1yr,  sine) = -168 milliarcseconds
+          PHI(1/2yr,cosine) =  -97 milliarcseconds
+          PHI(1/2yr,  sine) = -119 milliarcseconds
+          PHI(1/3yr,cosine) =  -17 milliarcseconds
+          PHI(1/3yr,  sine) =  -17 milliarcseconds
+          PHI(1/4yr,cosine) =   -9 milliarcseconds
+          PHI(1/4yr,  sine) =   -4 milliarcseconds
+   The number of radio tracking data (Doppler and range) observations for the
+       various data blocks are as follows:
+          MGS SPO1 and SPO2 at 177 km periapsis   =   131,623
+          MGS GCO at 370 km periapsis             =   140,735
+          MGS MAP at 370 km periapsis             = 8,366,012
+          Odyssey transistion at 200 km periapsis =    27,661
+          Odyssey mapping at 390 km periapsis     = 6,494,973
+          Pathfinder on the Mars surface          =     7,562
+          Viking 1 Lander on the Mars surface     =    15,628
+          MRO transition at 200 km periapsis      =    72,127
+          MRO mapping at 250 km periapsis         = 2,536,266
+   The data weights for each block have accounted for
+       the SPO1 and SPO2 Doppler being corrupted by solar plasma while
+       at small Sun-Earth-probe angles. The GCO and MAP data are the
+       highest quality data having a 2-way Doppler data weight near
+       0.03 mm/sec for a 10 second sample. The Pathfinder Doppler is
+       weighted about 0.08 mm/s and Viking Lander data is weighted
+       near 0.4 mm/s.
+   A kaula type power law constraint is applied to the spherical harmonics
+       coefficients beginning at degree 80. The MRO110B2 constraint uses a 
+       similar taper as the constraint applied to MGS95J (see Fig. 5 of 
+       Konopliv et al., 2006), but begins at degree 80.
+   The k2 Love number to use with this MRO110B2 solution is 0.183. The
+       second degree harmonic coefficients do not include the permanent
+       tide due to the Love number.
+   This delivery is the Mars static gravity field. However, the gravity
+       field varies due to the mass exchange between the polar caps and
+       the Mars atmosphere. The major component of this effect can be
+       included in the gravity field by adding the following correction
+       to the normalized J3 gravity coefficient:
+          dJ3 = 2.994D-09 * sin W*(t-t0)
+       where W is the Mars mean motion = 191.39 deg/yr and t-t0 = years
+       past Jan 1, 1999.
+
+ This file is a pair of ASCII tables: a header table and a table of
+ 9215 coefficients plus a value for GM.  Definitions of the tables
+ follow."
+
+START_TIME                   = 2006-08-30T18:00:00.000
+STOP_TIME                    = 2008-10-31T16:00:00.000
+PRODUCT_CREATION_TIME        = 2009-01-12T00:00:00.000
+PRODUCER_FULL_NAME           = "ALEX S. KONOPLIV"
+PRODUCER_INSTITUTION_NAME    = "JET PROPULSION LABORATORY"
+PRODUCT_VERSION_TYPE         = "FINAL"
+PRODUCER_ID                  = "MRO GST"
+SOFTWARE_NAME                = "SHAGRV.V1.0"
+
+
+OBJECT               = SHADR_HEADER_TABLE
+ROWS                       = 1
+COLUMNS                    = 8
+ROW_BYTES                  = 137
+ROW_SUFFIX_BYTES           = 107
+INTERCHANGE_FORMAT         = ASCII
+DESCRIPTION                = "The SHADR header includes
+descriptive information about the spherical harmonic 
+coefficients which follow in SHADR_COEFFICIENTS_TABLE.  
+The header consists of a single record of eight (delimited) 
+data columns requiring 137 bytes, a pad of 105 unspecified 
+ASCII characters, an ASCII carriage-return, and an ASCII 
+line-feed."
+
+  OBJECT                   = COLUMN
+    NAME                         = "REFERENCE RADIUS"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 1
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "KILOMETER"
+    DESCRIPTION                  = "The assumed reference 
+    radius of the spherical planet."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "CONSTANT"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 25
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "For a gravity field model
+    the assumed gravitational constant GM in kilometers cubed
+    per seconds squared for the planet.  For a topography
+    model, set to 1."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "UNCERTAINTY IN CONSTANT"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 49
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "For a gravity field model
+    the uncertainty in the gravitational constant GM in kilometers
+    cubed per seconds squared for the planet.  For a topography
+    model, set to 0."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "DEGREE OF FIELD"
+    DATA_TYPE                    = ASCII_INTEGER
+    START_BYTE                   = 73
+    BYTES                        = 5
+    FORMAT                       = "I5"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The degree of model field."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "ORDER OF FIELD"
+    DATA_TYPE                    = ASCII_INTEGER
+    START_BYTE                   = 79
+    BYTES                        = 5
+    FORMAT                       = "I5"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The order of the model field."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "NORMALIZATION STATE"
+    DATA_TYPE                    = ASCII_INTEGER
+    START_BYTE                   = 85
+    BYTES                        = 5
+    FORMAT                       = "I5"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The normalization indicator.
+    For gravity field:
+        0   coefficients are unnormalized
+        1   coefficients are normalized
+        2   other."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "REFERENCE LONGITUDE"
+    POSITIVE_LONGITUDE_DIRECTION = "EAST"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 91
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "DEGREE"
+    DESCRIPTION                  = "The reference longitude for
+    the spherical harmonic expansion; normally 0."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "REFERENCE LATITUDE"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 115
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "DEGREE"
+    DESCRIPTION                  = "The reference latitude for
+    the spherical harmonic expansion; normally 0."
+  END_OBJECT               = COLUMN
+
+END_OBJECT           = SHADR_HEADER_TABLE
+
+OBJECT               = SHADR_COEFFICIENTS_TABLE
+  ROWS                     = 6215
+  COLUMNS                  = 6
+  ROW_BYTES                = 107
+  ROW_SUFFIX_BYTES         = 15
+  INTERCHANGE_FORMAT       = ASCII
+  DESCRIPTION              = "The SHADR coefficients table 
+  contains the coefficients for the spherical harmonic model.
+  Each row in the table contains the degree index m, the
+  order index n, the coefficients Cmn and Smn, and the
+  uncertainties in Cmn and Smn.  The (delimited) data 
+  require 107 ASCII characters; these are followed by a pad 
+  of 13 unspecified ASCII characters, an ASCII carriage-
+  return, and an ASCII line-feed."
+
+  OBJECT                   = COLUMN
+    NAME                         = "COEFFICIENT DEGREE"
+    DATA_TYPE                    = ASCII_INTEGER
+    START_BYTE                   = 1
+    BYTES                        = 5
+    FORMAT                       = "I5"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The degree index m of the
+    C and S coefficients in this record."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "COEFFICIENT ORDER"
+    DATA_TYPE                    = ASCII_INTEGER
+    START_BYTE                   = 7
+    BYTES                        = 5
+    FORMAT                       = "I5"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The order index n of the
+    C and S coefficients in this record."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "C"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 13
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The coefficient Cmn
+    for this spherical harmonic model."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "S"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 37
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The coefficient Smn
+    for this spherical harmonic model."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "C UNCERTAINTY"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 61
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The uncertainty in the
+    coefficient Cmn for this spherical harmonic model."
+  END_OBJECT               = COLUMN
+
+  OBJECT                   = COLUMN
+    NAME                         = "S UNCERTAINTY"
+    DATA_TYPE                    = ASCII_REAL
+    START_BYTE                   = 85
+    BYTES                        = 23
+    FORMAT                       = "E23.16"
+    UNIT                         = "N/A"
+    DESCRIPTION                  = "The uncertainty in the
+    coefficient Smn for this spherical harmonic model."
+  END_OBJECT               = COLUMN
+
+END_OBJECT           = SHADR_COEFFICIENTS_TABLE
+
+END
