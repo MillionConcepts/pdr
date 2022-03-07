@@ -14,3 +14,4 @@
 /pdr/tests/reference/temp/
 *.dot
 *.profile
+data/**
