@@ -156,7 +156,7 @@ management in the future.
 Our testing methodology for *pdr* currently focuses on end-to-end integration
 testing to ensure consistency, coverage of supported datasets, and (to the extent we can verify it) correctness of output.
 
-*pdr*'s test suite lives in a different repository:
+the test suite for *pdr* lives in a different repository:
 https://github.com/MillionConcepts/pdr-tests. Its core is an application called
 **ix**. It should be considered a fairly complete alpha; we are actively using 
 it both as a regression test suite and an active development tool.
