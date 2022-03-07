@@ -1,0 +1,141 @@
+PDS_VERSION_ID                = PDS3
+
+/* File characteristics */
+RECORD_TYPE                   = FIXED_LENGTH
+RECORD_BYTES                  = 100
+FILE_RECORDS                  = 1408
+
+/* Pointers to objects in file */
+^TABLE                             = "S_00690502_GEOM.TAB"
+
+/* Identification data elements */
+DATA_SET_ID                        = "MRO-M-SHARAD-5-RADARGRAM-V1.0"
+PRODUCT_ID                         = "S_00690502_GEOM"
+INSTRUMENT_HOST_ID                 = "MRO"
+INSTRUMENT_HOST_NAME               = "MARS RECONNAISSANCE ORBITER"
+INSTRUMENT_ID                      = "SHARAD"
+INSTRUMENT_NAME                    = "SHALLOW RADAR"
+TARGET_NAME                        = "MARS"
+ORBIT_NUMBER                       = 6905
+MRO:START_SUB_SPACECRAFT_LONGITUDE = 23.663202 <DEGREE>
+MRO:START_SUB_SPACECRAFT_LATITUDE  = 47.737865 <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LONGITUDE  = 21.890105 <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LATITUDE   = 36.823744 <DEGREE>
+START_TIME                         = 2008-01-16T12:47:19.761
+STOP_TIME                          = 2008-01-16T12:50:46.604
+SPACECRAFT_CLOCK_START_COUNT       = "UNK"
+SPACECRAFT_CLOCK_STOP_COUNT        = "UNK"
+PRODUCT_CREATION_TIME              = 2014-12-27T12:00:00
+PRODUCT_VERSION_ID                 = "2"
+PRODUCER_FULL_NAME                 = "BRUCE A. CAMPBELL"
+PRODUCER_INSTITUTION_NAME          = "SMITHSONIAN INSTITUTION"
+
+/* GEOM table information */
+OBJECT                           = TABLE
+ COLUMNS                         = 10
+ ROWS                            = 1408
+ ROW_BYTES                       = 100
+ INTERCHANGE_FORMAT              = ASCII
+ DESCRIPTION                     = "Geographic, geometric, and ionospheric
+                                  properties at each radargram column."
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 1
+  NAME                             = "RADARGRAM COLUMN"
+  START_BYTE                       = 1
+  BYTES                            = 5
+  DATA_TYPE                        = ASCII_INTEGER
+  DESCRIPTION                      = "Radargram column."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 2
+  NAME                             = "TIME"
+  START_BYTE                       = 7
+  BYTES                            = 23
+  DATA_TYPE                        = TIME
+  DESCRIPTION                      = "UT date and time of observation."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 3
+  NAME                             = "LATITUDE"
+  UNIT                             = DEGREE
+  START_BYTE                       = 31
+  BYTES                            = 8
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Latitude of the footprint location."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 4
+  NAME                             = "LONGITUDE"
+  UNIT                             = DEGREE
+  START_BYTE                       = 40
+  BYTES                            = 8
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Longitude of the footprint location."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 5
+  NAME                             = "MARS RADIUS"
+  UNIT                             = KM
+  START_BYTE                       = 49
+  BYTES                            = 8
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Radius of Mars at the footprint time."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 6
+  NAME                             = "SPACECRAFT RADIUS"
+  UNIT                             = KM
+  START_BYTE                       = 58
+  BYTES                            = 8
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Distance from center of mass to MRO."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 7
+  NAME                             = "RADIAL VELOCITY"
+  UNIT                             = "M/S"
+  START_BYTE                       = 67
+  BYTES                            = 8
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "MRO radial velocity."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 8
+  NAME                             = "TANGENTIAL VELOCITY"
+  UNIT                             = "M/S"
+  START_BYTE                       = 76
+  BYTES                            = 9
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "MRO tangential velocity."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 9
+  NAME                             = "SZA"
+  UNIT                             = DEGREE
+  START_BYTE                       = 86
+  BYTES                            = 6
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Solar zenith angle."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 10
+  NAME                             = "PHASE/1.0E16"
+  START_BYTE                       = 93
+  BYTES                            = 6
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Signal phase distortion."
+ END_OBJECT                        = COLUMN
+
+END_OBJECT                         = TABLE
+
+END
