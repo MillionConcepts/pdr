@@ -27,6 +27,8 @@ def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
     if inplace is False:
         array = array.copy()
     if len(array.dtype) == 1:
+        if "V" in str(array.dtype[0]):
+            return array.astype("O")
         if array.dtype.isnative:
             return array
         return array.byteswap().newbyteorder("=")

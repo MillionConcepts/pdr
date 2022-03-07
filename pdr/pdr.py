@@ -27,7 +27,7 @@ from pdr.datatypes import (
 from pdr.formats import (
     LABEL_EXTENSIONS, pointer_to_loader, generic_image_properties,
     looks_like_this_kind_of_file, FITS_EXTENSIONS, check_special_offset,
-    check_special_fn,
+    check_special_fn, OBJECTS_IGNORED_BY_DEFAULT,
 )
 from pdr.utils import (
     depointerize,
@@ -232,7 +232,10 @@ class Data:
         setattr(self, "pointers", pointers)
         self._handle_initial_load(lazy, implicit_lazy_exception)
         if (lazy is False) or (implicit_lazy_exception == fn):
-            non_labels = [i for i in self.index if i != "LABEL"]
+            non_labels = [
+                i for i in self.index
+                if (i != "LABEL") and hasattr(self, i)
+            ]
             if all((self[i] is None for i in non_labels)):
                 try:
                     self._fallback_image_load()
@@ -248,9 +251,7 @@ class Data:
                 continue
             self.index.append(object_name)
             self.file_mapping[object_name] = self._target_path(object_name)
-            if object_name in (
-                "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC"
-            ):
+            if object_name in OBJECTS_IGNORED_BY_DEFAULT:
                 continue
             if lazy is False:
                 self.load(object_name)
@@ -684,6 +685,10 @@ class Data:
             fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
         )
         swapped = enforce_order_and_object(array, inplace=False)
+        # note that pandas treats complex and simple dtypes differently when
+        # initializing single-valued dataframes
+        if (swapped.size == 1) and (len(swapped.dtype) == 0):
+            swapped = swapped[0]
         table = pd.DataFrame(swapped)
         table = booleanize_booleans(table, fmtdef)
         return table
@@ -1036,6 +1041,8 @@ class Data:
         if outpath is None:
             outpath = Path(".")
         for obj in self.index:
+            if not hasattr(self, obj):
+                continue
             outfile = str(Path(outpath, f"{prefix}_{obj}"))
             # no need to have all this mpl stuff in the namespace normally
             from pdr.browsify import browsify
