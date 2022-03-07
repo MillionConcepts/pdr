@@ -25,9 +25,14 @@ from pdr.datatypes import (
     generic_image_constants,
 )
 from pdr.formats import (
-    LABEL_EXTENSIONS, pointer_to_loader, generic_image_properties,
-    looks_like_this_kind_of_file, FITS_EXTENSIONS, check_special_offset,
-    check_special_fn, OBJECTS_IGNORED_BY_DEFAULT,
+    LABEL_EXTENSIONS,
+    pointer_to_loader,
+    generic_image_properties,
+    looks_like_this_kind_of_file,
+    FITS_EXTENSIONS,
+    check_special_offset,
+    check_special_fn,
+    OBJECTS_IGNORED_BY_DEFAULT,
 )
 from pdr.utils import (
     depointerize,
@@ -38,11 +43,15 @@ from pdr.utils import (
     check_cases,
     TimelessOmniDecoder,
     append_repeated_object,
-    head_file
+    head_file,
 )
-from pdr.parse_components import enforce_order_and_object, \
-    booleanize_booleans, \
-    filter_duplicate_pointers, reindex_df_values, insert_sample_types_into_df
+from pdr.parse_components import (
+    enforce_order_and_object,
+    booleanize_booleans,
+    filter_duplicate_pointers,
+    reindex_df_values,
+    insert_sample_types_into_df,
+)
 
 
 cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
@@ -90,12 +99,12 @@ def process_line_interleaved_image(f, props):
     image, prefix = [], []
     for _ in np.arange(props["nrows"]):
         prefix.append(f.read(props["prefix_bytes"]))
-        frame = np.fromfile(
-            f, numpy_dtype, count=props["pixels"]
-        ).reshape(props["BANDS"], props["ncols"])
+        frame = np.fromfile(f, numpy_dtype, count=props["pixels"]).reshape(
+            props["BANDS"], props["ncols"]
+        )
         image.append(frame)
         del frame
-    image = np.ascontiguousarray(np.array(image).swapaxes(0,1))
+    image = np.ascontiguousarray(np.array(image).swapaxes(0, 1))
     return image, prefix
 
 
@@ -166,7 +175,10 @@ def decompress(filename):
 def check_explicit_delimiter(block):
     if "FIELD_DELIMITER" in block.keys():
         return {
-            "COMMA": ",", "VERTICAL_BAR": "|", "SEMICOLON": ";", "TAB": "\t"
+            "COMMA": ",",
+            "VERTICAL_BAR": "|",
+            "SEMICOLON": ";",
+            "TAB": "\t",
         }[block["FIELD_DELIMITER"]]
     return ","
 
@@ -178,7 +190,7 @@ class Data:
         *,
         debug: bool = False,
         lazy: Optional[bool] = None,
-        label_fn: Optional[Union[Path, str]] = None
+        label_fn: Optional[Union[Path, str]] = None,
     ):
         # TODO: products can have multiple data files, and in some cases one
         #  of those data files also contains the attached label -- basically,
@@ -233,8 +245,7 @@ class Data:
         self._handle_initial_load(lazy, implicit_lazy_exception)
         if (lazy is False) or (implicit_lazy_exception == fn):
             non_labels = [
-                i for i in self.index
-                if (i != "LABEL") and hasattr(self, i)
+                i for i in self.index if (i != "LABEL") and hasattr(self, i)
             ]
             if all((self[i] is None for i in non_labels)):
                 try:
@@ -253,14 +264,19 @@ class Data:
             self.file_mapping[object_name] = self._target_path(object_name)
             if object_name in OBJECTS_IGNORED_BY_DEFAULT:
                 continue
+            loaded = False
             if lazy is False:
                 self.load(object_name)
-            elif (
-                (lazy is True)
-                and (self.file_mapping[object_name] == implicit_lazy_exception)
-            ):
-                self.load(object_name)
-            else:
+                loaded = True
+            elif lazy is True:
+                if isinstance(implicit_lazy_exception, str):
+                    if (
+                        self.file_mapping[object_name].lower()
+                        == implicit_lazy_exception.lower()
+                    ):
+                        self.load(object_name)
+                        loaded = True
+            if loaded is False:
                 setattr(self, object_name, None)
 
     def _object_to_filename(self, object_name):
@@ -320,7 +336,7 @@ class Data:
             setattr(
                 self,
                 object_name,
-                self._catch_return_default(object_name, FileNotFoundError())
+                self._catch_return_default(object_name, FileNotFoundError()),
             )
             return
         if hasattr(self, object_name):
@@ -333,7 +349,7 @@ class Data:
             setattr(
                 self,
                 object_name,
-                self.load_from_pointer(object_name, **load_kwargs)
+                self.load_from_pointer(object_name, **load_kwargs),
             )
             return
         except KeyboardInterrupt:
@@ -370,7 +386,7 @@ class Data:
         # look for attached label
         label = pvl.loads(
             trim_label(decompress(self.filename)),
-            decoder=TimelessOmniDecoder()
+            decoder=TimelessOmniDecoder(),
         )
         self.file_mapping["LABEL"] = self.filename
         self.labelname = self.filename
@@ -382,6 +398,7 @@ class Data:
     def open_with_rasterio(self, object_name):
         import rasterio
         from rasterio.errors import NotGeoreferencedWarning, RasterioIOError
+
         # we do not want rasterio to shout about data not being
         # georeferenced; most rasters are not _supposed_ to be georeferenced.
         warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
@@ -394,7 +411,7 @@ class Data:
         # some rasterio drivers can only make sense of a label, attached
         # or otherwise
         except RasterioIOError:
-            dataset = rasterio.open(self.file_mapping['LABEL'])
+            dataset = rasterio.open(self.file_mapping["LABEL"])
         if len(dataset.indexes) == 1:
             # Make 2D images actually 2D
             return dataset.read()[0, :, :]
@@ -414,6 +431,7 @@ class Data:
             # TODO: we could generalize this more by trying to find filenames.
             if userasterio is True:
                 from rasterio.errors import RasterioIOError
+
                 try:
                     return self.open_with_rasterio(object_name)
                 except RasterioIOError:
@@ -479,9 +497,7 @@ class Data:
 
     def load_format_file(self, format_file, object_name):
         try:
-            fmtpath = check_cases(
-                self.get_absolute_path(format_file)
-            )
+            fmtpath = check_cases(self.get_absolute_path(format_file))
             return cached_pvl_load(fmtpath)
         except FileNotFoundError:
             warnings.warn(
@@ -525,9 +541,7 @@ class Data:
 
     def inject_format_files(self, block, object_name):
         format_filenames = {
-            ix: kv[1]
-            for ix, kv in enumerate(block)
-            if kv[0] == "^STRUCTURE"
+            ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
         }
         # make sure to insert the structure blocks in the correct order --
         # and remember that keys are not unique, so we have to use the index
@@ -547,7 +561,7 @@ class Data:
         label.
         """
         fmtdef = self.read_table_structure(pointer)
-        if fmtdef['DATA_TYPE'].str.contains('ASCII').any():
+        if fmtdef["DATA_TYPE"].str.contains("ASCII").any():
             # don't try to load it as a binary file -- TODO: kind of a hack
             return fmtdef, None
         if fmtdef is None:
@@ -581,11 +595,11 @@ class Data:
                     np.loadtxt(
                         fn,
                         # this is probably a poor assumption to hard code.
-                        delimiter=',',
+                        delimiter=",",
                         skiprows=self.labelget("LABEL_RECORDS"),
                     )
                     .copy()
-                    .newbyteorder('=')
+                    .newbyteorder("=")
                 )
             except (TypeError, KeyError, ValueError):
                 pass
@@ -598,7 +612,7 @@ class Data:
                 pass
         # TODO: handle this better
         string_buffer.seek(0)
-        if 'BYTES' in fmtdef.columns:
+        if "BYTES" in fmtdef.columns:
             try:
                 table = pd.read_fwf(
                     string_buffer, header=None, widths=fmtdef.BYTES.values
@@ -714,11 +728,7 @@ class Data:
         start, length, as_rows = self.table_position(object_name)
         # TODO: I'm sure there are other cases to handle here.
         return skeptically_load_header(
-            self.file_mapping[object_name],
-            object_name,
-            start,
-            length,
-            as_rows
+            self.file_mapping[object_name], object_name, start, length, as_rows
         )
 
     # TODO, maybe: modify check_special_offset to speak to
@@ -729,17 +739,16 @@ class Data:
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
             start = target[1] - 1
-            if 'RECORDS' in block.keys():
-                length = block['RECORDS']
+            if "RECORDS" in block.keys():
+                length = block["RECORDS"]
         else:
             start = self.data_start_byte(object_name)
-            if 'BYTES' in block.keys():
-                length = block['BYTES']
-            elif (
-                ('RECORDS' in block.keys())
-                and ('RECORD_BYTES' in self.LABEL.keys())
+            if "BYTES" in block.keys():
+                length = block["BYTES"]
+            elif ("RECORDS" in block.keys()) and (
+                "RECORD_BYTES" in self.LABEL.keys()
             ):
-                length = block['RECORDS'] * self.LABEL['RECORD_BYTES']
+                length = block["RECORDS"] * self.LABEL["RECORD_BYTES"]
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
@@ -786,11 +795,11 @@ class Data:
         specials = {
             name: block[name]
             for name in PDS3_CONSTANT_NAMES
-            if (name in block.keys()) and not (block[name] == 'N/A')
+            if (name in block.keys()) and not (block[name] == "N/A")
         }
         # ignore uint8 implicit constants (0, 255) for now -- too problematic
         # TODO: maybe add an override
-        if obj.dtype.name == 'uint8':
+        if obj.dtype.name == "uint8":
             self.specials[key] = specials
             return
         # check for implicit constants appropriate to the sample type
@@ -896,12 +905,12 @@ class Data:
         explicit record byte length?
         """
         if isinstance(target := self._get_target(object_name), pvl.Quantity):
-            if target.units == 'BYTES':
+            if target.units == "BYTES":
                 return False
         # TODO: untangle this, everywhere
         if isinstance(target := self._get_target(object_name), list):
             if isinstance(target[-1], pvl.Quantity):
-                if target[-1].units == 'BYTES':
+                if target[-1].units == "BYTES":
                     return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
@@ -948,7 +957,7 @@ class Data:
                 tab_size = rows * row_bytes
                 # TODO: should be the filename of the target
                 file_size = os.path.getsize(self.filename)
-                return file_size-tab_size
+                return file_size - tab_size
             if isinstance(target, list):
                 if isinstance(target[0], int):
                     return target[0]
@@ -958,13 +967,13 @@ class Data:
             if isinstance(target[-1], int):
                 return record_bytes * max(target[-1] - 1, 0)
             if isinstance(target[-1], pvl.Quantity):
-                if target[-1].units == 'BYTES':
+                if target[-1].units == "BYTES":
                     # TODO: are there cases in which _these_ aren't 1-indexed?
                     return target[-1].value - 1
                 return record_bytes * max(target[-1].value - 1, 0)
             return 0
         elif isinstance(target, list) and isinstance(target[-1], pvl.Quantity):
-            if target[-1].units == 'BYTES':  # TODO: untangle this
+            if target[-1].units == "BYTES":  # TODO: untangle this
                 return target[-1].value - 1
         elif isinstance(target, pvl.Quantity):
             if target.units == "BYTES":
@@ -1003,9 +1012,7 @@ class Data:
     #  split up the image-gen part of _browsify_array, something like that
     def show(self, object_name=None, scaled=True, **browse_kwargs):
         if object_name is None:
-            object_name = [
-                obj for obj in self.index if "IMAGE" in obj
-            ]
+            object_name = [obj for obj in self.index if "IMAGE" in obj]
             if object_name is None:
                 raise ValueError("please specify the name of an image object.")
             object_name = object_name[0]
@@ -1017,6 +1024,7 @@ class Data:
             obj = self[object_name]
         # no need to have all this mpl stuff in the namespace normally
         from pdr.browsify import _browsify_array
+
         return _browsify_array(obj, save=False, outbase="", **browse_kwargs)
 
     def dump_browse(
@@ -1046,6 +1054,7 @@ class Data:
             outfile = str(Path(outpath, f"{prefix}_{obj}"))
             # no need to have all this mpl stuff in the namespace normally
             from pdr.browsify import browsify
+
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
             if isinstance(self[obj], np.ndarray):
                 if scaled == "both":
