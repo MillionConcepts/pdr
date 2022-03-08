@@ -15,7 +15,7 @@ dependencies:
   - pvl
   - python-Levenshtein
   - astropy
-  - pytest
+  - matplotlib
   - pip:
       - pds4-tools
       - git+https://github.com/MillionConcepts/dustgoggles.git

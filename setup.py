@@ -28,10 +28,10 @@ setuptools.setup(
         "astropy",
         "pvl>=1.1.0",
         "python-Levenshtein",
-        "scikit-image",
         "dustgoggles"
     ],
     extras_require={
-        "tests": ["pytest"],
+        "notebooks": ["jupyter"],
+        "browsify": ["matplotlib", "pillow"]
     }
 )
