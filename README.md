@@ -22,6 +22,9 @@ The minimum supported version of Python is _3.8_.
 
 ### Usage
 
+(You can check out our example Notebook on Binder for a 
+quick interactive demo of functionality: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/master))
+
 Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the
 full path to a data file _or_ a metadata / label file (extensions .LBL,
 .lbl, or .xml). `read()` will look for corresponding data or metadata
