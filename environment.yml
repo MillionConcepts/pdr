@@ -16,7 +16,6 @@ dependencies:
   - python-Levenshtein
   - astropy
   - pytest
-  - scikit-image
   - pip:
       - pds4-tools
       - git+https://github.com/MillionConcepts/dustgoggles.git
