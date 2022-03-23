@@ -4,6 +4,7 @@ import os
 import warnings
 from functools import partial, cache
 from io import StringIO
+from itertools import chain
 from operator import contains
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
@@ -537,7 +538,16 @@ class Data:
                 fields = append_repeated_object(obj, fields, repeat_count)
             else:
                 fields.append(obj)
+        # semi-legal top-level containers not wrapped in other objects
+        if object_name == "CONTAINER":
+            repeat_count = block.get("REPETITIONS")
+            if repeat_count is not None:
+                fields = list(
+                    chain.from_iterable([fields for _ in range(repeat_count)])
+                )
         return fields
+
+
 
     def inject_format_files(self, block, object_name):
         format_filenames = {

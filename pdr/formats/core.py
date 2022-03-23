@@ -100,7 +100,11 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_text
     if "LINE_PREFIX_TABLE" in pointer:
         return data.tbd
-    if ("TABLE" in pointer) or ("SPREADSHEET" in pointer):
+    if (
+        ("TABLE" in pointer)
+        or ("SPREADSHEET" in pointer)
+        or ("CONTAINER" in pointer)
+    ):
         return data.read_table
     if "HISTOGRAM" in pointer:
         return data.read_histogram
