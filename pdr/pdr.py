@@ -184,6 +184,67 @@ def check_explicit_delimiter(block):
     return ","
 
 
+def determine_bit_column_byte_order(fmtdef, column):
+    if any(order in fmtdef.DATA_TYPE[column] for order in ['LSB', 'VAX']):
+        byte_order = 'little'
+    else:
+        byte_order = 'big'
+    return byte_order
+
+
+def check_for_bit_columns(fmtdef):
+    bit_columns = []
+    for column in fmtdef.index:
+        if 'BIT_STRING' in fmtdef.DATA_TYPE[column]:
+            bit_columns.append(column)
+    return bit_columns
+
+
+def convert_to_full_bit_string(bit_column_indices, table, fmtdef):
+    for column in bit_column_indices:
+        byte_column = table[fmtdef.NAME[column]]
+        byte_order = determine_bit_column_byte_order(fmtdef, column)
+        bit_str_column = byte_column.map(lambda byte_str: "".join(map(convert_to_bits,
+                                                                      conditionally_reverse(byte_str, byte_order))))
+        print(f'within convert_to_full_bit_string the bit_str_column is {table[fmtdef.NAME[column]][0]} and the length is {len(table[fmtdef.NAME[column]][0])}')
+        table[fmtdef.NAME[column]] = bit_str_column
+    return table
+
+
+def convert_to_bits(byte):
+    return bin(byte).replace("0b", "").zfill(8)
+
+
+def conditionally_reverse(iterable, byteorder):
+    if byteorder == 'little':
+        return reversed(iterable)
+    return iter(iterable)
+
+
+def split_list_by_value(ori_list, value):
+    size = len(ori_list)
+    idx_list = [idx for idx, val in
+                enumerate(ori_list) if val == value]
+    split_list = [ori_list[i: j] for i, j in
+                  zip([0] + idx_list, idx_list +
+                  ([size] if idx_list[-1] != size else []))]
+    split_list = split_list[1:]
+    return split_list
+
+
+def splice_bit_string(start_bit_lists, bit_column_indices, fmtdef, table):
+    for column in bit_column_indices:
+        bit_column = table[fmtdef.NAME[column]]
+        start_bit_list = start_bit_lists[bit_column_indices.index(column)]
+        print(f'The start bits are: {start_bit_list}')
+        print(f'The original bit string is {table[fmtdef.NAME[column]][0]} and the length is {len(table[fmtdef.NAME[column]][0])}')
+        start_bit_list = [val - 1 for val in start_bit_list]  # python zero indexing
+        bit_list_column = bit_column.map(lambda bit_string: [bit_string[start:end] for start, end in
+                                                             zip(start_bit_list, start_bit_list[1:]+[None])])
+        table[fmtdef.NAME[column]] = bit_list_column
+    return table
+
+
 class Data:
     def __init__(
         self,
@@ -472,7 +533,7 @@ class Data:
             return prefix
         return image
 
-    def read_table_structure(self, object_name):
+    def read_table_structure(self, pointer):
         """
         Try to turn the TABLE definition into a column name / data type
         array. Requires renaming some columns to maintain uniqueness. Also
@@ -489,8 +550,8 @@ class Data:
         """
         # TODO: this will generally fail for PDS4 -- but maybe it never needs
         #  to be called?
-        block = self.labelblock(depointerize(object_name))
-        fields = self.read_format_block(block, object_name)
+        block = self.labelblock(depointerize(pointer))
+        fields = self.read_format_block(block, pointer)
         # give columns unique names so that none of our table handling explodes
         fmtdef = pd.DataFrame.from_records(fields)
         fmtdef = reindex_df_values(fmtdef)
@@ -547,8 +608,6 @@ class Data:
                 )
         return fields
 
-
-
     def inject_format_files(self, block, object_name):
         format_filenames = {
             ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
@@ -604,7 +663,7 @@ class Data:
                 table = pd.DataFrame(
                     np.loadtxt(
                         fn,
-                        # this is probably a poor assumption to hard code.
+                        # this (delimiter as comma) is probably a poor assumption to hard code.
                         delimiter=",",
                         skiprows=self.labelget("LABEL_RECORDS"),
                     )
@@ -635,15 +694,14 @@ class Data:
         string_buffer.close()
         return table
 
-    # TODO: refactor this. see issue #27.
     def read_table(self, pointer="TABLE"):
         """
         Read a table. Will first attempt to parse it as generic DSV
         and then fall back to parsing it based on the label format definition.
         """
         target = self.labelget(pointerize(pointer))
-        if "BIT_COLUMN" in str(self.labelblock(pointer)):
-            raise NotImplementedError("BIT_COLUMNs are not yet supported.")
+        #if "BIT_COLUMN" in str(self.labelblock(pointer)):
+        #    raise NotImplementedError("BIT_COLUMNs are not yet supported.")
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -669,6 +727,7 @@ class Data:
             #  a single row with tens or hundreds of thousands of columns
             table = self._interpret_as_binary(fmtdef, dt, fn, pointer)
         table.columns = fmtdef.NAME.tolist()
+        table = self.format_any_bit_columns(table, fmtdef, pointer)
         try:
             # If there were any cruft "placeholder" columns, discard them
             table = table.drop(
@@ -677,6 +736,33 @@ class Data:
         except TypeError as ex:  # Failed to read the table
             return self._catch_return_default(pointer, ex)
         return table
+
+    def format_any_bit_columns(self, table, fmtdef, pointer):
+        bit_column_indices = check_for_bit_columns(fmtdef)
+        if bit_column_indices:
+            table = convert_to_full_bit_string(bit_column_indices, table, fmtdef)
+            start_bit_lists = self.read_start_bits(pointer)
+            table = splice_bit_string(start_bit_lists, bit_column_indices, fmtdef, table)
+        return table
+
+    def read_start_bits(self, pointer):
+        block = self.labelblock(depointerize(pointer))
+        format_block = list(block.items())
+        start_bit_list = []
+        while "^STRUCTURE" in [obj[0] for obj in format_block]:
+            format_block = self.inject_format_files(format_block, pointer)
+        for item_type, definition in format_block:
+            if item_type in ("COLUMN", "FIELD"):
+                try:
+                    list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")
+                    for obj in list_of_pvl_objects_for_bit_columns:
+                        start_bit = obj.get("START_BIT")
+                        start_bit_list.append(start_bit)
+                except:  # some columns in the same table won't have bit_columns
+                    continue
+        if start_bit_list:
+            start_bit_lists = split_list_by_value(start_bit_list, 1)
+            return start_bit_lists
 
     def read_histogram(self, object_name):
         # TODO: build this out for text examples
