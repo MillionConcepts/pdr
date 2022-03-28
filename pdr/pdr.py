@@ -206,7 +206,6 @@ def convert_to_full_bit_string(bit_column_indices, table, fmtdef):
         byte_order = determine_bit_column_byte_order(fmtdef, column)
         bit_str_column = byte_column.map(lambda byte_str: "".join(map(convert_to_bits,
                                                                       conditionally_reverse(byte_str, byte_order))))
-        print(f'within convert_to_full_bit_string the bit_str_column is {table[fmtdef.NAME[column]][0]} and the length is {len(table[fmtdef.NAME[column]][0])}')
         table[fmtdef.NAME[column]] = bit_str_column
     return table
 
@@ -236,8 +235,6 @@ def splice_bit_string(start_bit_lists, bit_column_indices, fmtdef, table):
     for column in bit_column_indices:
         bit_column = table[fmtdef.NAME[column]]
         start_bit_list = start_bit_lists[bit_column_indices.index(column)]
-        print(f'The start bits are: {start_bit_list}')
-        print(f'The original bit string is {table[fmtdef.NAME[column]][0]} and the length is {len(table[fmtdef.NAME[column]][0])}')
         start_bit_list = [val - 1 for val in start_bit_list]  # python zero indexing
         bit_list_column = bit_column.map(lambda bit_string: [bit_string[start:end] for start, end in
                                                              zip(start_bit_list, start_bit_list[1:]+[None])])
