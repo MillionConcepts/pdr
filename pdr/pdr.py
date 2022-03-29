@@ -629,7 +629,7 @@ class Data:
             return fmtdef, None
         if fmtdef is None:
             return fmtdef, np.dtype([])
-        return insert_sample_types_into_df(fmtdef)
+        return insert_sample_types_into_df(fmtdef, self)
 
     def _interpret_as_dsv(self, fn, fmtdef, object_name):
         # TODO: look for commas more intelligently or dispatch to astropy
@@ -747,7 +747,7 @@ class Data:
         if "NAME" not in fmtdef.columns:
             fmtdef["NAME"] = object_name
         fmtdef = reindex_df_values(fmtdef)
-        fmtdef, dt = insert_sample_types_into_df(fmtdef)
+        fmtdef, dt = insert_sample_types_into_df(fmtdef, self)
         return self._interpret_as_binary(
             fmtdef, dt, self.file_mapping[object_name], object_name
         )

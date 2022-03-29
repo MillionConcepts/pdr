@@ -47,6 +47,12 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     return False, None
 
 
+def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
+    if data.LABEL.get("INSTRUMENT_ID") == "MARSIS":
+        return formats.mex_marsis.get_sample_type(sample_type, sample_bytes, for_numpy)
+    return False, None
+
+
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
         ("JUNO JUPITER JIRAM REDUCED" in data.LABEL.get("DATA_SET_NAME", ""))

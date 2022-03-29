@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from pdr.datatypes import sample_types
+from pdr.formats import check_special_sample_type
 
 
 def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
@@ -87,7 +88,7 @@ def reindex_df_values(df: pd.DataFrame, column="NAME") -> pd.DataFrame:
     return df
 
 
-def insert_sample_types_into_df(fmtdef):
+def insert_sample_types_into_df(fmtdef, data):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
     insert numpy-compatible data type strings into that DataFrame;
@@ -104,9 +105,15 @@ def insert_sample_types_into_df(fmtdef):
         dt, item_bytes, total_bytes = data_type
         sample_bytes = total_bytes if np.isnan(item_bytes) else item_bytes
         try:
-            fmtdef.loc[group.index, 'dt'] = sample_types(
-                dt, sample_bytes, for_numpy=True
+            is_special, special_type = check_special_sample_type(
+                dt, int(sample_bytes), data, for_numpy=True
             )
+            if is_special:
+                fmtdef.loc[group.index, 'dt'] = special_type
+            else:
+                fmtdef.loc[group.index, 'dt'] = sample_types(
+                    dt, int(sample_bytes), for_numpy=True
+                )
         except KeyError:
             raise KeyError(
                 f"{data_type} is not a currently-supported data type."
