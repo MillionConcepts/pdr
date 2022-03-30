@@ -1,14 +1,12 @@
-import bz2
-import gzip
 import os
 import warnings
+from ast import literal_eval
 from functools import partial, cache
 from io import StringIO
 from itertools import chain
 from operator import contains
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
-from zipfile import ZipFile
 
 import Levenshtein as lev
 import numpy as np
@@ -20,6 +18,7 @@ from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
 
+from pdr.badpvl import read_pvl_label
 from pdr.datatypes import (
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
@@ -39,12 +38,12 @@ from pdr.utils import (
     depointerize,
     get_pds3_pointers,
     pointerize,
-    trim_label,
     casting_to_float,
     check_cases,
     TimelessOmniDecoder,
     append_repeated_object,
-    head_file,
+    head_file, decompress,
+    literalize_pvl_block, literalize_pvl,
 )
 from pdr.parse_components import (
     enforce_order_and_object,
@@ -151,21 +150,6 @@ def pointer_to_fits_key(pointer, hdulist):
         for i in hdulist.info(output=False)
     ]
     return levratio.index(max(levratio))
-
-
-def decompress(filename):
-    filename = check_cases(filename)
-    if filename.endswith(".gz"):
-        f = gzip.open(filename, "rb")
-    elif filename.endswith(".bz2"):
-        f = bz2.BZ2File(filename, "rb")
-    elif filename.endswith(".ZIP"):
-        f = ZipFile(filename, "r").open(
-            ZipFile(filename, "r").infolist()[0].filename
-        )
-    else:
-        f = open(filename, "rb")
-    return f
 
 
 def check_explicit_delimiter(block):
@@ -461,14 +445,16 @@ class Data:
             if Path(self.labelname).suffix.lower() == ".xml":
                 label = pds4.read(self.labelname, quiet=True).label.to_dict()
             else:
-                label = cached_pvl_load(self.labelname)
+                label = read_pvl_label(self.labelname)
+                # label = cached_pvl_load(self.labelname)
             self.file_mapping["LABEL"] = self.labelname
             return label
         # look for attached label
-        label = pvl.loads(
-            trim_label(decompress(self.filename)),
-            decoder=TimelessOmniDecoder(),
-        )
+        # label = pvl.loads(
+        #     trim_label(decompress(self.filename)),
+        #     decoder=TimelessOmniDecoder(),
+        # )
+        label = read_pvl_label(self.filename)
         self.file_mapping["LABEL"] = self.filename
         self.labelname = self.filename
         return label
@@ -950,16 +936,19 @@ class Data:
         """
         pass
 
-    def labelget(self, text):
+    @cache
+    def labelget(self, text, evaluate=True):
         """
         get the first value from this object's label whose key exactly matches
-        `text`. if only_block is passed, will only return this value if it's a
-        mapping (e.g. nested PVL block) and otherwise returns key from top
-        label level. TODO: very crude. needs to work with XML.
+        `text`. TODO: very crude. needs to work with XML.
         """
-        return dig_for_value(self.LABEL, text)
+        value = dig_for_value(self.LABEL, text)
+        if value is None:
+            return None
+        return literalize_pvl(value) if evaluate is True else value
 
-    def labelblock(self, text):
+    @cache
+    def labelblock(self, text, make_literal = True):
         """
         get the first value from this object's label whose key
         exactly matches `text` iff it is a mapping (e.g. nested PVL block);
@@ -968,7 +957,10 @@ class Data:
         """
         what_got_dug = dig_for_value(self.LABEL, text)
         if not isinstance(what_got_dug, Mapping):
-            return self.LABEL
+            what_got_dug = self.LABEL
+        if make_literal is True:
+            print(f"*****{text}*****")
+            return literalize_pvl_block(what_got_dug)
         return what_got_dug
 
     def _check_delimiter_stream(self, object_name):
@@ -998,6 +990,20 @@ class Data:
             return True
         return False
 
+    def _count_from_bottom_of_file(self, target):
+        if isinstance(target, int):
+            # Counts up from the bottom of the file
+            rows = self.labelget("ROWS")
+            row_bytes = self.labelget("ROW_BYTES")
+            tab_size = rows * row_bytes
+            # TODO: should be the filename of the target
+            file_size = os.path.getsize(self.filename)
+            return file_size - tab_size
+        if isinstance(target, (list, tuple)):
+            if isinstance(target[0], int):
+                return target[0]
+        raise ValueError(f"unknown data pointer format: {target}")
+
     def data_start_byte(self, object_name):
         """
         Determine the first byte of the data in a file from its pointer.
@@ -1015,20 +1021,10 @@ class Data:
         else:
             record_bytes = self.labelget("RECORD_BYTES")
         if record_bytes is None:
-            if isinstance(target, int):
-                # Counts up from the bottom of the file
-                rows = self.labelget("ROWS")
-                row_bytes = self.labelget("ROW_BYTES")
-                tab_size = rows * row_bytes
-                # TODO: should be the filename of the target
-                file_size = os.path.getsize(self.filename)
-                return file_size - tab_size
-            if isinstance(target, list):
-                if isinstance(target[0], int):
-                    return target[0]
+            return self._count_from_bottom_of_file(target)
         if isinstance(target, int):
             return record_bytes * max(target - 1, 0)
-        if isinstance(target, list) and (record_bytes is not None):
+        if isinstance(target, (list, tuple)) and (record_bytes is not None):
             if isinstance(target[-1], int):
                 return record_bytes * max(target[-1] - 1, 0)
             if isinstance(target[-1], pvl.Quantity):
@@ -1037,7 +1033,7 @@ class Data:
                     return target[-1].value - 1
                 return record_bytes * max(target[-1].value - 1, 0)
             return 0
-        elif isinstance(target, list) and isinstance(target[-1], pvl.Quantity):
+        elif isinstance(target, (list, tuple)) and isinstance(target[-1], pvl.Quantity):
             if target[-1].units == "BYTES":  # TODO: untangle this
                 return target[-1].value - 1
         elif isinstance(target, pvl.Quantity):

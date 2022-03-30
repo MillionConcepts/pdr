@@ -1,9 +1,12 @@
 """assorted utility functions"""
+import bz2
+import gzip
 import os
 import re
 import struct
 import sys
 import warnings
+from ast import literal_eval
 from itertools import chain
 from numbers import Number
 from pathlib import Path
@@ -17,7 +20,9 @@ from typing import (
     MutableSequence,
     IO
 )
-from dustgoggles.structures import dig_for
+from zipfile import ZipFile
+
+from dustgoggles.structures import dig_for, dig_and_edit
 import numpy as np
 import pandas as pd
 import pandas.api.types
@@ -328,3 +333,38 @@ def append_repeated_object(
         else:
             fields.append(obj)
     return fields
+
+
+def decompress(filename):
+    filename = check_cases(filename)
+    if filename.endswith(".gz"):
+        f = gzip.open(filename, "rb")
+    elif filename.endswith(".bz2"):
+        f = bz2.BZ2File(filename, "rb")
+    elif filename.endswith(".ZIP"):
+        f = ZipFile(filename, "r").open(
+            ZipFile(filename, "r").infolist()[0].filename
+        )
+    else:
+        f = open(filename, "rb")
+    return f
+
+
+def literalize_pvl(obj):
+    if isinstance(obj, Mapping):
+        return obj
+    try:
+        return literal_eval(obj)
+    except (SyntaxError, ValueError):
+        print(obj)
+        return obj
+
+
+def literalize_pvl_block(block):
+    literalized = dig_and_edit(
+        block,
+        None,
+        predicate=lambda x, y: not isinstance(x, Mapping),
+        value_set_function=lambda _, obj: literalize_pvl(obj)
+    )
+    return literalized
