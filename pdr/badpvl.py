@@ -116,26 +116,26 @@ def literalize_pvl(obj):
 
 
 def multidict_dig_and_edit(
-    multidict,
+    input_multidict,
     target,
     input_object=None,
     predicate=eq,
     value_set_function=None
 ):
-    output = MultiDict()
+    output_multidict = MultiDict()
     if value_set_function is None:
         value_set_function = constant(input_object)
-    for key, value in multidict.items():
+    for key, value in input_multidict.items():
         if isinstance(value, MultiDict):
             edited_multidict = multidict_dig_and_edit(
                 value, target, input_object, predicate, value_set_function
             )
-            output.add(key, edited_multidict)
+            output_multidict.add(key, edited_multidict)
             continue
         if not predicate(key, target):
             continue
-        output.add(key, value_set_function(input_object, value))
-    return output
+        output_multidict.add(key, value_set_function(input_object, value))
+    return output_multidict
 
 
 def literalize_pvl_block(block):
