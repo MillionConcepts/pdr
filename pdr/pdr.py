@@ -187,7 +187,7 @@ def check_explicit_delimiter(block):
 def convert_to_full_bit_string(table, fmtdef):
     for column in fmtdef.index:
         try:
-            if type(fmtdef.start_bit_list[column]) is list:
+            if isinstance(fmtdef.start_bit_list[column], list):
                 byte_column = table[fmtdef.NAME[column]]
                 byte_order = determine_bit_column_byte_order(fmtdef, column)
                 bit_str_column = byte_column.map(lambda byte_str: "".join(map(convert_to_bits,
@@ -710,6 +710,7 @@ class Data:
             # Check if this is just a DSV file
             # TODO: verify that this is not catching things it shouldn't
             table = self._interpret_as_dsv(fn, fmtdef, pointer)
+            table.columns = fmtdef.NAME.tolist()
         else:
             # TODO: this will always throw an exception for text files
             #  because offset is only a legal argument for binary files
@@ -718,7 +719,6 @@ class Data:
             #  perspective; it's perfectly stable) for tables defined as
             #  a single row with tens or hundreds of thousands of columns
             table = self._interpret_as_binary(fmtdef, dt, fn, pointer)
-        table.columns = fmtdef.NAME.tolist()
         try:
             # If there were any cruft "placeholder" columns, discard them
             table = table.drop(
@@ -759,11 +759,15 @@ class Data:
             fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
         )
         swapped = enforce_order_and_object(array, inplace=False)
-        # note that pandas treats complex and simple dtypes differently when
-        # initializing single-valued dataframes
-        if (swapped.size == 1) and (len(swapped.dtype) == 0):
-            swapped = swapped[0]
+        # TODO: I believe the following commented-out block is deprecated
+        #  but I am leaving it in as a dead breadcrumb for now just in case
+        #  something bizarre happens -michael
+        # # note that pandas treats complex and simple dtypes differently when
+        # # initializing single-valued dataframes
+        # if (swapped.size == 1) and (len(swapped.dtype) == 0):
+        #     swapped = swapped[0]
         table = pd.DataFrame(swapped)
+        table.columns = fmtdef.NAME.tolist()
         table = booleanize_booleans(table, fmtdef)
         table = convert_to_full_bit_string(table, fmtdef)
         table = splice_bit_string(table, fmtdef)
