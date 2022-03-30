@@ -65,8 +65,6 @@ class BlockParser:
         self.on_dupe = on_dupe
 
     def _step_out(self):
-        # name, aggregation = self.names.pop(), self.aggregations.pop()
-        # self.add_statement(name, aggregation)
         self.add_statement(self.names.pop(), self.aggregations.pop())
 
     def _step_in(self, name):
