@@ -938,14 +938,14 @@ class Data:
         pass
 
     @cache
-    def labelget(self, text, evaluate=True):
+    def labelget(self, text, default=None, evaluate=True):
         """
         get the first value from this object's label whose key exactly matches
         `text`. TODO: very crude. needs to work with XML.
         """
         value = dig_for_value(self.LABEL, text)
         if value is None:
-            return None
+            return default
         return literalize_pvl(value) if evaluate is True else value
 
     @cache
@@ -979,10 +979,10 @@ class Data:
                     return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
-        if self.LABEL.get("RECORD_BYTES") is not None:
+        if self.labelget("RECORD_BYTES") is not None:
             return False
         # TODO: not sure this is a good assumption
-        if not self.LABEL.get("RECORD_TYPE") == "STREAM":
+        if not self.labelget("RECORD_TYPE") == "STREAM":
             return False
         textish = map(
             partial(contains, object_name), ("ASCII", "SPREADSHEET", "HEADER")
@@ -1028,19 +1028,19 @@ class Data:
         if isinstance(target, (list, tuple)) and (record_bytes is not None):
             if isinstance(target[-1], int):
                 return record_bytes * max(target[-1] - 1, 0)
-            if isinstance(target[-1], pvl.Quantity):
-                if target[-1].units == "BYTES":
+            if isinstance(target[-1], dict):
+                if target[-1]['units'] == "BYTES":
                     # TODO: are there cases in which _these_ aren't 1-indexed?
-                    return target[-1].value - 1
-                return record_bytes * max(target[-1].value - 1, 0)
+                    return target[-1]['value'] - 1
+                return record_bytes * max(target[-1]['value'] - 1, 0)
             return 0
-        elif isinstance(target, (list, tuple)) and isinstance(target[-1], pvl.Quantity):
-            if target[-1].units == "BYTES":  # TODO: untangle this
-                return target[-1].value - 1
-        elif isinstance(target, pvl.Quantity):
-            if target.units == "BYTES":
-                return target.value - 1
-            return record_bytes * max(target.value - 1, 0)
+        elif isinstance(target, (list, tuple)) and isinstance(target[-1], dict):
+            if target[-1]['units'] == "BYTES":  # TODO: untangle this
+                return target[-1]['values']- 1
+        elif isinstance(target, dict):
+            if target['units'] == "BYTES":
+                return target['value'] - 1
+            return record_bytes * max(target['value'] - 1, 0)
         if isinstance(target, str):
             return 0
         else:

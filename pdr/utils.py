@@ -356,8 +356,8 @@ def decompress(filename):
 def parse_pvl_quantity_tuple(obj):
     name, quantity_string = obj.strip("()").split(",")
     quantity = {
-        'value': re.search(r"\d+", quantity_string).group(),
-        'units': re.search(r"<(.*)>", quantity_string).group(1)
+        'value': literalize_pvl(re.search(r"\d+", quantity_string).group()),
+        'units': literalize_pvl(re.search(r"<(.*)>", quantity_string).group(1))
     }
     return literalize_pvl(name), quantity
 
