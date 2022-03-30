@@ -353,13 +353,23 @@ def decompress(filename):
     return f
 
 
+def parse_pvl_quantity_tuple(obj):
+    name, quantity_string = obj.strip("()").split(",")
+    quantity = {
+        'value': re.search(r"\d+", quantity_string).group(),
+        'units': re.search(r"<(.*)>", quantity_string).group(1)
+    }
+    return literalize_pvl(name), quantity
+
+
 def literalize_pvl(obj):
     if isinstance(obj, Mapping):
         return obj
     try:
         return literal_eval(obj)
     except (SyntaxError, ValueError):
-        # print(obj)
+        if ("<" in obj) and (">" in obj):
+            return parse_pvl_quantity_tuple(obj)
         return obj
 
 
