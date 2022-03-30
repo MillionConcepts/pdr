@@ -68,7 +68,7 @@ def sample_types(
 #  consolidated into pdr.formats.
 def generic_image_constants(data):
     consts = {}
-    if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
+    if data.labelget("INSTRUMENT_ID") == "CRISM":
         consts["NULL"] = 65535
     return consts
 
