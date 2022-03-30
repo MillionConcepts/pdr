@@ -801,7 +801,6 @@ class Data:
     def read_header(self, object_name="HEADER"):
         """Attempt to read a file header."""
         start, length, as_rows = self.table_position(object_name)
-        # TODO: I'm sure there are other cases to handle here.
         return skeptically_load_header(
             self.file_mapping[object_name], object_name, start, length, as_rows
         )
