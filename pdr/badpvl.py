@@ -71,7 +71,7 @@ class BlockParser:
     def add_statement(self, parameter, value):
         if self.on_dupe is not None:
             pass  # TODO: implement
-        self.aggregations[-1][parameter] = value
+        self.aggregations[-1].add(parameter, value)
 
     def parse_statements(self, statements):
         for parameter, value in statements:

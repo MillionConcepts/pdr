@@ -9,6 +9,7 @@ import warnings
 from ast import literal_eval
 from itertools import chain
 from numbers import Number
+from operator import eq
 from pathlib import Path
 from typing import (
     Optional,
@@ -22,6 +23,7 @@ from typing import (
 )
 from zipfile import ZipFile
 
+from dustgoggles.func import constant
 from dustgoggles.structures import dig_for, dig_and_edit
 import numpy as np
 import pandas as pd
@@ -29,6 +31,7 @@ import pandas.api.types
 import pvl
 import pvl.decoder
 import pvl.grammar
+from multidict import MultiDict
 
 """
 The following three functions are substantially derived from code in
@@ -360,11 +363,34 @@ def literalize_pvl(obj):
         return obj
 
 
+def multidict_dig_and_edit(
+    multidict,
+    target,
+    input_object=None,
+    predicate=eq,
+    value_set_function=None
+):
+    output = MultiDict()
+    if value_set_function is None:
+        value_set_function = constant(input_object)
+    for key, value in multidict.items():
+        if isinstance(value, MultiDict):
+            edited_multidict = multidict_dig_and_edit(
+                value, target, input_object, predicate, value_set_function
+            )
+            output.add(key, edited_multidict)
+            continue
+        if not predicate(key, target):
+            continue
+        output.add(key, value_set_function(input_object, value))
+    return output
+
+
 def literalize_pvl_block(block):
-    literalized = dig_and_edit(
+    literalized = multidict_dig_and_edit(
         block,
         None,
-        predicate=lambda x, y: not isinstance(x, Mapping),
+        predicate=lambda x, y: True,
         value_set_function=lambda _, obj: literalize_pvl(obj)
     )
     return literalized
