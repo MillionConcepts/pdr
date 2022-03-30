@@ -72,8 +72,8 @@ def process_single_band_image(f, props):
         (props["nrows"], props["ncols"] + props["prefix_cols"])
     )
     if props["prefix_cols"] > 0:
-        prefix = image[:, : props["prefix_cols"]]
-        image = image[:, props["prefix_cols"] :]
+        prefix = image[:, :props["prefix_cols"]]
+        image = image[:, props["prefix_cols"]:]
     else:
         prefix = None
     return image, prefix
@@ -86,8 +86,8 @@ def process_band_sequential_image(f, props):
         (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
     )
     if props["prefix_cols"] > 0:
-        prefix = image[:, : props["prefix_cols"]]
-        image = image[:, props["prefix_cols"] :]
+        prefix = image[:, :props["prefix_cols"]]
+        image = image[:, props["prefix_cols"]:]
     else:
         prefix = None
     return image, prefix
@@ -117,7 +117,6 @@ def skeptically_load_header(
             return cached_pvl_load(check_cases(path))
         except ValueError:
             file = open(check_cases(path))
-            # TODO: somehow normalize this with read_table
             if as_rows is True:
                 if start > 0:
                     file.readlines(start)
@@ -131,10 +130,6 @@ def skeptically_load_header(
         warnings.warn(f"unable to parse {object_name}: {ex}")
 
 
-# TODO: watch out for cases in which individual products may be scattered
-#  across multiple HDUs. I'm not certain where these are, and I think it is
-#  technically illegal in every PDS3 version, but I'm almost certain they
-#  exist anyway.
 def pointer_to_fits_key(pointer, hdulist):
     """
     In some data sets with FITS, the PDS3 object names and FITS object
@@ -184,21 +179,27 @@ def check_explicit_delimiter(block):
     return ","
 
 
+def expand_bit_strings(table, fmtdef):
+    if "start_bit_list" not in fmtdef.columns:
+        return table
+    table = convert_to_full_bit_string(table, fmtdef)
+    return splice_bit_string(table, fmtdef)
+
+
 def convert_to_full_bit_string(table, fmtdef):
     for column in fmtdef.index:
-        try:
-            if isinstance(fmtdef.start_bit_list[column], list):
-                byte_column = table[fmtdef.NAME[column]]
-                byte_order = determine_bit_column_byte_order(fmtdef, column)
-                bit_str_column = byte_column.map(lambda byte_str: "".join(map(convert_to_bits,
-                                                                          conditionally_reverse(byte_str, byte_order))))
-                table[fmtdef.NAME[column]] = bit_str_column
-        except AttributeError:
-            continue
+        if isinstance(fmtdef.start_bit_list[column], list):
+            byte_column = table[fmtdef.NAME[column]]
+            byte_order = determine_bit_column_byte_order(fmtdef, column)
+            bit_str_column = convert_byte_column_to_bits(
+                byte_column, byte_order
+            )
+            table[fmtdef.NAME[column]] = bit_str_column
     return table
 
 
 def determine_bit_column_byte_order(fmtdef, column):
+    # TODO, maybe: should this reference pdr.datatypes?
     if any(order in fmtdef.DATA_TYPE[column] for order in ['LSB', 'VAX']):
         byte_order = 'little'
     else:
@@ -210,6 +211,18 @@ def convert_to_bits(byte):
     return bin(byte).replace("0b", "").zfill(8)
 
 
+def convert_byte_str_to_bits(byte_str, byte_order):
+    return "".join(
+        map(convert_to_bits, conditionally_reverse(byte_str, byte_order))
+    )
+
+
+def convert_byte_column_to_bits(byte_column, byte_order):
+    return byte_column.map(
+        partial(convert_byte_str_to_bits, byte_order=byte_order)
+    )
+
+
 def conditionally_reverse(iterable, byteorder):
     if byteorder == 'little':
         return reversed(iterable)
@@ -217,17 +230,27 @@ def conditionally_reverse(iterable, byteorder):
 
 
 def splice_bit_string(table, fmtdef):
+    if "start_bit_list" not in fmtdef.columns:
+        return
     for column in fmtdef.index:
-        try:
-            if type(fmtdef.start_bit_list[column]) is list:
-                bit_column = table[fmtdef.NAME[column]]
-                start_bit_list = [val - 1 for val in fmtdef.start_bit_list[column]]  # python zero indexing
-                bit_list_column = bit_column.map(lambda bit_string: [bit_string[start:end] for start, end in
-                                                                     zip(start_bit_list, start_bit_list[1:]+[None])])
-                table[fmtdef.NAME[column]] = bit_list_column
-        except AttributeError:
-            continue
+        if isinstance(fmtdef.start_bit_list[column], list):
+            bit_column = table[fmtdef.NAME[column]]
+            start_bit_list = [
+                val - 1 for val in fmtdef.start_bit_list[column]
+            ]  # python zero indexing
+            bit_list_column = bit_column.map(
+                partial(split_bits, start_bit_list=start_bit_list)
+            )
+            table[fmtdef.NAME[column]] = bit_list_column
     return table
+
+
+def split_bits(bit_string, start_bit_list):
+    return [
+        bit_string[start:end]
+        for start, end
+        in zip(start_bit_list, start_bit_list[1:]+[None])
+    ]
 
 
 def add_bit_column_info(obj, definition):
@@ -250,9 +273,6 @@ class Data:
         lazy: Optional[bool] = None,
         label_fn: Optional[Union[Path, str]] = None,
     ):
-        # TODO: products can have multiple data files, and in some cases one
-        #  of those data files also contains the attached label -- basically,
-        #  these can't be strings
         self.debug = debug
         self.filename = str(Path(fn).absolute())
         fn = self.filename
@@ -302,16 +322,7 @@ class Data:
         setattr(self, "pointers", pointers)
         self._handle_initial_load(lazy, implicit_lazy_exception)
         if (lazy is False) or (implicit_lazy_exception == fn):
-            non_labels = [
-                i for i in self.index if (i != "LABEL") and hasattr(self, i)
-            ]
-            if all((self[i] is None for i in non_labels)):
-                try:
-                    self._fallback_image_load()
-                except KeyboardInterrupt:
-                    raise
-                except Exception:
-                    pass
+            self._handle_fallback_load()
 
     def _handle_initial_load(self, lazy, implicit_lazy_exception):
         for pointer in self.pointers:
@@ -362,6 +373,22 @@ class Data:
                 raise
             return None
 
+    def _handle_fallback_load(self):
+        """
+        attempt to handle cases in which objects don't have explicit pointers
+        but we want to get them anyway
+        """
+        non_labels = [
+            i for i in self.index if (i != "LABEL") and hasattr(self, i)
+        ]
+        if all((self[i] is None for i in non_labels)):
+            try:
+                self._fallback_image_load()
+            except KeyboardInterrupt:
+                raise
+            except Exception as ex:
+                pass
+
     def _fallback_image_load(self):
         """
         sometimes images do not have explicit pointers, so we may want to
@@ -375,10 +402,6 @@ class Data:
             #  permissive in some way to handle this, or we should at
             #  least give a useful error message.
             image = self.read_image()
-        # TODO: this will presently break if passed an unlabeled
-        #  image file. read_image() should probably be made more
-        #  permissive in some way to handle this, or we should at
-        #  least give a useful error message.
         if image is not None:
             setattr(self, "IMAGE", image)
             self.index += ["IMAGE"]
@@ -502,7 +525,6 @@ class Data:
                 return None  # not much we can do with this!
             props = generic_image_properties(object_name, block, self)
         # a little decision tree to seamlessly deal with compression
-        # TODO: make sure this generalizes
         fn = self.file_mapping[object_name]
         f = decompress(fn)
         f.seek(props["start_byte"])
@@ -510,7 +532,6 @@ class Data:
             # Make sure that single-band images are 2-dim arrays.
             if props["BANDS"] == 1:
                 image, prefix = process_single_band_image(f, props)
-            # TODO: I think the ndarray.reshape call in this case may be wrong
             elif props["band_storage_type"] == "BAND_SEQUENTIAL":
                 image, prefix = process_band_sequential_image(f, props)
             elif props["band_storage_type"] == "LINE_INTERLEAVED":
@@ -542,10 +563,8 @@ class Data:
         If the table format is defined in an external FMT file, then this
         will attempt to locate it in the same directory as the data / label,
         and throw an error if it's not there.
-        TODO: Grab external format files as needed.
+        TODO, maybe: Grab external format files as needed.
         """
-        # TODO: this will generally fail for PDS4 -- but maybe it never needs
-        #  to be called?
         block = self.labelblock(depointerize(pointer))
         fields = self.read_format_block(block, pointer)
         # give columns unique names so that none of our table handling explodes
@@ -585,10 +604,6 @@ class Data:
             # containers can have REPETITIONS,
             # and some "columns" contain a lot of columns (ITEMS)
             # repeat the definition, renaming duplicates, for these cases
-            # TODO, maybe: index containers appropriately so that we can check
-            #  for accuracy of start byte values...but I am not very confident
-            #  that files like this will be formatted consistently enough
-            #  that checking to insert placeholders will be useful
             if repeat_count is not None:
                 fields = append_repeated_object(obj, fields, repeat_count)
             else:
@@ -625,15 +640,14 @@ class Data:
         """
         fmtdef = self.read_table_structure(pointer)
         if fmtdef["DATA_TYPE"].str.contains("ASCII").any():
-            # don't try to load it as a binary file -- TODO: kind of a hack
+            # don't try to load it as a binary file
             return fmtdef, None
         if fmtdef is None:
             return fmtdef, np.dtype([])
         return insert_sample_types_into_df(fmtdef, self)
 
     def _interpret_as_dsv(self, fn, fmtdef, object_name):
-        # TODO: look for commas more intelligently or dispatch to astropy
-        #  or whatever
+        # TODO, maybe: add better delimiter detection & dispatch
         start, length, as_rows = self.table_position(object_name)
         sep = check_explicit_delimiter(self.labelblock(object_name))
         if as_rows is False:
@@ -657,7 +671,6 @@ class Data:
                 table = pd.DataFrame(
                     np.loadtxt(
                         fn,
-                        # this (delimiter as comma) is probably a poor assumption to hard code.
                         delimiter=",",
                         skiprows=self.labelget("LABEL_RECORDS"),
                     )
@@ -690,8 +703,8 @@ class Data:
 
     def read_table(self, pointer="TABLE"):
         """
-        Read a table. Will first attempt to parse it as generic DSV
-        and then fall back to parsing it based on the label format definition.
+        Read a table. Parse the label format definition and then decide
+        whether to parse it as text or binary.
         """
         target = self.labelget(pointerize(pointer))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
@@ -707,8 +720,6 @@ class Data:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
         if (dt is None) or ("SPREADSHEET" in pointer) or ("ASCII" in pointer):
-            # Check if this is just a DSV file
-            # TODO: verify that this is not catching things it shouldn't
             table = self._interpret_as_dsv(fn, fmtdef, pointer)
             table.columns = fmtdef.NAME.tolist()
         else:
@@ -769,8 +780,7 @@ class Data:
         table = pd.DataFrame(swapped)
         table.columns = fmtdef.NAME.tolist()
         table = booleanize_booleans(table, fmtdef)
-        table = convert_to_full_bit_string(table, fmtdef)
-        table = splice_bit_string(table, fmtdef)
+        table = expand_bit_strings(table, fmtdef)
         return table
 
     def read_text(self, object_name):
@@ -790,15 +800,12 @@ class Data:
 
     def read_header(self, object_name="HEADER"):
         """Attempt to read a file header."""
-        # TODO: not currently raising this in debug mode. probably shouldn't
         start, length, as_rows = self.table_position(object_name)
         # TODO: I'm sure there are other cases to handle here.
         return skeptically_load_header(
             self.file_mapping[object_name], object_name, start, length, as_rows
         )
 
-    # TODO, maybe: modify check_special_offset to speak to
-    #  these as well
     def table_position(self, object_name):
         target = self._get_target(object_name)
         block = self.labelblock(object_name)
@@ -996,10 +1003,6 @@ class Data:
         """
         Determine the first byte of the data in a file from its pointer.
         """
-        # TODO: hacky, make this consistent -- actually this pointer notation
-        #  is hacky across the module, primarily because it's horrible in the
-        #  first place :shrug: -- previously I did this by making pointers
-        #  lists, but this may be unwieldy
         # TODO: like similar functions, this will currently break with PDS4
 
         # hook for defining internally-consistent-but-nonstandard special cases
@@ -1008,9 +1011,6 @@ class Data:
             return special_byte
         target = self._get_target(object_name)
         labelblock = self.labelblock(object_name)
-
-        # TODO: I am positive this will break sometimes; need to find the
-        #  correct RECORD_BYTES in some cases...sequence pointers
         if "RECORD_BYTES" in labelblock.keys():
             record_bytes = labelblock["RECORD_BYTES"]
         else:
@@ -1142,8 +1142,6 @@ class Data:
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
         return getattr(self, item)
-
-    # TODO, maybe: do __str__ and __repr__ better
 
     def __repr__(self):
         not_loaded = []

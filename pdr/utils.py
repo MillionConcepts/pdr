@@ -173,19 +173,16 @@ def download_test_data(
     )
 
 
-# TODO: excessively ugly
 def get_pds3_pointers(
     label: Optional[pvl.collections.OrderedMultiDict] = None,
     local_path: Optional[str] = None,
 ) -> tuple[pvl.collections.OrderedMultiDict]:
     """
-    attempt to get all PDS3 "pointers" -- PVL objects starting with "^" --
+    attempt to get all PDS3 "pointers" -- PVL parameters starting with "^" --
     from a passed label or path to label file.
     """
     if label is None:
         label = pvl.load(local_path)
-    # TODO: inadequate? see issue pdr#15 -- did I have a resolution for this
-    #  somewhere? do we really need to do a full recursion step...? gross
     return dig_for(label, "^", lambda k, v: k.startswith(v))
 
 
@@ -199,8 +196,6 @@ def depointerize(string: str) -> str:
     return string[1:] if string.startswith("^") else string
 
 
-# TODO: replace this with regularizing case of filenames upstream per Michael
-#  Aye's recommendation
 def in_both_cases(strings: Collection[str]) -> tuple[str]:
     """
     given a collection of strings, return a tuple containing each string in
@@ -256,7 +251,6 @@ def trim_label(
     raise_for_failure: bool = False,
 ) -> Union[str, bytes]:
     head = head_file(fn, max_size).read()
-    # TODO: add some logging or whatever i guess
     for ending in KNOWN_LABEL_ENDINGS:
         if (endmatch := re.search(ending, head)) is not None:
             return head[: endmatch.span()[1]]

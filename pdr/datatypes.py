@@ -64,6 +64,8 @@ def sample_types(
     }[sample_type]
 
 
+# TODO: this is a special-case-handling function and should probably be
+#  consolidated into pdr.formats.
 def generic_image_constants(data):
     consts = {}
     if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
@@ -71,10 +73,6 @@ def generic_image_constants(data):
     return consts
 
 
-# TODO: super incomplete, although hopefully not often needed
-
-
-# special constants
 
 # "basic" PDS3 special constants
 PDS3_CONSTANT_NAMES = (
@@ -122,9 +120,11 @@ PDS3_CONSTANT_NAMES = tuple(PDS3_ISIS_CONSTANT_NAMES + PDS3_CONSTANT_NAMES)
 # ISIS special pixel values
 # (https://isis.astrogeology.usgs.gov/Object/Developer/_special_pixel_8h_source.html)
 
+
 IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
     {
-        # TODO: these are simply ignored atm; too problematic in too many cases
+        # we define the uint8 constants but do not by default use them: they
+        # are simply too problematic in too many cases.
         "uint8": {"NULL": 0, "ISIS_SAT_HIGH": 255},
         "int16": {
             "N/A": -32768,
@@ -143,13 +143,13 @@ IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
             "ISIS_HIGH_INST_SAT": 65534,
             "ISIS_HIGH_REPR_SAT": 65535,
         },
-        # TODO: signed 32-bit integers don't seem to be considered in ISIS?
+        # note that signed 32-bit integers don't seem to be considered in ISIS
         "int32": {
             "N/A": -214743648,
             "UNK": 2147483647,
         },
-        # TODO: dubious. not sure when we read 64-bit integers out of PDS3
-        #  objects anyway?
+        # TODO: dubious. when do we read 64-bit integers out of PDS3
+        #  arrays anyway?
         "int64": {"N/A": -214743648, "UNK": 2147483647},
         "uint32": {
             "N/A": 4294967293,

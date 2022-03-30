@@ -24,7 +24,7 @@ def find_masked_bounds(image, cheat_low, cheat_high):
     """
     valid = image[~image.mask].data
     if valid.size == 0:
-        return None, None  # TODO: perhaps a silly hack?
+        return None, None
     if (cheat_low != 0) and (cheat_high != 0):
         minimum, maximum = np.percentile(
             valid, [cheat_low, 100 - cheat_high], overwrite_input=True
