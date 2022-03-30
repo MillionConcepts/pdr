@@ -580,7 +580,7 @@ class Data:
         for item_type, definition in format_block:
             if item_type in ("COLUMN", "FIELD"):
                 obj = dict(definition)
-                print("*******NAME:  ", obj["NAME"], "*****")
+                # print("*******NAME:  ", obj["NAME"], "*****")
                 repeat_count = definition.get("ITEMS")
                 obj = add_bit_column_info(obj, definition)
             elif item_type == "CONTAINER":
@@ -960,7 +960,7 @@ class Data:
         if not isinstance(what_got_dug, Mapping):
             what_got_dug = self.LABEL
         if make_literal is True:
-            print(f"*****{text}*****")
+            # print(f"*****{text}*****")
             return literalize_pvl_block(what_got_dug)
         return what_got_dug
 

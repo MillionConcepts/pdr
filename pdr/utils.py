@@ -359,7 +359,7 @@ def literalize_pvl(obj):
     try:
         return literal_eval(obj)
     except (SyntaxError, ValueError):
-        print(obj)
+        # print(obj)
         return obj
 
 
