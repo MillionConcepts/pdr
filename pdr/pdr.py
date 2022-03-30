@@ -18,7 +18,7 @@ from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
 
-from pdr.badpvl import read_pvl_label
+from pdr.badpvl import read_pvl_label, literalize_pvl, literalize_pvl_block
 from pdr.datatypes import (
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
@@ -43,7 +43,6 @@ from pdr.utils import (
     TimelessOmniDecoder,
     append_repeated_object,
     head_file, decompress,
-    literalize_pvl_block, literalize_pvl,
 )
 from pdr.parse_components import (
     enforce_order_and_object,

@@ -6,10 +6,8 @@ import re
 import struct
 import sys
 import warnings
-from ast import literal_eval
 from itertools import chain
 from numbers import Number
-from operator import eq
 from pathlib import Path
 from typing import (
     Optional,
@@ -23,15 +21,13 @@ from typing import (
 )
 from zipfile import ZipFile
 
-from dustgoggles.func import constant
-from dustgoggles.structures import dig_for, dig_and_edit
+from dustgoggles.structures import dig_for
 import numpy as np
 import pandas as pd
 import pandas.api.types
 import pvl
 import pvl.decoder
 import pvl.grammar
-from multidict import MultiDict
 
 """
 The following three functions are substantially derived from code in
@@ -351,56 +347,3 @@ def decompress(filename):
     else:
         f = open(filename, "rb")
     return f
-
-
-def parse_pvl_quantity_tuple(obj):
-    name, quantity_string = obj.strip("()").split(",")
-    quantity = {
-        'value': literalize_pvl(re.search(r"\d+", quantity_string).group()),
-        'units': literalize_pvl(re.search(r"<(.*)>", quantity_string).group(1))
-    }
-    return literalize_pvl(name), quantity
-
-
-def literalize_pvl(obj):
-    if isinstance(obj, Mapping):
-        return obj
-    try:
-        return literal_eval(obj)
-    except (SyntaxError, ValueError):
-        if ("<" in obj) and (">" in obj):
-            return parse_pvl_quantity_tuple(obj)
-        return obj
-
-
-def multidict_dig_and_edit(
-    multidict,
-    target,
-    input_object=None,
-    predicate=eq,
-    value_set_function=None
-):
-    output = MultiDict()
-    if value_set_function is None:
-        value_set_function = constant(input_object)
-    for key, value in multidict.items():
-        if isinstance(value, MultiDict):
-            edited_multidict = multidict_dig_and_edit(
-                value, target, input_object, predicate, value_set_function
-            )
-            output.add(key, edited_multidict)
-            continue
-        if not predicate(key, target):
-            continue
-        output.add(key, value_set_function(input_object, value))
-    return output
-
-
-def literalize_pvl_block(block):
-    literalized = multidict_dig_and_edit(
-        block,
-        None,
-        predicate=lambda x, y: True,
-        value_set_function=lambda _, obj: literalize_pvl(obj)
-    )
-    return literalized

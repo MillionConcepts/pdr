@@ -1,7 +1,12 @@
-from typing import Sequence, Iterable
+import re
+from ast import literal_eval
+from operator import eq
+from typing import Sequence, Iterable, Mapping
 
+from dustgoggles.func import constant
 from more_itertools import split_before
 import multidict
+from multidict import MultiDict
 
 from pdr.utils import trim_label, decompress
 
@@ -90,3 +95,56 @@ def read_pvl_label(filename):
     trimmed_lines = filter(None, map(prune_pvl_lines, label.split("\n")))
     statements = chunk_statements(trimmed_lines)
     return BlockParser().parse_statements(statements)
+
+
+def parse_pvl_quantity_tuple(obj):
+    name, quantity_string = obj.strip("()").split(",")
+    quantity = {
+        'value': literalize_pvl(re.search(r"\d+", quantity_string).group()),
+        'units': literalize_pvl(re.search(r"<(.*)>", quantity_string).group(1))
+    }
+    return literalize_pvl(name), quantity
+
+
+def literalize_pvl(obj):
+    if isinstance(obj, Mapping):
+        return obj
+    try:
+        return literal_eval(obj)
+    except (SyntaxError, ValueError):
+        if ("<" in obj) and (">" in obj):
+            return parse_pvl_quantity_tuple(obj)
+        return obj
+
+
+def multidict_dig_and_edit(
+    multidict,
+    target,
+    input_object=None,
+    predicate=eq,
+    value_set_function=None
+):
+    output = MultiDict()
+    if value_set_function is None:
+        value_set_function = constant(input_object)
+    for key, value in multidict.items():
+        if isinstance(value, MultiDict):
+            edited_multidict = multidict_dig_and_edit(
+                value, target, input_object, predicate, value_set_function
+            )
+            output.add(key, edited_multidict)
+            continue
+        if not predicate(key, target):
+            continue
+        output.add(key, value_set_function(input_object, value))
+    return output
+
+
+def literalize_pvl_block(block):
+    literalized = multidict_dig_and_edit(
+        block,
+        None,
+        predicate=lambda x, y: True,
+        value_set_function=lambda _, obj: literalize_pvl(obj)
+    )
+    return literalized
