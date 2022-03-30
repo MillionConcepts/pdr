@@ -86,6 +86,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and pointer == "TABLE"
     ):
         return True, formats.galileo.galileo_table_loader(data)
+    if (
+        data.LABEL.get("INSTRUMENT_NAME") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
+        and pointer == "IMAGE_REPLY_TABLE"
+    ):
+        return True, formats.msl_ccam.image_reply_table_loader(data)
     return False, None
 
 
