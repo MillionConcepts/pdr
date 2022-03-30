@@ -580,6 +580,7 @@ class Data:
         for item_type, definition in format_block:
             if item_type in ("COLUMN", "FIELD"):
                 obj = dict(definition)
+                print("*******NAME:  ", obj["NAME"], "*****")
                 repeat_count = definition.get("ITEMS")
                 obj = add_bit_column_info(obj, definition)
             elif item_type == "CONTAINER":
