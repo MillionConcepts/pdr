@@ -1,6 +1,5 @@
 import os
 import warnings
-from ast import literal_eval
 from functools import partial, cache
 from io import StringIO
 from itertools import chain
@@ -12,11 +11,9 @@ import Levenshtein as lev
 import numpy as np
 import pandas as pd
 import pds4_tools as pds4
-import pvl
 from cytoolz import curry, groupby
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
-from pvl.exceptions import ParseError
 
 from pdr.badpvl import read_pvl_label, literalize_pvl, literalize_pvl_block
 from pdr.datatypes import (
@@ -53,7 +50,6 @@ from pdr.parse_components import (
 )
 
 
-cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
 
 
 def make_format_specifications(props):
@@ -118,6 +114,8 @@ def skeptically_load_header(
     try:
         if as_pvl is True:
             try:
+                from pdr.utils import cached_pvl_load
+
                 return cached_pvl_load(check_cases(path))
             except ValueError:
                 pass
@@ -131,7 +129,7 @@ def skeptically_load_header(
             text = file.read(length)
         file.close()
         return text
-    except (ParseError, ValueError, OSError) as ex:
+    except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
 
 
@@ -453,14 +451,9 @@ class Data:
                 label = pds4.read(self.labelname, quiet=True).label.to_dict()
             else:
                 label = read_pvl_label(self.labelname)
-                # label = cached_pvl_load(self.labelname)
             self.file_mapping["LABEL"] = self.labelname
             return label
         # look for attached label
-        # label = pvl.loads(
-        #     trim_label(decompress(self.filename)),
-        #     decoder=TimelessOmniDecoder(),
-        # )
         label = read_pvl_label(self.filename)
         self.file_mapping["LABEL"] = self.filename
         self.labelname = self.filename
@@ -974,13 +967,15 @@ class Data:
         do I appear to point to a delimiter-separated file without
         explicit record byte length?
         """
-        if isinstance(target := self._get_target(object_name), pvl.Quantity):
-            if target.units == "BYTES":
+        # TODO: this may be deprecated. assess against notionally-supported
+        #  products.
+        if isinstance(target := self._get_target(object_name), dict):
+            if target.get('units') == "BYTES":
                 return False
         # TODO: untangle this, everywhere
         if isinstance(target := self._get_target(object_name), list):
-            if isinstance(target[-1], pvl.Quantity):
-                if target[-1].units == "BYTES":
+            if isinstance(target[-1], dict):
+                if target[-1].get('units') == "BYTES":
                     return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
@@ -1049,7 +1044,7 @@ class Data:
         if isinstance(target, str):
             return 0
         else:
-            raise ParseError(f"Unknown data pointer format: {target}")
+            raise ValueError(f"Unknown data pointer format: {target}")
 
     def _get_target(self, object_name):
         target = self.labelget(object_name)

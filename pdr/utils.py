@@ -6,6 +6,7 @@ import re
 import struct
 import sys
 import warnings
+from functools import cache
 from itertools import chain
 from numbers import Number
 from pathlib import Path
@@ -347,3 +348,10 @@ def decompress(filename):
     else:
         f = open(filename, "rb")
     return f
+
+
+@cache
+def cached_pvl_load(reference):
+    import pvl
+
+    return pvl.load(reference, decoder=TimelessOmniDecoder())
