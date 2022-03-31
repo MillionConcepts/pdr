@@ -117,17 +117,32 @@ def casting_to_float(array: np.ndarray, *operands: Collection[Number]) -> bool:
     )
 
 
+# compression 'types' we support
+SUPPORTED_COMPRESSION_EXTENSIONS = (".gz", ".bz2", ".zip")
+
+
+def stem_path(path: Path):
+    """
+    convert a Path to lowercase and remove any compression extensions
+    from it to stem for loose matching
+    """
+    lowercase = path.name.lower()
+    for ext in SUPPORTED_COMPRESSION_EXTENSIONS:
+        lowercase = lowercase.replace(ext, "")
+    return lowercase
+
+
 def check_cases(filename: Union[Path, str]) -> str:
     """
     check for oddly-cased versions of a specified filename in local path --
     very common to have case mismatches between PDS3 labels and actual archive
-    contents.
+    contents. similarly, check common compression extensions.
     """
     if Path(filename).exists():
         return filename
     matches = tuple(
         filter(
-            lambda path: path.name.lower() == Path(filename).name.lower(),
+            lambda path: stem_path(path) == Path(filename).name.lower(),
             Path(filename).parent.iterdir(),
         )
     )
@@ -164,11 +179,11 @@ def append_repeated_object(
 
 def decompress(filename):
     filename = check_cases(filename)
-    if filename.endswith(".gz"):
+    if filename.lower().endswith(".gz"):
         f = gzip.open(filename, "rb")
-    elif filename.endswith(".bz2"):
+    elif filename.lower().endswith(".bz2"):
         f = bz2.BZ2File(filename, "rb")
-    elif filename.endswith(".ZIP"):
+    elif filename.lower().endswith(".zip"):
         f = ZipFile(filename, "r").open(
             ZipFile(filename, "r").infolist()[0].filename
         )

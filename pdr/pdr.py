@@ -631,6 +631,7 @@ class Data:
             return fmtdef, np.dtype([])
         return insert_sample_types_into_df(fmtdef, self)
 
+    # noinspection PyTypeChecker
     def _interpret_as_dsv(self, fn, fmtdef, object_name):
         # TODO, maybe: add better delimiter detection & dispatch
         start, length, as_rows = self.table_position(object_name)
