@@ -87,13 +87,29 @@ def read_pvl_label(filename):
     return BlockParser().parse_statements(statements)
 
 
-def parse_pvl_quantity_tuple(obj):
-    name, quantity_string = obj.strip("()").split(",")
-    quantity = {
-        'value': literalize_pvl(re.search(r"\d+", quantity_string).group()),
-        'units': literalize_pvl(re.search(r"<(.*)>", quantity_string).group(1))
+def parse_pvl_quantity_object(obj):
+    return {
+        'value': literalize_pvl(re.search(r"\d+", obj).group()),
+        'units': literalize_pvl(re.search(r"<(.*)>", obj).group(1))
     }
-    return literalize_pvl(name), quantity
+
+
+def parse_pvl_quantity_statement(statement):
+    """
+    parse pvl statements including quantities. returns quantities as mappings.
+    this will also handle statements that do not consist entirely of
+    quantities, notably including tuples of the form
+    ("SOMETHING.DAT", 1000 <BYTES>) that are commonly used to specify offsets
+    within files for data objects
+    """
+    objects = statement.strip("()").split(",")
+    output = []
+    for obj in objects:
+        if ("<" in obj) and (">" in obj):
+            output.append(parse_pvl_quantity_object(obj))
+        else:
+            output.append(literalize_pvl(obj))
+    return tuple(output)
 
 
 def literalize_pvl(obj):
@@ -102,8 +118,10 @@ def literalize_pvl(obj):
     try:
         return literal_eval(obj)
     except (SyntaxError, ValueError):
+        # note: this is ptobably too permissive. if it causes problems we
+        # can replace it with a regex check.
         if ("<" in obj) and (">" in obj):
-            return parse_pvl_quantity_tuple(obj)
+            return parse_pvl_quantity_statement(obj)
         return obj
 
 

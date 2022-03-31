@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pds4_tools as pds4
 import pvl
-from cytoolz import groupby
+from cytoolz import curry, groupby
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
 from pvl.exceptions import ParseError
@@ -296,6 +296,7 @@ class Data:
         label = self.read_label()
         setattr(self, "LABEL", label)
         self.index += ["LABEL"]
+        self.labeldigger = cache(curry(dig_for_value, self.LABEL))
         if self.labelname.endswith(".xml"):
             # Just use pds4_tools if this is a PDS4 file
             # TODO: do this better, including lazy
@@ -567,7 +568,7 @@ class Data:
     def load_format_file(self, format_file, object_name):
         try:
             fmtpath = check_cases(self.get_absolute_path(format_file))
-            return cached_pvl_load(fmtpath)
+            return literalize_pvl_block(read_pvl_label(fmtpath))
         except FileNotFoundError:
             warnings.warn(
                 f"Unable to locate external table format file:\n\t"
@@ -586,7 +587,6 @@ class Data:
         for item_type, definition in format_block:
             if item_type in ("COLUMN", "FIELD"):
                 obj = dict(definition)
-                # print("*******NAME:  ", obj["NAME"], "*****")
                 repeat_count = definition.get("ITEMS")
                 obj = add_bit_column_info(obj, definition)
             elif item_type == "CONTAINER":
@@ -947,26 +947,25 @@ class Data:
     def labelget(self, text, default=None, evaluate=True):
         """
         get the first value from this object's label whose key exactly matches
-        `text`. TODO: very crude. needs to work with XML.
+        `text`. TODO: needs to work with XML.
         """
-        value = dig_for_value(self.LABEL, text)
+        value = self.labeldigger(text)
         if value is None:
             return default
         return literalize_pvl(value) if evaluate is True else value
 
     @cache
-    def labelblock(self, text, make_literal = True):
+    def labelblock(self, text, evaluate=True):
         """
         get the first value from this object's label whose key
         exactly matches `text` iff it is a mapping (e.g. nested PVL block);
         otherwise, returns the label as a whole.
         TODO: very crude. needs to work with XML.
         """
-        what_got_dug = dig_for_value(self.LABEL, text)
+        what_got_dug = self.labeldigger(text)
         if not isinstance(what_got_dug, Mapping):
             what_got_dug = self.LABEL
-        if make_literal is True:
-            # print(f"*****{text}*****")
+        if evaluate is True:
             return literalize_pvl_block(what_got_dug)
         return what_got_dug
 
