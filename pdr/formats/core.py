@@ -20,7 +20,9 @@ FITS_EXTENSIONS = (".fits", ".fit")
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
     is_this_kind_of_extension = partial(contains, kind_extensions)
-    return any(map(is_this_kind_of_extension, Path(filename.lower()).suffixes))
+    return any(
+        map(is_this_kind_of_extension, Path(filename.lower()).suffixes)
+    )
 
 
 def file_extension_to_loader(filename: str, data: "Data") -> Callable:
@@ -42,52 +44,57 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
 def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
-    if data.LABEL.get("INSTRUMENT_ID") == "CHEMIN":
+    if data.labelget("INSTRUMENT_ID") == "CHEMIN":
         return formats.msl_cmn.get_offset(data, pointer)
     return False, None
 
 
 def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
-    if data.LABEL.get("INSTRUMENT_ID") == "MARSIS" and data.LABEL.get("PRODUCT_TYPE") == "EDR":
-        return formats.mex_marsis.get_sample_type(sample_type, sample_bytes, for_numpy)
+    if (
+            data.labelget("INSTRUMENT_ID") == "MARSIS"
+            and data.labelget("PRODUCT_TYPE") == "EDR"
+    ):
+        return formats.mex_marsis.get_sample_type(
+            sample_type, sample_bytes, for_numpy
+        )
     return False, None
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
-        ("JUNO JUPITER JIRAM REDUCED" in data.LABEL.get("DATA_SET_NAME", ""))
+        ("JUNO JUPITER JIRAM REDUCED" in data.labelget("DATA_SET_NAME", ""))
         and (pointer == "IMAGE")
     ):
         return True, formats.juno.jiram_image_loader(data, pointer)
     if (
-        data.LABEL.get("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
-        and data.LABEL.get("MISSION_NAME") == "MARS SCIENCE LABORATORY"
+        data.labelget("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
+        and data.labelget("MISSION_NAME") == "MARS SCIENCE LABORATORY"
         and pointer == "IMAGE"
     ):
         return True, formats.msl_mmm.image_loader(data, pointer)
     if (
-        data.LABEL.get("INSTRUMENT_ID") == "APXS"
+        data.labelget("INSTRUMENT_ID") == "APXS"
         and "TABLE" in pointer
     ):
         # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)
     if (
-        data.LABEL.get("INSTRUMENT_ID") == "CHEMIN"
+        data.labelget("INSTRUMENT_ID") == "CHEMIN"
         and (("HEADER" in pointer) or ("SPREADSHEET" in pointer))
     ):
         # mangled object names + positions
         return True, formats.msl_cmn.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
-    if data.LABEL.get("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":
+    if data.labelget("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":
         return True, formats.m3.l0_image_loader(data)
     # difficult table formats that are handled well by astropy.io.ascii
     if (
-        data.LABEL.get("INSTRUMENT_NAME") == "TRIAXIAL FLUXGATE MAGNETOMETER"
+        data.labelget("INSTRUMENT_NAME") == "TRIAXIAL FLUXGATE MAGNETOMETER"
         and pointer == "TABLE"
     ):
         return True, formats.galileo.galileo_table_loader(data)
     if (
-        data.LABEL.get("INSTRUMENT_NAME") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
+        data.labelget("INSTRUMENT_NAME") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
         and pointer == "IMAGE_REPLY_TABLE"
     ):
         return True, formats.msl_ccam.image_reply_table_loader(data)
@@ -190,15 +197,11 @@ def generic_image_properties(object_name, block, data) -> dict:
         * (props["ncols"] + props["prefix_cols"])
         * props["BANDS"]
     )
-    # TODO: handle cases where image blocks are nested inside file
-    #  blocks and info such as RECORD_BYTES is found only there
-    #  -- previously I did this by making pointers lists, but this may
-    #  be an unwieldy solution
     props["start_byte"] = data.data_start_byte(object_name)
     return props
 
 
-def generic_image_constants(data):
+def special_image_constants(data):
     consts = {}
     if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
         consts["NULL"] = 65535
@@ -210,10 +213,10 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     special-case handling for labels with nonstandard filename specifications
     """
     if (
-        ("HIRISE" in data.LABEL.get("DATA_SET_ID"))
+        ("HIRISE" in data.labelget("DATA_SET_ID"))
         and (object_name == "IMAGE")
-        and ("-EDR-" not in data.LABEL.get("DATA_SET_ID"))
-        and ("-EDR-" not in data.LABEL.get("DATA_SET_ID"))
+        and ("-EDR-" not in data.labelget("DATA_SET_ID"))
+        and ("-EDR-" not in data.labelget("DATA_SET_ID"))
     ):
         return True, data.LABEL['COMPRESSED_FILE']['FILE_NAME']
     return False, None

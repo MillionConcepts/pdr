@@ -1,5 +1,3 @@
-import bz2
-import gzip
 import os
 import warnings
 from functools import partial, cache
@@ -8,19 +6,16 @@ from itertools import chain
 from operator import contains
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence
-from zipfile import ZipFile
 
 import Levenshtein as lev
 import numpy as np
 import pandas as pd
 import pds4_tools as pds4
-import pvl
-import bit_handling
-from cytoolz import groupby
+from cytoolz import curry, groupby
 from dustgoggles.structures import dig_for_value
 from pandas.errors import ParserError
-from pvl.exceptions import ParseError
 
+from pdr import bit_handling
 from pdr.datatypes import (
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
@@ -29,33 +24,29 @@ from pdr.formats import (
     LABEL_EXTENSIONS,
     pointer_to_loader,
     generic_image_properties,
-    generic_image_constants,
     looks_like_this_kind_of_file,
     FITS_EXTENSIONS,
     check_special_offset,
     check_special_fn,
     OBJECTS_IGNORED_BY_DEFAULT,
+    special_image_constants,
 )
-from pdr.utils import (
-    depointerize,
+from pdr.np_utils import (
+    enforce_order_and_object, casting_to_float
+)
+from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
-    trim_label,
-    casting_to_float,
-    check_cases,
-    TimelessOmniDecoder,
-    append_repeated_object,
-    head_file,
-)
-from pdr.parse_components import (
-    enforce_order_and_object,
-    booleanize_booleans,
+    depointerize,
     filter_duplicate_pointers,
-    reindex_df_values,
-    insert_sample_types_into_df,
+    read_pvl_label, literalize_pvl_block, literalize_pvl
 )
-
-cached_pvl_load = cache(partial(pvl.load, decoder=TimelessOmniDecoder()))
+from pdr.pd_utils import (
+    insert_sample_types_into_df, reindex_df_values, booleanize_booleans
+)
+from pdr.utils import (
+    check_cases, append_repeated_object, head_file, decompress,
+)
 
 
 def make_format_specifications(props):
@@ -110,23 +101,32 @@ def process_line_interleaved_image(f, props):
 
 
 def skeptically_load_header(
-    path, object_name="header", start=0, length=None, as_rows=False
+    path,
+    object_name="header",
+    start=0,
+    length=None,
+    as_rows=False,
+    as_pvl = False
 ):
     try:
-        try:
-            return cached_pvl_load(check_cases(path))
-        except ValueError:
-            file = open(check_cases(path))
-            if as_rows is True:
-                if start > 0:
-                    file.readlines(start)
-                text = "\r\n".join(file.readlines(length))
-            else:
-                file.seek(start)
-                text = file.read(length)
-            file.close()
-            return text
-    except (ParseError, ValueError, OSError) as ex:
+        if as_pvl is True:
+            try:
+                from pdr.pvl_utils import cached_pvl_load
+
+                return cached_pvl_load(check_cases(path))
+            except ValueError:
+                pass
+        file = open(check_cases(path))
+        if as_rows is True:
+            if start > 0:
+                file.readlines(start)
+            text = "\r\n".join(file.readlines(length))
+        else:
+            file.seek(start)
+            text = file.read(length)
+        file.close()
+        return text
+    except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
 
 
@@ -151,21 +151,6 @@ def pointer_to_fits_key(pointer, hdulist):
         for i in hdulist.info(output=False)
     ]
     return levratio.index(max(levratio))
-
-
-def decompress(filename):
-    filename = check_cases(filename)
-    if filename.endswith(".gz"):
-        f = gzip.open(filename, "rb")
-    elif filename.endswith(".bz2"):
-        f = bz2.BZ2File(filename, "rb")
-    elif filename.endswith(".ZIP"):
-        f = ZipFile(filename, "r").open(
-            ZipFile(filename, "r").infolist()[0].filename
-        )
-    else:
-        f = open(filename, "rb")
-    return f
 
 
 def check_explicit_delimiter(block):
@@ -221,6 +206,7 @@ class Data:
         label = self.read_label()
         setattr(self, "LABEL", label)
         self.index += ["LABEL"]
+        self.labeldigger = cache(curry(dig_for_value, self.LABEL))
         if self.labelname.endswith(".xml"):
             # Just use pds4_tools if this is a PDS4 file
             # TODO: do this better, including lazy
@@ -376,14 +362,11 @@ class Data:
             if Path(self.labelname).suffix.lower() == ".xml":
                 label = pds4.read(self.labelname, quiet=True).label.to_dict()
             else:
-                label = cached_pvl_load(self.labelname)
+                label = read_pvl_label(self.labelname)
             self.file_mapping["LABEL"] = self.labelname
             return label
         # look for attached label
-        label = pvl.loads(
-            trim_label(decompress(self.filename)),
-            decoder=TimelessOmniDecoder(),
-        )
+        label = read_pvl_label(self.filename)
         self.file_mapping["LABEL"] = self.filename
         self.labelname = self.filename
         return label
@@ -490,7 +473,7 @@ class Data:
     def load_format_file(self, format_file, object_name):
         try:
             fmtpath = check_cases(self.get_absolute_path(format_file))
-            return cached_pvl_load(fmtpath)
+            return literalize_pvl_block(read_pvl_label(fmtpath))
         except FileNotFoundError:
             warnings.warn(
                 f"Unable to locate external table format file:\n\t"
@@ -561,6 +544,7 @@ class Data:
             return fmtdef, np.dtype([])
         return insert_sample_types_into_df(fmtdef, self)
 
+    # noinspection PyTypeChecker
     def _interpret_as_dsv(self, fn, fmtdef, object_name):
         # TODO, maybe: add better delimiter detection & dispatch
         start, length, as_rows = self.table_position(object_name)
@@ -730,9 +714,9 @@ class Data:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
-                "RECORD_BYTES" in self.LABEL.keys()
+                self.labelget("RECORD_BYTES") is not None
             ):
-                length = block["RECORDS"] * self.LABEL["RECORD_BYTES"]
+                length = block["RECORDS"] * self.labelget("RECORD_BYTES")
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
@@ -808,7 +792,7 @@ class Data:
         """
         obj, block = self._init_array_method(key)
         if key not in self.specials:
-            consts = generic_image_constants(self)
+            consts = special_image_constants(self)
             self.specials[key] = consts
             if not consts:
                 self.find_special_constants(key)
@@ -862,25 +846,30 @@ class Data:
         """
         pass
 
-    def labelget(self, text):
+    @cache
+    def labelget(self, text, default=None, evaluate=True):
         """
         get the first value from this object's label whose key exactly matches
-        `text`. if only_block is passed, will only return this value if it's a
-        mapping (e.g. nested PVL block) and otherwise returns key from top
-        label level. TODO: very crude. needs to work with XML.
+        `text`. TODO: needs to work with XML.
         """
-        return dig_for_value(self.LABEL, text)
+        value = self.labeldigger(text)
+        if value is None:
+            return default
+        return literalize_pvl(value) if evaluate is True else value
 
-    def labelblock(self, text):
+    @cache
+    def labelblock(self, text, evaluate=True):
         """
         get the first value from this object's label whose key
         exactly matches `text` iff it is a mapping (e.g. nested PVL block);
         otherwise, returns the label as a whole.
         TODO: very crude. needs to work with XML.
         """
-        what_got_dug = dig_for_value(self.LABEL, text)
+        what_got_dug = self.labeldigger(text)
         if not isinstance(what_got_dug, Mapping):
-            return self.LABEL
+            what_got_dug = self.LABEL
+        if evaluate is True:
+            return literalize_pvl_block(what_got_dug)
         return what_got_dug
 
     def _check_delimiter_stream(self, object_name):
@@ -888,20 +877,22 @@ class Data:
         do I appear to point to a delimiter-separated file without
         explicit record byte length?
         """
-        if isinstance(target := self._get_target(object_name), pvl.Quantity):
-            if target.units == "BYTES":
+        # TODO: this may be deprecated. assess against notionally-supported
+        #  products.
+        if isinstance(target := self._get_target(object_name), dict):
+            if target.get('units') == "BYTES":
                 return False
         # TODO: untangle this, everywhere
         if isinstance(target := self._get_target(object_name), list):
-            if isinstance(target[-1], pvl.Quantity):
-                if target[-1].units == "BYTES":
+            if isinstance(target[-1], dict):
+                if target[-1].get('units') == "BYTES":
                     return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
-        if self.LABEL.get("RECORD_BYTES") is not None:
+        if self.labelget("RECORD_BYTES") is not None:
             return False
         # TODO: not sure this is a good assumption
-        if not self.LABEL.get("RECORD_TYPE") == "STREAM":
+        if not self.labelget("RECORD_TYPE") == "STREAM":
             return False
         textish = map(
             partial(contains, object_name), ("ASCII", "SPREADSHEET", "HEADER")
@@ -909,6 +900,20 @@ class Data:
         if any(textish):
             return True
         return False
+
+    def _count_from_bottom_of_file(self, target):
+        if isinstance(target, int):
+            # Counts up from the bottom of the file
+            rows = self.labelget("ROWS")
+            row_bytes = self.labelget("ROW_BYTES")
+            tab_size = rows * row_bytes
+            # TODO: should be the filename of the target
+            file_size = os.path.getsize(self.filename)
+            return file_size - tab_size
+        if isinstance(target, (list, tuple)):
+            if isinstance(target[0], int):
+                return target[0]
+        raise ValueError(f"unknown data pointer format: {target}")
 
     def data_start_byte(self, object_name):
         """
@@ -927,39 +932,29 @@ class Data:
         else:
             record_bytes = self.labelget("RECORD_BYTES")
         if record_bytes is None:
-            if isinstance(target, int):
-                # Counts up from the bottom of the file
-                rows = self.labelget("ROWS")
-                row_bytes = self.labelget("ROW_BYTES")
-                tab_size = rows * row_bytes
-                # TODO: should be the filename of the target
-                file_size = os.path.getsize(self.filename)
-                return file_size - tab_size
-            if isinstance(target, list):
-                if isinstance(target[0], int):
-                    return target[0]
+            return self._count_from_bottom_of_file(target)
         if isinstance(target, int):
             return record_bytes * max(target - 1, 0)
-        if isinstance(target, list) and (record_bytes is not None):
+        if isinstance(target, (list, tuple)) and (record_bytes is not None):
             if isinstance(target[-1], int):
                 return record_bytes * max(target[-1] - 1, 0)
-            if isinstance(target[-1], pvl.Quantity):
-                if target[-1].units == "BYTES":
+            if isinstance(target[-1], dict):
+                if target[-1]['units'] == "BYTES":
                     # TODO: are there cases in which _these_ aren't 1-indexed?
-                    return target[-1].value - 1
-                return record_bytes * max(target[-1].value - 1, 0)
+                    return target[-1]['value'] - 1
+                return record_bytes * max(target[-1]['value'] - 1, 0)
             return 0
-        elif isinstance(target, list) and isinstance(target[-1], pvl.Quantity):
-            if target[-1].units == "BYTES":  # TODO: untangle this
-                return target[-1].value - 1
-        elif isinstance(target, pvl.Quantity):
-            if target.units == "BYTES":
-                return target.value - 1
-            return record_bytes * max(target.value - 1, 0)
+        elif isinstance(target, (list, tuple)) and isinstance(target[-1], dict):
+            if target[-1]['units'] == "BYTES":  # TODO: untangle this
+                return target[-1]['values'] - 1
+        elif isinstance(target, dict):
+            if target['units'] == "BYTES":
+                return target['value'] - 1
+            return record_bytes * max(target['value'] - 1, 0)
         if isinstance(target, str):
             return 0
         else:
-            raise ParseError(f"Unknown data pointer format: {target}")
+            raise ValueError(f"Unknown data pointer format: {target}")
 
     def _get_target(self, object_name):
         target = self.labelget(object_name)
