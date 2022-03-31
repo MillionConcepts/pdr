@@ -108,22 +108,29 @@ def process_line_interleaved_image(f, props):
 
 
 def skeptically_load_header(
-    path, object_name="header", start=0, length=None, as_rows=False
+    path,
+    object_name="header",
+    start=0,
+    length=None,
+    as_rows=False,
+    as_pvl = False
 ):
     try:
-        try:
-            return cached_pvl_load(check_cases(path))
-        except ValueError:
-            file = open(check_cases(path))
-            if as_rows is True:
-                if start > 0:
-                    file.readlines(start)
-                text = "\r\n".join(file.readlines(length))
-            else:
-                file.seek(start)
-                text = file.read(length)
-            file.close()
-            return text
+        if as_pvl is True:
+            try:
+                return cached_pvl_load(check_cases(path))
+            except ValueError:
+                pass
+        file = open(check_cases(path))
+        if as_rows is True:
+            if start > 0:
+                file.readlines(start)
+            text = "\r\n".join(file.readlines(length))
+        else:
+            file.seek(start)
+            text = file.read(length)
+        file.close()
+        return text
     except (ParseError, ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
 
