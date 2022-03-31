@@ -46,7 +46,7 @@ def convert_byte_column_to_bits(byte_column, byte_order):
 
 
 def conditionally_reverse(iterable, byteorder):
-    if byteorder == 'little':
+    if byteorder == '<':
         return reversed(iterable)
     return iter(iterable)
 

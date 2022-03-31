@@ -27,6 +27,14 @@ def integer_bytes(
     return f"{endian}{letter}"
 
 
+def determine_byte_order(sample_type):
+    if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
+        endian = "<"
+    else:
+        endian = ">"
+    return endian
+
+
 def sample_types(
     sample_type: str, sample_bytes: int, for_numpy: bool = False
 ) -> str:
@@ -38,10 +46,7 @@ def sample_types(
     if (("INTEGER" in sample_type) or (sample_type == "BOOLEAN")) and (
         "ASCII" not in sample_type
     ):
-        if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
-            endian = "<"
-        else:
-            endian = ">"
+        endian = determine_byte_order(sample_type)
         signed = "UNSIGNED" not in sample_type
         return integer_bytes(endian, signed, sample_bytes, for_numpy)
     char = "V" if for_numpy is True else "s"
