@@ -1,6 +1,6 @@
 supported_datasets.md
 
-# Datasets Supported by PDR:
+# Datasets Supported by `pdr`:
 
 "Support" from *pdr* falls into two categories: official and notional.
 
