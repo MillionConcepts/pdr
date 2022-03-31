@@ -64,16 +64,6 @@ def sample_types(
     }[sample_type]
 
 
-# TODO: this is a special-case-handling function and should probably be
-#  consolidated into pdr.formats.
-def generic_image_constants(data):
-    consts = {}
-    if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
-        consts["NULL"] = 65535
-    return consts
-
-
-
 # "basic" PDS3 special constants
 PDS3_CONSTANT_NAMES = (
     "INVALID_CONSTANT",

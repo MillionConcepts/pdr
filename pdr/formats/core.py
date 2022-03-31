@@ -198,6 +198,13 @@ def generic_image_properties(object_name, block, data) -> dict:
     return props
 
 
+def generic_image_constants(data):
+    consts = {}
+    if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
+        consts["NULL"] = 65535
+    return consts
+
+
 def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     """
     special-case handling for labels with nonstandard filename specifications
