@@ -24,10 +24,6 @@ def is_an_assignment_line(line):
 
     there is an issue with people who put '=' in text blocks --
     looking for a block of capital letters is usually good enough
-    but some people like to actually put them on the assignment line, like
-    MRO:SPECIMEN_DESC      = "MONTMORILLONITE + FEOX, 100 % FECL2 SOL_N, PH=7,
-    i strongly suspect we will never make semantic use of parameters like this
-    and so we will just ignore them for now
     """
     if "=" not in line:
         return False
@@ -44,7 +40,10 @@ def chunk_statements(trimmed_lines: Iterable[str]):
         try:
             parameter, value_head = map(str.strip, assignment.split("="))
         except ValueError:
-            print(f"this line is terrible: {assignment}")
+            # some people like to put extra '='s on assignment lines,, like:
+            # MRO:SPECIMEN_DESC      = "MONTMORILLONITE + FEOX, 100 % FECL2 SOL_N, PH=7,
+            # i strongly suspect we will never make semantic use of
+            # parameters like this and so we will just ignore them for now
             continue
         value_head += " ".join(map(str.strip, statement[1:]))
         statements.append((parameter, value_head))
