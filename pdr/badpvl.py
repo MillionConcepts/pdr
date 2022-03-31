@@ -14,14 +14,6 @@ PVL_BLOCK_INITIALS = ("OBJECT", "GROUP", "BEGIN_OBJECT", "BEGIN_GROUP")
 PVL_BLOCK_TERMINALS = ("END",)
 
 
-def prune_pvl_lines(line):
-    """remove comments and blank lines from a pvl-text"""
-    stripped = line.strip()
-    if ("/*" in line) or ("*/" in line):
-        return ""
-    return stripped
-
-
 def is_an_assignment_line(line):
     """
     pick lines that begin assignment statements.
@@ -88,7 +80,10 @@ class BlockParser:
 
 def read_pvl_label(filename):
     label = trim_label(decompress(filename)).decode('utf-8')
-    trimmed_lines = filter(None, map(prune_pvl_lines, label.split("\n")))
+    uncommented_label = re.sub(r"/\*.*?(\*/|$)", "", label)
+    trimmed_lines = filter(
+        None, map(lambda line: line.strip(), uncommented_label.split("\n"))
+    )
     statements = chunk_statements(trimmed_lines)
     return BlockParser().parse_statements(statements)
 
