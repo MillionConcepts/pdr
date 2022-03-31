@@ -1,6 +1,7 @@
 """utilities for parsing BIT_COLUMN objects in tables."""
 
 from functools import partial
+from pdr.datatypes import determine_byte_order
 
 
 def expand_bit_strings(table, fmtdef):
@@ -14,21 +15,12 @@ def convert_to_full_bit_string(table, fmtdef):
     for column in fmtdef.index:
         if isinstance(fmtdef.start_bit_list[column], list):
             byte_column = table[fmtdef.NAME[column]]
-            byte_order = determine_bit_column_byte_order(fmtdef, column)
+            byte_order = determine_byte_order(fmtdef.DATA_TYPE[column])
             bit_str_column = convert_byte_column_to_bits(
                 byte_column, byte_order
             )
             table[fmtdef.NAME[column]] = bit_str_column
     return table
-
-
-def determine_bit_column_byte_order(fmtdef, column):
-    # TODO, maybe: should this reference pdr.datatypes?
-    if any(order in fmtdef.DATA_TYPE[column] for order in ['LSB', 'VAX']):
-        byte_order = 'little'
-    else:
-        byte_order = 'big'
-    return byte_order
 
 
 def convert_to_bits(byte):
