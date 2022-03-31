@@ -15,6 +15,7 @@ dependencies:
   - pvl
   - python-Levenshtein
   - astropy
+  - multidict
   - matplotlib
   - requests
   - pip:

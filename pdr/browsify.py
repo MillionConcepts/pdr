@@ -1,20 +1,14 @@
 """functions for producing browse versions of products"""
-import pickle
-import warnings
 from pathlib import Path
+import pickle
 from typing import Any, Sequence, Union, Optional
+import warnings
 
+from dustgoggles.func import naturals
 import numpy as np
 import pandas as pd
-import pvl
 from PIL import Image
-from dustgoggles.func import naturals
 from matplotlib import pyplot as plt
-from pvl.grammar import OmniGrammar
-
-
-# noinspection PyArgumentList
-from pdr.utils import numeric_columns
 
 
 def find_masked_bounds(image, cheat_low, cheat_high):
@@ -151,9 +145,7 @@ def browsify(
     translation, it dumps as .pkl (pickled binary blob).
     """
     outbase = str(outbase)
-    if isinstance(obj, pvl.collections.OrderedMultiDict):
-        _browsify_pds3_label(obj, outbase, **dump_kwargs)
-    elif isinstance(obj, np.recarray):
+    if isinstance(obj, np.recarray):
         _browsify_recarray(obj, outbase, **dump_kwargs)
     elif isinstance(obj, np.ndarray):
         _browsify_array(obj, outbase, **dump_kwargs)
@@ -181,19 +173,6 @@ def _browsify_recarray(obj: np.recarray, outbase: str, **_):
         obj.to_csv(outbase + ".csv")
     except ValueError:
         pickle.dump(obj, open(outbase + "_nested_recarray.pkl", "wb"))
-
-
-def _browsify_pds3_label(
-    obj: pvl.collections.OrderedMultiDict, outbase: str, **_
-):
-    # try to dump PDS3 labels as formal pvl
-    try:
-        pvl.dump(obj, open(outbase + ".lbl", "w"), grammar=OmniGrammar())
-    except (ValueError, TypeError) as e:
-        # if that fails, just dump them as text
-        with open(outbase + ".badpvl.txt", "w") as file:
-            file.write(str(obj))
-        pass
 
 
 def _browsify_array(

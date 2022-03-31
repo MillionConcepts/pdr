@@ -1,3 +1,5 @@
+"""utilities for parsing BIT_COLUMN objects in tables."""
+
 from functools import partial
 
 

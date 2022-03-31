@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 
 def galileo_table_loader(data: "Data") -> Callable:
-    if "-EDR-" in data.LABEL.get("DATA_SET_ID"):
+    if "-EDR-" in data.labelget("DATA_SET_ID"):
         warnings.warn("Galileo EDR binary tables are not yet supported.")
         return data.trivial
     def load_this_table(*_, **__):
