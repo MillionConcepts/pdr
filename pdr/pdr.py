@@ -37,7 +37,6 @@ from pdr.utils import (
     pointerize,
     casting_to_float,
     check_cases,
-    TimelessOmniDecoder,
     append_repeated_object,
     head_file, decompress,
 )
@@ -114,7 +113,7 @@ def skeptically_load_header(
     try:
         if as_pvl is True:
             try:
-                from pdr.utils import cached_pvl_load
+                from pdr.pvl_utils import cached_pvl_load
 
                 return cached_pvl_load(check_cases(path))
             except ValueError:
