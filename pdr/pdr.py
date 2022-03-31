@@ -638,9 +638,6 @@ class Data:
             table = self._interpret_as_dsv(fn, fmtdef, pointer)
             table.columns = fmtdef.NAME.tolist()
         else:
-            # TODO: this will always throw an exception for text files
-            #  because offset is only a legal argument for binary files
-            #  --but arguably text files should never get here
             # TODO: this works poorly (from a usability and performance
             #  perspective; it's perfectly stable) for tables defined as
             #  a single row with tens or hundreds of thousands of columns
