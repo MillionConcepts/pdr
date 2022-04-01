@@ -7,27 +7,8 @@ from io import BytesIO
 from itertools import chain
 from numbers import Number
 from pathlib import Path
-from typing import (
-    Collection,
-    Union,
-    Sequence,
-    Mapping,
-    MutableSequence,
-    IO
-)
+from typing import Union, Sequence, Mapping, MutableSequence, IO
 from zipfile import ZipFile
-
-
-def in_both_cases(strings: Collection[str]) -> tuple[str]:
-    """
-    given a collection of strings, return a tuple containing each string in
-    that collection in both upper and lower case.
-    """
-    return tuple(
-        chain.from_iterable(
-            [(string.upper(), string.lower()) for string in strings]
-        )
-    )
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -79,7 +60,7 @@ def check_cases(filename: Union[Path, str]) -> str:
     contents. similarly, check common compression extensions.
     """
     if Path(filename).exists():
-        return filename
+        return str(filename)
     matches = tuple(
         filter(
             lambda path: stem_path(path) == Path(filename).name.lower(),
@@ -91,8 +72,8 @@ def check_cases(filename: Union[Path, str]) -> str:
     if len(matches) > 1:
         warning_list = ", ".join([path.name for path in matches])
         warnings.warn(
-            f"Multiple off-case versions of {filename} found in search path: "
-            f"{warning_list}. Using {matches[0].name}."
+            f"Multiple off-case or possibly-compressed versions of {filename} "
+            f"found in search path: {warning_list}. Using {matches[0].name}."
         )
     return str(matches[0])
 
@@ -131,3 +112,6 @@ def decompress(filename):
         f = open(filename, "rb")
     return f
 
+
+def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
+    return str(Path(fn).with_suffix(new_suffix))

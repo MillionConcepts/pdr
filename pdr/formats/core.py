@@ -5,13 +5,12 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 from pdr import formats
 from pdr.datatypes import sample_types
-from pdr.utils import in_both_cases
 
 
 if TYPE_CHECKING:
     from pdr import Data
 
-LABEL_EXTENSIONS = in_both_cases((".xml", ".lbl"))
+LABEL_EXTENSIONS = (".xml", ".lbl")
 IMAGE_EXTENSIONS = (".img", ".tif", ".tiff", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
@@ -44,15 +43,15 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
 def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
-    if data.labelget("INSTRUMENT_ID") == "CHEMIN":
+    if data.metaget("INSTRUMENT_ID") == "CHEMIN":
         return formats.msl_cmn.get_offset(data, pointer)
     return False, None
 
 
 def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
     if (
-            data.labelget("INSTRUMENT_ID") == "MARSIS"
-            and data.labelget("PRODUCT_TYPE") == "EDR"
+            data.metaget("INSTRUMENT_ID") == "MARSIS"
+            and data.metaget("PRODUCT_TYPE") == "EDR"
     ):
         return formats.mex_marsis.get_sample_type(
             sample_type, sample_bytes, for_numpy
@@ -61,46 +60,46 @@ def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
 
 
 def check_special_bit_column_case(data):
-    if data.labelget("INSTRUMENT_NAME") == "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT":
+    if data.metaget("INSTRUMENT_NAME") == "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT":
         return True, "MSB_BIT_STRING"
     return False, None
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
-        ("JUNO JUPITER JIRAM REDUCED" in data.labelget("DATA_SET_NAME", ""))
+        ("JUNO JUPITER JIRAM REDUCED" in data.metaget("DATA_SET_NAME", ""))
         and (pointer == "IMAGE")
     ):
         return True, formats.juno.jiram_image_loader(data, pointer)
     if (
-        data.labelget("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
-        and data.labelget("MISSION_NAME") == "MARS SCIENCE LABORATORY"
+        data.metaget("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
+        and data.metaget("MISSION_NAME") == "MARS SCIENCE LABORATORY"
         and pointer == "IMAGE"
     ):
         return True, formats.msl_mmm.image_loader(data, pointer)
     if (
-        data.labelget("INSTRUMENT_ID") == "APXS"
+        data.metaget("INSTRUMENT_ID") == "APXS"
         and "TABLE" in pointer
     ):
         # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)
     if (
-        data.labelget("INSTRUMENT_ID") == "CHEMIN"
+        data.metaget("INSTRUMENT_ID") == "CHEMIN"
         and (("HEADER" in pointer) or ("SPREADSHEET" in pointer))
     ):
         # mangled object names + positions
         return True, formats.msl_cmn.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
-    if data.labelget("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":
+    if data.metaget("INSTRUMENT_ID") == "M3" and pointer == "L0_IMAGE":
         return True, formats.m3.l0_image_loader(data)
     # difficult table formats that are handled well by astropy.io.ascii
     if (
-        data.labelget("INSTRUMENT_NAME") == "TRIAXIAL FLUXGATE MAGNETOMETER"
+        data.metaget("INSTRUMENT_NAME") == "TRIAXIAL FLUXGATE MAGNETOMETER"
         and pointer == "TABLE"
     ):
         return True, formats.galileo.galileo_table_loader(data)
     if (
-        data.labelget("INSTRUMENT_NAME") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
+        data.metaget("INSTRUMENT_NAME") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
         and pointer == "IMAGE_REPLY_TABLE"
     ):
         return True, formats.msl_ccam.image_reply_table_loader(data)
@@ -117,6 +116,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     is_special, loader = check_special_case(pointer, data)
     if is_special is True:
         return loader
+    if pointer == "LABEL":
+        return data.read_label
     # TIFF tags / headers should always be parsed by the TIFF parser itself
     if ("TIFF" in pointer) and ("IMAGE" not in pointer):
         return data.trivial
@@ -209,7 +210,7 @@ def generic_image_properties(object_name, block, data) -> dict:
 
 def special_image_constants(data):
     consts = {}
-    if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
+    if data.metaget("INSTRUMENT_ID") == "CRISM":
         consts["NULL"] = 65535
     return consts
 
@@ -219,12 +220,12 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     special-case handling for labels with nonstandard filename specifications
     """
     if (
-        ("HIRISE" in data.labelget("DATA_SET_ID"))
+        ("HIRISE" in data.metaget("DATA_SET_ID"))
         and (object_name == "IMAGE")
-        and ("-EDR-" not in data.labelget("DATA_SET_ID"))
-        and ("-EDR-" not in data.labelget("DATA_SET_ID"))
+        and ("-EDR-" not in data.metaget("DATA_SET_ID"))
+        and ("-EDR-" not in data.metaget("DATA_SET_ID"))
     ):
-        return True, data.LABEL['COMPRESSED_FILE']['FILE_NAME']
+        return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']
     return False, None
 
 

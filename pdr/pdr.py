@@ -13,6 +13,7 @@ import pandas as pd
 import pds4_tools as pds4
 from cytoolz import curry, groupby
 from dustgoggles.structures import dig_for_value
+from multidict import MultiDict
 from pandas.errors import ParserError
 
 from pdr import bit_handling
@@ -39,13 +40,15 @@ from pdr.parselabel.pds3 import (
     pointerize,
     depointerize,
     filter_duplicate_pointers,
-    read_pvl_label, literalize_pvl_block, literalize_pvl
+    read_pvl_label,
+    literalize_pvl
 )
+from pdr.parselabel.utils import trim_label
 from pdr.pd_utils import (
     insert_sample_types_into_df, reindex_df_values, booleanize_booleans
 )
 from pdr.utils import (
-    check_cases, append_repeated_object, head_file, decompress,
+    check_cases, append_repeated_object, head_file, decompress, with_extension,
 )
 
 
@@ -164,50 +167,68 @@ def check_explicit_delimiter(block):
     return ","
 
 
+class Metadata(MultiDict):
+    """
+    MultiDict subclass intended primarily as a helper class for Data.
+    includes various convenience methods for handling metadata syntaxes,
+    common access and display interfaces, etc.
+    # TODO: implement PDS4-style XML (or XML alias object) formatting.
+    """
+    def __init__(self, arg=(), syntax='pds3', **kwargs):
+        super().__init__(arg, **kwargs)
+        self.syntax = syntax
+        if self.syntax == 'pds3':
+            self.formatter = literalize_pvl
+        else:
+            raise NotImplementedError(
+                "Syntaxes other than PDS3-style PVL are not yet implemented."
+            )
+
+    def __getitem__(self, key):
+        value = super().__getitem__(key)
+        return self.formatter(value)
+
+
+def associate_label_file(
+    data_filename: str, label_filename: Optional[str] = None
+) -> Optional[str]:
+    if label_filename is not None:
+        return check_cases(Path(label_filename).absolute())
+    elif data_filename.endswith(LABEL_EXTENSIONS):
+        return check_cases(data_filename)
+    for lext in LABEL_EXTENSIONS:
+        try:
+            return check_cases(with_extension(data_filename, lext))
+        except FileNotFoundError:
+            continue
+    return None
+
+
 class Data:
     def __init__(
         self,
         fn: Union[Path, str],
         *,
         debug: bool = False,
-        lazy: Optional[bool] = None,
         label_fn: Optional[Union[Path, str]] = None,
+        search_paths = ()
     ):
-        self.debug = debug
-        self.filename = str(Path(fn).absolute())
-        fn = self.filename
-        self.file_mapping = {}
-        self.labelname = None
-        # index of all of the pointers to data
+        # list of the product's associated data objects
         self.index = []
-        # known special constants per pointer
+        # do we raise an exception rather than a warning if loading a data
+        # object fails?
+        self.debug = debug
+        self.filename = check_cases(Path(fn).absolute())
+        # mappings from data objects to local paths
+        self.file_mapping = {}
+        # known special constants per data object
         self.specials = {}
-        implicit_lazy_exception = None
+        # where can we look for files contaniing data objects?
+        # not yet fully implemented; only uses first (automatic) one.
+        self.search_paths = [self._init_search_paths()] + list(search_paths)
         # Attempt to identify and assign a label file
-        if label_fn is not None:
-            self.labelname = str(Path(label_fn).absolute())
-            label_fn = self.labelname
-            lazy = False if lazy is None else lazy
-        elif fn.endswith(LABEL_EXTENSIONS):
-            self.labelname = fn
-            lazy = False if lazy is None else lazy
-        else:
-            implicit_lazy_exception = fn
-            lazy = True if lazy is None else lazy
-        while self.labelname is None:
-            for lext in LABEL_EXTENSIONS:
-                try:
-                    self.labelname = check_cases(
-                        fn.replace(Path(fn).suffix, lext)
-                    )
-                except FileNotFoundError:
-                    continue
-            break
-        label = self.read_label()
-        setattr(self, "LABEL", label)
-        self.index += ["LABEL"]
-        self.labeldigger = cache(curry(dig_for_value, self.LABEL))
-        if self.labelname.endswith(".xml"):
+        self.labelname = associate_label_file(self.filename, label_fn)
+        if str(self.labelname).endswith(".xml"):
             # Just use pds4_tools if this is a PDS4 file
             # TODO: do this better, including lazy
             data = pds4.read(self.labelname, quiet=True)
@@ -215,45 +236,36 @@ class Data:
                 setattr(self, structure.id.replace(" ", "_"), structure.data)
                 self.index += [structure.id.replace(" ", "_")]
             return
+        try:
+            self.metadata = self.read_metadata()
+        except (UnicodeError, FileNotFoundError) as ex:
+            raise ValueError(
+                f"Can't load this product's metadata: {ex}, {type(ex)}"
+            )
+        self.pointers = filter_duplicate_pointers(
+            get_pds3_pointers(self.metadata)
+        )
+        self._find_objects()
 
-        pt_groups = groupby(lambda pt: pt[0], get_pds3_pointers(label))
-        pointers = []
-        # noinspection PyArgumentList
-        pointers = filter_duplicate_pointers(pointers, pt_groups)
-        setattr(self, "pointers", pointers)
-        self._handle_initial_load(lazy, implicit_lazy_exception)
-        if (lazy is False) or (implicit_lazy_exception == fn):
-            self._handle_fallback_load()
+    def _init_search_paths(self):
+        for target in ("labelname", "filename"):
+            if (target in dir(self)) and (target is not None):
+                return str(Path(self.getattr(target)).absolute().parent)
+        raise FileNotFoundError
 
-    def _handle_initial_load(self, lazy, implicit_lazy_exception):
+    def _find_objects(self):
         for pointer in self.pointers:
             object_name = depointerize(pointer)
             if pointer_to_loader(object_name, self) == self.trivial:
                 continue
             self.index.append(object_name)
             self.file_mapping[object_name] = self._target_path(object_name)
-            if object_name in OBJECTS_IGNORED_BY_DEFAULT:
-                continue
-            loaded = False
-            if lazy is False:
-                self.load(object_name)
-                loaded = True
-            elif lazy is True:
-                if isinstance(implicit_lazy_exception, str):
-                    if (
-                        self.file_mapping[object_name].lower()
-                        == implicit_lazy_exception.lower()
-                    ):
-                        self.load(object_name)
-                        loaded = True
-            if loaded is False:
-                setattr(self, object_name, None)
 
     def _object_to_filename(self, object_name):
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
             return self.get_absolute_path(special_target)
-        target = self.labelget(pointerize(object_name))
+        target = self.metaget(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -263,6 +275,10 @@ class Data:
             return self.filename
 
     def _target_path(self, object_name, raise_missing=False):
+        """
+        find the path on the local filesystem to the file containing a named
+        data object.
+        """
         target = self._object_to_filename(object_name)
         try:
             if isinstance(target, str):
@@ -274,21 +290,8 @@ class Data:
                 raise
             return None
 
-    def _handle_fallback_load(self):
-        """
-        attempt to handle cases in which objects don't have explicit pointers
-        but we want to get them anyway
-        """
-        non_labels = [
-            i for i in self.index if (i != "LABEL") and hasattr(self, i)
-        ]
-        if all((self[i] is None for i in non_labels)):
-            try:
-                self._fallback_image_load()
-            except KeyboardInterrupt:
-                raise
-            except Exception as ex:
-                pass
+    def unloaded(self):
+        return tuple(filter(lambda k: k not in dir(self), self.index))
 
     def _fallback_image_load(self):
         """
@@ -308,8 +311,19 @@ class Data:
             self.index += ["IMAGE"]
 
     def load(self, object_name, reload=False, **load_kwargs):
-        if object_name not in self.index:
+        if (object_name != "all") and (object_name not in self.index):
             raise KeyError(f"{object_name} not found in index: {self.index}.")
+        if object_name == "all":
+            for name in filter(
+                lambda k: k not in OBJECTS_IGNORED_BY_DEFAULT, self.keys()
+            ):
+                try:
+                    self.load(name)
+                except ValueError as value_error:
+                    if "already loaded" in str(value_error):
+                        continue
+                    raise value_error
+            return
         if self.file_mapping.get(object_name) is None:
             warnings.warn(
                 f"{object_name} file {self._object_to_filename(object_name)} "
@@ -321,12 +335,11 @@ class Data:
                 self._catch_return_default(object_name, FileNotFoundError()),
             )
             return
-        if hasattr(self, object_name):
-            if (self[object_name] is not None) and (reload is False):
-                raise ValueError(
-                    f"{object_name} is already loaded; pass reload=True to "
-                    f"force reload."
-                )
+        if (object_name in dir(self)) and (reload is False):
+            raise ValueError(
+                f"{object_name} is already loaded; pass reload=True to "
+                f"force reload."
+            )
         try:
             setattr(
                 self,
@@ -351,28 +364,40 @@ class Data:
                 self, object_name, self._catch_return_default(object_name, ex)
             )
 
-    def read_label(self):
+    def read_metadata(self):
         """
-        Attempts to read the data label, checking first whether this is a
-        PDS4 file, then whether it has a detached label, then whether it
-        has an attached label. Returns None if all of these attempts are
-        unsuccessful.
+        Attempt to ingest a product's metadata. If it has a
+        detached XML label, ingest it using pds4_tools; if it has a detached
+        PDS3/PVL label, ingest it with pdr.parselabel.pds3.read_pvl_label.
+        If it has no detached label, attempt to ingest attached PVL from
+        the product's nominal path using read_pvl_label.
         """
-        if self.labelname:  # a detached label exists
+        if self.labelname is not None:  # a detached label exists
             if Path(self.labelname).suffix.lower() == ".xml":
-                label = pds4.read(self.labelname, quiet=True).label.to_dict()
+                metadata = pds4.read(
+                    self.labelname, quiet=True
+                ).label.to_dict()
             else:
-                label = read_pvl_label(self.labelname)
-            self.file_mapping["LABEL"] = self.labelname
-            return label
-        # look for attached label
-        label = read_pvl_label(self.filename)
-        self.file_mapping["LABEL"] = self.filename
-        self.labelname = self.filename
-        return label
+                metadata = Metadata(read_pvl_label(self.labelname))
+        else:
+            # look for attached label
+            metadata = Metadata(read_pvl_label(self.filename))
+            self.labelname = self.filename
+        self.file_mapping["LABEL"] = self.labelname
+        self.index.append("LABEL")
+        return metadata
 
     def load_from_pointer(self, pointer, **load_kwargs):
         return pointer_to_loader(pointer, self)(pointer, **load_kwargs)
+
+    def read_label(self, _pointer, fmt="text"):
+        if fmt == "text":
+            return trim_label(decompress(self.labelname)).decode('utf-8')
+        elif fmt == "pvl":
+            import pvl
+
+            return pvl.load(self.labelname)
+        raise NotImplementedError(f"The {fmt} format is not yet implemented.")
 
     def open_with_rasterio(self, object_name):
         import rasterio
@@ -418,7 +443,7 @@ class Data:
         if special_properties is not None:
             props = special_properties
         else:
-            block = self.labelblock(object_name)
+            block = self.metablock(object_name)
             if block is None:
                 return None  # not much we can do with this!
             props = generic_image_properties(object_name, block, self)
@@ -463,7 +488,7 @@ class Data:
         and throw an error if it's not there.
         TODO, maybe: Grab external format files as needed.
         """
-        block = self.labelblock(depointerize(pointer))
+        block = self.metablock(depointerize(pointer))
         fields = self.read_format_block(block, pointer)
         # give columns unique names so that none of our table handling explodes
         fmtdef = pd.DataFrame.from_records(fields)
@@ -473,7 +498,7 @@ class Data:
     def load_format_file(self, format_file, object_name):
         try:
             fmtpath = check_cases(self.get_absolute_path(format_file))
-            return literalize_pvl_block(read_pvl_label(fmtpath))
+            return literalize_pvl(read_pvl_label(fmtpath))
         except FileNotFoundError:
             warnings.warn(
                 f"Unable to locate external table format file:\n\t"
@@ -532,9 +557,9 @@ class Data:
 
     def parse_table_structure(self, pointer):
         """
-        Generate a dtype array to later pass to numpy.fromfile
-        to unpack the table data according to the format given in the
-        label.
+        Read a table's format specification and generate a DataFrame
+        and -- if it's binary -- a numpy dtype object. These are later passed
+        to np.fromfile or one of several ASCII table readers.
         """
         fmtdef = self.read_table_structure(pointer)
         if fmtdef["DATA_TYPE"].str.contains("ASCII").any():
@@ -545,10 +570,14 @@ class Data:
         return insert_sample_types_into_df(fmtdef, self)
 
     # noinspection PyTypeChecker
-    def _interpret_as_dsv(self, fn, fmtdef, object_name):
+    def _interpret_as_ascii(self, fn, fmtdef, object_name):
+        """
+        read an ASCII table. first assume it's delimiter-separated; attempt to
+        parse it as a fixed-width table if that fails.
+        """
         # TODO, maybe: add better delimiter detection & dispatch
         start, length, as_rows = self.table_position(object_name)
-        sep = check_explicit_delimiter(self.labelblock(object_name))
+        sep = check_explicit_delimiter(self.metablock(object_name))
         if as_rows is False:
             bytes_buffer = head_file(fn, nbytes=length, offset=start)
             string_buffer = StringIO(bytes_buffer.read().decode())
@@ -571,7 +600,7 @@ class Data:
                     np.loadtxt(
                         fn,
                         delimiter=",",
-                        skiprows=self.labelget("LABEL_RECORDS"),
+                        skiprows=self.metaget("LABEL_RECORDS"),
                     )
                     .copy()
                     .newbyteorder("=")
@@ -605,7 +634,7 @@ class Data:
         Read a table. Parse the label format definition and then decide
         whether to parse it as text or binary.
         """
-        target = self.labelget(pointerize(pointer))
+        target = self.metaget(pointerize(pointer))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -619,7 +648,7 @@ class Data:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
         if (dt is None) or ("SPREADSHEET" in pointer) or ("ASCII" in pointer):
-            table = self._interpret_as_dsv(fn, fmtdef, pointer)
+            table = self._interpret_as_ascii(fn, fmtdef, pointer)
             table.columns = fmtdef.NAME.tolist()
         else:
             # TODO: this works poorly (from a usability and performance
@@ -637,7 +666,7 @@ class Data:
 
     def read_histogram(self, object_name):
         # TODO: build this out for text examples
-        block = self.labelblock(object_name)
+        block = self.metablock(object_name)
         if block.get("INTERCHANGE_FORMAT") != "BINARY":
             raise NotImplementedError(
                 "ASCII histograms are not currently supported."
@@ -660,7 +689,7 @@ class Data:
         )
 
     def _interpret_as_binary(self, fmtdef, dt, fn, pointer):
-        count = self.labelblock(pointer).get("ROWS")
+        count = self.metablock(pointer).get("ROWS")
         count = count if count is not None else 1
         array = np.fromfile(
             fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
@@ -680,9 +709,9 @@ class Data:
         return table
 
     def read_text(self, object_name):
-        target = self.labelget(pointerize(object_name))
+        target = self.metaget(pointerize(object_name))
         local_path = self.get_absolute_path(
-            self.labelget(pointerize(object_name))
+            self.metaget(pointerize(object_name))
         )
         try:
             return open(check_cases(local_path)).read()
@@ -703,7 +732,7 @@ class Data:
 
     def table_position(self, object_name):
         target = self._get_target(object_name)
-        block = self.labelblock(object_name)
+        block = self.metablock(object_name)
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
             start = target[1] - 1
@@ -714,9 +743,9 @@ class Data:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
-                self.labelget("RECORD_BYTES") is not None
+                    self.metaget("RECORD_BYTES") is not None
             ):
-                length = block["RECORDS"] * self.labelget("RECORD_BYTES")
+                length = block["RECORDS"] * self.metaget("RECORD_BYTES")
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
@@ -739,7 +768,7 @@ class Data:
             # TODO: assuming this does not need to be specified as f-string
             #  (like in read_header/tbd) -- maybe! must determine and specify
             #  what cases this exception was needed to handle
-            self._catch_return_default(self.labelget(pointer), ex)
+            self._catch_return_default(self.metaget(pointer), ex)
 
     def _catch_return_default(self, pointer: str, exception: Exception):
         """
@@ -748,7 +777,7 @@ class Data:
         """
         if self.debug is True:
             raise exception
-        return self.labelget(pointer)
+        return self.metaget(pointer)
 
     def find_special_constants(self, key):
         """
@@ -828,7 +857,7 @@ class Data:
         obj = self[object_name]
         if not isinstance(obj, np.ndarray):
             raise TypeError("this method is only applicable to arrays.")
-        return obj, self.labelblock(object_name)
+        return obj, self.metablock(object_name)
 
     def tbd(self, pointer=""):
         """
@@ -837,7 +866,7 @@ class Data:
         passes just the value of the pointer.
         """
         warnings.warn(f"The {pointer} pointer is not yet fully supported.")
-        return self.labelget(pointer)
+        return self.metaget(pointer)
 
     def trivial(self, pointer=""):
         """
@@ -847,30 +876,37 @@ class Data:
         pass
 
     @cache
-    def labelget(self, text, default=None, evaluate=True):
+    def metaget(self, text, default=None, evaluate=True):
         """
-        get the first value from this object's label whose key exactly matches
-        `text`. TODO: needs to work with XML.
+        get the first value from this object's metadata whose key exactly
+        matches `text`, even if it is nested inside a mapping. evaluate it
+        using self.metadata.formatter.
+        WARNING: this function's return values are memoized for performance.
+        updating elements of self.metadata that have already been accessed
+        will result in unpredictable behavior.
         """
-        value = self.labeldigger(text)
+        value = dig_for_value(self.metadata, text)
         if value is None:
             return default
-        return literalize_pvl(value) if evaluate is True else value
+        return self.metadata.formatter(value) if evaluate is True else value
 
     @cache
-    def labelblock(self, text, evaluate=True):
+    def metablock(self, text, evaluate=True):
         """
-        get the first value from this object's label whose key
-        exactly matches `text` iff it is a mapping (e.g. nested PVL block);
-        otherwise, returns the label as a whole.
-        TODO: very crude. needs to work with XML.
+        get the first value from this object's metadata whose key exactly
+        matches `text`, even if it is nested inside a mapping, iff the value
+        itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
+        evaluate it using self.metadata.formatter. if there is no key matching
+        'text', will evaluate and return the metadata as a whole.
+        WARNING: this function's return values are memoized for performance.
+        updating elements of self.metadata that have already been accessed
+        with this function will result in unpredictable behavior.
         """
-        what_got_dug = self.labeldigger(text)
-        if not isinstance(what_got_dug, Mapping):
-            what_got_dug = self.LABEL
-        if evaluate is True:
-            return literalize_pvl_block(what_got_dug)
-        return what_got_dug
+        value = dig_for_value(self.metadata, text)
+        if not isinstance(value, Mapping):
+            value = self.metadata
+        return self.metadata.formatter(value) if evaluate is True else value
+
 
     def _check_delimiter_stream(self, object_name):
         """
@@ -889,10 +925,10 @@ class Data:
                     return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
-        if self.labelget("RECORD_BYTES") is not None:
+        if self.metaget("RECORD_BYTES") is not None:
             return False
         # TODO: not sure this is a good assumption
-        if not self.labelget("RECORD_TYPE") == "STREAM":
+        if not self.metaget("RECORD_TYPE") == "STREAM":
             return False
         textish = map(
             partial(contains, object_name), ("ASCII", "SPREADSHEET", "HEADER")
@@ -904,8 +940,8 @@ class Data:
     def _count_from_bottom_of_file(self, target):
         if isinstance(target, int):
             # Counts up from the bottom of the file
-            rows = self.labelget("ROWS")
-            row_bytes = self.labelget("ROW_BYTES")
+            rows = self.metaget("ROWS")
+            row_bytes = self.metaget("ROW_BYTES")
             tab_size = rows * row_bytes
             # TODO: should be the filename of the target
             file_size = os.path.getsize(self.filename)
@@ -926,11 +962,11 @@ class Data:
         if is_special:
             return special_byte
         target = self._get_target(object_name)
-        labelblock = self.labelblock(object_name)
-        if "RECORD_BYTES" in labelblock.keys():
-            record_bytes = labelblock["RECORD_BYTES"]
+        block = self.metablock(object_name)
+        if "RECORD_BYTES" in block.keys():
+            record_bytes = block["RECORD_BYTES"]
         else:
-            record_bytes = self.labelget("RECORD_BYTES")
+            record_bytes = self.metaget("RECORD_BYTES")
         if record_bytes is None:
             return self._count_from_bottom_of_file(target)
         if isinstance(target, int):
@@ -957,28 +993,14 @@ class Data:
             raise ValueError(f"Unknown data pointer format: {target}")
 
     def _get_target(self, object_name):
-        target = self.labelget(object_name)
+        target = self.metaget(object_name)
         if isinstance(target, Mapping):
-            target = self.labelget(pointerize(object_name))
+            target = self.metaget(pointerize(object_name))
         return target
 
-    # The following two functions make this object act sort of dict-like
-    #  in useful ways for data exploration.
-    def keys(self):
-        # Returns the keys for observational data and metadata objects
-        return self.index
-
-    def get_absolute_path(self, file):
-        if self.labelname:
-            return str(
-                Path(Path(self.labelname).absolute().parent, Path(file).name)
-            )
-        elif self.filename:
-            return str(
-                Path(Path(self.filename).absolute().parent, Path(file).name)
-            )
-        else:
-            return file
+    # TODO: have this iterate through scopes
+    def get_absolute_path(self, filename):
+        return str(Path(self.search_paths[0], filename))
 
     # TODO: reorganize this -- common dispatch funnel with dump_browse,
     #  split up the image-gen part of _browsify_array, something like that
@@ -1020,9 +1042,7 @@ class Data:
             prefix = Path(self.filename).stem
         if outpath is None:
             outpath = Path(".")
-        for obj in self.index:
-            if not hasattr(self, obj):
-                continue
+        for obj in filter(lambda i: i in dir(self), self.index):
             outfile = str(Path(outpath, f"{prefix}_{obj}"))
             # no need to have all this mpl stuff in the namespace normally
             from pdr.browsify import browsify
@@ -1042,23 +1062,51 @@ class Data:
                     raise ValueError(f"unknown scaling argument {scaled}")
             else:
                 dump_it(self[obj], outfile)
-            if (purge is True) and (obj != "LABEL"):
+            if purge is True:
                 self.__delattr__(obj)
+
+    def __getattribute__(self, attr):
+        # provide a way to sidestep special behavior
+        if attr == "getattr":
+            return super().__getattribute__
+        # do not infinitely check if the index is in itself
+        if attr == "index":
+            return self.getattr("index")
+        # do not attempt to lazy-load attributes that are not data objects
+        if attr not in self.getattr("index"):
+            return self.getattr(attr)
+        try:
+            return self.getattr(attr)
+        except AttributeError:
+            # if an attribute name corresponds to the name of a known data
+            # object and that attribute hasn't been assigned, load and return
+            # the data object
+            self.load(attr)
+            return self.getattr(attr)
+
+    # this is redundant with __getattribute__. it is repeated here for
+    # clarity and to help enable static analysis.
+    def getattr(self, attr):
+        """
+        get an attribute of self without either lazy-loading on failure or
+        risking infinite loops inside lazy-load behaviors.
+        """
+        return super().__getattribute__(attr)
+
+    # The following two functions make this object act sort of dict-like
+    #  in useful ways for data exploration.
+    def keys(self):
+        # Returns the keys for observational data and metadata objects
+        return self.index
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
-        return getattr(self, item)
+        return self.__getattribute__(item)
 
     def __repr__(self):
-        not_loaded = []
-        for k in self.keys():
-            if not hasattr(self, k):
-                not_loaded.append(k)
-            elif self[k] is None:
-                not_loaded.append(k)
         rep = f"pdr.Data({self.filename})\nkeys={self.keys()}"
-        if len(not_loaded) > 0:
-            rep += f"\nnot yet loaded: {not_loaded}"
+        if len(self.unloaded()) > 0:
+            rep += f"\nnot yet loaded: {self.unloaded()}"
         return rep
 
     def __str__(self):

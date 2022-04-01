@@ -7,7 +7,7 @@ def jiram_image_loader(data, _):
     """
     JIRAM RDRs are specified as MSB but appear to be LSB.
     """
-    props = generic_image_properties("IMAGE", data.labelblock("IMAGE"), data)
+    props = generic_image_properties("IMAGE", data.metablock("IMAGE"), data)
     props['sample_type'] = '<f'
     return partial(
         data.read_image, userasterio=False, special_properties=props

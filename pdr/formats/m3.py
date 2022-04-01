@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 def m3_l0_image_properties(data):
-    block, props = data.labelblock("L0_IMAGE"), {}
+    block, props = data.metablock("L0_IMAGE"), {}
     props["BYTES_PER_PIXEL"] = block["SAMPLE_BITS"] / 8
     props["sample_type"] = sample_types(
         block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"],

@@ -5,6 +5,7 @@ import re
 from operator import eq
 from typing import Iterable, Mapping, Optional
 
+from cytoolz import groupby
 from dustgoggles.func import constant
 from dustgoggles.structures import dig_for
 from more_itertools import split_before
@@ -116,19 +117,6 @@ def parse_pvl_quantity_statement(statement):
     return tuple(output)
 
 
-def literalize_pvl(obj):
-    if isinstance(obj, Mapping):
-        return obj
-    try:
-        return literal_eval(obj)
-    except (SyntaxError, ValueError):
-        # note: this is ptobably too permissive. if it causes problems we
-        # can replace it with a regex check.
-        if ("<" in obj) and (">" in obj):
-            return parse_pvl_quantity_statement(obj)
-        return obj
-
-
 def multidict_dig_and_edit(
     input_multidict,
     target,
@@ -150,6 +138,19 @@ def multidict_dig_and_edit(
             continue
         output_multidict.add(key, value_set_function(input_object, value))
     return output_multidict
+
+
+def literalize_pvl(obj):
+    if isinstance(obj, Mapping):
+        return literalize_pvl_block(obj)
+    try:
+        return literal_eval(obj)
+    except (SyntaxError, ValueError):
+        # note: this is probably too permissive. if it causes problems we
+        # can replace it with a regex check.
+        if ("<" in obj) and (">" in obj):
+            return parse_pvl_quantity_statement(obj)
+        return obj
 
 
 def literalize_pvl_block(block):
@@ -182,16 +183,21 @@ def depointerize(string: str) -> str:
     return string[1:] if string.startswith("^") else string
 
 
-def filter_duplicate_pointers(pointers, pt_groups):
+def filter_duplicate_pointers(pointers):
+    # noinspection PyTypeChecker
+    pt_groups = groupby(lambda pt: pt[0], pointers)
+    filtered_pointers = []
     for pointer, group in pt_groups.items():
-        if (len(group) > 1) and (pointer != "^STRUCTURE"):
-            if pointer != "^DESCRIPTION":
-                # don't waste anyone's time mentioning that the label
-                # references both ODL.TXT and VICAR2.TXT
-                warnings.warn(
-                    f"Duplicate handling for {pointer} not yet "
-                    f"implemented, ignoring"
-                )
+        if (
+            (len(group) > 1)
+            and (pointer not in ("^STRUCTURE", "^DESCRIPTION"))
+        ):
+            # don't waste anyone's time mentioning, that the label
+            # references both ODL.TXT and VICAR2.TXT, etc.
+            warnings.warn(
+                f"Duplicate handling for {pointer} not yet "
+                f"implemented, ignoring"
+            )
         else:
-            pointers.append(group[0][0])
-    return pointers
+            filtered_pointers.append(group[0][0])
+    return filtered_pointers

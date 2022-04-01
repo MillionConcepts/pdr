@@ -34,6 +34,6 @@ def chemin_spreadsheet_loader(data: "Data"):
     def load_this_table(*_, **__):
         import pandas as pd
         return pd.read_csv(
-            data.get_absolute_path(data.labelget("^SPREADSHEET")[0])
+            data.get_absolute_path(data.metaget("^SPREADSHEET")[0])
         )
     return load_this_table
