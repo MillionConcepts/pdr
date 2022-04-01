@@ -77,6 +77,7 @@ of their metadata appear to match other sources.
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
   - Juno Waves reduced tables
+  - JADE EDRs and RDRs
 - Galileo magnetometer tables
 
 ## Known Unsupported Datasets
@@ -92,6 +93,5 @@ of their metadata appear to match other sources.
     Python. Help is welcomed with either of these efforts! The MSL
     "calibrated" (RDR) files for these cameras are not compressed in this way.
 - Juno
-  - JADE (support planned)
   - UVS (support planned)
   - Waves EDR (support not planned)
