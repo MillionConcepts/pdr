@@ -2,6 +2,7 @@
 
 from functools import partial
 from pdr.datatypes import determine_byte_order
+from pdr.formats import check_special_bit_column_case
 
 
 def expand_bit_strings(table, fmtdef):
@@ -69,8 +70,14 @@ def split_bits(bit_string, start_bit_list):
     ]
 
 
-def add_bit_column_info(obj, definition):
-    if 'BIT_STRING' in obj['DATA_TYPE']:
+def add_bit_column_info(obj, definition, data):
+    if 'BIT_COLUMN' in obj.keys():
+        if 'BIT_STRING' not in obj['DATA_TYPE']:
+            is_special, special_dtype = check_special_bit_column_case(data)
+            if is_special is False:
+                raise ValueError("Incompatible data type for bit columns.")
+            obj["DATA_TYPE"] = special_dtype
+
         start_bit_list = []
         list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")
         for pvl_obj in list_of_pvl_objects_for_bit_columns:

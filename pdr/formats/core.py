@@ -60,6 +60,12 @@ def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
     return False, None
 
 
+def check_special_bit_column_case(data):
+    if data.labelget("INSTRUMENT_NAME") == "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT":
+        return True, "MSB_BIT_STRING"
+    return False, None
+
+
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
         ("JUNO JUPITER JIRAM REDUCED" in data.labelget("DATA_SET_NAME", ""))

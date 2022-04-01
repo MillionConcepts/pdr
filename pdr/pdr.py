@@ -493,7 +493,7 @@ class Data:
             if item_type in ("COLUMN", "FIELD"):
                 obj = dict(definition)
                 repeat_count = definition.get("ITEMS")
-                obj = bit_handling.add_bit_column_info(obj, definition)
+                obj = bit_handling.add_bit_column_info(obj, definition, self)
             elif item_type == "CONTAINER":
                 obj = self.read_format_block(definition, object_name)
                 repeat_count = definition.get("REPETITIONS")
