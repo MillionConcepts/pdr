@@ -11,7 +11,6 @@ import Levenshtein as lev
 import numpy as np
 import pandas as pd
 import pds4_tools as pds4
-from cytoolz import curry, groupby
 from dustgoggles.structures import dig_for_value
 from multidict import MultiDict
 from pandas.errors import ParserError
