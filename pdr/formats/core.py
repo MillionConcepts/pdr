@@ -60,9 +60,12 @@ def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
 
 
 def check_special_bit_column_case(data):
-    if data.metaget("INSTRUMENT_NAME") == "ALPHA PARTICLE X-RAYSPECTROMETER":
-        return True, "MSB_BIT_STRING"
-    if data.metaget("INSTRUMENT_NAME") == "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT":
+    instrument = data.metaget("INSTRUMENT_NAME")
+    if instrument in (
+        "ALPHA PARTICLE X-RAYSPECTROMETER",
+        "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT",
+        "CHEMISTRY AND MINERALOGY INSTRUMENT"
+    ):
         return True, "MSB_BIT_STRING"
     return False, None
 

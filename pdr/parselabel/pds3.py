@@ -56,9 +56,8 @@ def chunk_statements(trimmed_lines: Iterable[str]):
 
 
 class BlockParser:
-    def __init__(self, on_dupe=None):
+    def __init__(self):
         self.names, self.aggregations = [], [MultiDict()]
-        self.on_dupe = on_dupe
 
     def _step_out(self):
         self.add_statement(self.names.pop(), self.aggregations.pop())
@@ -94,7 +93,7 @@ def read_pvl_label(filename):
 
 def parse_pvl_quantity_object(obj):
     return {
-        'value': literalize_pvl(re.search(r"\d+", obj).group()),
+        'value': literalize_pvl(re.search(r"(\d|\.)+", obj).group()),
         'units': literalize_pvl(re.search(r"<(.*)>", obj).group(1))
     }
 
