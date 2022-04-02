@@ -31,23 +31,27 @@ from pdr.formats import (
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
 )
-from pdr.np_utils import (
-    enforce_order_and_object, casting_to_float
-)
+from pdr.np_utils import enforce_order_and_object, casting_to_float
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     depointerize,
     filter_duplicate_pointers,
     read_pvl_label,
-    literalize_pvl
+    literalize_pvl,
 )
 from pdr.parselabel.utils import trim_label
 from pdr.pd_utils import (
-    insert_sample_types_into_df, reindex_df_values, booleanize_booleans
+    insert_sample_types_into_df,
+    reindex_df_values,
+    booleanize_booleans,
 )
 from pdr.utils import (
-    check_cases, append_repeated_object, head_file, decompress, with_extension,
+    check_cases,
+    append_repeated_object,
+    head_file,
+    decompress,
+    with_extension,
 )
 
 
@@ -65,8 +69,8 @@ def process_single_band_image(f, props):
         (props["nrows"], props["ncols"] + props["prefix_cols"])
     )
     if props["prefix_cols"] > 0:
-        prefix = image[:, :props["prefix_cols"]]
-        image = image[:, props["prefix_cols"]:]
+        prefix = image[:, : props["prefix_cols"]]
+        image = image[:, props["prefix_cols"] :]
     else:
         prefix = None
     return image, prefix
@@ -79,8 +83,8 @@ def process_band_sequential_image(f, props):
         (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
     )
     if props["prefix_cols"] > 0:
-        prefix = image[:, :props["prefix_cols"]]
-        image = image[:, props["prefix_cols"]:]
+        prefix = image[:, : props["prefix_cols"]]
+        image = image[:, props["prefix_cols"] :]
     else:
         prefix = None
     return image, prefix
@@ -108,7 +112,7 @@ def skeptically_load_header(
     start=0,
     length=None,
     as_rows=False,
-    as_pvl = False
+    as_pvl=False,
 ):
     try:
         if as_pvl is True:
@@ -173,10 +177,11 @@ class Metadata(MultiDict):
     common access and display interfaces, etc.
     # TODO: implement PDS4-style XML (or XML alias object) formatting.
     """
-    def __init__(self, arg=(), syntax='pds3', **kwargs):
+
+    def __init__(self, arg=(), syntax="pds3", **kwargs):
         super().__init__(arg, **kwargs)
         self.syntax = syntax
-        if self.syntax == 'pds3':
+        if self.syntax == "pds3":
             self.formatter = literalize_pvl
         else:
             raise NotImplementedError(
@@ -210,7 +215,7 @@ class Data:
         *,
         debug: bool = False,
         label_fn: Optional[Union[Path, str]] = None,
-        search_paths = ()
+        search_paths=(),
     ):
         # list of the product's associated data objects
         self.index = []
@@ -391,7 +396,7 @@ class Data:
 
     def read_label(self, _pointer, fmt="text"):
         if fmt == "text":
-            return trim_label(decompress(self.labelname)).decode('utf-8')
+            return trim_label(decompress(self.labelname)).decode("utf-8")
         elif fmt == "pvl":
             import pvl
 
@@ -742,7 +747,7 @@ class Data:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
-                    self.metaget("RECORD_BYTES") is not None
+                self.metaget("RECORD_BYTES") is not None
             ):
                 length = block["RECORDS"] * self.metaget("RECORD_BYTES")
         return start, length, as_rows
@@ -906,7 +911,6 @@ class Data:
             value = self.metadata
         return self.metadata.formatter(value) if evaluate is True else value
 
-
     def _check_delimiter_stream(self, object_name):
         """
         do I appear to point to a delimiter-separated file without
@@ -915,12 +919,12 @@ class Data:
         # TODO: this may be deprecated. assess against notionally-supported
         #  products.
         if isinstance(target := self._get_target(object_name), dict):
-            if target.get('units') == "BYTES":
+            if target.get("units") == "BYTES":
                 return False
         # TODO: untangle this, everywhere
         if isinstance(target := self._get_target(object_name), list):
             if isinstance(target[-1], dict):
-                if target[-1].get('units') == "BYTES":
+                if target[-1].get("units") == "BYTES":
                     return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
@@ -974,18 +978,20 @@ class Data:
             if isinstance(target[-1], int):
                 return record_bytes * max(target[-1] - 1, 0)
             if isinstance(target[-1], dict):
-                if target[-1]['units'] == "BYTES":
+                if target[-1]["units"] == "BYTES":
                     # TODO: are there cases in which _these_ aren't 1-indexed?
-                    return target[-1]['value'] - 1
-                return record_bytes * max(target[-1]['value'] - 1, 0)
+                    return target[-1]["value"] - 1
+                return record_bytes * max(target[-1]["value"] - 1, 0)
             return 0
-        elif isinstance(target, (list, tuple)) and isinstance(target[-1], dict):
-            if target[-1]['units'] == "BYTES":  # TODO: untangle this
-                return target[-1]['values'] - 1
+        elif isinstance(target, (list, tuple)) and isinstance(
+            target[-1], dict
+        ):
+            if target[-1]["units"] == "BYTES":  # TODO: untangle this
+                return target[-1]["values"] - 1
         elif isinstance(target, dict):
-            if target['units'] == "BYTES":
-                return target['value'] - 1
-            return record_bytes * max(target['value'] - 1, 0)
+            if target["units"] == "BYTES":
+                return target["value"] - 1
+            return record_bytes * max(target["value"] - 1, 0)
         if isinstance(target, str):
             return 0
         else:
