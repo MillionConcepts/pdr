@@ -774,6 +774,24 @@ class Data:
             #  what cases this exception was needed to handle
             self._catch_return_default(self.metaget(pointer), ex)
 
+    def handle_tiff_file(self, pointer: str, userasterio=False):
+        # optionally read with rasterio
+        if userasterio:
+            import rasterio
+
+            return rasterio.open(self.file_mapping[pointer]).read()
+        # otherwise read with pillow
+        from PIL import Image
+        # noinspection PyTypeChecker
+        image = np.ascontiguousarray(Image.open(self.file_mapping[pointer]))
+        # pillow reads images as [x, y, channel] rather than [channel, x, y]
+        if len(image.shape) == 3:
+            return np.ascontiguousarray(np.rollaxis(image, 2))
+        return image
+
+
+
+
     def _catch_return_default(self, pointer: str, exception: Exception):
         """
         if we are in debug mode, reraise an exception. otherwise, return

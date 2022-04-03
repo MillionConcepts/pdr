@@ -11,10 +11,11 @@ if TYPE_CHECKING:
     from pdr import Data
 
 LABEL_EXTENSIONS = (".xml", ".lbl")
-IMAGE_EXTENSIONS = (".img", ".tif", ".tiff", ".rgb")
+IMAGE_EXTENSIONS = (".img", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
 FITS_EXTENSIONS = (".fits", ".fit")
+TIFF_EXTENSIONS = (".tif", ".tiff")
 
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
@@ -29,10 +30,12 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
     attempt to select the correct method of pdr.Data for objects only
     specified by a PDS3 FILE_NAME pointer (or by filename otherwise).
     """
-    if looks_like_this_kind_of_file(filename, IMAGE_EXTENSIONS):
-        return data.read_image
     if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
         return data.handle_fits_file
+    if looks_like_this_kind_of_file(filename, TIFF_EXTENSIONS):
+        return data.handle_fits_file
+    if looks_like_this_kind_of_file(filename, IMAGE_EXTENSIONS):
+        return data.read_image
     if looks_like_this_kind_of_file(filename, TEXT_EXTENSIONS):
         return data.read_text
     if looks_like_this_kind_of_file(filename, TABLE_EXTENSIONS):
@@ -143,12 +146,10 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
     if ("IMAGE" in pointer) or ("QUB" in pointer):
-        # TODO: sloppy pt. 1. this will be problematic for
+        # TODO: sloppy pt. 1. this may be problematic for
         #  products with a 'secondary' fits file, etc.
-        if looks_like_this_kind_of_file(
-            data._target_path(pointer), FITS_EXTENSIONS
-        ):
-            return data.handle_fits_file
+        if image_lib_dispatch(pointer, data) is not None:
+            return image_lib_dispatch(pointer, data)
         return data.read_image
     # we don't present STRUCTURES separately from their tables;
     if "STRUCTURE" in pointer:
@@ -156,9 +157,23 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
     # TODO: sloppy pt. 2
-    if looks_like_this_kind_of_file(data.filename, FITS_EXTENSIONS):
-        return data.handle_fits_file
+    if image_lib_dispatch(pointer, data) is not None:
+        return image_lib_dispatch(pointer, data)
     return data.tbd
+
+
+def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
+    """
+    check file extensions to see if we want to toss a file to an external
+    library rather than using our internal raster handling. current cases are:
+    pillow for tiff, astropy for fits
+    """
+    object_filename = data._target_path(pointer)
+    if looks_like_this_kind_of_file(object_filename, FITS_EXTENSIONS):
+        return data.handle_fits_file
+    if looks_like_this_kind_of_file(object_filename, TIFF_EXTENSIONS):
+        return data.handle_tiff_file
+    return None
 
 
 def qube_image_properties(block):
