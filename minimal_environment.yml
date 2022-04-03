@@ -8,15 +8,12 @@ dependencies:
   - numpy
   - pandas
   - git
-  - jupyter
   - pip
-  - pvl
   - python-Levenshtein
   - astropy
   - multidict
-  - pillow
-  - matplotlib
   - requests
+  - pillow
   - more-itertools
   - pip:
       - pds4-tools
