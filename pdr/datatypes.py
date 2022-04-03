@@ -49,15 +49,16 @@ def sample_types(
         endian = determine_byte_order(sample_type)
         signed = "UNSIGNED" not in sample_type
         return integer_bytes(endian, signed, sample_bytes, for_numpy)
-    char = "V" if for_numpy is True else "s"
+    void = "V" if for_numpy is True else "s"
+    _float = "d" if sample_bytes == 8 else "f"
     return {
-        "IEEE_REAL": ">f",
-        "PC_REAL": "<d" if sample_bytes == 8 else "<f",
-        "FLOAT": ">f",
-        "REAL": ">f",
-        "MAC_REAL": ">f",
-        "SUN_REAL": ">f",
-        "MSB_BIT_STRING": f"{char}{sample_bytes}",
+        "IEEE_REAL": f">{_float}",
+        "PC_REAL": f"<{_float}",
+        "FLOAT":  f">{_float}",
+        "REAL":  f">{_float}",
+        "MAC_REAL":  f">{_float}",
+        "SUN_REAL":  f">{_float}",
+        "MSB_BIT_STRING": f"{void}{sample_bytes}",
         # "Character string representing a real number"
         "ASCII_REAL": f"S{sample_bytes}",
         # ASCII character string representing an integer
