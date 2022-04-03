@@ -50,8 +50,8 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
 
 def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
     if (
-            data.metaget("INSTRUMENT_ID") == "MARSIS"
-            and data.metaget("PRODUCT_TYPE") == "EDR"
+        data.metaget("INSTRUMENT_ID") == "MARSIS"
+        and data.metaget("PRODUCT_TYPE") == "EDR"
     ):
         return formats.mex_marsis.get_sample_type(
             sample_type, sample_bytes, for_numpy
@@ -72,19 +72,18 @@ def check_special_bit_column_case(data):
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
+        data.metaget("INSTRUMENT_ID") == "LROC"
+        and data.metaget("PRODUCT_TYPE") == "EDR"
+        and pointer == "IMAGE"
+    ):  # unsigned integers not specified as such
+        return True, formats.lroc.lroc_edr_image_loader(data, pointer)
+    if (
         ("JUNO JUPITER JIRAM REDUCED" in data.metaget("DATA_SET_NAME", ""))
         and (pointer == "IMAGE")
     ):
         return True, formats.juno.jiram_image_loader(data, pointer)
     if (
-        data.metaget("INSTITUTION_NAME") == "MALIN SPACE SCIENCE SYSTEMS"
-        and data.metaget("MISSION_NAME") == "MARS SCIENCE LABORATORY"
-        and pointer == "IMAGE"
-    ):
-        return True, formats.msl_mmm.image_loader(data, pointer)
-    if (
-        data.metaget("INSTRUMENT_ID") == "APXS"
-        and "TABLE" in pointer
+        data.metaget("INSTRUMENT_ID") == "APXS" and "TABLE" in pointer
     ):
         # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)

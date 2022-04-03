@@ -427,7 +427,7 @@ class Data:
             return dataset.read()
 
     def read_image(
-        self, object_name="IMAGE", userasterio=True, special_properties=None
+        self, object_name="IMAGE", userasterio=False, special_properties=None
     ):
         """
         Read an image file as a numpy array. Defaults to using `rasterio`,
@@ -970,32 +970,23 @@ class Data:
             record_bytes = block["RECORD_BYTES"]
         else:
             record_bytes = self.metaget("RECORD_BYTES")
+        start_byte = None
+        if isinstance(target, int) and (record_bytes is not None):
+            start_byte = record_bytes * max(target - 1, 0)
+        if isinstance(target, (list, tuple)):
+            if isinstance(target[-1], int) and (record_bytes is not None):
+                start_byte = record_bytes * max(target[-1] - 1, 0)
+            if isinstance(target[-1], dict):
+                start_byte = quantity_start_byte(target[-1], record_bytes)
+        elif isinstance(target, dict):
+            start_byte = quantity_start_byte(target, record_bytes)
+        if isinstance(target, str):
+            start_byte = 0
+        if start_byte is not None:
+            return start_byte
         if record_bytes is None:
             return self._count_from_bottom_of_file(target)
-        if isinstance(target, int):
-            return record_bytes * max(target - 1, 0)
-        if isinstance(target, (list, tuple)) and (record_bytes is not None):
-            if isinstance(target[-1], int):
-                return record_bytes * max(target[-1] - 1, 0)
-            if isinstance(target[-1], dict):
-                if target[-1]["units"] == "BYTES":
-                    # TODO: are there cases in which _these_ aren't 1-indexed?
-                    return target[-1]["value"] - 1
-                return record_bytes * max(target[-1]["value"] - 1, 0)
-            return 0
-        elif isinstance(target, (list, tuple)) and isinstance(
-            target[-1], dict
-        ):
-            if target[-1]["units"] == "BYTES":  # TODO: untangle this
-                return target[-1]["values"] - 1
-        elif isinstance(target, dict):
-            if target["units"] == "BYTES":
-                return target["value"] - 1
-            return record_bytes * max(target["value"] - 1, 0)
-        if isinstance(target, str):
-            return 0
-        else:
-            raise ValueError(f"Unknown data pointer format: {target}")
+        raise ValueError(f"Unknown data pointer format: {target}")
 
     def _get_target(self, object_name):
         target = self.metaget(object_name)
@@ -1123,3 +1114,11 @@ class Data:
     def __iter__(self):
         for key in self.keys():
             yield self[key]
+
+
+def quantity_start_byte(quantity_dict, record_bytes):
+    # TODO: are there cases in which _these_ aren't 1-indexed?
+    if quantity_dict["units"] == "BYTES":
+        return quantity_dict["value"] - 1
+    if record_bytes is not None:
+        return record_bytes * max(quantity_dict["value"] - 1, 0)
