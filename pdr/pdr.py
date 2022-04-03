@@ -46,6 +46,7 @@ from pdr.pd_utils import (
     reindex_df_values,
     booleanize_booleans,
 )
+from pdr.rasterio_utils import open_with_rasterio
 from pdr.utils import (
     check_cases,
     append_repeated_object,
@@ -64,7 +65,10 @@ def make_format_specifications(props):
 
 def process_single_band_image(f, props):
     _, numpy_dtype = make_format_specifications(props)
-    image = np.fromfile(f, dtype=numpy_dtype)
+    # TODO: added this 'count' parameter to handle a case in which the image
+    #  was not the last object in the file. We might want to add it to
+    #  the multiband loaders too.
+    image = np.fromfile(f, dtype=numpy_dtype, count=props['pixels'])
     image = image.reshape(
         (props["nrows"], props["ncols"] + props["prefix_cols"])
     )
@@ -403,47 +407,23 @@ class Data:
             return pvl.load(self.labelname)
         raise NotImplementedError(f"The {fmt} format is not yet implemented.")
 
-    def open_with_rasterio(self, object_name):
-        import rasterio
-        from rasterio.errors import NotGeoreferencedWarning, RasterioIOError
-
-        # we do not want rasterio to shout about data not being
-        # georeferenced; most rasters are not _supposed_ to be georeferenced.
-        warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
-        if object_name in self.file_mapping.keys():
-            fn = self.file_mapping[object_name]
-        else:
-            fn = check_cases(self.filename)
-        try:
-            dataset = rasterio.open(fn)
-        # some rasterio drivers can only make sense of a label, attached
-        # or otherwise
-        except RasterioIOError:
-            dataset = rasterio.open(self.file_mapping["LABEL"])
-        if len(dataset.indexes) == 1:
-            # Make 2D images actually 2D
-            return dataset.read()[0, :, :]
-        else:
-            return dataset.read()
-
     def read_image(
         self, object_name="IMAGE", userasterio=False, special_properties=None
     ):
         """
-        Read an image file as a numpy array. Defaults to using `rasterio`,
-        and then tries to parse the file directly.
+        Read an image object from this product and return it as a numpy array.
         """
         # TODO: Check for and apply BIT_MASK.
         object_name = depointerize(object_name)
-        if object_name == "IMAGE" or self.filename.lower().endswith("qub"):
-            # TODO: we could generalize this more by trying to find filenames.
-            if userasterio is True:
-                from rasterio.errors import RasterioIOError
-
-                try:
-                    return self.open_with_rasterio(object_name)
-                except RasterioIOError:
-                    pass
+        # optional hook for rasterio, for regression/comparison testing, etc.
+        if userasterio is True:
+            from pdr.rasterio_utils import open_with_rasterio
+            try:
+                return open_with_rasterio(
+                    self.file_mapping, self.filename, object_name
+                )
+            except IOError:
+                pass
         if special_properties is not None:
             props = special_properties
         else:
@@ -775,7 +755,7 @@ class Data:
             self._catch_return_default(self.metaget(pointer), ex)
 
     def handle_tiff_file(self, pointer: str, userasterio=False):
-        # optionally read with rasterio
+        # optional hook for rasterio usage for regression tests, etc.
         if userasterio:
             import rasterio
 

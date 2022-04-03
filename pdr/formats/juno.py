@@ -9,6 +9,4 @@ def jiram_image_loader(data, _):
     """
     props = generic_image_properties("IMAGE", data.metablock("IMAGE"), data)
     props['sample_type'] = '<f'
-    return partial(
-        data.read_image, userasterio=False, special_properties=props
-    )
+    return partial(data.read_image, special_properties=props)

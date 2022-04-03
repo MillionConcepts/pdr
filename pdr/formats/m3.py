@@ -34,7 +34,5 @@ def l0_image_loader(data: "Data") -> Callable:
     # Chandrayaan M3 L0 data  are in a deprecated ENVI format that uses
     # "line prefixes"
     return partial(
-        data.read_image,
-        userasterio=False,
-        special_properties=m3_l0_image_properties(data),
+        data.read_image, special_properties=m3_l0_image_properties(data)
     )
