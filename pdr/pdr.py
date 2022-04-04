@@ -46,7 +46,6 @@ from pdr.pd_utils import (
     reindex_df_values,
     booleanize_booleans,
 )
-from pdr.rasterio_utils import open_with_rasterio
 from pdr.utils import (
     check_cases,
     append_repeated_object,
