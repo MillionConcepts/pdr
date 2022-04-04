@@ -22,6 +22,7 @@ setuptools.setup(
     python_requires='>=3.8',
     install_requires=[
         "pds4_tools",
+        "multidict",
         "pandas",
         "numpy",
         "python-Levenshtein",
