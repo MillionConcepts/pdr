@@ -93,7 +93,7 @@ def read_pvl_label(filename):
 
 def parse_pvl_quantity_object(obj):
     return {
-        'value': literalize_pvl(re.search(r"(\d|\.)+", obj).group()),
+        'value': literalize_pvl(re.search(r"(\d|\.|-)+", obj).group()),
         'units': literalize_pvl(re.search(r"<(.*)>", obj).group(1))
     }
 
