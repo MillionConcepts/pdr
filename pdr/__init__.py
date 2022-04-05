@@ -1,6 +1,6 @@
 import os.path as _osp
 
-from pdr.pdr import Data
+from pdr.pdr import Data, Metadata
 from pdr.utils import check_cases
 
 __version__ = "0.5.0"

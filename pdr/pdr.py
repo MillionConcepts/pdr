@@ -173,6 +173,8 @@ def check_explicit_delimiter(block):
     return ","
 
 
+
+
 class Metadata(MultiDict):
     """
     MultiDict subclass intended primarily as a helper class for Data.
@@ -249,6 +251,8 @@ class Data:
             raise ValueError(
                 f"Can't load this product's metadata: {ex}, {type(ex)}"
             )
+        self._metaget_interior = _metaget_factory(self.metadata)
+        self._metablock_interior = _metablock_factory(self.metadata)
         self.pointers = filter_duplicate_pointers(
             get_pds3_pointers(self.metadata)
         )
@@ -768,9 +772,6 @@ class Data:
             return np.ascontiguousarray(np.rollaxis(image, 2))
         return image
 
-
-
-
     def _catch_return_default(self, pointer: str, exception: Exception):
         """
         if we are in debug mode, reraise an exception. otherwise, return
@@ -876,7 +877,10 @@ class Data:
         """
         pass
 
-    @cache
+    # note that 'directly' caching these methods can result in recursive
+    # reference chains behind the lru_cache API that can prevent the Data
+    # object from being garbage-collected, which is why they are hidden
+    # behind these wrappers. there may be a cleaner way to do this.
     def metaget(self, text, default=None, evaluate=True):
         """
         get the first value from this object's metadata whose key exactly
@@ -886,12 +890,8 @@ class Data:
         updating elements of self.metadata that have already been accessed
         will result in unpredictable behavior.
         """
-        value = dig_for_value(self.metadata, text)
-        if value is None:
-            return default
-        return self.metadata.formatter(value) if evaluate is True else value
+        return self._metaget_interior(text, default, evaluate)
 
-    @cache
     def metablock(self, text, evaluate=True):
         """
         get the first value from this object's metadata whose key exactly
@@ -903,10 +903,7 @@ class Data:
         updating elements of self.metadata that have already been accessed
         with this function will result in unpredictable behavior.
         """
-        value = dig_for_value(self.metadata, text)
-        if not isinstance(value, Mapping):
-            value = self.metadata
-        return self.metadata.formatter(value) if evaluate is True else value
+        return self._metablock_interior(text, evaluate)
 
     def _check_delimiter_stream(self, object_name):
         """
@@ -1119,3 +1116,29 @@ def quantity_start_byte(quantity_dict, record_bytes):
         return quantity_dict["value"] - 1
     if record_bytes is not None:
         return record_bytes * max(quantity_dict["value"] - 1, 0)
+
+
+def _metaget_factory(metadata, cached=True):
+
+    def metaget_interior(text, default, evaluate):
+        value = dig_for_value(metadata, text)
+        if value is not None:
+            return metadata.formatter(value) if evaluate is True else value
+        return default
+
+    if cached is True:
+        return cache(metaget_interior)
+    return metaget_interior
+
+
+def _metablock_factory(metadata, cached=True):
+
+    def metablock_interior(text, evaluate):
+        value = dig_for_value(metadata, text)
+        if not isinstance(value, Mapping):
+            value = metadata
+        return metadata.formatter(value) if evaluate is True else value
+
+    if cached is True:
+        return cache(metablock_interior)
+    return metablock_interior
