@@ -10,7 +10,6 @@ from typing import Mapping, Optional, Union, Sequence
 import Levenshtein as lev
 import numpy as np
 import pandas as pd
-import pds4_tools as pds4
 from dustgoggles.structures import dig_for_value
 from multidict import MultiDict
 from pandas.errors import ParserError
@@ -272,6 +271,8 @@ class Data:
         if str(self.labelname).endswith(".xml"):
             # Just use pds4_tools if this is a PDS4 file
             # TODO: do this better, including lazy
+            import pds4_tools as pds4
+
             data = pds4.read(self.labelname, quiet=True)
             for structure in data.structures:
                 setattr(self, structure.id.replace(" ", "_"), structure.data)
@@ -420,6 +421,8 @@ class Data:
         """
         if self.labelname is not None:  # a detached label exists
             if Path(self.labelname).suffix.lower() == ".xml":
+                import pds4_tools as pds4
+
                 metadata = pds4.read(
                     self.labelname, quiet=True
                 ).label.to_dict()
