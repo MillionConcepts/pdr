@@ -173,8 +173,6 @@ def check_explicit_delimiter(block):
     return ","
 
 
-
-
 class Metadata(MultiDict):
     """
     MultiDict subclass intended primarily as a helper class for Data.
@@ -192,10 +190,43 @@ class Metadata(MultiDict):
             raise NotImplementedError(
                 "Syntaxes other than PDS3-style PVL are not yet implemented."
             )
+        # note that 'directly' caching these methods can result in recursive
+        # reference chains behind the lru_cache API that can prevent the
+        # Metadata object from being garbage-collected, which is why they are
+        # hidden behind these wrappers. there may be a cleaner way to do this.
+        self._metaget_interior = _metaget_factory(self)
+        self._metablock_interior = _metablock_factory(self)
 
     def __getitem__(self, key):
         value = super().__getitem__(key)
         return self.formatter(value)
+
+
+    def metaget(self, text, default=None, evaluate=True):
+        """
+        get the first value from this object whose key exactly
+        matches `text`, even if it is nested inside a mapping. optionally
+        evaluate it using self.formatter.
+        WARNING: this function's return values are memoized for performance.
+        updating elements of self that have already been accessed
+        with this function will not update future calls to this function.
+        """
+        return self._metaget_interior(text, default, evaluate)
+
+    def metablock(self, text, evaluate=True):
+        """
+        get the first value from this object whose key exactly
+        matches `text`, even if it is nested inside a mapping, iff the value
+        itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
+        evaluate it using self.formatter. if there is no key matching
+        'text', will evaluate and return the metadata as a whole.
+        WARNING: this function's return values are memoized for performance.
+        updating elements of self that have already been accessed
+        with this function and then calling it again will result in
+        unpredictable behavior.
+        """
+        return self._metablock_interior(text, evaluate)
+
 
 
 def associate_label_file(
@@ -810,7 +841,7 @@ class Data:
         }
         self.specials[key] = specials
 
-    def get_scaled(self, key: str, inplace=False) -> np.ndarray:
+    def get_scaled(self, key: str, inplace=False, float_dtype=None) -> np.ndarray:
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.
@@ -842,10 +873,15 @@ class Data:
         # try to perform the operation in-place if requested, although if
         # we're casting to float, we can't
         # TODO: detect rollover cases, etc.
-        if (inplace is True) and not casting_to_float(obj, scale, offset):
+        if inplace is True and not casting_to_float(obj, scale, offset):
             obj *= scale
             obj += offset
             return obj
+        # if we're casting to float, permit specification of dtype
+        # prior to operation (float64 is numpy's default and often excessive)
+        if casting_to_float(obj, scale, offset):
+            if float_dtype is not None:
+                obj = obj.astype(float_dtype)
         return obj * scale + offset
 
     def _init_array_method(
@@ -877,10 +913,6 @@ class Data:
         """
         pass
 
-    # note that 'directly' caching these methods can result in recursive
-    # reference chains behind the lru_cache API that can prevent the Data
-    # object from being garbage-collected, which is why they are hidden
-    # behind these wrappers. there may be a cleaner way to do this.
     def metaget(self, text, default=None, evaluate=True):
         """
         get the first value from this object's metadata whose key exactly
@@ -888,9 +920,9 @@ class Data:
         using self.metadata.formatter.
         WARNING: this function's return values are memoized for performance.
         updating elements of self.metadata that have already been accessed
-        will result in unpredictable behavior.
+        with this function will not update future calls to this function.
         """
-        return self._metaget_interior(text, default, evaluate)
+        return self.metadata.metaget(text, default, evaluate)
 
     def metablock(self, text, evaluate=True):
         """
@@ -901,9 +933,9 @@ class Data:
         'text', will evaluate and return the metadata as a whole.
         WARNING: this function's return values are memoized for performance.
         updating elements of self.metadata that have already been accessed
-        with this function will result in unpredictable behavior.
+        with this function will not update future calls to this function.
         """
-        return self._metablock_interior(text, evaluate)
+        return self.metadata.metablock(text, evaluate)
 
     def _check_delimiter_stream(self, object_name):
         """
