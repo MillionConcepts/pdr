@@ -23,6 +23,7 @@ from pdr.datatypes import (
 from pdr.formats import (
     LABEL_EXTENSIONS,
     pointer_to_loader,
+    is_trivial,
     generic_image_properties,
     looks_like_this_kind_of_file,
     FITS_EXTENSIONS,
@@ -298,10 +299,9 @@ class Data:
     def _find_objects(self):
         for pointer in self.pointers:
             object_name = depointerize(pointer)
-            if pointer_to_loader(object_name, self) == self.trivial:
+            if is_trivial(object_name):
                 continue
             self.index.append(object_name)
-            self.file_mapping[object_name] = self._target_path(object_name)
 
     def _object_to_filename(self, object_name):
         is_special, special_target = check_special_fn(self, object_name)
@@ -367,16 +367,20 @@ class Data:
                     raise value_error
             return
         if self.file_mapping.get(object_name) is None:
-            warnings.warn(
-                f"{object_name} file {self._object_to_filename(object_name)} "
-                f"not found in path."
-            )
-            setattr(
-                self,
-                object_name,
-                self._catch_return_default(object_name, FileNotFoundError()),
-            )
-            return
+            target = self._target_path(object_name)
+            if target is None:
+                warnings.warn(
+                    f"{object_name} file {self._object_to_filename(object_name)} "
+                    f"not found in path."
+                )
+                setattr(
+                    self,
+                    object_name,
+                    self._catch_return_default(object_name, FileNotFoundError()),
+                )
+                return
+            else:
+                self.file_mapping[object_name] = target
         if (object_name in dir(self)) and (reload is False):
             raise ValueError(
                 f"{object_name} is already loaded; pass reload=True to "

@@ -113,6 +113,8 @@ def parse_pvl_quantity_statement(statement):
             output.append(parse_pvl_quantity_object(obj))
         else:
             output.append(literalize_pvl(obj))
+    if len(output) == 1:
+        return output[0]
     return tuple(output)
 
 

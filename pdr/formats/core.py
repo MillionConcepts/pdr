@@ -113,6 +113,16 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     return False, None
 
 
+def is_trivial(pointer) -> bool:
+    # TIFF tags / headers should always be parsed by the TIFF parser itself
+    if ("TIFF" in pointer) and ("IMAGE" not in pointer):
+        return True
+    # we don't present STRUCTURES separately from their tables;
+    if "STRUCTURE" in pointer:
+        return True
+    return False
+
+
 # noinspection PyTypeChecker
 def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     """
@@ -120,14 +130,13 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     name. checks for special cases and then falls back to generic loading
     methods of pdr.Data.
     """
+    if is_trivial(pointer) is True:
+        return data.trivial
     is_special, loader = check_special_case(pointer, data)
     if is_special is True:
         return loader
     if pointer == "LABEL":
         return data.read_label
-    # TIFF tags / headers should always be parsed by the TIFF parser itself
-    if ("TIFF" in pointer) and ("IMAGE" not in pointer):
-        return data.trivial
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
     if "LINE_PREFIX_TABLE" in pointer:
@@ -151,9 +160,6 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         if image_lib_dispatch(pointer, data) is not None:
             return image_lib_dispatch(pointer, data)
         return data.read_image
-    # we don't present STRUCTURES separately from their tables;
-    if "STRUCTURE" in pointer:
-        return data.trivial
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
     # TODO: sloppy pt. 2
