@@ -252,7 +252,7 @@ class Data:
         *,
         debug: bool = False,
         label_fn: Optional[Union[Path, str]] = None,
-        search_paths=(),
+        search_paths=()
     ):
         # list of the product's associated data objects
         self.index = []

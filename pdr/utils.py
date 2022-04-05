@@ -99,7 +99,6 @@ def append_repeated_object(
 
 
 def decompress(filename):
-    filename = check_cases(filename)
     if filename.lower().endswith(".gz"):
         f = gzip.open(filename, "rb")
     elif filename.lower().endswith(".bz2"):
