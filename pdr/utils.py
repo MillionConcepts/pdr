@@ -53,12 +53,16 @@ def stem_path(path: Path):
     return lowercase
 
 
-def check_cases(filename: Union[Path, str]) -> str:
+def check_cases(filename: Union[Path, str], skip: bool = False) -> str:
     """
     check for oddly-cased versions of a specified filename in local path --
     very common to have case mismatches between PDS3 labels and actual archive
     contents. similarly, check common compression extensions.
+
+    the skip argument makes the function simply return filename.
     """
+    if skip is True:
+        return str(filename)
     if Path(filename).exists():
         return str(filename)
     matches = tuple(

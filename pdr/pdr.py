@@ -10,6 +10,7 @@ from typing import Mapping, Optional, Union, Sequence
 import Levenshtein as lev
 import numpy as np
 import pandas as pd
+from cytoolz import countby, identity
 from dustgoggles.structures import dig_for_value
 from multidict import MultiDict
 from pandas.errors import ParserError
@@ -181,8 +182,10 @@ class Metadata(MultiDict):
     # TODO: implement PDS4-style XML (or XML alias object) formatting.
     """
 
-    def __init__(self, arg=(), syntax="pds3", **kwargs):
-        super().__init__(arg, **kwargs)
+    def __init__(self, mapping_params, syntax="pds3", **kwargs):
+        mapping, params = mapping_params
+        super().__init__(mapping, **kwargs)
+        self.fieldcounts = countby(identity, params)
         self.syntax = syntax
         if self.syntax == "pds3":
             self.formatter = literalize_pvl
@@ -201,39 +204,79 @@ class Metadata(MultiDict):
         value = super().__getitem__(key)
         return self.formatter(value)
 
-
-    def metaget(self, text, default=None, evaluate=True):
+    def metaget(self, text, default=None, evaluate=True, warn=True):
         """
         get the first value from this object whose key exactly
         matches `text`, even if it is nested inside a mapping. optionally
-        evaluate it using self.formatter.
+        evaluate it using self.formatter. raise a warning if there are
+        multiple keys matching this.
         WARNING: this function's return values are memoized for performance.
         updating elements of self that have already been accessed
         with this function will not update future calls to this function.
         """
+        count = self.fieldcounts.get(text)
+        if count is None:
+            return default
+        if (count > 1) and (warn is True):
+            warnings.warn(
+                f"More than one value for {text} exists in the metadata. "
+                f"Returning only the first.",
+                DuplicateKeyWarning
+            )
         return self._metaget_interior(text, default, evaluate)
 
-    def metablock(self, text, evaluate=True):
+    def metaget_(self, text, default=None, evaluate=True):
+        """quiet-by-default version of metaget"""
+        return self.metaget(text, default, evaluate, False)
+
+    def metaget_fuzzy(self, text, evaluate=True):
+        levratio = {
+            key: lev.ratio(key, text) for key in set(self.fieldcounts.keys())
+        }
+        if levratio == {}:
+            return None
+        peak = max(levratio.values())
+        for k, v in levratio.items():
+            if v == peak:
+                return self.metaget(k, None, evaluate)
+
+    def metablock(self, text, evaluate=True, warn=True):
         """
         get the first value from this object whose key exactly
         matches `text`, even if it is nested inside a mapping, iff the value
         itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
-        evaluate it using self.formatter. if there is no key matching
-        'text', will evaluate and return the metadata as a whole.
+        evaluate it using self.formatter. raise a warning if there are
+        multiple keys matching this.1
+        if there is no key matching 'text', will evaluate and return the
+        metadata as a whole.
         WARNING: this function's return values are memoized for performance.
         updating elements of self that have already been accessed
         with this function and then calling it again will result in
         unpredictable behavior.
         """
+        count = self.fieldcounts.get(text)
+        if count is None:
+            return None
+        if (count > 1) and (warn is True):
+            warnings.warn(
+                f"More than one block named {text} exists in the metadata. "
+                f"Returning only the first.",
+                DuplicateKeyWarning
+            )
         return self._metablock_interior(text, evaluate)
 
+    def metablock_(self, text, evaluate=True):
+        """quiet-by-default version of metablock"""
+        return self.metablock(text, evaluate, False)
 
 
 def associate_label_file(
-    data_filename: str, label_filename: Optional[str] = None
+    data_filename: str,
+    label_filename: Optional[str] = None,
+    skip_check: bool = False
 ) -> Optional[str]:
     if label_filename is not None:
-        return check_cases(Path(label_filename).absolute())
+        return check_cases(Path(label_filename).absolute(), skip_check)
     elif data_filename.endswith(LABEL_EXTENSIONS):
         return check_cases(data_filename)
     for lext in LABEL_EXTENSIONS:
@@ -251,14 +294,15 @@ class Data:
         *,
         debug: bool = False,
         label_fn: Optional[Union[Path, str]] = None,
-        search_paths=()
+        search_paths=(),
+        skip_existence_check=False
     ):
         # list of the product's associated data objects
         self.index = []
         # do we raise an exception rather than a warning if loading a data
         # object fails?
         self.debug = debug
-        self.filename = check_cases(Path(fn).absolute())
+        self.filename = check_cases(Path(fn).absolute(), skip_existence_check)
         # mappings from data objects to local paths
         self.file_mapping = {}
         # known special constants per data object
@@ -267,7 +311,9 @@ class Data:
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + list(search_paths)
         # Attempt to identify and assign a label file
-        self.labelname = associate_label_file(self.filename, label_fn)
+        self.labelname = associate_label_file(
+            self.filename, label_fn, skip_existence_check
+        )
         if str(self.labelname).endswith(".xml"):
             # Just use pds4_tools if this is a PDS4 file
             # TODO: do this better, including lazy
@@ -289,7 +335,10 @@ class Data:
         self.pointers = filter_duplicate_pointers(
             get_pds3_pointers(self.metadata)
         )
-        self._find_objects()
+        # this is a weird edge case where someone has opened a format file
+        # or something like that, but there's no reason to not allow it
+        if self.pointers is not None:
+            self._find_objects()
 
     def _init_search_paths(self):
         for target in ("labelname", "filename"):
@@ -308,7 +357,7 @@ class Data:
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
             return self.get_absolute_path(special_target)
-        target = self.metaget(pointerize(object_name))
+        target = self.metaget_(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -371,28 +420,29 @@ class Data:
             target = self._target_path(object_name)
             if target is None:
                 warnings.warn(
-                    f"{object_name} file {self._object_to_filename(object_name)} "
+                    f"{object_name} file "
+                    f"{self._object_to_filename(object_name)} "
                     f"not found in path."
                 )
                 setattr(
                     self,
                     object_name,
-                    self._catch_return_default(object_name, FileNotFoundError()),
+                    self._catch_return_default(
+                        object_name, FileNotFoundError()
+                    ),
                 )
                 return
-            else:
-                self.file_mapping[object_name] = target
+            self.file_mapping[object_name] = target
         if (object_name in dir(self)) and (reload is False):
             raise ValueError(
                 f"{object_name} is already loaded; pass reload=True to "
                 f"force reload."
             )
         try:
-            setattr(
-                self,
-                object_name,
-                self.load_from_pointer(object_name, **load_kwargs),
-            )
+            obj = self.load_from_pointer(object_name, **load_kwargs)
+            if obj is None:  # trivially loaded
+                return
+            setattr(self, object_name, obj)
             return
         except KeyboardInterrupt:
             raise
@@ -468,7 +518,7 @@ class Data:
         if special_properties is not None:
             props = special_properties
         else:
-            block = self.metablock(object_name)
+            block = self.metablock_(object_name)
             if block is None:
                 return None  # not much we can do with this!
             props = generic_image_properties(object_name, block, self)
@@ -513,7 +563,7 @@ class Data:
         and throw an error if it's not there.
         TODO, maybe: Grab external format files as needed.
         """
-        block = self.metablock(depointerize(pointer))
+        block = self.metablock_(depointerize(pointer))
         fields = self.read_format_block(block, pointer)
         # give columns unique names so that none of our table handling explodes
         fmtdef = pd.DataFrame.from_records(fields)
@@ -602,7 +652,7 @@ class Data:
         """
         # TODO, maybe: add better delimiter detection & dispatch
         start, length, as_rows = self.table_position(object_name)
-        sep = check_explicit_delimiter(self.metablock(object_name))
+        sep = check_explicit_delimiter(self.metablock_(object_name))
         if as_rows is False:
             bytes_buffer = head_file(fn, nbytes=length, offset=start)
             string_buffer = StringIO(bytes_buffer.read().decode())
@@ -625,7 +675,7 @@ class Data:
                     np.loadtxt(
                         fn,
                         delimiter=",",
-                        skiprows=self.metaget("LABEL_RECORDS"),
+                        skiprows=self.metaget_("LABEL_RECORDS"),
                     )
                     .copy()
                     .newbyteorder("=")
@@ -659,7 +709,7 @@ class Data:
         Read a table. Parse the label format definition and then decide
         whether to parse it as text or binary.
         """
-        target = self.metaget(pointerize(pointer))
+        target = self.metaget_(pointerize(pointer))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -691,7 +741,7 @@ class Data:
 
     def read_histogram(self, object_name):
         # TODO: build this out for text examples
-        block = self.metablock(object_name)
+        block = self.metablock_(object_name)
         if block.get("INTERCHANGE_FORMAT") != "BINARY":
             raise NotImplementedError(
                 "ASCII histograms are not currently supported."
@@ -714,7 +764,7 @@ class Data:
         )
 
     def _interpret_as_binary(self, fmtdef, dt, fn, pointer):
-        count = self.metablock(pointer).get("ROWS")
+        count = self.metablock_(pointer).get("ROWS")
         count = count if count is not None else 1
         array = np.fromfile(
             fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
@@ -734,9 +784,9 @@ class Data:
         return table
 
     def read_text(self, object_name):
-        target = self.metaget(pointerize(object_name))
+        target = self.metaget_(pointerize(object_name))
         local_path = self.get_absolute_path(
-            self.metaget(pointerize(object_name))
+            self.metaget_(pointerize(object_name))
         )
         try:
             return open(check_cases(local_path)).read()
@@ -757,7 +807,7 @@ class Data:
 
     def table_position(self, object_name):
         target = self._get_target(object_name)
-        block = self.metablock(object_name)
+        block = self.metablock_(object_name)
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
             start = target[1] - 1
@@ -768,9 +818,9 @@ class Data:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
-                self.metaget("RECORD_BYTES") is not None
+                    self.metaget_("RECORD_BYTES") is not None
             ):
-                length = block["RECORDS"] * self.metaget("RECORD_BYTES")
+                length = block["RECORDS"] * self.metaget_("RECORD_BYTES")
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
@@ -793,7 +843,7 @@ class Data:
             # TODO: assuming this does not need to be specified as f-string
             #  (like in read_header/tbd) -- maybe! must determine and specify
             #  what cases this exception was needed to handle
-            self._catch_return_default(self.metaget(pointer), ex)
+            self._catch_return_default(self.metaget_(pointer), ex)
 
     def handle_tiff_file(self, pointer: str, userasterio=False):
         # optional hook for rasterio usage for regression tests, etc.
@@ -817,7 +867,7 @@ class Data:
         """
         if self.debug is True:
             raise exception
-        return self.metaget(pointer)
+        return self.metaget_(pointer)
 
     def find_special_constants(self, key):
         """
@@ -902,7 +952,7 @@ class Data:
         obj = self[object_name]
         if not isinstance(obj, np.ndarray):
             raise TypeError("this method is only applicable to arrays.")
-        return obj, self.metablock(object_name)
+        return obj, self.metablock_(object_name)
 
     def tbd(self, pointer=""):
         """
@@ -911,7 +961,7 @@ class Data:
         passes just the value of the pointer.
         """
         warnings.warn(f"The {pointer} pointer is not yet fully supported.")
-        return self.metaget(pointer)
+        return self.metaget_(pointer)
 
     def trivial(self, pointer=""):
         """
@@ -920,7 +970,7 @@ class Data:
         """
         pass
 
-    def metaget(self, text, default=None, evaluate=True):
+    def metaget(self, text, default=None, evaluate=True, warn=True):
         """
         get the first value from this object's metadata whose key exactly
         matches `text`, even if it is nested inside a mapping. evaluate it
@@ -929,9 +979,13 @@ class Data:
         updating elements of self.metadata that have already been accessed
         with this function will not update future calls to this function.
         """
-        return self.metadata.metaget(text, default, evaluate)
+        return self.metadata.metaget(text, default, evaluate, warn)
 
-    def metablock(self, text, evaluate=True):
+    def metaget_(self, text, default=None, evaluate=True):
+        """quiet-by-default version of metaget"""
+        return self.metadata.metaget(text, default, evaluate, False)
+
+    def metablock(self, text, evaluate=True, warn=True):
         """
         get the first value from this object's metadata whose key exactly
         matches `text`, even if it is nested inside a mapping, iff the value
@@ -942,7 +996,11 @@ class Data:
         updating elements of self.metadata that have already been accessed
         with this function will not update future calls to this function.
         """
-        return self.metadata.metablock(text, evaluate)
+        return self.metadata.metablock(text, evaluate, warn)
+
+    def metablock_(self, text, evaluate=True):
+        """quiet-by-default version of metablock"""
+        return self.metadata.metablock(text, evaluate, False)
 
     def _check_delimiter_stream(self, object_name):
         """
@@ -961,10 +1019,10 @@ class Data:
                     return False
         # TODO: not sure this is a good assumption -- it is a bad assumption
         #  for the CHEMIN RDRs, but those labels are just wrong
-        if self.metaget("RECORD_BYTES") is not None:
+        if self.metaget_("RECORD_BYTES") is not None:
             return False
         # TODO: not sure this is a good assumption
-        if not self.metaget("RECORD_TYPE") == "STREAM":
+        if not self.metaget_("RECORD_TYPE") == "STREAM":
             return False
         textish = map(
             partial(contains, object_name), ("ASCII", "SPREADSHEET", "HEADER")
@@ -976,8 +1034,8 @@ class Data:
     def _count_from_bottom_of_file(self, target):
         if isinstance(target, int):
             # Counts up from the bottom of the file
-            rows = self.metaget("ROWS")
-            row_bytes = self.metaget("ROW_BYTES")
+            rows = self.metaget_("ROWS")
+            row_bytes = self.metaget_("ROW_BYTES")
             tab_size = rows * row_bytes
             # TODO: should be the filename of the target
             file_size = os.path.getsize(self.filename)
@@ -998,11 +1056,11 @@ class Data:
         if is_special:
             return special_byte
         target = self._get_target(object_name)
-        block = self.metablock(object_name)
+        block = self.metablock_(object_name)
         if "RECORD_BYTES" in block.keys():
             record_bytes = block["RECORD_BYTES"]
         else:
-            record_bytes = self.metaget("RECORD_BYTES")
+            record_bytes = self.metaget_("RECORD_BYTES")
         start_byte = None
         if isinstance(target, int) and (record_bytes is not None):
             start_byte = record_bytes * max(target - 1, 0)
@@ -1022,9 +1080,9 @@ class Data:
         raise ValueError(f"Unknown data pointer format: {target}")
 
     def _get_target(self, object_name):
-        target = self.metaget(object_name)
+        target = self.metaget_(object_name)
         if isinstance(target, Mapping):
-            target = self.metaget(pointerize(object_name))
+            target = self.metaget_(pointerize(object_name))
         return target
 
     # TODO: have this iterate through scopes
@@ -1160,7 +1218,7 @@ def quantity_start_byte(quantity_dict, record_bytes):
 def _metaget_factory(metadata, cached=True):
 
     def metaget_interior(text, default, evaluate):
-        value = dig_for_value(metadata, text)
+        value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
         if value is not None:
             return metadata.formatter(value) if evaluate is True else value
         return default
@@ -1173,7 +1231,7 @@ def _metaget_factory(metadata, cached=True):
 def _metablock_factory(metadata, cached=True):
 
     def metablock_interior(text, evaluate):
-        value = dig_for_value(metadata, text)
+        value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
         if not isinstance(value, Mapping):
             value = metadata
         return metadata.formatter(value) if evaluate is True else value
@@ -1181,3 +1239,7 @@ def _metablock_factory(metadata, cached=True):
     if cached is True:
         return cache(metablock_interior)
     return metablock_interior
+
+
+class DuplicateKeyWarning(UserWarning):
+    pass

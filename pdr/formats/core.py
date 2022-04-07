@@ -46,15 +46,15 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
 def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
-    if data.metaget("INSTRUMENT_ID", "") == "CHEMIN":
+    if data.metaget_("INSTRUMENT_ID", "") == "CHEMIN":
         return formats.msl_cmn.get_offset(data, pointer)
     return False, None
 
 
 def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
     if (
-        data.metaget("INSTRUMENT_ID") == "MARSIS"
-        and data.metaget("PRODUCT_TYPE") == "EDR"
+        data.metaget_("INSTRUMENT_ID") == "MARSIS"
+        and data.metaget_("PRODUCT_TYPE") == "EDR"
     ):
         return formats.mex_marsis.get_sample_type(
             sample_type, sample_bytes, for_numpy
@@ -63,7 +63,7 @@ def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
 
 
 def check_special_bit_column_case(data):
-    instrument = data.metaget("INSTRUMENT_NAME")
+    instrument = data.metaget_("INSTRUMENT_NAME")
     if instrument in (
         "ALPHA PARTICLE X-RAYSPECTROMETER",
         "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT",
@@ -75,38 +75,38 @@ def check_special_bit_column_case(data):
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
-        data.metaget("INSTRUMENT_ID", "") == "LROC"
-        and data.metaget("PRODUCT_TYPE", "") == "EDR"
+        data.metaget_("INSTRUMENT_ID", "") == "LROC"
+        and data.metaget_("PRODUCT_TYPE", "") == "EDR"
         and pointer == "IMAGE"
     ):  # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_image_loader(data, pointer)
     if (
-        ("JUNO JUPITER JIRAM REDUCED" in data.metaget("DATA_SET_NAME", ""))
+        ("JUNO JUPITER JIRAM REDUCED" in data.metaget_("DATA_SET_NAME", ""))
         and (pointer == "IMAGE")
     ):
         return True, formats.juno.jiram_image_loader(data, pointer)
     if (
-        data.metaget("INSTRUMENT_ID") == "APXS" and "TABLE" in pointer
+        data.metaget_("INSTRUMENT_ID") == "APXS" and "TABLE" in pointer
     ):
         # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)
     if (
-        data.metaget("INSTRUMENT_ID", "") == "CHEMIN"
+        data.metaget_("INSTRUMENT_ID", "") == "CHEMIN"
         and (("HEADER" in pointer) or ("SPREADSHEET" in pointer))
     ):
         # mangled object names + positions
         return True, formats.msl_cmn.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
-    if data.metaget("INSTRUMENT_ID", "") == "M3" and pointer == "L0_IMAGE":
+    if data.metaget_("INSTRUMENT_ID", "") == "M3" and pointer == "L0_IMAGE":
         return True, formats.m3.l0_image_loader(data)
     # difficult table formats that are handled well by astropy.io.ascii
     if (
-        data.metaget("INSTRUMENT_NAME", "") == "TRIAXIAL FLUXGATE MAGNETOMETER"
+        data.metaget_("INSTRUMENT_NAME", "") == "TRIAXIAL FLUXGATE MAGNETOMETER"
         and pointer == "TABLE"
     ):
         return True, formats.galileo.galileo_table_loader(data)
     if (
-        data.metaget("INSTRUMENT_NAME", "") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
+        data.metaget_("INSTRUMENT_NAME", "") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
         and pointer == "IMAGE_REPLY_TABLE"
     ):
         return True, formats.msl_ccam.image_reply_table_loader(data)
@@ -235,7 +235,7 @@ def generic_image_properties(object_name, block, data) -> dict:
 
 def special_image_constants(data):
     consts = {}
-    if data.metaget("INSTRUMENT_ID") == "CRISM":
+    if data.metaget_("INSTRUMENT_ID") == "CRISM":
         consts["NULL"] = 65535
     return consts
 
@@ -245,10 +245,10 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     special-case handling for labels with nonstandard filename specifications
     """
     if (
-        ("HIRISE" in data.metaget("DATA_SET_ID", ""))
+        ("HIRISE" in data.metaget_("DATA_SET_ID", ""))
         and (object_name == "IMAGE")
-        and ("-EDR-" not in data.metaget("DATA_SET_ID", ""))
-        and ("-EDR-" not in data.metaget("DATA_SET_ID", ""))
+        and ("-EDR-" not in data.metaget_("DATA_SET_ID", ""))
+        and ("-EDR-" not in data.metaget_("DATA_SET_ID", ""))
     ):
         return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']
     return False, None

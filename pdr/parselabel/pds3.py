@@ -5,9 +5,9 @@ import re
 from operator import eq
 from typing import Iterable, Mapping, Optional
 
-from cytoolz import groupby
+from cytoolz import groupby, identity
 from dustgoggles.func import constant
-from dustgoggles.structures import dig_for
+from dustgoggles.structures import dig_for_keys
 from more_itertools import split_before
 from multidict import MultiDict
 
@@ -57,7 +57,7 @@ def chunk_statements(trimmed_lines: Iterable[str]):
 
 class BlockParser:
     def __init__(self):
-        self.names, self.aggregations = [], [MultiDict()]
+        self.names, self.aggregations, self.parameters = [], [MultiDict()], []
 
     def _step_out(self):
         self.add_statement(self.names.pop(), self.aggregations.pop())
@@ -68,6 +68,7 @@ class BlockParser:
 
     def add_statement(self, parameter, value):
         self.aggregations[-1].add(parameter, value)
+        self.parameters.append(parameter)
 
     def parse_statements(self, statements):
         for parameter, value in statements:
@@ -78,7 +79,7 @@ class BlockParser:
                 self._step_out()
             else:
                 self.add_statement(parameter, value)
-        return self.aggregations[0]
+        return self.aggregations[0], self.parameters
 
 
 def read_pvl_label(filename):
@@ -171,7 +172,9 @@ def get_pds3_pointers(
     attempt to get all PDS3 "pointers" -- PVL parameters starting with "^" --
     from a MultiDict generated from a PDS3 label
     """
-    return dig_for(label, "^", lambda k, v: k.startswith(v))
+    return dig_for_keys(
+        label, lambda k, _: k.startswith("^"), mtypes=(dict, MultiDict)
+    )
 
 
 def pointerize(string: str) -> str:
@@ -185,8 +188,10 @@ def depointerize(string: str) -> str:
 
 
 def filter_duplicate_pointers(pointers):
+    if pointers is None:
+        return None
     # noinspection PyTypeChecker
-    pt_groups = groupby(lambda pt: pt[0], pointers)
+    pt_groups = groupby(identity, pointers)
     filtered_pointers = []
     for pointer, group in pt_groups.items():
         if (
@@ -200,5 +205,6 @@ def filter_duplicate_pointers(pointers):
                 f"implemented, ignoring"
             )
         else:
-            filtered_pointers.append(group[0][0])
+            filtered_pointers.append(group[0])
     return filtered_pointers
+
