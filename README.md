@@ -18,7 +18,7 @@ conda env create -f environment.yml
 conda activate pdr 
 pip install -e .
 ```
-The minimum supported version of Python is _3.8_.
+The minimum supported version of Python is _3.9_.
 
 ### Usage
 
@@ -47,9 +47,10 @@ array([[21, 21, 20, ..., 19, 19, 20],
        [25, 25, 25, ..., 27, 26, 26],
        [24, 25, 25, ..., 26, 26, 26]], dtype=int16)
 ```
-You can usually find the primary metadata as a *pvl* object in 'LABEL':
+The primary metadata is stored within the `pdr.Data` object as a `pdr.Metadata` object. The values within the 
+metadata can be accessed using `dict`-style \[\] index notation. For example:
 ```
->>> data['LABEL']['INSTRUMENT_HOST_NAME']
+>>> data.metadata['INSTRUMENT_HOST_NAME']
 'MARS SCIENCE LABORATORY'
 ```
 Some PDS products (like this one) contain multiple data objects. You can look
@@ -75,7 +76,8 @@ at all of the objects associated with a product with `.keys()`:
 In general:
 + Image data are presented as `numpy` arrays.
 + Table data are presented as `pandas` DataFrames.
-+ Header and label data are presented as `pvl` objects.
++ Header and label data are presented as plain text objects.
++ Metadata is read from the label and presented as a pdr.Metadata class (behaves as a `dict`)
 + Other data are presented as simple python types (`str`, `tuple`, `dict`).
 + Data loaded from PDS4 .xml labels [are presented as whatever object
   `pds4-tools` returns.](https://pdssbn.astro.umd.edu/tools/pds4_tools_docs/current/) We plan to normalize this behavior in the future.
@@ -132,15 +134,15 @@ with underscores in order to make them usable as attributes.
 consistency. We plan to deprecate this behavior in the future.
 
 #### Lazy loading
-If you call `pdr.Data.read` on a data file rather than a label file, or if
-you pass it the `lazy=True` argument, it will only load data objects from the 
-individual file you passed -- and it will load no data objects, simply the label, 
-if you pass a detached label file with `lazy=True`. You can load other objects 
-later by using the `load` method, like `data.load("IMAGE")`. You might want to do this for a
-variety of reasons, but one common use case is loading products that have
-multiple large files (like Chandrayaan-1 M3 L1B and L2 products). It is likely 
-that in many cases you will only want to reference one or two of those files, 
-and not waste time and memory loading all of them on initialization.
+`pdr.Data.read` has lazy loading as default and will only load data objects from 
+a file when that object is referenced. For example, calling data.IMAGE will load 
+the IMAGE object at that time. You can alternatively load objects by using the 
+`load` method, like `data.load("IMAGE")` with which you can also pass the `all` 
+to load all data objects, like `data.load('all')`. This is useful for a variety 
+of reasons, but one common use case is loading products that have multiple large 
+files (like Chandrayaan-1 M3 L1B and L2 products). It is likely that in many cases 
+you will only want to reference one or two of those files, and not waste time and 
+memory loading all of them on initialization.
 
 #### Missing files
 If a file referenced by a label is missing, *pdr* will throw warnings and
