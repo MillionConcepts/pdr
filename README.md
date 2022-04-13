@@ -20,6 +20,17 @@ pip install -e .
 ```
 The minimum supported version of Python is _3.9_.
 
+Using environment.yml during installation will install all dependencies
+(both required and optional) for pdr. If you'd prefer to forego the optional
+dependencies please use environment.yml. Optional dependencies and their
+added functions are listed below:
+
+  - pvl: allows Data.load("LABEL", as_pvl=True) which will load your label as a pvl object instead of plain text
+  - astropy: allows reading of .fits files
+  - jupyter: allows usage of the Example Jupyter Notebook (and other jupyter notebooks you create)
+  - pillow: allows reading of .tif files
+  - matplotlib: allows usage of `save_sparklines`, an experimental browse function
+
 ### Usage
 
 (You can check out our example Notebook on Binder for a 
@@ -100,6 +111,11 @@ values and apply any scaling and offset specified in the label. Use it like:
 validation of these outputs, so **do not trust that they are ready for
 analysis** without further processing or validation. Contributions towards making this
 more effective for specific data product types are very much welcomed.
+
+If you'd like to visualize the outputs that this creates the `dump_browse`
+feature creates a separate browse product (.jpg, .txt., or .csv) in the folder
+you execute from. Use it like: `data.dump_browse()`. This uses the get_scaled
+feature for images and will also output browse products for tables and labels.
 
 #### PDS4 products
 All valid PDS4 products should be fully supported. `pdr.Data` simply wraps
