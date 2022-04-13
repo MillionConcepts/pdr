@@ -45,14 +45,14 @@ of their metadata appear to match other sources.
   - CRISM speclib and typespec tables
   - SHARAD EDR and RDR
   - SHARAD rgram and geom files
-  - RSS RSR, RSDMAP, SHADR, and SHBDR
+  - RSS ODF, RSR, RSDMAP, SHADR, and SHBDR
 - MSL
   - Hazcam EDR and RDR (including ops parameter maps)
   - Navcam EDR and RDR (including ops parameter maps)
   - Mastcam, MAHLI, and MARDI RDRs
   - CCAM LIBS EDR, L1B, and L2; CCAM RMI EDR and RDR
   - APXS EDR and RDR (*note: the EDR checksum suffix is not supported*)
-  - Chemin L1B and L2 RDRs, and EDRs other than the Film EDR
+  - Chemin L1B and L2 RDRs, and EDRs
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*) 
@@ -77,12 +77,12 @@ of their metadata appear to match other sources.
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
   - Juno Waves reduced tables
+  - JADE EDRs and RDRs
 - Galileo magnetometer tables
 
 ## Known Unsupported Datasets
 - MRO
   - HiRISE EDRs (IMAGEs from these may open, but we suspect not correctly; other packed binary objects may not)
-  - RSS .odf (support planned)
   - RSS .tnf (support not planned)
 - MSL
   - Malin Space Science Systems (MSSS) Camera EDRs: "Raw" (EDR) data from the
@@ -92,8 +92,6 @@ of their metadata appear to match other sources.
     uncompressed raster .IMG files exists in the archive. We plan to either include / compile this code with the installation of this package or (much better) to port `dat2img` to pure
     Python. Help is welcomed with either of these efforts! The MSL
     "calibrated" (RDR) files for these cameras are not compressed in this way.
-  - Chemin Film EDR (support planned)
 - Juno
-  - JADE (support planned)
   - UVS (support planned)
   - Waves EDR (support not planned)

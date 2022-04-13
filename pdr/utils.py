@@ -1,216 +1,14 @@
-"""assorted utility functions"""
-import os
-import re
+"""generic i/o, parsing, and functional utilities."""
+import bz2
+import gzip
 import struct
-import sys
 import warnings
+from io import BytesIO
 from itertools import chain
 from numbers import Number
 from pathlib import Path
-from typing import (
-    Optional,
-    Collection,
-    Union,
-    Hashable,
-    Sequence,
-    Mapping,
-    MutableSequence,
-    IO
-)
-from dustgoggles.structures import dig_for
-import numpy as np
-import pandas as pd
-import pandas.api.types
-import pvl
-import pvl.decoder
-import pvl.grammar
-
-"""
-The following three functions are substantially derived from code in
-https://github.com/astroML/astroML and so carry the following license:
-
-Copyright (c) 2012-2013, Jacob Vanderplas All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-from urllib.request import urlopen
-from urllib.error import HTTPError
-from io import BytesIO
-
-
-def url_content_length(fhandle):
-    length = dict(fhandle.info())["Content-Length"]
-    return int(length.strip())
-
-
-def bytes_to_string(nbytes):
-    if nbytes < 1024:
-        return "%ib" % nbytes
-    nbytes /= 1024.0
-    if nbytes < 1024:
-        return "%.1fkb" % nbytes
-    nbytes /= 1024.0
-    if nbytes < 1024:
-        return "%.2fMb" % nbytes
-    nbytes /= 1024.0
-    return "%.1fGb" % nbytes
-
-
-def download_with_progress_bar(data_url, file_path, force=False, quiet=False):
-    if os.path.exists(file_path) and not force:
-        if not quiet:
-            print("{fn} already exists.".format(fn=file_path.split("/")[-1]))
-            print("\t Use `force` to redownload.")
-        return 0
-    if not os.path.exists(os.path.dirname(file_path)):
-        os.makedirs(os.path.dirname(file_path))
-    num_units = 40
-    try:
-        fhandle = urlopen(data_url)
-    except HTTPError as e:
-        # print("***", e)
-        # print("\t", data_url)
-        return 1
-    content_length = url_content_length(fhandle)
-    chunk_size = content_length // num_units
-    print(
-        "Downloading -from- {url}\n\t-to- {cal_dir}".format(
-            url=data_url, cal_dir=os.path.dirname(file_path)
-        )
-    )
-    nchunks = 0
-    buf = BytesIO()
-    content_length_str = bytes_to_string(content_length)
-    while True:
-        next_chunk = fhandle.read(chunk_size)
-        nchunks += 1
-        if next_chunk:
-            buf.write(next_chunk)
-            s = (
-                "["
-                + nchunks * "="
-                + (num_units - 1 - nchunks) * " "
-                + "]  %s / %s   \r"
-                % (bytes_to_string(buf.tell()), content_length_str)
-            )
-        else:
-            sys.stdout.write("\n")
-            break
-
-        sys.stdout.write(s)
-        sys.stdout.flush()
-
-    buf.seek(0)
-    open(file_path, "wb").write(buf.getvalue())
-    return 0
-
-
-###
-# END code derived from astroML
-###
-
-
-def url_to_path(url, data_dir="."):
-    try:
-        dirstart = url.split("://")[1].find("/")
-        file_path = data_dir + url.split("://")[1][dirstart:]
-        if file_path.split("/")[1] != "data":
-            file_path = file_path.replace(
-                file_path.split("/")[1], "data/" + file_path.split("/")[1]
-            )
-            print(file_path)
-    except AttributeError:  # for url==np.nan
-        file_path = ""
-    return file_path
-
-
-def download_data_and_label(
-    url: str, data_dir: str = ".", lbl_url: Optional[str] = None
-) -> tuple[str, str]:
-    """
-    Download an observational data file from the PDS.
-    Check for a detached label file and also download that, if it exists.
-    Optionally specify known url of the label with lbl_url.
-    returns local paths to downloaded data and label files.
-    """
-    _ = download_with_progress_bar(
-        url, url_to_path(url, data_dir=data_dir), quiet=True
-    )
-    try:
-        _ = download_with_progress_bar(
-            lbl_url, url_to_path(lbl_url, data_dir=data_dir), quiet=True
-        )
-    except (AttributeError, FileNotFoundError):
-        # Attempt to guess the label URL (if there is a label)
-        for ext in [
-            ".LBL",
-            ".lbl",
-            ".xml",
-            ".XML",
-            ".HDR",
-        ]:  # HDR? ENVI headers
-            lbl_ = url[: url.rfind(".")] + ext
-            if not download_with_progress_bar(
-                lbl_, url_to_path(lbl_, data_dir=data_dir), quiet=True
-            ):
-                lbl_url = lbl_
-    return url_to_path(url, data_dir=data_dir), url_to_path(
-        lbl_url, data_dir=data_dir
-    )
-
-
-def download_test_data(
-    index: int, data_dir: str = ".", refdatafile: str = "pdr/tests/refdata.csv"
-) -> tuple[str, str]:
-    refdata = pd.read_csv(f"{refdatafile}", comment="#")
-    return download_data_and_label(
-        refdata["url"][index],
-        lbl_url=refdata["lbl"][index],
-        data_dir=data_dir,
-    )
-
-
-# TODO: excessively ugly
-def get_pds3_pointers(
-    label: Optional[pvl.collections.OrderedMultiDict] = None,
-    local_path: Optional[str] = None,
-) -> tuple[pvl.collections.OrderedMultiDict]:
-    """
-    attempt to get all PDS3 "pointers" -- PVL objects starting with "^" --
-    from a passed label or path to label file.
-    """
-    if label is None:
-        label = pvl.load(local_path)
-    # TODO: inadequate? see issue pdr#15 -- did I have a resolution for this
-    #  somewhere? do we really need to do a full recursion step...? gross
-    return dig_for(label, "^", lambda k, v: k.startswith(v))
-
-
-def pointerize(string: str) -> str:
-    """make a string start with ^ if it didn't already"""
-    return string if string.startswith("^") else "^" + string
-
-
-def depointerize(string: str) -> str:
-    """prevent a string from starting with ^"""
-    return string[1:] if string.startswith("^") else string
-
-
-# TODO: replace this with regularizing case of filenames upstream per Michael
-#  Aye's recommendation
-def in_both_cases(strings: Collection[str]) -> tuple[str]:
-    """
-    given a collection of strings, return a tuple containing each string in
-    that collection in both upper and lower case.
-    """
-    return tuple(
-        chain.from_iterable(
-            [(string.upper(), string.lower()) for string in strings]
-        )
-    )
+from typing import Union, Sequence, Mapping, MutableSequence, IO
+from zipfile import ZipFile
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -220,10 +18,6 @@ def read_hex(hex_string: str, fmt: str = ">I") -> Number:
     unsigned 32-bit integer)
     """
     return struct.unpack(fmt, bytes.fromhex(hex_string))[0]
-
-
-# heuristic for max label size. we know it's not a real rule.
-MAX_LABEL_SIZE = 500 * 1024
 
 
 def head_file(
@@ -244,48 +38,36 @@ def head_file(
     return head_buffer
 
 
-KNOWN_LABEL_ENDINGS = (
-    b"END\r\n",  # PVL
-    b"\x00{3}",  # just null bytes
-)
+# compression 'types' we support
+SUPPORTED_COMPRESSION_EXTENSIONS = (".gz", ".bz2", ".zip")
 
 
-def trim_label(
-    fn: Union[IO, Path, str],
-    max_size: int = MAX_LABEL_SIZE,
-    raise_for_failure: bool = False,
-) -> Union[str, bytes]:
-    head = head_file(fn, max_size).read()
-    # TODO: add some logging or whatever i guess
-    for ending in KNOWN_LABEL_ENDINGS:
-        if (endmatch := re.search(ending, head)) is not None:
-            return head[: endmatch.span()[1]]
-    if raise_for_failure:
-        raise ValueError("couldn't find a label ending")
-    return head
-
-
-def casting_to_float(array: np.ndarray, *operands: Collection[Number]) -> bool:
+def stem_path(path: Path):
     """
-    check: will this operation cast the array to float?
-    return True if array is integer-valued and any operands are not integers.
+    convert a Path to lowercase and remove any compression extensions
+    from it to stem for loose matching
     """
-    return (array.dtype.char in np.typecodes["AllInteger"]) and not all(
-        [isinstance(operand, int) for operand in operands]
-    )
+    lowercase = path.name.lower()
+    for ext in SUPPORTED_COMPRESSION_EXTENSIONS:
+        lowercase = lowercase.replace(ext, "")
+    return lowercase
 
 
-def check_cases(filename: Union[Path, str]) -> str:
+def check_cases(filename: Union[Path, str], skip: bool = False) -> str:
     """
     check for oddly-cased versions of a specified filename in local path --
     very common to have case mismatches between PDS3 labels and actual archive
-    contents.
+    contents. similarly, check common compression extensions.
+
+    the skip argument makes the function simply return filename.
     """
+    if skip is True:
+        return str(filename)
     if Path(filename).exists():
-        return filename
+        return str(filename)
     matches = tuple(
         filter(
-            lambda path: path.name.lower() == Path(filename).name.lower(),
+            lambda path: stem_path(path) == Path(filename).name.lower(),
             Path(filename).parent.iterdir(),
         )
     )
@@ -294,26 +76,10 @@ def check_cases(filename: Union[Path, str]) -> str:
     if len(matches) > 1:
         warning_list = ", ".join([path.name for path in matches])
         warnings.warn(
-            f"Multiple off-case versions of {filename} found in search path: "
-            f"{warning_list}. Using {matches[0].name}."
+            f"Multiple off-case or possibly-compressed versions of {filename} "
+            f"found in search path: {warning_list}. Using {matches[0].name}."
         )
     return str(matches[0])
-
-
-class TimelessOmniDecoder(pvl.decoder.OmniDecoder):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, grammar=pvl.grammar.OmniGrammar(), **kwargs)
-
-    def decode_datetime(self, value: str):
-        raise ValueError
-
-
-def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
-    return [
-        col
-        for col, dtype in df.dtypes.iteritems()
-        if pandas.api.types.is_numeric_dtype(dtype)
-    ]
 
 
 def append_repeated_object(
@@ -334,3 +100,21 @@ def append_repeated_object(
         else:
             fields.append(obj)
     return fields
+
+
+def decompress(filename):
+    if filename.lower().endswith(".gz"):
+        f = gzip.open(filename, "rb")
+    elif filename.lower().endswith(".bz2"):
+        f = bz2.BZ2File(filename, "rb")
+    elif filename.lower().endswith(".zip"):
+        f = ZipFile(filename, "r").open(
+            ZipFile(filename, "r").infolist()[0].filename
+        )
+    else:
+        f = open(filename, "rb")
+    return f
+
+
+def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
+    return str(Path(fn).with_suffix(new_suffix))

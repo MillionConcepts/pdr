@@ -22,16 +22,17 @@ setuptools.setup(
     python_requires='>=3.8',
     install_requires=[
         "pds4_tools",
-        "rasterio",
+        "multidict",
         "pandas",
         "numpy",
-        "astropy",
-        "pvl>=1.1.0",
         "python-Levenshtein",
         "dustgoggles"
     ],
     extras_require={
-        "notebooks": ["jupyter"],
-        "browsify": ["matplotlib", "pillow"]
+        "notebooks": ["jupyter", "matplotlib"],
+        "browsify": ["matplotlib"],
+        "fits": ["astropy"],
+        "tiff": ["pillow"],
+        "pvl": ["pvl"],
     }
 )

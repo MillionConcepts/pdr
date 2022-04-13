@@ -27,6 +27,14 @@ def integer_bytes(
     return f"{endian}{letter}"
 
 
+def determine_byte_order(sample_type):
+    if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
+        endian = "<"
+    else:
+        endian = ">"
+    return endian
+
+
 def sample_types(
     sample_type: str, sample_bytes: int, for_numpy: bool = False
 ) -> str:
@@ -38,21 +46,19 @@ def sample_types(
     if (("INTEGER" in sample_type) or (sample_type == "BOOLEAN")) and (
         "ASCII" not in sample_type
     ):
-        if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
-            endian = "<"
-        else:
-            endian = ">"
+        endian = determine_byte_order(sample_type)
         signed = "UNSIGNED" not in sample_type
         return integer_bytes(endian, signed, sample_bytes, for_numpy)
-    char = "V" if for_numpy is True else "s"
+    void = "V" if for_numpy is True else "s"
+    _float = "d" if sample_bytes == 8 else "f"
     return {
-        "IEEE_REAL": ">f",
-        "PC_REAL": "<d" if sample_bytes == 8 else "<f",
-        "FLOAT": ">f",
-        "REAL": ">f",
-        "MAC_REAL": ">f",
-        "SUN_REAL": ">f",
-        "MSB_BIT_STRING": f"{char}{sample_bytes}",
+        "IEEE_REAL": f">{_float}",
+        "PC_REAL": f"<{_float}",
+        "FLOAT":  f">{_float}",
+        "REAL":  f">{_float}",
+        "MAC_REAL":  f">{_float}",
+        "SUN_REAL":  f">{_float}",
+        "MSB_BIT_STRING": f"{void}{sample_bytes}",
         # "Character string representing a real number"
         "ASCII_REAL": f"S{sample_bytes}",
         # ASCII character string representing an integer
@@ -63,18 +69,6 @@ def sample_types(
         "CHARACTER": f"S{sample_bytes}",  # ASCII character string
     }[sample_type]
 
-
-def generic_image_constants(data):
-    consts = {}
-    if data.LABEL.get("INSTRUMENT_ID") == "CRISM":
-        consts["NULL"] = 65535
-    return consts
-
-
-# TODO: super incomplete, although hopefully not often needed
-
-
-# special constants
 
 # "basic" PDS3 special constants
 PDS3_CONSTANT_NAMES = (
@@ -122,9 +116,11 @@ PDS3_CONSTANT_NAMES = tuple(PDS3_ISIS_CONSTANT_NAMES + PDS3_CONSTANT_NAMES)
 # ISIS special pixel values
 # (https://isis.astrogeology.usgs.gov/Object/Developer/_special_pixel_8h_source.html)
 
+
 IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
     {
-        # TODO: these are simply ignored atm; too problematic in too many cases
+        # we define the uint8 constants but do not by default use them: they
+        # are simply too problematic in too many cases.
         "uint8": {"NULL": 0, "ISIS_SAT_HIGH": 255},
         "int16": {
             "N/A": -32768,
@@ -143,13 +139,13 @@ IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
             "ISIS_HIGH_INST_SAT": 65534,
             "ISIS_HIGH_REPR_SAT": 65535,
         },
-        # TODO: signed 32-bit integers don't seem to be considered in ISIS?
+        # note that signed 32-bit integers don't seem to be considered in ISIS
         "int32": {
             "N/A": -214743648,
             "UNK": 2147483647,
         },
-        # TODO: dubious. not sure when we read 64-bit integers out of PDS3
-        #  objects anyway?
+        # TODO: dubious. when do we read 64-bit integers out of PDS3
+        #  arrays anyway?
         "int64": {"N/A": -214743648, "UNK": 2147483647},
         "uint32": {
             "N/A": 4294967293,
