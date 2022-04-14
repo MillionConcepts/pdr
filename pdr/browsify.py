@@ -8,7 +8,6 @@ from dustgoggles.func import naturals
 import numpy as np
 import pandas as pd
 from PIL import Image
-from matplotlib import pyplot as plt
 
 
 def find_masked_bounds(image, cheat_low, cheat_high):
@@ -289,6 +288,8 @@ def save_sparklines(
     sparkline_column_key = lambda c: 'spectrum' in c.lower(),
     orientation = 'rows'
 ):
+    from matplotlib import pyplot as plt
+
     sparkframe = df[
         [c for c in df.columns if sparkline_column_key(c)]
     ].copy().reset_index(drop=True)
