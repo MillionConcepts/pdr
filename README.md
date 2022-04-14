@@ -22,7 +22,7 @@ The minimum supported version of Python is _3.9_.
 
 Using environment.yml during installation will install all dependencies
 (both required and optional) for pdr. If you'd prefer to forego the optional
-dependencies please use environment.yml. Optional dependencies and their
+dependencies please use minimal_environment.yml. Optional dependencies and their
 added functions are listed below:
 
   - pvl: allows Data.load("LABEL", as_pvl=True) which will load your label as a pvl object instead of plain text
@@ -153,9 +153,9 @@ consistency. We plan to deprecate this behavior in the future.
 `pdr.Data.read` has lazy loading as default and will only load data objects from 
 a file when that object is referenced. For example, calling data.IMAGE will load 
 the IMAGE object at that time. You can alternatively load objects by using the 
-`load` method, like `data.load("IMAGE")` with which you can also pass the `all` 
-to load all data objects, like `data.load('all')`. This is useful for a variety 
-of reasons, but one common use case is loading products that have multiple large 
+`load` method, like `data.load("IMAGE")`. You can also pass the 'all' argument 
+to load all data objects, like `data.load('all')`. Lazy-loading variety 
+of reasons, but one common use case is accessing products with multiple large 
 files (like Chandrayaan-1 M3 L1B and L2 products). It is likely that in many cases 
 you will only want to reference one or two of those files, and not waste time and 
 memory loading all of them on initialization.
