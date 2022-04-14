@@ -8,14 +8,12 @@ dependencies:
   - numpy
   - pandas
   - git
-  - jupyter
   - pip
-  - gdal
-  - rasterio
-  - pvl
   - python-Levenshtein
-  - astropy
-  - scikit-image
+  - multidict
+  - more-itertools
+  - jupyter
+  - pillow
   - pip:
       - pds4-tools
       - git+https://github.com/MillionConcepts/dustgoggles.git
