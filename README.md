@@ -28,7 +28,7 @@ added functions are listed below:
   - pvl: allows Data.load("LABEL", as_pvl=True) which will load your label as a pvl object instead of plain text
   - astropy: allows reading of .fits files
   - jupyter: allows usage of the Example Jupyter Notebook (and other jupyter notebooks you create)
-  - pillow: allows reading of .tif files
+  - pillow: allows reading of TIFF files and rendering browse images
   - matplotlib: allows usage of `save_sparklines`, an experimental browse function
 
 ### Usage
