@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pdr",
-    version="0.6.0",
+    version="0.6.1",
     author="Chase Million",
     author_email="chase@millionconcepts.com",
     description="Planetary Data Reader",
@@ -14,12 +14,12 @@ setuptools.setup(
     url="https://github.com/MillionConcepts/pdr",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 2 - Beta",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     install_requires=[
         "pds4_tools",
         "multidict",
