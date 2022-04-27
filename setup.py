@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/MillionConcepts/pdr",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Development Status :: 2 - Beta",
+        "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
