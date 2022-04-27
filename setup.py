@@ -26,7 +26,8 @@ setuptools.setup(
         "pandas",
         "numpy",
         "python-Levenshtein",
-        "dustgoggles"
+        "dustgoggles",
+        "more_itertools"
     ],
     extras_require={
         "notebooks": ["jupyter", "matplotlib"],
