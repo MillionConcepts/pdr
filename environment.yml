@@ -8,6 +8,7 @@ dependencies:
   - numpy
   - pandas
   - git
+  - dustgoggles
   - pip
   - python-Levenshtein
   - multidict
@@ -20,4 +21,3 @@ dependencies:
   - matplotlib
   - pip:
       - pds4-tools
-      - git+https://github.com/MillionConcepts/dustgoggles.git

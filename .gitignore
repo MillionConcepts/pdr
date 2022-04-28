@@ -15,3 +15,5 @@
 *.dot
 *.profile
 data/**
+build/**
+dist/**
