@@ -20,7 +20,8 @@ conda install -c conda-forge pdr
 The minimum supported version of Python is _3.9_.
 
 Using the conda install will install all dependencies in the environment.yml file
-(both required and optional) for pdr. Optional dependencies and their
+(both required and optional) for pdr. If you'd prefer to forego the optional dependencies please use minimal_environment.yml in your installation. 
+This is not supported through a direct conda install as described above and will take additional steps. Optional dependencies and their
 added functions are listed below:
 
   - pvl: allows Data.load("LABEL", as_pvl=True) which will load your label as a pvl object instead of plain text
