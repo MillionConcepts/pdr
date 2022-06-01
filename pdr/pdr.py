@@ -573,7 +573,8 @@ class Data:
     def load_format_file(self, format_file, object_name):
         try:
             fmtpath = check_cases(self.get_absolute_path(format_file))
-            return literalize_pvl(read_pvl_label(fmtpath))
+            aggregations, _ = read_pvl_label(fmtpath)
+            return literalize_pvl(aggregations)
         except FileNotFoundError:
             warnings.warn(
                 f"Unable to locate external table format file:\n\t"
@@ -624,10 +625,7 @@ class Data:
         assembled_structure = []
         last_ix = 0
         for ix, filename in format_filenames.items():
-            try:
-                fmt = list(self.load_format_file(filename, object_name).items())
-            except AttributeError:
-                fmt = list(self.load_format_file(filename, object_name)[0].items())
+            fmt = list(self.load_format_file(filename, object_name).items())
             assembled_structure += block[last_ix:ix] + fmt
             last_ix = ix + 1
         assembled_structure += block[last_ix:]
@@ -696,7 +694,6 @@ class Data:
         string_buffer.seek(0)
         if "BYTES" in fmtdef.columns:
             try:
-                widths = list(map(int, fmtdef.BYTES.values))
                 table = pd.read_fwf(
                     string_buffer, header=None, widths=widths
                 )
