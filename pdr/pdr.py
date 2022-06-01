@@ -695,7 +695,7 @@ class Data:
         if "BYTES" in fmtdef.columns:
             try:
                 table = pd.read_fwf(
-                    string_buffer, header=None, widths=widths
+                    string_buffer, header=None, widths=fmtdef.BYTES.values
                 )
                 string_buffer.close()
                 return table
