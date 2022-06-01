@@ -9,20 +9,19 @@ of "primary observational data" product currently archived in the PDS
 If the software fails while attempting to read from datasets that we have listed as supported, please submit an issue with a link to the file and information about the error (if applicable). There might also be datasets that work but are not listed. We would like to hear about those too. If a dataset is not yet supported that you would like us to consider prioritizing, [please fill out this request form](https://docs.google.com/forms/d/1JHyMDzC9LlXY4MOMcHqV5fbseSB096_PsLshAMqMWBw/viewform).
 
 ### Installation
-_pdr_ is not yet on `pip` or `conda`. We recommend cloning the repository and 
-installing it into a `conda`environment made from the provided `environment.yml` file, like:
+_pdr_ is now on `conda` and `pip`. We recommend (and only officially support) installation into a `conda` environment.
+You can do this like so: 
+
 ```
-git clone https://github.com/MillionConcepts/pdr.git
-cd pdr
-conda env create -f environment.yml
-conda activate pdr 
-pip install -e .
+conda create --name pdrenv
+conda activate pdrenv
+conda install -c conda-forge pdr
 ```
 The minimum supported version of Python is _3.9_.
 
-Using environment.yml during installation will install all dependencies
-(both required and optional) for pdr. If you'd prefer to forego the optional
-dependencies please use minimal_environment.yml. Optional dependencies and their
+Using the conda install will install all dependencies in the environment.yml file
+(both required and optional) for pdr. If you'd prefer to forego the optional dependencies please use minimal_environment.yml in your installation. 
+This is not supported through a direct conda install as described above and will take additional steps. Optional dependencies and their
 added functions are listed below:
 
   - pvl: allows Data.load("LABEL", as_pvl=True) which will load your label as a pvl object instead of plain text
