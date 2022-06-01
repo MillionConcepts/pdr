@@ -624,7 +624,10 @@ class Data:
         assembled_structure = []
         last_ix = 0
         for ix, filename in format_filenames.items():
-            fmt = list(self.load_format_file(filename, object_name).items())
+            try:
+                fmt = list(self.load_format_file(filename, object_name).items())
+            except AttributeError:
+                fmt = list(self.load_format_file(filename, object_name)[0].items())
             assembled_structure += block[last_ix:ix] + fmt
             last_ix = ix + 1
         assembled_structure += block[last_ix:]
@@ -693,8 +696,9 @@ class Data:
         string_buffer.seek(0)
         if "BYTES" in fmtdef.columns:
             try:
+                widths = list(map(int, fmtdef.BYTES.values))
                 table = pd.read_fwf(
-                    string_buffer, header=None, widths=fmtdef.BYTES.values
+                    string_buffer, header=None, widths=widths
                 )
                 string_buffer.close()
                 return table
