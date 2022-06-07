@@ -6,7 +6,7 @@ from pdr.utils import head_file
 
 
 KNOWN_LABEL_ENDINGS = (
-    b"END\r\n",  # PVL
+    b"\nEND\r\n",  # PVL
     b"\x00{3}",  # just null bytes
 )
 

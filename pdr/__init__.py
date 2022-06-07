@@ -13,6 +13,8 @@ def read(fp, **kwargs):
     try:
         return Data(fp, **kwargs)
     except FileNotFoundError:
+        if any(val in fp for val in ['http', 'www.', 'ftp:']):
+            raise ValueError(f"Support for read from url is not currently implemented.")
         return Data(check_cases(fp), **kwargs)
 
 

@@ -694,9 +694,10 @@ class Data:
         string_buffer.seek(0)
         if "BYTES" in fmtdef.columns:
             try:
-                table = pd.read_fwf(
-                    string_buffer, header=None, widths=fmtdef.BYTES.values
-                )
+                fields = []
+                for ix, row in fmtdef.iterrows():
+                    fields.append((row['START_BYTE'], row['BYTES'] + row['START_BYTE']))
+                table = pd.read_fwf(string_buffer, header=None, colspecs=fields)
                 string_buffer.close()
                 return table
             except (pd.errors.EmptyDataError, pd.errors.ParserError):
