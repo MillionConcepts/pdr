@@ -10,10 +10,10 @@ def galileo_table_loader(data: "Data") -> Callable:
         warnings.warn("Galileo EDR binary tables are not yet supported.")
         return data.trivial
 
-    def load_this_table(*_, **__):
-        import astropy.io.ascii
-        table = astropy.io.ascii.read(data.file_mapping['TABLE']).to_pandas()
-        table.columns = data.read_table_structure('TABLE')['NAME'].values
-        return table
+    # def load_this_table(*_, **__):
+    #     import astropy.io.ascii
+    #     table = astropy.io.ascii.read(data.file_mapping['TABLE']).to_pandas()
+    #     table.columns = data.read_table_structure('TABLE')['NAME'].values
+    #     return table
 
-    return load_this_table
+    return data.read_table

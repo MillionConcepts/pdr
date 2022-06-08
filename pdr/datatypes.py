@@ -67,6 +67,7 @@ def sample_types(
         # (e.g. 1990-08-01T23:59:59)
         "DATE": f"S{sample_bytes}",
         "CHARACTER": f"S{sample_bytes}",  # ASCII character string
+        "TIME": f"S{sample_bytes}",
     }[sample_type]
 
 
