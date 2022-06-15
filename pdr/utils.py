@@ -103,11 +103,11 @@ def append_repeated_object(
 
 
 def decompress(filename):
-    if filename.lower().endswith(".gz"):
+    if filename.lower().endswith(b".gz"):
         f = gzip.open(filename, "rb")
-    elif filename.lower().endswith(".bz2"):
+    elif filename.lower().endswith(b".bz2"):
         f = bz2.BZ2File(filename, "rb")
-    elif filename.lower().endswith(".zip"):
+    elif filename.lower().endswith(b".zip"):
         f = ZipFile(filename, "r").open(
             ZipFile(filename, "r").infolist()[0].filename
         )
