@@ -83,7 +83,7 @@ class BlockParser:
 
 
 def read_pvl_label(filename):
-    label = trim_label(decompress(filename)).decode('utf-8')
+    label = trim_label(filename).decode('utf-8')
     uncommented_label = re.sub(r"/\*.*?(\*/|$)", "", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
