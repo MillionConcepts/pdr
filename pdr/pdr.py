@@ -182,16 +182,25 @@ class Metadata(MultiDict):
     # TODO: implement PDS4-style XML (or XML alias object) formatting.
     """
 
-    def __init__(self, mapping_params, syntax="pds3", **kwargs):
+    def __init__(self, mapping_params, standard="PDS3", **kwargs):
         mapping, params = mapping_params
         super().__init__(mapping, **kwargs)
         self.fieldcounts = countby(identity, params)
-        self.syntax = syntax
-        if self.syntax == "pds3":
+        self.standard = standard
+        if self.standard == "PDS3":
             self.formatter = literalize_pvl
+        elif self.standard == "PDS4":
+            # we're trusting that pds4_tools stringified everything correctly.
+            # also note that this has no default capacity to describe units --
+            # you have to explicitly check the 'attrib' attribute of the
+            # XML node, which is not preserved by Label.to_dict().
+            # TODO: replace pds4_tools' Label.to_dict() with our own
+            #  literalizer function.
+            self.formatter = identity
         else:
             raise NotImplementedError(
-                "Syntaxes other than PDS3-style PVL are not yet implemented."
+                "Syntaxes other than PDS3-style PVL and preprocessed PDS4 XML "
+                "are not yet implemented."
             )
         # note that 'directly' caching these methods can result in recursive
         # reference chains behind the lru_cache API that can prevent the
@@ -310,20 +319,20 @@ class Data:
         # where can we look for files contaniing data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + list(search_paths)
+        self.standard = None
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
             self.filename, label_fn, skip_existence_check
         )
+        # cache for pds4_tools.reader.general_objects.Structure objects.
+        self._pds4_structures = None
         if str(self.labelname).endswith(".xml"):
-            # Just use pds4_tools if this is a PDS4 file
-            # TODO: do this better, including lazy
-            import pds4_tools as pds4
-
-            data = pds4.read(self.labelname, quiet=True)
-            for structure in data.structures:
-                setattr(self, structure.id.replace(" ", "_"), structure.data)
-                self.index += [structure.id.replace(" ", "_")]
+            self.standard = "PDS4"
+            self._pds4_structures = {}
+            self._init_pds4()
             return
+        else:
+            self.standard = "PDS3"
         try:
             self.metadata = self.read_metadata()
         except (UnicodeError, FileNotFoundError) as ex:
@@ -335,10 +344,24 @@ class Data:
         self.pointers = filter_duplicate_pointers(
             get_pds3_pointers(self.metadata)
         )
-        # this is a weird edge case where someone has opened a format file
-        # or something like that, but there's no reason to not allow it
+        # if self.pointers is None, we've probably got a weird edge case where
+        # someone directly opened a PVL file that's not a label -- a format
+        # file or something -- but there's no reason to not allow it.
         if self.pointers is not None:
             self._find_objects()
+
+    def _init_pds4(self):
+        # Just use pds4_tools if this is a PDS4 file
+        import pds4_tools as pds4
+
+        structure_list = pds4.read(
+            self.labelname, lazy_load=True, quiet=True, no_scale=True
+        )
+        for structure in structure_list.structures:
+            self._pds4_structures[structure.id.replace(" ", "_")] = structure
+            self.index.append(structure.id.replace(" ", "_"))
+        self._pds4_structures["label"] = structure_list.label
+        self.index.append("label")
 
     def _init_search_paths(self):
         for target in ("labelname", "filename"):
@@ -416,6 +439,13 @@ class Data:
                         continue
                     raise value_error
             return
+        if (object_name in dir(self)) and (reload is False):
+            raise ValueError(
+                f"{object_name} is already loaded; pass reload=True to "
+                f"force reload."
+            )
+        if self.standard == "PDS4":
+            return self._load_pds4(object_name)
         if self.file_mapping.get(object_name) is None:
             target = self._target_path(object_name)
             if target is None:
@@ -433,11 +463,6 @@ class Data:
                 )
                 return
             self.file_mapping[object_name] = target
-        if (object_name in dir(self)) and (reload is False):
-            raise ValueError(
-                f"{object_name} is already loaded; pass reload=True to "
-                f"force reload."
-            )
         try:
             obj = self.load_from_pointer(object_name, **load_kwargs)
             if obj is None:  # trivially loaded
@@ -461,23 +486,27 @@ class Data:
                 self, object_name, self._catch_return_default(object_name, ex)
             )
 
+    def _load_pds4(self, object_name):
+        """load this object however pds4_tools wants to load this object."""
+        if object_name == "label":
+            setattr(self, "label", self._pds4_structures["label"])
+        else:
+            setattr(self, object_name, self._pds4_structures[object_name].data)
+
     def read_metadata(self):
         """
-        Attempt to ingest a product's metadata. If it has a
-        detached XML label, ingest it using pds4_tools; if it has a detached
-        PDS3/PVL label, ingest it with pdr.parselabel.pds3.read_pvl_label.
-        If it has no detached label, attempt to ingest attached PVL from
-        the product's nominal path using read_pvl_label.
+        Attempt to ingest a product's metadata. if it is a PDS4 product, its
+        XML label will have been ingested by pds4_tools in self._init_pds4().
+        in that case, simply preprocess it for Metadata.__init__.
+        otherwise, if it has a detached PDS3/PVL label, ingest it with
+        pdr.parselabel.pds3.read_pvl_label.
+        If we have found no detached label of any kind, attempt to ingest
+        attached PVL from the product's nominal path using read_pvl_label.
         """
+        if self.standard == "PDS4":
+            return self._preprocess_pds4_label()
         if self.labelname is not None:  # a detached label exists
-            if Path(self.labelname).suffix.lower() == ".xml":
-                import pds4_tools as pds4
-
-                metadata = pds4.read(
-                    self.labelname, quiet=True
-                ).label.to_dict()
-            else:
-                metadata = Metadata(read_pvl_label(self.labelname))
+            metadata = Metadata(read_pvl_label(self.labelname))
         else:
             # look for attached label
             metadata = Metadata(read_pvl_label(self.filename))
@@ -485,6 +514,9 @@ class Data:
         self.file_mapping["LABEL"] = self.labelname
         self.index.append("LABEL")
         return metadata
+
+    def _preprocess_pds4_label(self):
+        pass
 
     def load_from_pointer(self, pointer, **load_kwargs):
         return pointer_to_loader(pointer, self)(pointer, **load_kwargs)
@@ -900,7 +932,9 @@ class Data:
         }
         self.specials[key] = specials
 
-    def get_scaled(self, key: str, inplace=False, float_dtype=None) -> np.ndarray:
+    def get_scaled(
+        self, key: str, inplace=False, float_dtype=None
+    ) -> np.ndarray:
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.
@@ -908,9 +942,14 @@ class Data:
 
         if inplace is True, does calculations in-place on original array,
         with attendant memory savings and destructiveness.
-
-        TODO: as above, does nothing for PDS4.
         """
+        # Do whatever pds4_tools would most likely do with these data.
+        # TODO: shake this out much more vigorously. perhaps make
+        #  the inplace and float_dtype arguments do something.
+        #  check and see if implicit special constants ever still exist
+        #  stealthily in PDS4 data. etc.
+        if self.standard == "PDS4":
+            return _scale_pds4_tools_struct(self._pds4_structures[key])
         obj, block = self._init_array_method(key)
         if key not in self.specials:
             consts = special_image_constants(self)
@@ -1245,3 +1284,25 @@ def _metablock_factory(metadata, cached=True):
 
 class DuplicateKeyWarning(UserWarning):
     pass
+
+
+# TODO: shake this out much more vigorously
+def _scale_pds4_tools_struct(struct):
+    """see pds4_tools.reader.read_arrays.new_array"""
+    # TODO: apply bit_mask
+    from pds4_tools.reader.data_types import (
+        apply_scaling_and_value_offset, pds_to_numpy_type
+    )
+    array = struct.data
+    element_array = struct.meta_data['Element_Array']
+    scale_kwargs = {
+        'scaling_factor': element_array.get('scaling_factor'),
+        'value_offset': element_array.get('value_offset')
+    }
+    # TODO: is this important?
+    #     dtype = pds_to_numpy_type(struct.meta_data.data_type(),
+    #     data=array, **scale_kwargs)
+    special_constants = struct.meta_data.get('Special_Constants')
+    array = apply_scaling_and_value_offset(
+        array, special_constants=special_constants, **scale_kwargs)
+    return array
