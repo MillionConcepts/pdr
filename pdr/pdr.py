@@ -41,6 +41,7 @@ from pdr.parselabel.pds3 import (
     read_pvl_label,
     literalize_pvl,
 )
+from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.parselabel.utils import trim_label
 from pdr.pd_utils import (
     insert_sample_types_into_df,
@@ -255,7 +256,7 @@ class Metadata(MultiDict):
         matches `text`, even if it is nested inside a mapping, iff the value
         itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
         evaluate it using self.formatter. raise a warning if there are
-        multiple keys matching this.1
+        multiple keys matching this.
         if there is no key matching 'text', will evaluate and return the
         metadata as a whole.
         WARNING: this function's return values are memoized for performance.
@@ -330,7 +331,6 @@ class Data:
             self.standard = "PDS4"
             self._pds4_structures = {}
             self._init_pds4()
-            return
         else:
             self.standard = "PDS3"
         try:
@@ -341,6 +341,8 @@ class Data:
             )
         self._metaget_interior = _metaget_factory(self.metadata)
         self._metablock_interior = _metablock_factory(self.metadata)
+        if self.standard == "PDS4":
+            return
         self.pointers = filter_duplicate_pointers(
             get_pds3_pointers(self.metadata)
         )
@@ -504,7 +506,7 @@ class Data:
         attached PVL from the product's nominal path using read_pvl_label.
         """
         if self.standard == "PDS4":
-            return self._preprocess_pds4_label()
+            return Metadata(reformat_pds4_tools_label(self.label))
         if self.labelname is not None:  # a detached label exists
             metadata = Metadata(read_pvl_label(self.labelname))
         else:
@@ -514,9 +516,6 @@ class Data:
         self.file_mapping["LABEL"] = self.labelname
         self.index.append("LABEL")
         return metadata
-
-    def _preprocess_pds4_label(self):
-        pass
 
     def load_from_pointer(self, pointer, **load_kwargs):
         return pointer_to_loader(pointer, self)(pointer, **load_kwargs)
