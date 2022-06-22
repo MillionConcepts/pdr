@@ -371,12 +371,14 @@ class Data:
         find the path on the local filesystem to the file containing a named
         data object.
         """
-        target = self._object_to_filename(object_name)
+        if isinstance(object_name, set):
+            file_list = []
+            for obj in object_name:
+                file = self._target_path(obj)
+                file_list = file_list + [file]
+            return file_list
         try:
-            if isinstance(target, str):
-                return check_cases(self.get_absolute_path(target))
-            else:
-                return check_cases(self.filename)
+            return self._object_to_filename(object_name)
         except FileNotFoundError:
             if raise_missing is True:
                 raise
@@ -711,14 +713,7 @@ class Data:
         Read a table. Parse the label format definition and then decide
         whether to parse it as text or binary.
         """
-        target = self.metaget_(pointerize(pointer))
-        if isinstance(target, Sequence) and not (isinstance(target, str)):
-            if isinstance(target[0], str):
-                target = target[0]
-        if isinstance(target, str):
-            fn = check_cases(self.get_absolute_path(target))
-        else:
-            fn = check_cases(self.filename)
+        fn = self.file_mapping[pointer]
         try:
             fmtdef, dt = self.parse_table_structure(pointer)
         except KeyError as ex:
@@ -787,11 +782,12 @@ class Data:
 
     def read_text(self, object_name):
         target = self.metaget_(pointerize(object_name))
-        local_path = self.get_absolute_path(
-            self.metaget_(pointerize(object_name))
-        )
+        local_path = self.file_mapping[object_name]
         try:
-            return open(check_cases(local_path)).read()
+            if isinstance(local_path, str):
+                return open(check_cases(local_path)).read()
+            elif isinstance(local_path, list):
+                return [open(check_cases(each_local_path)).read() for each_local_path in local_path]
         except FileNotFoundError as ex:
             exception = ex
             warnings.warn(f"couldn't find {target}")
