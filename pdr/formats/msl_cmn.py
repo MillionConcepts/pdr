@@ -13,6 +13,7 @@ def override_name(loader: Callable, name: str) -> Callable:
 def table_loader(data, object_name):
     # mangled name
     if object_name == "CHMN_HSK_HEADER_TABLE":
+        data.file_mapping['CHMN_HSKN_HEADER_TABLE'] = data.file_mapping['CHMN_HSK_HEADER_TABLE']
         return override_name(data.read_table, "CHMN_HSKN_HEADER_TABLE")
     if object_name == "HEADER":
         return data.trivial
