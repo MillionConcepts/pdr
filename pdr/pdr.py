@@ -698,7 +698,12 @@ class Data:
             try:
                 fields = []
                 for ix, row in fmtdef.iterrows():
-                    fields.append((row['START_BYTE'], row['BYTES'] + row['START_BYTE']))
+                    # note that these are 1-indexed
+                    interval = (
+                        row['START_BYTE'] - 1,
+                        row['BYTES'] + row['START_BYTE'] - 1
+                    )
+                    fields.append(interval)
                 table = pd.read_fwf(string_buffer, header=None, colspecs=fields)
                 string_buffer.close()
                 return table
