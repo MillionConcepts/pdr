@@ -509,7 +509,7 @@ class Data:
             setattr(self, object_name, df)
         # TODO: do other important cases exist?
         else:
-            setattr(self, object_name, structure)
+            setattr(self, object_name, structure.data)
 
     def read_metadata(self):
         """
