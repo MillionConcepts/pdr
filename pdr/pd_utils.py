@@ -82,3 +82,25 @@ def booleanize_booleans(
     boolean_columns = fmtdef.loc[fmtdef["DATA_TYPE"] == "BOOLEAN", "NAME"]
     table[boolean_columns] = table[boolean_columns].astype(bool)
     return table
+
+
+def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
+    sub_dfs = []
+    name_buffer = []
+    for field in array.dtype.descr:
+        if len(field) == 2:
+            name_buffer.append(field[0])
+        else:
+            if len(name_buffer) > 0:
+                sub_dfs.append(pd.DataFrame.from_records(array[name_buffer]))
+                name_buffer = []
+            sub_df = pd.DataFrame.from_records(array[field[0]])
+            sub_df.columns = [
+                f"{field[0]}_{ix}" for ix in range(len(sub_df.columns))
+            ]
+            sub_dfs.append(sub_df)
+    if len(name_buffer) > 0:
+        sub_dfs.append(pd.DataFrame.from_records(array[name_buffer]))
+    if len(sub_dfs) == 0:
+        return sub_dfs[0]
+    return pd.concat(sub_dfs, axis=1)
