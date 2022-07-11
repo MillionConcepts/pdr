@@ -491,11 +491,25 @@ class Data:
             )
 
     def _load_pds4(self, object_name):
-        """load this object however pds4_tools wants to load this object."""
-        if object_name == "label":
-            setattr(self, "label", self._pds4_structures["label"])
+        """
+        load this object however pds4_tools wants to load this object, then
+        reformat to df or expose the array handle in accordance with our type
+        conventions.
+        """
+        structure = self._pds4_structures[object_name]
+        from pds4_tools.reader.label_objects import Label
+        if isinstance(structure, Label):
+            setattr(self, "label", structure)
+        elif structure.is_array():
+            setattr(self, object_name, structure.data)
+        elif structure.is_table():
+            from pdr.pd_utils import structured_array_to_df
+            df = structured_array_to_df(structure.data)
+            df.columns = df.columns.str.replace(r"GROUP_?\d+", "", regex=True)
+            setattr(self, object_name, df)
+        # TODO: do other important cases exist?
         else:
-            setattr(self, object_name, self._pds4_structures[object_name].data)
+            setattr(self, object_name, structure.data)
 
     def read_metadata(self):
         """
