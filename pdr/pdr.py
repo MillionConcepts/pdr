@@ -136,7 +136,7 @@ def skeptically_load_header(
             with open(check_cases(path), 'rb') as file:
                 file.seek(start)
                 text = file.read(length).decode()
-            return text
+        return text
     except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
 
