@@ -858,26 +858,20 @@ class Data:
         block = self.metablock_(object_name)
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
-            print(type(target[1]))
-            print(target[1])
             if isinstance(target[1], dict):
                 start = target[1]['value'] - 1
             else:
                 start = target[1] - 1
             if "RECORDS" in block.keys():
-                print('records exists in block keys')
                 length = block["RECORDS"]
         else:
             start = self.data_start_byte(object_name)
             if "BYTES" in block.keys():
-                print('bytes in block.keys')
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
                     self.metaget_("RECORD_BYTES") is not None
             ):
-                print('that last elif block')
                 length = block["RECORDS"] * self.metaget_("RECORD_BYTES")
-        print(length)
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
