@@ -127,16 +127,16 @@ def skeptically_load_header(
                 return cached_pvl_load(check_cases(path))
             except ValueError:
                 pass
-        file = open(check_cases(path))
         if as_rows is True:
-            if start > 0:
-                file.readlines(start)
-            text = "\r\n".join(file.readlines(length))
+            with open(check_cases(path)) as file:
+                if start > 0:
+                    file.readlines(start)
+                text = "\r\n".join(file.readlines(length))
         else:
-            file.seek(start)
-            text = file.read(length)
-        file.close()
-        return text
+            with open(check_cases(path), 'rb') as file:
+                file.seek(start)
+                text = file.read(length).decode()
+            return text
     except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
 
@@ -844,17 +844,26 @@ class Data:
         block = self.metablock_(object_name)
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
-            start = target[1] - 1
+            print(type(target[1]))
+            print(target[1])
+            if isinstance(target[1], dict):
+                start = target[1]['value'] - 1
+            else:
+                start = target[1] - 1
             if "RECORDS" in block.keys():
+                print('records exists in block keys')
                 length = block["RECORDS"]
         else:
             start = self.data_start_byte(object_name)
             if "BYTES" in block.keys():
+                print('bytes in block.keys')
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
                     self.metaget_("RECORD_BYTES") is not None
             ):
+                print('that last elif block')
                 length = block["RECORDS"] * self.metaget_("RECORD_BYTES")
+        print(length)
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
@@ -1054,7 +1063,7 @@ class Data:
             if target.get("units") == "BYTES":
                 return False
         # TODO: untangle this, everywhere
-        if isinstance(target := self._get_target(object_name), list):
+        if isinstance(target := self._get_target(object_name), (list, tuple)):
             if isinstance(target[-1], dict):
                 if target[-1].get("units") == "BYTES":
                     return False
