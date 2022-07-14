@@ -769,7 +769,7 @@ class Data:
         except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
-        if (dt is None) or ("SPREADSHEET" in pointer) or ("ASCII" in pointer):
+        if looks_like_ascii(self, dt, pointer):
             table = self._interpret_as_ascii(fn, fmtdef, pointer)
             table.columns = fmtdef.NAME.tolist()
         else:
@@ -1323,3 +1323,12 @@ def _scale_pds4_tools_struct(struct):
     array = apply_scaling_and_value_offset(
         array, special_constants=special_constants, **scale_kwargs)
     return array
+
+
+def looks_like_ascii(data, dtype, pointer):
+    return (
+        (dtype is None)
+        or ("SPREADSHEET" in pointer)
+        or ("ASCII" in pointer)
+        or (data.metablock(pointer).get('INTERCHANGE_FORMAT') == 'ASCII')
+    )
