@@ -724,7 +724,7 @@ class Data:
         except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
-        if (dt is None) or ("SPREADSHEET" in pointer) or ("ASCII" in pointer):
+        if looks_like_ascii(self, dt, pointer):
             table = self._interpret_as_ascii(fn, fmtdef, pointer)
             table.columns = fmtdef.NAME.tolist()
         else:
@@ -1246,3 +1246,12 @@ def _metablock_factory(metadata, cached=True):
 
 class DuplicateKeyWarning(UserWarning):
     pass
+
+
+def looks_like_ascii(data, dtype, pointer):
+    return (
+        (dtype is None)
+        or ("SPREADSHEET" in pointer)
+        or ("ASCII" in pointer)
+        or (data.metablock(pointer).get('INTERCHANGE_FORMAT') == 'ASCII')
+    )
