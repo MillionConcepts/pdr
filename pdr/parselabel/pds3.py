@@ -187,7 +187,7 @@ def depointerize(string: str) -> str:
     return string[1:] if string.startswith("^") else string
 
 
-def index_duplicate_pointers(pointers):
+def index_duplicate_pointers(pointers, metadata):
     if pointers is None:
         return None
     # noinspection PyTypeChecker
@@ -204,7 +204,10 @@ def index_duplicate_pointers(pointers):
                 f"Duplicated {pointer}, indexing with integers after each entry e.g.: {pointer}_0"
             )
             reindexed_pointers = reindexed_pointers + [f"{pointer}_{ix}" for ix in range(len(group))]
+            for ix in range(len(group)):
+                metadata[f'{pointer}_{ix}'] = metadata.pop(pointer)
+                metadata[f'{depointerize(pointer)}_{ix}'] = metadata.pop(depointerize(pointer))
         else:
             reindexed_pointers.append(group[0])
-    return reindexed_pointers
+    return reindexed_pointers, metadata
 
