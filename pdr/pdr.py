@@ -37,7 +37,7 @@ from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     depointerize,
-    filter_duplicate_pointers,
+    index_duplicate_pointers,
     read_pvl_label,
     literalize_pvl,
 )
@@ -225,6 +225,8 @@ class Metadata(MultiDict):
         with this function will not update future calls to this function.
         """
         count = self.fieldcounts.get(text)
+        if count is None and text.split('_')[-1].isnumeric():  # this may be an reindexed duplicate table
+            return self._metaget_interior(text, default, evaluate)
         if count is None:
             return default
         if (count > 1) and (warn is True):
@@ -265,6 +267,8 @@ class Metadata(MultiDict):
         unpredictable behavior.
         """
         count = self.fieldcounts.get(text)
+        if count is None and text.split('_')[-1].isnumeric():  # this may be an reindexed duplicate table
+            return self._metablock_interior(text, evaluate)
         if count is None:
             return None
         if (count > 1) and (warn is True):
@@ -343,7 +347,7 @@ class Data:
         self._metablock_interior = _metablock_factory(self.metadata)
         if self.standard == "PDS4":
             return
-        self.pointers = filter_duplicate_pointers(
+        self.pointers = index_duplicate_pointers(
             get_pds3_pointers(self.metadata)
         )
         # if self.pointers is None, we've probably got a weird edge case where
@@ -1277,6 +1281,10 @@ def _metaget_factory(metadata, cached=True):
 
     def metaget_interior(text, default, evaluate):
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
+        if value is None:
+            ith = text.split('_')[-1]
+            if ith.isnumeric():  # we think this is a duplicate key we've indexed
+                value = metadata.getall(text.strip('_' + ith))[int(ith)]
         if value is not None:
             return metadata.formatter(value) if evaluate is True else value
         return default
@@ -1290,6 +1298,10 @@ def _metablock_factory(metadata, cached=True):
 
     def metablock_interior(text, evaluate):
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
+        if value is None:
+            ith = text.split('_')[-1]
+            if ith.isnumeric():  # we think this is a duplicate key we've indexed
+                value = metadata.getall(text.strip('_' + ith))[int(ith)]
         if not isinstance(value, Mapping):
             value = metadata
         return metadata.formatter(value) if evaluate is True else value

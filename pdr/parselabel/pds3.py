@@ -187,12 +187,12 @@ def depointerize(string: str) -> str:
     return string[1:] if string.startswith("^") else string
 
 
-def filter_duplicate_pointers(pointers):
+def index_duplicate_pointers(pointers):
     if pointers is None:
         return None
     # noinspection PyTypeChecker
     pt_groups = groupby(identity, pointers)
-    filtered_pointers = []
+    reindexed_pointers = []
     for pointer, group in pt_groups.items():
         if (
             (len(group) > 1)
@@ -201,10 +201,10 @@ def filter_duplicate_pointers(pointers):
             # don't waste anyone's time mentioning, that the label
             # references both ODL.TXT and VICAR2.TXT, etc.
             warnings.warn(
-                f"Duplicate handling for {pointer} not yet "
-                f"implemented, ignoring"
+                f"Duplicated {pointer}, indexing with integers after each entry e.g.: {pointer}_0"
             )
+            reindexed_pointers = reindexed_pointers + [f"{pointer}_{ix}" for ix in range(len(group))]
         else:
-            filtered_pointers.append(group[0])
-    return filtered_pointers
+            reindexed_pointers.append(group[0])
+    return reindexed_pointers
 
