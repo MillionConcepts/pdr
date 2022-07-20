@@ -343,9 +343,7 @@ class Data:
         self._metablock_interior = _metablock_factory(self.metadata)
         if self.standard == "PDS4":
             return
-        self.pointers, self.metadata = index_duplicate_pointers(
-            get_pds3_pointers(self.metadata), self.metadata
-        )
+        self.pointers = get_pds3_pointers(self.metadata)
         # if self.pointers is None, we've probably got a weird edge case where
         # someone directly opened a PVL file that's not a label -- a format
         # file or something -- but there's no reason to not allow it.

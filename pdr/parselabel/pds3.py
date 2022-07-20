@@ -82,14 +82,18 @@ class BlockParser:
         return self.aggregations[0], self.parameters
 
 
-def read_pvl_label(filename):
+def read_pvl_label(filename, deduplicate_pointers=True):
     label = trim_label(decompress(filename)).decode('utf-8')
     uncommented_label = re.sub(r"/\*.*?(\*/|$)", "", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
     )
     statements = chunk_statements(trimmed_lines)
-    return BlockParser().parse_statements(statements)
+    mapping, params = BlockParser().parse_statements(statements)
+    if deduplicate_pointers:
+        pointers = get_pds3_pointers(mapping)
+        mapping, params = index_duplicate_pointers(pointers, mapping, params)
+    return mapping, params
 
 
 def parse_pvl_quantity_object(obj):
@@ -187,12 +191,11 @@ def depointerize(string: str) -> str:
     return string[1:] if string.startswith("^") else string
 
 
-def index_duplicate_pointers(pointers, metadata):
+def index_duplicate_pointers(pointers, mapping, params):
     if pointers is None:
         return None
     # noinspection PyTypeChecker
     pt_groups = groupby(identity, pointers)
-    reindexed_pointers = []
     for pointer, group in pt_groups.items():
         if (
             (len(group) > 1)
@@ -203,11 +206,15 @@ def index_duplicate_pointers(pointers, metadata):
             warnings.warn(
                 f"Duplicated {pointer}, indexing with integers after each entry e.g.: {pointer}_0"
             )
-            reindexed_pointers = reindexed_pointers + [f"{pointer}_{ix}" for ix in range(len(group))]
             for ix in range(len(group)):
-                metadata[f'{pointer}_{ix}'] = metadata.pop(pointer)
-                metadata[f'{depointerize(pointer)}_{ix}'] = metadata.pop(depointerize(pointer))
-        else:
-            reindexed_pointers.append(group[0])
-    return reindexed_pointers, metadata
+                indexed_pointer = f'{pointer}_{ix}'
+                indexed_depointer = f'{depointerize(pointer)}_{ix}'
+                mapping[indexed_pointer] = mapping.pop(pointer)
+                mapping[indexed_depointer] = mapping.pop(depointerize(pointer))
+                params.append(indexed_pointer)
+                params.append(indexed_depointer)
+                if ix == 0:
+                    params.remove(pointer)
+                    params.remove(depointerize(pointer))
+    return mapping, params
 
