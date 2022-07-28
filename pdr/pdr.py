@@ -1158,10 +1158,7 @@ class Data:
     #  split up the image-gen part of _browsify_array, something like that
     def show(self, object_name=None, scaled=True, **browse_kwargs):
         if object_name is None:
-            object_name = [obj for obj in self.index if "IMAGE" in obj]
-            if object_name is None:
-                raise ValueError("please specify the name of an image object.")
-            object_name = object_name[0]
+            raise ValueError(f"please specify the name of an image object. keys include {self.index}")
         if not isinstance(self[object_name], np.ndarray):
             raise TypeError("Data.show only works on array data.")
         if scaled is True:
