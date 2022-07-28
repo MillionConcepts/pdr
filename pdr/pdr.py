@@ -32,12 +32,12 @@ from pdr.formats import (
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
 )
-from pdr.np_utils import enforce_order_and_object, casting_to_float
+from pdr.np_utils import enforce_order_and_object, casting_to_float, \
+    np_from_buffered_io
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     depointerize,
-    index_duplicate_pointers,
     read_pvl_label,
     literalize_pvl,
 )
@@ -69,7 +69,7 @@ def process_single_band_image(f, props):
     # TODO: added this 'count' parameter to handle a case in which the image
     #  was not the last object in the file. We might want to add it to
     #  the multiband loaders too.
-    image = np.fromfile(f, dtype=numpy_dtype, count=props['pixels'])
+    image = np_from_buffered_io(f, dtype=numpy_dtype, count=props['pixels'])
     image = image.reshape(
         (props["nrows"], props["ncols"] + props["prefix_cols"])
     )
@@ -83,7 +83,7 @@ def process_single_band_image(f, props):
 
 def process_band_sequential_image(f, props):
     _, numpy_dtype = make_format_specifications(props)
-    image = np.fromfile(f, dtype=numpy_dtype)
+    image = np_from_buffered_io(f, numpy_dtype, count=props["pixels"])
     image = image.reshape(
         (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
     )
@@ -102,9 +102,10 @@ def process_line_interleaved_image(f, props):
     image, prefix = [], []
     for _ in np.arange(props["nrows"]):
         prefix.append(f.read(props["prefix_bytes"]))
-        frame = np.fromfile(f, numpy_dtype, count=props["pixels"]).reshape(
-            props["BANDS"], props["ncols"]
-        )
+        frame = np_from_buffered_io(
+            f, numpy_dtype, count=props["pixels"]).reshape(
+                props["BANDS"], props["ncols"]
+            )
         image.append(frame)
         del frame
     image = np.ascontiguousarray(np.array(image).swapaxes(0, 1))
@@ -811,7 +812,7 @@ class Data:
     def _interpret_as_binary(self, fmtdef, dt, fn, pointer):
         count = self.metablock_(pointer).get("ROWS")
         count = count if count is not None else 1
-        array = np.fromfile(
+        array = np_from_buffered_io(
             fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
         )
         swapped = enforce_order_and_object(array, inplace=False)
