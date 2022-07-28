@@ -95,3 +95,5 @@ of their metadata appear to match other sources.
 - Juno
   - UVS (support planned)
   - Waves EDR (support not planned)
+- Galileo
+  - magnetometer summary tables (other tables supported)
