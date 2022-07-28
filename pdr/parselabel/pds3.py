@@ -199,7 +199,7 @@ def index_duplicate_pointers(pointers, mapping, params):
     for pointer, group in pt_groups.items():
         if (
             (len(group) > 1)
-            and (pointer not in ("^STRUCTURE", "^DESCRIPTION"))
+            and (pointer not in ("^STRUCTURE", "^DESCRIPTION", "^PDS_OBJECT"))
         ):
             # don't waste anyone's time mentioning, that the label
             # references both ODL.TXT and VICAR2.TXT, etc.
