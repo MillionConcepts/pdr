@@ -193,7 +193,7 @@ def depointerize(string: str) -> str:
 
 def index_duplicate_pointers(pointers, mapping, params):
     if pointers is None:
-        return None
+        return mapping, params
     # noinspection PyTypeChecker
     pt_groups = groupby(identity, pointers)
     for pointer, group in pt_groups.items():
