@@ -33,7 +33,7 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
     if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
         return data.handle_fits_file
     if looks_like_this_kind_of_file(filename, TIFF_EXTENSIONS):
-        return data.handle_fits_file
+        return data.handle_tiff_file
     if looks_like_this_kind_of_file(filename, IMAGE_EXTENSIONS):
         return data.read_image
     if looks_like_this_kind_of_file(filename, TEXT_EXTENSIONS):
