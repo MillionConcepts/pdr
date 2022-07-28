@@ -385,6 +385,7 @@ class Data:
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
+        # TODO: should we move every check_cases call here?
         if isinstance(target, str):
             return self.get_absolute_path(target)
         else:
@@ -402,7 +403,7 @@ class Data:
                 file_list = file_list + [file]
             return file_list
         try:
-            return self._object_to_filename(object_name)
+            return check_cases(self._object_to_filename(object_name))
         except FileNotFoundError:
             if raise_missing is True:
                 raise
@@ -700,20 +701,26 @@ class Data:
         # TODO, maybe: add better delimiter detection & dispatch
         start, length, as_rows = self.table_position(object_name)
         sep = check_explicit_delimiter(self.metablock_(object_name))
-        if as_rows is False:
-            bytes_buffer = head_file(fn, nbytes=length, offset=start)
-            string_buffer = StringIO(bytes_buffer.read().decode())
-            bytes_buffer.close()
-        else:
-            with open(fn) as file:
+        with decompress(fn) as f:
+            if as_rows is False:
+                bytes_buffer = head_file(f, nbytes=length, offset=start)
+                string_buffer = StringIO(bytes_buffer.read().decode())
+                bytes_buffer.close()
+            else:
                 if start > 0:
-                    file.readlines(start)
-                string_buffer = StringIO("\r\n".join(file.readlines(length)))
+                    [next(f) for _ in range(start)]
+                if length is None:
+                    lines = f.readlines()
+                else:
+                    lines = [next(f) for _ in range(length)]
+                string_buffer = StringIO("\r\n".join(map(bytes.decode, lines)))
             string_buffer.seek(0)
         try:
             table = pd.read_csv(string_buffer, sep=sep, header=None)
         # TODO: I'm not sure this is a good idea
         # TODO: hacky, untangle this tree
+        # TODO: this won't work for compressed files, but I'm not even
+        #  sure what we're using it for right now
         except (UnicodeError, AttributeError, ParserError):
             table = None
         if table is None:
@@ -812,9 +819,10 @@ class Data:
     def _interpret_as_binary(self, fmtdef, dt, fn, pointer):
         count = self.metablock_(pointer).get("ROWS")
         count = count if count is not None else 1
-        array = np_from_buffered_io(
-            fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
-        )
+        with decompress(fn) as f:
+            array = np_from_buffered_io(
+                f, dtype=dt, offset=self.data_start_byte(pointer), count=count
+            )
         swapped = enforce_order_and_object(array, inplace=False)
         # TODO: I believe the following commented-out block is deprecated
         #  but I am leaving it in as a dead breadcrumb for now just in case
@@ -885,7 +893,7 @@ class Data:
         from astropy.io import fits
 
         try:
-            hdulist = fits.open(check_cases(self.file_mapping[pointer]))
+            hdulist = fits.open(self.file_mapping[pointer])
             if "HEADER" in pointer:
                 return hdulist[pointer_to_fits_key(pointer, hdulist)].header
             return hdulist[pointer_to_fits_key(pointer, hdulist)].data

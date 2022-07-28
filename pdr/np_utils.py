@@ -74,7 +74,6 @@ def np_from_buffered_io(
     memory if it's a compressed buffer, and just using np.fromfile if it's not
     """
     if offset is not None:
-        buffered_io = open(Path(buffered_io))
         buffered_io.seek(offset)
     if isinstance(buffered_io, (BZ2File, ZipFile, GzipFile, BytesIO)):
         n_bytes = None if count is None else count * dtype.itemsize
