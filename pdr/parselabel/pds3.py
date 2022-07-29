@@ -82,14 +82,18 @@ class BlockParser:
         return self.aggregations[0], self.parameters
 
 
-def read_pvl_label(filename):
+def read_pvl_label(filename, deduplicate_pointers=True):
     label = trim_label(decompress(filename)).decode('utf-8')
     uncommented_label = re.sub(r"/\*.*?(\*/|$)", "", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
     )
     statements = chunk_statements(trimmed_lines)
-    return BlockParser().parse_statements(statements)
+    mapping, params = BlockParser().parse_statements(statements)
+    if deduplicate_pointers:
+        pointers = get_pds3_pointers(mapping)
+        mapping, params = index_duplicate_pointers(pointers, mapping, params)
+    return mapping, params
 
 
 def parse_pvl_quantity_object(obj):
@@ -187,24 +191,30 @@ def depointerize(string: str) -> str:
     return string[1:] if string.startswith("^") else string
 
 
-def filter_duplicate_pointers(pointers):
+def index_duplicate_pointers(pointers, mapping, params):
     if pointers is None:
-        return None
+        return mapping, params
     # noinspection PyTypeChecker
     pt_groups = groupby(identity, pointers)
-    filtered_pointers = []
     for pointer, group in pt_groups.items():
         if (
             (len(group) > 1)
-            and (pointer not in ("^STRUCTURE", "^DESCRIPTION"))
+            and (pointer not in ("^STRUCTURE", "^DESCRIPTION", "^PDS_OBJECT"))
         ):
             # don't waste anyone's time mentioning, that the label
             # references both ODL.TXT and VICAR2.TXT, etc.
             warnings.warn(
-                f"Duplicate handling for {pointer} not yet "
-                f"implemented, ignoring"
+                f"Duplicated {pointer}, indexing with integers after each entry e.g.: {pointer}_0"
             )
-        else:
-            filtered_pointers.append(group[0])
-    return filtered_pointers
+            for ix in range(len(group)):
+                indexed_pointer = f'{pointer}_{ix}'
+                indexed_depointer = f'{depointerize(pointer)}_{ix}'
+                mapping[indexed_pointer] = mapping.pop(pointer)
+                mapping[indexed_depointer] = mapping.pop(depointerize(pointer))
+                params.append(indexed_pointer)
+                params.append(indexed_depointer)
+                if ix == 0:
+                    params.remove(pointer)
+                    params.remove(depointerize(pointer))
+    return mapping, params
 

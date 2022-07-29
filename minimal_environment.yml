@@ -13,6 +13,4 @@ dependencies:
   - multidict
   - more-itertools
   - dustgoggles
-  - pip:
-      - pds4-tools
-
+  - pds4_tools

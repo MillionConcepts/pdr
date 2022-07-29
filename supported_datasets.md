@@ -55,7 +55,12 @@ of their metadata appear to match other sources.
   - Chemin L1B and L2 RDRs, and EDRs
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
-  (*note: L0 line prefix tables are not currently supported*) 
+  (*note: L0 line prefix tables are not currently supported*)
+- Galileo 
+  - magnetometer tables (except summary tables)
+- Juno
+  - FGM tables
+  - Gravity Science tables
 
 ## Notionally Supported Datasets:
 - MRO
@@ -70,7 +75,6 @@ of their metadata appear to match other sources.
   - JIRAM EDRs and RDRs *note: RDRs may not read correctly from their PDS4
   labels. We recommend opening them from their PDS3 labels.*
   - JEDI EDRs and RDRs
-  - FGM tables
   - MWR *note: performance is better if read from the PDS3 labels. this
   requires .FMT (format) files, available in the root directories of the MWR
   volumes.*
@@ -78,7 +82,6 @@ of their metadata appear to match other sources.
   efficiently from PDS3 labels*
   - Juno Waves reduced tables
   - JADE EDRs and RDRs
-- Galileo magnetometer tables
 
 ## Known Unsupported Datasets
 - MRO
@@ -95,3 +98,5 @@ of their metadata appear to match other sources.
 - Juno
   - UVS (support planned)
   - Waves EDR (support not planned)
+- Galileo
+  - magnetometer summary tables (other tables supported)

@@ -32,15 +32,16 @@ from pdr.formats import (
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
 )
-from pdr.np_utils import enforce_order_and_object, casting_to_float
+from pdr.np_utils import enforce_order_and_object, casting_to_float, \
+    np_from_buffered_io
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     depointerize,
-    filter_duplicate_pointers,
     read_pvl_label,
     literalize_pvl,
 )
+from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.parselabel.utils import trim_label
 from pdr.pd_utils import (
     insert_sample_types_into_df,
@@ -68,7 +69,7 @@ def process_single_band_image(f, props):
     # TODO: added this 'count' parameter to handle a case in which the image
     #  was not the last object in the file. We might want to add it to
     #  the multiband loaders too.
-    image = np.fromfile(f, dtype=numpy_dtype, count=props['pixels'])
+    image = np_from_buffered_io(f, dtype=numpy_dtype, count=props['pixels'])
     image = image.reshape(
         (props["nrows"], props["ncols"] + props["prefix_cols"])
     )
@@ -82,7 +83,7 @@ def process_single_band_image(f, props):
 
 def process_band_sequential_image(f, props):
     _, numpy_dtype = make_format_specifications(props)
-    image = np.fromfile(f, dtype=numpy_dtype)
+    image = np_from_buffered_io(f, numpy_dtype, count=props["pixels"])
     image = image.reshape(
         (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
     )
@@ -101,9 +102,10 @@ def process_line_interleaved_image(f, props):
     image, prefix = [], []
     for _ in np.arange(props["nrows"]):
         prefix.append(f.read(props["prefix_bytes"]))
-        frame = np.fromfile(f, numpy_dtype, count=props["pixels"]).reshape(
-            props["BANDS"], props["ncols"]
-        )
+        frame = np_from_buffered_io(
+            f, numpy_dtype, count=props["pixels"]).reshape(
+                props["BANDS"], props["ncols"]
+            )
         image.append(frame)
         del frame
     image = np.ascontiguousarray(np.array(image).swapaxes(0, 1))
@@ -126,15 +128,15 @@ def skeptically_load_header(
                 return cached_pvl_load(check_cases(path))
             except ValueError:
                 pass
-        file = open(check_cases(path))
         if as_rows is True:
-            if start > 0:
-                file.readlines(start)
-            text = "\r\n".join(file.readlines(length))
+            with open(check_cases(path)) as file:
+                if start > 0:
+                    file.readlines(start)
+                text = "\r\n".join(file.readlines(length))
         else:
-            file.seek(start)
-            text = file.read(length)
-        file.close()
+            with open(check_cases(path), 'rb') as file:
+                file.seek(start)
+                text = file.read(length).decode()
         return text
     except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
@@ -182,16 +184,25 @@ class Metadata(MultiDict):
     # TODO: implement PDS4-style XML (or XML alias object) formatting.
     """
 
-    def __init__(self, mapping_params, syntax="pds3", **kwargs):
+    def __init__(self, mapping_params, standard="PDS3", **kwargs):
         mapping, params = mapping_params
         super().__init__(mapping, **kwargs)
         self.fieldcounts = countby(identity, params)
-        self.syntax = syntax
-        if self.syntax == "pds3":
+        self.standard = standard
+        if self.standard == "PDS3":
             self.formatter = literalize_pvl
+        elif self.standard == "PDS4":
+            # we're trusting that pds4_tools stringified everything correctly.
+            # also note that this has no default capacity to describe units --
+            # you have to explicitly check the 'attrib' attribute of the
+            # XML node, which is not preserved by Label.to_dict().
+            # TODO: replace pds4_tools' Label.to_dict() with our own
+            #  literalizer function.
+            self.formatter = identity
         else:
             raise NotImplementedError(
-                "Syntaxes other than PDS3-style PVL are not yet implemented."
+                "Syntaxes other than PDS3-style PVL and preprocessed PDS4 XML "
+                "are not yet implemented."
             )
         # note that 'directly' caching these methods can result in recursive
         # reference chains behind the lru_cache API that can prevent the
@@ -246,7 +257,7 @@ class Metadata(MultiDict):
         matches `text`, even if it is nested inside a mapping, iff the value
         itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
         evaluate it using self.formatter. raise a warning if there are
-        multiple keys matching this.1
+        multiple keys matching this.
         if there is no key matching 'text', will evaluate and return the
         metadata as a whole.
         WARNING: this function's return values are memoized for performance.
@@ -310,20 +321,19 @@ class Data:
         # where can we look for files contaniing data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + list(search_paths)
+        self.standard = None
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
             self.filename, label_fn, skip_existence_check
         )
+        # cache for pds4_tools.reader.general_objects.Structure objects.
+        self._pds4_structures = None
         if str(self.labelname).endswith(".xml"):
-            # Just use pds4_tools if this is a PDS4 file
-            # TODO: do this better, including lazy
-            import pds4_tools as pds4
-
-            data = pds4.read(self.labelname, quiet=True)
-            for structure in data.structures:
-                setattr(self, structure.id.replace(" ", "_"), structure.data)
-                self.index += [structure.id.replace(" ", "_")]
-            return
+            self.standard = "PDS4"
+            self._pds4_structures = {}
+            self._init_pds4()
+        else:
+            self.standard = "PDS3"
         try:
             self.metadata = self.read_metadata()
         except (UnicodeError, FileNotFoundError) as ex:
@@ -332,13 +342,27 @@ class Data:
             )
         self._metaget_interior = _metaget_factory(self.metadata)
         self._metablock_interior = _metablock_factory(self.metadata)
-        self.pointers = filter_duplicate_pointers(
-            get_pds3_pointers(self.metadata)
-        )
-        # this is a weird edge case where someone has opened a format file
-        # or something like that, but there's no reason to not allow it
+        if self.standard == "PDS4":
+            return
+        self.pointers = get_pds3_pointers(self.metadata)
+        # if self.pointers is None, we've probably got a weird edge case where
+        # someone directly opened a PVL file that's not a label -- a format
+        # file or something -- but there's no reason to not allow it.
         if self.pointers is not None:
             self._find_objects()
+
+    def _init_pds4(self):
+        # Just use pds4_tools if this is a PDS4 file
+        import pds4_tools as pds4
+
+        structure_list = pds4.read(
+            self.labelname, lazy_load=True, quiet=True, no_scale=True
+        )
+        for structure in structure_list.structures:
+            self._pds4_structures[structure.id.replace(" ", "_")] = structure
+            self.index.append(structure.id.replace(" ", "_"))
+        self._pds4_structures["label"] = structure_list.label
+        self.index.append("label")
 
     def _init_search_paths(self):
         for target in ("labelname", "filename"):
@@ -361,6 +385,7 @@ class Data:
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
+        # TODO: should we move every check_cases call here?
         if isinstance(target, str):
             return self.get_absolute_path(target)
         else:
@@ -378,7 +403,7 @@ class Data:
                 file_list = file_list + [file]
             return file_list
         try:
-            return self._object_to_filename(object_name)
+            return check_cases(self._object_to_filename(object_name))
         except FileNotFoundError:
             if raise_missing is True:
                 raise
@@ -418,6 +443,13 @@ class Data:
                         continue
                     raise value_error
             return
+        if (object_name in dir(self)) and (reload is False):
+            raise ValueError(
+                f"{object_name} is already loaded; pass reload=True to "
+                f"force reload."
+            )
+        if self.standard == "PDS4":
+            return self._load_pds4(object_name)
         if self.file_mapping.get(object_name) is None:
             target = self._target_path(object_name)
             if target is None:
@@ -435,11 +467,6 @@ class Data:
                 )
                 return
             self.file_mapping[object_name] = target
-        if (object_name in dir(self)) and (reload is False):
-            raise ValueError(
-                f"{object_name} is already loaded; pass reload=True to "
-                f"force reload."
-            )
         try:
             obj = self.load_from_pointer(object_name, **load_kwargs)
             if obj is None:  # trivially loaded
@@ -463,23 +490,41 @@ class Data:
                 self, object_name, self._catch_return_default(object_name, ex)
             )
 
+    def _load_pds4(self, object_name):
+        """
+        load this object however pds4_tools wants to load this object, then
+        reformat to df or expose the array handle in accordance with our type
+        conventions.
+        """
+        structure = self._pds4_structures[object_name]
+        from pds4_tools.reader.label_objects import Label
+        if isinstance(structure, Label):
+            setattr(self, "label", structure)
+        elif structure.is_array():
+            setattr(self, object_name, structure.data)
+        elif structure.is_table():
+            from pdr.pd_utils import structured_array_to_df
+            df = structured_array_to_df(structure.data)
+            df.columns = df.columns.str.replace(r"GROUP_?\d+", "", regex=True)
+            setattr(self, object_name, df)
+        # TODO: do other important cases exist?
+        else:
+            setattr(self, object_name, structure.data)
+
     def read_metadata(self):
         """
-        Attempt to ingest a product's metadata. If it has a
-        detached XML label, ingest it using pds4_tools; if it has a detached
-        PDS3/PVL label, ingest it with pdr.parselabel.pds3.read_pvl_label.
-        If it has no detached label, attempt to ingest attached PVL from
-        the product's nominal path using read_pvl_label.
+        Attempt to ingest a product's metadata. if it is a PDS4 product, its
+        XML label will have been ingested by pds4_tools in self._init_pds4().
+        in that case, simply preprocess it for Metadata.__init__.
+        otherwise, if it has a detached PDS3/PVL label, ingest it with
+        pdr.parselabel.pds3.read_pvl_label.
+        If we have found no detached label of any kind, attempt to ingest
+        attached PVL from the product's nominal path using read_pvl_label.
         """
+        if self.standard == "PDS4":
+            return Metadata(reformat_pds4_tools_label(self.label))
         if self.labelname is not None:  # a detached label exists
-            if Path(self.labelname).suffix.lower() == ".xml":
-                import pds4_tools as pds4
-
-                metadata = pds4.read(
-                    self.labelname, quiet=True
-                ).label.to_dict()
-            else:
-                metadata = Metadata(read_pvl_label(self.labelname))
+            metadata = Metadata(read_pvl_label(self.labelname))
         else:
             # look for attached label
             metadata = Metadata(read_pvl_label(self.filename))
@@ -656,20 +701,26 @@ class Data:
         # TODO, maybe: add better delimiter detection & dispatch
         start, length, as_rows = self.table_position(object_name)
         sep = check_explicit_delimiter(self.metablock_(object_name))
-        if as_rows is False:
-            bytes_buffer = head_file(fn, nbytes=length, offset=start)
-            string_buffer = StringIO(bytes_buffer.read().decode())
-            bytes_buffer.close()
-        else:
-            with open(fn) as file:
+        with decompress(fn) as f:
+            if as_rows is False:
+                bytes_buffer = head_file(f, nbytes=length, offset=start)
+                string_buffer = StringIO(bytes_buffer.read().decode())
+                bytes_buffer.close()
+            else:
                 if start > 0:
-                    file.readlines(start)
-                string_buffer = StringIO("\r\n".join(file.readlines(length)))
+                    [next(f) for _ in range(start)]
+                if length is None:
+                    lines = f.readlines()
+                else:
+                    lines = [next(f) for _ in range(length)]
+                string_buffer = StringIO("\r\n".join(map(bytes.decode, lines)))
             string_buffer.seek(0)
         try:
             table = pd.read_csv(string_buffer, sep=sep, header=None)
         # TODO: I'm not sure this is a good idea
         # TODO: hacky, untangle this tree
+        # TODO: this won't work for compressed files, but I'm not even
+        #  sure what we're using it for right now
         except (UnicodeError, AttributeError, ParserError):
             table = None
         if table is None:
@@ -768,9 +819,10 @@ class Data:
     def _interpret_as_binary(self, fmtdef, dt, fn, pointer):
         count = self.metablock_(pointer).get("ROWS")
         count = count if count is not None else 1
-        array = np.fromfile(
-            fn, dtype=dt, offset=self.data_start_byte(pointer), count=count
-        )
+        with decompress(fn) as f:
+            array = np_from_buffered_io(
+                f, dtype=dt, offset=self.data_start_byte(pointer), count=count
+            )
         swapped = enforce_order_and_object(array, inplace=False)
         # TODO: I believe the following commented-out block is deprecated
         #  but I am leaving it in as a dead breadcrumb for now just in case
@@ -813,7 +865,10 @@ class Data:
         block = self.metablock_(object_name)
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
-            start = target[1] - 1
+            if isinstance(target[1], dict):
+                start = target[1]['value'] - 1
+            else:
+                start = target[1] - 1
             if "RECORDS" in block.keys():
                 length = block["RECORDS"]
         else:
@@ -838,7 +893,7 @@ class Data:
         from astropy.io import fits
 
         try:
-            hdulist = fits.open(check_cases(self.file_mapping[pointer]))
+            hdulist = fits.open(self.file_mapping[pointer])
             if "HEADER" in pointer:
                 return hdulist[pointer_to_fits_key(pointer, hdulist)].header
             return hdulist[pointer_to_fits_key(pointer, hdulist)].data
@@ -901,7 +956,9 @@ class Data:
         }
         self.specials[key] = specials
 
-    def get_scaled(self, key: str, inplace=False, float_dtype=None) -> np.ndarray:
+    def get_scaled(
+        self, key: str, inplace=False, float_dtype=None
+    ) -> np.ndarray:
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.
@@ -909,9 +966,14 @@ class Data:
 
         if inplace is True, does calculations in-place on original array,
         with attendant memory savings and destructiveness.
-
-        TODO: as above, does nothing for PDS4.
         """
+        # Do whatever pds4_tools would most likely do with these data.
+        # TODO: shake this out much more vigorously. perhaps make
+        #  the inplace and float_dtype arguments do something.
+        #  check and see if implicit special constants ever still exist
+        #  stealthily in PDS4 data. etc.
+        if self.standard == "PDS4":
+            return _scale_pds4_tools_struct(self._pds4_structures[key])
         obj, block = self._init_array_method(key)
         if key not in self.specials:
             consts = special_image_constants(self)
@@ -1016,7 +1078,7 @@ class Data:
             if target.get("units") == "BYTES":
                 return False
         # TODO: untangle this, everywhere
-        if isinstance(target := self._get_target(object_name), list):
+        if isinstance(target := self._get_target(object_name), (list, tuple)):
             if isinstance(target[-1], dict):
                 if target[-1].get("units") == "BYTES":
                     return False
@@ -1096,10 +1158,7 @@ class Data:
     #  split up the image-gen part of _browsify_array, something like that
     def show(self, object_name=None, scaled=True, **browse_kwargs):
         if object_name is None:
-            object_name = [obj for obj in self.index if "IMAGE" in obj]
-            if object_name is None:
-                raise ValueError("please specify the name of an image object.")
-            object_name = object_name[0]
+            raise ValueError(f"please specify the name of an image object. keys include {self.index}")
         if not isinstance(self[object_name], np.ndarray):
             raise TypeError("Data.show only works on array data.")
         if scaled is True:
@@ -1246,6 +1305,28 @@ def _metablock_factory(metadata, cached=True):
 
 class DuplicateKeyWarning(UserWarning):
     pass
+
+
+# TODO: shake this out much more vigorously
+def _scale_pds4_tools_struct(struct):
+    """see pds4_tools.reader.read_arrays.new_array"""
+    # TODO: apply bit_mask
+    from pds4_tools.reader.data_types import (
+        apply_scaling_and_value_offset, pds_to_numpy_type
+    )
+    array = struct.data
+    element_array = struct.meta_data['Element_Array']
+    scale_kwargs = {
+        'scaling_factor': element_array.get('scaling_factor'),
+        'value_offset': element_array.get('value_offset')
+    }
+    # TODO: is this important?
+    #     dtype = pds_to_numpy_type(struct.meta_data.data_type(),
+    #     data=array, **scale_kwargs)
+    special_constants = struct.meta_data.get('Special_Constants')
+    array = apply_scaling_and_value_offset(
+        array, special_constants=special_constants, **scale_kwargs)
+    return array
 
 
 def looks_like_ascii(data, dtype, pointer):

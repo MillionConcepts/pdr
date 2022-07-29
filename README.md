@@ -19,31 +19,34 @@ conda install -c conda-forge pdr
 ```
 The minimum supported version of Python is _3.9_.
 
-Using the conda install will install all dependencies in the environment.yml file
-(both required and optional) for pdr. If you'd prefer to forego the optional dependencies please use minimal_environment.yml in your installation. 
-This is not supported through a direct conda install as described above and will take additional steps. Optional dependencies and their
-added functions are listed below:
+Using the conda install will install all dependencies in the environment.yml 
+file (both required and optional) for pdr. If you'd prefer to forego the 
+optional dependencies, please use minimal_environment.yml in your 
+installation. This is not supported through a direct conda install as 
+described above and will reqiore additional steps. Optional dependencies 
+and the added functionality they support are listed below:
 
-  - pvl: allows Data.load("LABEL", as_pvl=True) which will load your label as a pvl object instead of plain text
-  - astropy: allows reading of .fits files
-  - jupyter: allows usage of the Example Jupyter Notebook (and other jupyter notebooks you create)
-  - pillow: allows reading of TIFF files and rendering browse images
-  - matplotlib: allows usage of `save_sparklines`, an experimental browse function
+  - `pvl`: allows `Data.load("LABEL", as_pvl=True)` which will load PDS3 labels as `pvl` objects rather than plain text
+  - `astropy`: adds support for FITS files
+  - `jupyter`: allows usage of the Example Jupyter Notebook (and other jupyter notebooks you create)
+  - `pillow`: adds support for TIFF files and browse image rendering
+  - `matplotlib`: allows usage of `save_sparklines`, an experimental browse function
 
 ### Usage
 
 (You can check out our example Notebook on Binder for a 
-quick interactive demo of functionality: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/master))
+quick interactive demo of functionality: 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/master))
 
-Just run `import pdr` and then `pdr.read(filename)` where _filename_ is the
+Just run `import pdr` and then `pdr.read(filename)`, where _filename_ is the
 full path to a data file _or_ a metadata / label file (extensions .LBL,
 .lbl, or .xml). `read()` will look for corresponding data or metadata
 files in the same path, or read metadata directly from the data file if it has
 an attached label.
 
-The function will return a `pdr.Data` object whose attributes include all of the data
-and metadata. These attributes are named according to the names of the data
-objects as given in the label. They can be accessed either as attributes or using
+`read` returns a `pdr.Data` object whose attributes include all of the data
+and metadata. Data attributes take their names directly from the product's
+label. They can be accessed either as attributes or using
 `dict`-style \[\] index notation. For example, PDS3 image objects are often
 named "IMAGE", so you could examine a PDS3 image as an array with:
 ```
@@ -57,10 +60,12 @@ array([[21, 21, 20, ..., 19, 19, 20],
        [25, 25, 25, ..., 27, 26, 26],
        [24, 25, 25, ..., 26, 26, 26]], dtype=int16)
 ```
-The primary metadata is stored within the `pdr.Data` object as a `pdr.Metadata` object. The values within the 
-metadata can be accessed using `dict`-style \[\] index notation. For example:
+Parsed metadata are stored in a `pdr.Metadata` object and exposed as the
+`metadata` property of a `pdr.Data` object. You can access metadata values 
+with `dict`-style \[\] index notation or the convenience method `metaget`. 
+For instance:
 ```
->>> data.metadata['INSTRUMENT_HOST_NAME']
+>>> data.metaget('INSTRUMENT_HOST_NAME')
 'MARS SCIENCE LABORATORY'
 ```
 Some PDS products (like this one) contain multiple data objects. You can look
@@ -84,13 +89,13 @@ at all of the objects associated with a product with `.keys()`:
 
 ### Output data types
 In general:
-+ Image data are presented as `numpy` arrays.
-+ Table data are presented as `pandas` DataFrames.
-+ Header and label data are presented as plain text objects.
-+ Metadata is read from the label and presented as a pdr.Metadata class (behaves as a `dict`)
++ Image data are presented as NumPy `ndarray` objects.
++ Table data are presented as pandas `DataFrame` objects. 
++ Parsed label contents (metadata fields + values) are presented in a
+`pdr.Metadata` object (behaves much like a `dict`).
++ Header and label contents are presented as plain text (`str` objects), 
+`bytes`, or, for PDS4 labels, `pds4_tools.reader.label_objects.Label` objects.
 + Other data are presented as simple python types (`str`, `tuple`, `dict`).
-+ Data loaded from PDS4 .xml labels [are presented as whatever object
-  `pds4-tools` returns.](https://pdssbn.astro.umd.edu/tools/pds4_tools_docs/current/) We plan to normalize this behavior in the future.
 + There might be rare exceptions.
 
 ### Notes and Caveats
@@ -99,39 +104,36 @@ Some data, especially calibrated image data, require the application of
 additional offsets or scale factors to convert the storage units to meaningful
 physical units. The information on how and when to apply such adjustments is
 typically stored (as plain text) in the instrument SIS, and the scale factors
-themselves are often (but not always) stored in the label. Many calibrated
-image files also contain special constants (like missing or invalid data),
-which are often not explicitly specified in the label. `pdr` is therefore not
-guaranteed to know anything about or correctly apply these constants.
+themselves are often (but not always) stored in the label. Image data also 
+often contain special constants (like missing or invalid data), and these 
+constants are often not explicitly specified in the label. 
+`pdr` is therefore not guaranteed to correctly apply -- or even know 
+anything about -- these constants.
 
 `pdr.Data` objects offer a convenience method that attempts to mask invalid
 values and apply any scaling and offset specified in the label. Use it like:
 `scaled_image = data.get_scaled('IMAGE')`. However, we do not perform science
 validation of these outputs, so **do not trust that they are ready for
-analysis** without further processing or validation. Contributions towards making this
-more effective for specific data product types are very much welcomed.
+analysis** without further processing or validation. Contributions towards 
+making this more effective for specific data product types are very much 
+welcomed.
 
-If you'd like to visualize the outputs that this creates the `dump_browse`
-feature creates a separate browse product (.jpg, .txt., or .csv) in the folder
-you execute from. Use it like: `data.dump_browse()`. This uses the get_scaled
-feature for images and will also output browse products for tables and labels.
-
-#### PDS4 products
-All valid PDS4 products should be fully supported. `pdr.Data` simply wraps
-`pds4-tools`. They may not, however, behave in exactly the same way as objects
-loaded using *pdr*'s native functionality. In general, if a PDS3 label is
-available for a product, we recommend loading the product from it rather than
-the PDS4 label. We plan to implement a unified interface for PDS3 and PDS4
-metadata later on in the project.
+If you'd like to visualize the outputs that this creates, the `dump_browse`
+method creates separate browse files for all currently-loaded objects 
+(as .jpg, .txt., or .csv) in your working directory. Use it like: 
+`data.dump_browse()`. This uses the `get_scaled` method for images and will 
+also output browse products for tables and labels.
 
 #### .FMT files
-Some PDS3 table data are defined in external reference files (usually with a
-`.FMT` extension). You can often find these in the LABEL or DOCUMENT
-subdirectories of the data archive volumes. If you place the relevant format
-files in the same directory as the data files you are trying to read, *pdr*
-will be able to find them. Otherwise, it will not and a warning will be thrown 
-with the name of the file needed to assist in locating it. Future functionality 
-may make this smoother.
+Some PDS3 table formats are defined in external reference files (usually 
+with a `.FMT` extension). You can often find these in the LABEL or DOCUMENT
+subdirectories of data archive volumes. If you place the relevant format
+files in the same directory as the data files you are trying to read, `pdr`
+will be able to use them to interpret the table data. If you attempt to read 
+a table object that requires a format file that is not present, `pdr` will
+not be able to open the table object, and will throw a warning that includes 
+the format file name in order to help you go find it. Future functionality 
+may make this process smoother.
 
 #### Data attribute naming
 The observational and metadata attributes (or keys) of `pdr.Data`
@@ -142,22 +144,33 @@ it causes us to break strict PEP-8 standards for attribute capitalization.
 There are three exceptions at present:
 1. Some table formats include repeated column names. For usability and
 compatibility, we force these to be unique by suffixing 0-indexed increasing
-integers. So a table definition with two separate columns named "COLUMN" will return a pandas DataFrame with columns named "COLUMN_0" and "COLUMN_1."
+integers. So a table definition with two separate columns named "COLUMN" will 
+return a pandas DataFrame with columns named "COLUMN_0" and "COLUMN_1."
 2. PDS3 data object names sometimes contain spaces. _pdr_ replaces the spaces
 with underscores in order to make them usable as attributes.
-3. PDS4 labels loaded by `pds4-tools` are renamed "LABEL" for internal
-consistency. We plan to deprecate this behavior in the future.
+
+#### PDS4 products
+`pdr.Data` wraps [`pds4_tools`](https://github.com/Small-Bodies-Node/pds4_tools/) 
+to read PDS4 products. All valid PDS4 products should be fully supported. `pdr`
+modifies some `pds4_tools` outputs in order to provide interface and behavior
+consistency. In general, you should be able to use `pdr` with PDS4 products 
+the same way you do with PDS3 products.
+
+Some PDS data products have both PDS3 and PDS4 labels. Data object names, 
+metadata, and even data field names and format specifications often differ 
+slightly between these labels, so `pdr` may produce slightly different outputs
+depending on which label you use to initialize it. This is not a bug. 
+However, in general, if a PDS3 label is available, we recommend initializing 
+the object from the PDS3 label rather than the PDS4 label.
 
 #### Lazy loading
-`pdr.Data.read` has lazy loading as default and will only load data objects from 
-a file when that object is referenced. For example, calling data.IMAGE will load 
-the IMAGE object at that time. You can alternatively load objects by using the 
-`load` method, like `data.load("IMAGE")`. You can also pass the 'all' argument 
-to load all data objects, like `data.load('all')`. Lazy-loading variety 
-of reasons, but one common use case is accessing products with multiple large 
-files (like Chandrayaan-1 M3 L1B and L2 products). It is likely that in many cases 
-you will only want to reference one or two of those files, and not waste time and 
-memory loading all of them on initialization.
+Because many planetary data objects are very large, `pdr` helps conserve 
+your time and memory by loading them lazily. It loads data objects into memory
+when they are explicitly referenced, not when `pdr.Data` is initialized. 
+For example, referencing`data.IMAGE` will immediately load the IMAGE object if 
+it has not already been loaded. Alternatively, you can load objects by using 
+the `load` method, like `data.load("IMAGE")`. You can also pass the 'all' 
+argument to load all data objects, like `data.load("all")`. 
 
 #### Missing files
 If a file referenced by a label is missing, *pdr* will throw warnings and
@@ -174,9 +187,11 @@ management in the future.
 ### tests
 
 Our testing methodology for *pdr* currently focuses on end-to-end integration
-testing to ensure consistency, coverage of supported datasets, and (to the extent we can verify it) correctness of output.
+testing to ensure consistency, coverage of supported datasets, and 
+(to the extent we can verify it) correctness of output.
 
-the test suite for *pdr* lives in a different repository: https://github.com/MillionConcepts/pdr-tests. Its core is an application called
+the test suite for *pdr* lives in a different repository: 
+https://github.com/MillionConcepts/pdr-tests. Its core is an application called
 **ix**. It should be considered a fairly complete alpha; we are actively using 
 it both as a regression test suite and an active development tool.
 

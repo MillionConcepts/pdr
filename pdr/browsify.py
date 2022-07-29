@@ -156,6 +156,9 @@ def browsify(
             save_sparklines(obj, outbase)
     elif obj is None:
         return
+    elif "to_string" in dir(obj):  # probably an XML ElementTree interface
+        with open(outbase + ".xml", "w") as stream:
+            stream.write(obj.to_string())
     else:
         # this should usually work. it may need another backup binary blob
         # pickler for really weird binary objects.
