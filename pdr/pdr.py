@@ -144,7 +144,7 @@ def skeptically_load_header(
 
 def pointer_to_fits_key(pointer, hdulist):
     """
-    In some data sets with FITS, the PDS3 object names and FITS object
+    In some datasets with FITS, the PDS3 object names and FITS object
     names are not identical. This function attempts to use Levenshtein
     "fuzzy matching" to identify the correlation between the two. It is not
     guaranteed to be correct! And special case handling might be required in
