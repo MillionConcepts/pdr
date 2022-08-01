@@ -69,9 +69,13 @@ of their metadata appear to match other sources.
   - FGM tables
   - Gravity Science tables
 - Apollo
-  - Apollo 12 and 15 Solar Wind Spectrometer tables
-  - Apollo 15 X-ray Fluorescence Spectrometer tables
-  - Apollo 14 and 15 Cold Cathode Ion Gage digitized plots and index tables
+  - all PDS3 datasets that have not been deprecated by PDS4 versions. 
+    specifically:
+    - Apollo 12 and 15 Solar Wind Spectrometer tables
+    - Apollo 15 and 16 X-ray Fluorescence Spectrometer tables
+    - Apollo 14 and 15 Cold Cathode Ion Gage digitized plots and index tables
+    - Apollo 15 and 16 Lunar Self-Recording Penetrometer transcribed tables
+    - BUG soil reflectance tables
 
 ## Notionally Supported Datasets:
 - MRO
@@ -93,6 +97,10 @@ of their metadata appear to match other sources.
   efficiently from PDS3 labels*
   - Juno Waves reduced tables
   - JADE EDRs and RDRs
+- Apollo
+  - PDS3 versions of Apollo 15 and 17 Heat Flow Experiment tables -- 
+    however, we recommend using the PDS4 collection a15_17_hfe_concatenated,
+    which contains corrections and additional data, instead
 
 ## Known Unsupported Datasets
 - MRO
