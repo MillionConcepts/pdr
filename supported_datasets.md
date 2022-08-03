@@ -76,6 +76,8 @@ of their metadata appear to match other sources.
     - Apollo 14 and 15 Cold Cathode Ion Gage digitized plots and index tables
     - Apollo 15 and 16 Lunar Self-Recording Penetrometer transcribed tables
     - BUG soil reflectance tables
+- Mars Express
+  - MARSIS EDRs and RDRs
 
 ## Notionally Supported Datasets:
 - MRO
