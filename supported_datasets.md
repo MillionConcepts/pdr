@@ -1,8 +1,6 @@
-supported_datasets.md
+# Datasets Supported by `pdr`
 
-# Datasets Supported by `pdr`:
-
-"Support" from *pdr* falls into two categories: official and notional.
+"Support" from `pdr` falls into two categories: official and notional.
 
 **_Officially supported datasets_** have been extensively tested and all of
 their products are supported. If you encounter a file of this type that does not
@@ -19,10 +17,19 @@ Many datasets that do not fall into either of these categories may work
 just fine. They are not listed simply because we have not had a chance to 
 test them yet.
 
-Some datasets are also **_Known Unsupported_**. Some files or objects may
+Some datasets are also **_Known unsupported_**. Some files or objects may
 open, while others may not; those that do may open incorrectly. Support is
 planned for some of these datasets. Others—due to unusual data formats,
 availability, or quality issues—may never be supported.
+
+**All PDS4 products, unless explictly listed here as known unsupported or specified
+in [`pds4_tools`](https://github.com/Small-Bodies-Node/pds4_tools/) documentation
+as out of support, are considered at least notionally supported**. We 
+give specific comments and usage suggestions about some PDS4 product types below. 
+PDS4 products are much more rigorously standardized and validated than PDS3 
+products, allowing the `pds4_tools` developers to make very broad support 
+claims that we consider trustworthy. All currently-known exceptions are due 
+to data QA problems rather than deficiencies in `pds4_tools`. 
 
 As a general note, our confidence is generally lower about products that
 contain raw telemetry (or other forms of unprocessed data) or that use 
@@ -61,6 +68,14 @@ of their metadata appear to match other sources.
 - Juno
   - FGM tables
   - Gravity Science tables
+- Apollo
+  - all PDS3 datasets that have not been deprecated by PDS4 versions. 
+    specifically:
+    - Apollo 12 and 15 Solar Wind Spectrometer tables
+    - Apollo 15 and 16 X-ray Fluorescence Spectrometer tables
+    - Apollo 14 and 15 Cold Cathode Ion Gage digitized plots and index tables
+    - Apollo 15 and 16 Lunar Self-Recording Penetrometer transcribed tables
+    - BUG soil reflectance tables
 
 ## Notionally Supported Datasets:
 - MRO
@@ -82,6 +97,10 @@ of their metadata appear to match other sources.
   efficiently from PDS3 labels*
   - Juno Waves reduced tables
   - JADE EDRs and RDRs
+- Apollo
+  - PDS3 versions of Apollo 15 and 17 Heat Flow Experiment tables -- 
+    however, we recommend using the PDS4 collection a15_17_hfe_concatenated,
+    which contains corrections and additional data, instead
 
 ## Known Unsupported Datasets
 - MRO

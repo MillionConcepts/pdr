@@ -116,7 +116,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
 
 def is_trivial(pointer) -> bool:
     # TIFF tags / headers should always be parsed by the TIFF parser itself
-    if ("TIFF" in pointer) and ("IMAGE" not in pointer):
+    if (
+        ("TIFF" in pointer)
+        and ("IMAGE" not in pointer)
+        and ("DOCUMENT" not in pointer)
+    ):
         return True
     # we don't present STRUCTURES separately from their tables;
     if "STRUCTURE" in pointer:
