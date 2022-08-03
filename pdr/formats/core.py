@@ -67,7 +67,8 @@ def check_special_bit_column_case(data):
     if instrument in (
         "ALPHA PARTICLE X-RAYSPECTROMETER",
         "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT",
-        "CHEMISTRY AND MINERALOGY INSTRUMENT"
+        "CHEMISTRY AND MINERALOGY INSTRUMENT",
+        "MARS ADVANCED RADAR FOR SUBSURFACE ANDIONOSPHERE SOUNDING"
     ):
         return True, "MSB_BIT_STRING"
     return False, None
