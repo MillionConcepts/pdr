@@ -67,7 +67,7 @@ of their metadata appear to match other sources.
   - magnetometer tables (except summary tables)
 - Juno
   - FGM tables
-  - Gravity Science tables
+  - Gravity Science tables (EDR, RSR, and TNF)
 - Apollo
   - all PDS3 datasets that have not been deprecated by PDS4 versions. 
     specifically:
