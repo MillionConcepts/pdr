@@ -38,11 +38,11 @@ and the added functionality they support are listed below:
 quick interactive demo of functionality: 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/master))
 
-Just run `import pdr` and then `pdr.read(filename)`, where _filename_ is the
-full path to a data file _or_ a metadata / label file (extensions .LBL,
-.lbl, or .xml). `read()` will look for corresponding data or metadata
-files in the same path, or read metadata directly from the data file if it has
-an attached label.
+Just open and python shell and run `import pdr` and then `pdr.read(filename)`, 
+where _filename_ is the full path to a data file _or_ a metadata / label file 
+(extensions .LBL, .lbl, or .xml). `read()` will look for corresponding data 
+or metadata files in the same path, or read metadata directly from the data file 
+if it has an attached label.
 
 `read` returns a `pdr.Data` object whose attributes include all of the data
 and metadata. Data attributes take their names directly from the product's
