@@ -288,7 +288,7 @@ def associate_label_file(
 ) -> Optional[str]:
     if label_filename is not None:
         return check_cases(Path(label_filename).absolute(), skip_check)
-    elif data_filename.endswith(LABEL_EXTENSIONS):
+    elif data_filename.lower().endswith(LABEL_EXTENSIONS):
         return check_cases(data_filename)
     for lext in LABEL_EXTENSIONS:
         try:
