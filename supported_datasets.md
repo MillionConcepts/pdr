@@ -78,6 +78,8 @@ of their metadata appear to match other sources.
     - BUG soil reflectance tables
 - Mars Express
   - MARSIS EDRs and RDRs
+- Mars Odyssey
+  - THEMIS BTR, ABR, PBT, and ALB
 
 ## Notionally Supported Datasets:
 - MRO
@@ -121,3 +123,5 @@ of their metadata appear to match other sources.
   - Waves EDR (support not planned)
 - Galileo
   - magnetometer summary tables (other tables supported)
+- Mars Odyssey
+  - THEMIS EDR, RDR, and GEO (support planned)
