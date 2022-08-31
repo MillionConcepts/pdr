@@ -80,6 +80,9 @@ of their metadata appear to match other sources.
   - MARSIS EDRs and RDRs
 - Mars Odyssey
   - THEMIS BTR, ABR, PBT, and ALB
+- MGS
+  - TES-TSDR ATM, BOL, GEO, OBS, POS, and TLM
+  - TES-TSDR IFG and RAD (fixed-length '.TAB' tables only)
 
 ## Notionally Supported Datasets:
 - MRO
@@ -125,3 +128,7 @@ of their metadata appear to match other sources.
   - magnetometer summary tables (other tables supported)
 - Mars Odyssey
   - THEMIS EDR, RDR, and GEO (support planned)
+- MGS
+  - TES-TSDR PCT (support not planned)
+  - TES-TSDR variable-length '.VAR' tables (support not planned)
+
