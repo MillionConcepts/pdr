@@ -153,7 +153,14 @@ def browsify(
         obj.to_csv(outbase + ".csv"),
         # TODO: experimental, add more handles
         if any(("spectrum" in c.lower() for c in obj.columns)):
-            save_sparklines(obj, outbase)
+            try:
+                save_sparklines(obj, outbase)
+            except TypeError:
+                warnings.warn(
+                    "This appears to be a spectrum table, but the "
+                    "experimental sparklines browse rendering function "
+                    "failed. This is not surprising or especially problematic."
+                )
     elif obj is None:
         return
     elif "to_string" in dir(obj):  # probably an XML ElementTree interface

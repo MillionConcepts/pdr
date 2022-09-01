@@ -87,6 +87,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         return True, formats.juno.jiram_image_loader(data, pointer)
     if (
+        (data.metaget_("INSTRUMENT_NAME", "") == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE PROBE")
+        and ("SPECTRUM_TABLE" in pointer)
+    ):
+        return True, formats.rosetta.rosetta_table_loader(data, pointer)
+    if (
         data.metaget_("INSTRUMENT_ID") == "APXS" and "TABLE" in pointer
     ):
         # just an ambiguous name: best to specify it)
