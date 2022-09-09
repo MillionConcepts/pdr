@@ -60,7 +60,8 @@ from pdr.utils import (
 def make_format_specifications(props):
     endian, ctype = props["sample_type"][0], props["sample_type"][-1]
     struct_fmt = f"{endian}{props['pixels']}{ctype}"
-    dtype = np.dtype(f"{endian}{ctype}")
+    np_type = props["sample_type"][1:]
+    dtype = np.dtype(f"{endian}{np_type}")
     return struct_fmt, dtype
 
 

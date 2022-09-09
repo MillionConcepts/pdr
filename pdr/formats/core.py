@@ -213,9 +213,8 @@ def generic_image_properties(object_name, block, data) -> dict:
     else:
         props = {}
         props["BYTES_PER_PIXEL"] = int(block["SAMPLE_BITS"] / 8)
-        # TODO: I think this should have for_numpy set
         props["sample_type"] = sample_types(
-            block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"]
+            block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
         )
         props["nrows"] = block["LINES"]
         props["ncols"] = block["LINE_SAMPLES"]
