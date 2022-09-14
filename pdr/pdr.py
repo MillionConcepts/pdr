@@ -877,9 +877,11 @@ class Data:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
-                    self.metaget_("RECORD_BYTES") is not None
+                self.metaget_("RECORD_BYTES") is not None
             ):
                 length = block["RECORDS"] * self.metaget_("RECORD_BYTES")
+            elif ("ROWS" in block.keys()) and ("ROW_BYTES" in block.keys()):
+                length = block["ROWS"] * block["ROW_BYTES"]
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
