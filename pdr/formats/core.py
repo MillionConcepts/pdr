@@ -75,6 +75,8 @@ def check_special_bit_column_case(data):
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
+    if pointer == 'SHADR_HEADER_TABLE':
+        return True, formats.messenger.shadr_header_table_loader(data)
     if (
         data.metaget_("INSTRUMENT_ID", "") == "LROC"
         and data.metaget_("PRODUCT_TYPE", "") == "EDR"
