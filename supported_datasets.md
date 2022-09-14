@@ -83,6 +83,16 @@ of their metadata appear to match other sources.
 - MGS
   - TES-TSDR ATM, BOL, GEO, OBS, POS, and TLM
   - TES-TSDR IFG and RAD (fixed-length '.TAB' tables only)
+- MESSENGER
+  - GRNS EDR, RDR, CDR, DDR, and DAP
+  - MASCS EDR, CDR, DDR, and DAP
+  - MLA EDR, RDR, RADR, CDR, and GDR
+  - XRS EDR, RDR, and CDR
+    - *note: RDR maps are defined differently in their PDS3 and PDS4 labels. We recommend opening them from their PDS4 labels.*
+  - RSS EDR and RDR
+    - *note: Opening RDR SHADR files from their PDS4 labels is recommended.*
+  - Space Weathering maps
+  - MEAP electron events tables, thermal neutron map, and image cubes
 
 ## Notionally Supported Datasets:
 - MRO
@@ -131,4 +141,7 @@ of their metadata appear to match other sources.
 - MGS
   - TES-TSDR PCT (support not planned)
   - TES-TSDR variable-length '.VAR' tables (support not planned)
+- MESSENGER
+  - Ground calibration data (support not planned)
+  - MEAP enhanced gamma ray spectrometry data
 
