@@ -67,13 +67,16 @@ def check_special_bit_column_case(data):
     if instrument in (
         "ALPHA PARTICLE X-RAYSPECTROMETER",
         "JOVIAN AURORAL PLASMA DISTRIBUTIONS EXPERIMENT",
-        "CHEMISTRY AND MINERALOGY INSTRUMENT"
+        "CHEMISTRY AND MINERALOGY INSTRUMENT",
+        "MARS ADVANCED RADAR FOR SUBSURFACE ANDIONOSPHERE SOUNDING"
     ):
         return True, "MSB_BIT_STRING"
     return False, None
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
+    if pointer == 'SHADR_HEADER_TABLE':
+        return True, formats.messenger.shadr_header_table_loader(data)
     if (
         data.metaget_("INSTRUMENT_ID", "") == "LROC"
         and data.metaget_("PRODUCT_TYPE", "") == "EDR"
@@ -85,6 +88,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and (pointer == "IMAGE")
     ):
         return True, formats.juno.jiram_image_loader(data, pointer)
+    if (
+        (data.metaget_("INSTRUMENT_NAME", "") == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE PROBE")
+        and ("SPECTRUM_TABLE" in pointer)
+    ):
+        return True, formats.rosetta.rosetta_table_loader(data, pointer)
     if (
         data.metaget_("INSTRUMENT_ID") == "APXS" and "TABLE" in pointer
     ):
@@ -115,7 +123,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
 
 def is_trivial(pointer) -> bool:
     # TIFF tags / headers should always be parsed by the TIFF parser itself
-    if ("TIFF" in pointer) and ("IMAGE" not in pointer):
+    if (
+        ("TIFF" in pointer)
+        and ("IMAGE" not in pointer)
+        and ("DOCUMENT" not in pointer)
+    ):
         return True
     # we don't present STRUCTURES separately from their tables;
     if "STRUCTURE" in pointer:
@@ -203,9 +215,8 @@ def generic_image_properties(object_name, block, data) -> dict:
     else:
         props = {}
         props["BYTES_PER_PIXEL"] = int(block["SAMPLE_BITS"] / 8)
-        # TODO: I think this should have for_numpy set
         props["sample_type"] = sample_types(
-            block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"]
+            block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
         )
         props["nrows"] = block["LINES"]
         props["ncols"] = block["LINE_SAMPLES"]

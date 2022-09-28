@@ -118,11 +118,14 @@ PDS3_CONSTANT_NAMES = tuple(PDS3_ISIS_CONSTANT_NAMES + PDS3_CONSTANT_NAMES)
 # (https://isis.astrogeology.usgs.gov/Object/Developer/_special_pixel_8h_source.html)
 
 
+# TODO: make all the dicts nested in this into MappingProxyTypes
 IMPLICIT_PDS3_CONSTANTS = MappingProxyType(
     {
         # we define the uint8 constants but do not by default use them: they
         # are simply too problematic in too many cases.
         "uint8": {"NULL": 0, "ISIS_SAT_HIGH": 255},
+        # ISIS doesn't seem to use this dtype and it's not mentioned in the SR
+        "int8": {},
         "int16": {
             "N/A": -32768,
             "UNK": 32767,

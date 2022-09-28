@@ -78,6 +78,6 @@ def np_from_buffered_io(
     if isinstance(buffered_io, (BZ2File, ZipFile, GzipFile, BytesIO)):
         n_bytes = None if count is None else count * dtype.itemsize
         stream = BytesIO(buffered_io.read(n_bytes))
-        return np.asarray(stream.getbuffer(), dtype=dtype)
+        return np.frombuffer(stream.getbuffer(), dtype=dtype)
     count = -1 if count is None else count
     return np.fromfile(buffered_io, dtype=dtype, count=count)

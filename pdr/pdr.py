@@ -60,7 +60,8 @@ from pdr.utils import (
 def make_format_specifications(props):
     endian, ctype = props["sample_type"][0], props["sample_type"][-1]
     struct_fmt = f"{endian}{props['pixels']}{ctype}"
-    dtype = np.dtype(f"{endian}{ctype}")
+    np_type = props["sample_type"][1:]
+    dtype = np.dtype(f"{endian}{np_type}")
     return struct_fmt, dtype
 
 
@@ -144,7 +145,7 @@ def skeptically_load_header(
 
 def pointer_to_fits_key(pointer, hdulist):
     """
-    In some data sets with FITS, the PDS3 object names and FITS object
+    In some datasets with FITS, the PDS3 object names and FITS object
     names are not identical. This function attempts to use Levenshtein
     "fuzzy matching" to identify the correlation between the two. It is not
     guaranteed to be correct! And special case handling might be required in
@@ -288,7 +289,7 @@ def associate_label_file(
 ) -> Optional[str]:
     if label_filename is not None:
         return check_cases(Path(label_filename).absolute(), skip_check)
-    elif data_filename.endswith(LABEL_EXTENSIONS):
+    elif data_filename.lower().endswith(LABEL_EXTENSIONS):
         return check_cases(data_filename)
     for lext in LABEL_EXTENSIONS:
         try:
@@ -876,7 +877,7 @@ class Data:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
             elif ("RECORDS" in block.keys()) and (
-                    self.metaget_("RECORD_BYTES") is not None
+                self.metaget_("RECORD_BYTES") is not None
             ):
                 length = block["RECORDS"] * self.metaget_("RECORD_BYTES")
         return start, length, as_rows
