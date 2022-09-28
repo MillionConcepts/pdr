@@ -93,7 +93,7 @@ of their metadata appear to match other sources.
   - XRS EDR, RDR, and CDR
     - *note: RDR maps are defined differently in their PDS3 and PDS4 labels. We recommend opening them from their PDS4 labels.*
   - RSS EDR and RDR
-    - *note: Opening RDR SHADR files from their PDS4 labels is recommended.*
+    - *note: EDR DDOR and TNF products have UNDEFINED record types in their PDS3 labels. We recommend opening them from their PDS4 labels.*
   - Space Weathering maps
   - MEAP electron events tables, thermal neutron map, and image cubes
 
