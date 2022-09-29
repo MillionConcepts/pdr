@@ -30,6 +30,8 @@ def is_an_assignment_line(line):
     there is an issue with people who put '=' in text blocks --
     looking for a block of capital letters is usually good enough
     """
+    if line.startswith("END_OBJECT"):
+        return True
     if "=" not in line:
         return False
     if line[:10] != line[:10].upper():
@@ -42,6 +44,9 @@ def chunk_statements(trimmed_lines: Iterable[str]):
     statements = []
     for statement in split_before(trimmed_lines, is_an_assignment_line):
         assignment = statement[0]
+        if assignment.startswith("END_OBJECT"):
+            statements.append(("END_OBJECT", ""))
+            continue
         try:
             parameter, value_head = map(str.strip, assignment.split("="))
         except ValueError:
