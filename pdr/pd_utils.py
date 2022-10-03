@@ -49,6 +49,12 @@ def compute_offsets(fmtdef):
     # START_BYTE is 1-indexed, but we're preparing these offsets for
     # numpy, which 0-indexes
     fmtdef['OFFSET'] = fmtdef['START_BYTE'] - 1
+    block_names = fmtdef['BLOCK_NAME'].unique()
+    # calculate offsets for formats loaded in by reference
+    for block_name in block_names[1:]:
+        fmt_block = fmtdef.loc[fmtdef['BLOCK_NAME'] == block_name]
+        prior_offset = fmtdef.loc[fmt_block.index[0] - 1]['OFFSET']
+        fmtdef.loc[fmt_block.index, 'OFFSET'] += prior_offset
     if 'ITEM_BYTES' not in fmtdef:
         return fmtdef
     column_groups = fmtdef.loc[fmtdef['ITEM_BYTES'].notna()]
