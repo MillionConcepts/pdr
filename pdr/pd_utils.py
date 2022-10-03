@@ -46,19 +46,18 @@ def compute_offsets(fmtdef):
     including a START_BYTE column, add an OFFSET column, unpacking objects
     if necessary
     """
-    fmtdef['OFFSET'] = fmtdef['START_BYTE']
+    # START_BYTE is 1-indexed, but we're preparing these offsets for
+    # numpy, which 0-indexes
+    fmtdef['OFFSET'] = fmtdef['START_BYTE'] - 1
     if 'ITEM_BYTES' not in fmtdef:
         return fmtdef
     column_groups = fmtdef.loc[fmtdef['ITEM_BYTES'].notna()]
     for _, group in column_groups.groupby('START_BYTE'):
-        column_offsets = (
+        fmtdef.loc[group.index, 'OFFSET'] = (
             group['OFFSET']
             + group['ITEM_BYTES'].iloc[0]
             * np.arange(len(group))
         )
-        # START_BYTE is 1-indexed, but we're preparing these offsets for
-        # numpy, which 0-indexes
-        fmtdef.loc[group.index, 'OFFSET'] = column_offsets - 1
     return fmtdef
 
 
