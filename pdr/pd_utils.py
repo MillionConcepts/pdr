@@ -40,6 +40,35 @@ def reindex_df_values(df: pd.DataFrame, column="NAME") -> pd.DataFrame:
     return df
 
 
+def compute_offsets(fmtdef):
+    """
+    given a DataFrame containing PDS3 binary table structure specifications,
+    including a START_BYTE column, add an OFFSET column, unpacking objects
+    if necessary
+    """
+    # START_BYTE is 1-indexed, but we're preparing these offsets for
+    # numpy, which 0-indexes
+    fmtdef['OFFSET'] = fmtdef['START_BYTE'] - 1
+    block_names = fmtdef['BLOCK_NAME'].unique()
+    # calculate offsets for formats loaded in by reference
+    for block_name in block_names[1:]:
+        fmt_block = fmtdef.loc[fmtdef['BLOCK_NAME'] == block_name]
+        prior = fmtdef.loc[fmt_block.index[0] - 1]
+        fmtdef.loc[
+            fmt_block.index, 'OFFSET'
+        ] += prior['OFFSET'] + prior['BYTES']
+    if 'ITEM_BYTES' not in fmtdef:
+        return fmtdef
+    column_groups = fmtdef.loc[fmtdef['ITEM_BYTES'].notna()]
+    for _, group in column_groups.groupby('START_BYTE'):
+        fmtdef.loc[group.index, 'OFFSET'] = (
+            group['OFFSET']
+            + group['ITEM_BYTES'].iloc[0]
+            * np.arange(len(group))
+        )
+    return fmtdef
+
+
 def insert_sample_types_into_df(fmtdef, data):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
@@ -50,6 +79,8 @@ def insert_sample_types_into_df(fmtdef, data):
     fmtdef['dt'] = None
     if 'ITEM_BYTES' not in fmtdef.columns:
         fmtdef['ITEM_BYTES'] = np.nan
+    if 'START_BYTE' in fmtdef.columns:
+        fmtdef = compute_offsets(fmtdef)
     data_types = tuple(
         fmtdef.groupby(['DATA_TYPE', 'ITEM_BYTES', 'BYTES'], dropna=False)
     )
@@ -70,9 +101,13 @@ def insert_sample_types_into_df(fmtdef, data):
             raise KeyError(
                 f"{data_type} is not a currently-supported data type."
             )
-    return (
+    dtype_spec = fmtdef[
+        [c for c in ('NAME', 'dt', 'OFFSET') if c in fmtdef.columns]
+    ].to_dict('list')
+    spec_keys = ('names', 'formats', 'offsets')[:len(dtype_spec)]
+    return(
         fmtdef,
-        np.dtype(fmtdef[['NAME', 'dt']].to_records(index=False).tolist())
+        np.dtype({k: v for k, v in zip(spec_keys, dtype_spec.values())})
     )
 
 

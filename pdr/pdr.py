@@ -635,12 +635,13 @@ class Data:
     def read_format_block(self, block, object_name):
         # load external structure specifications
         format_block = list(block.items())
+        block_name = block.get('NAME')
         while "^STRUCTURE" in [obj[0] for obj in format_block]:
             format_block = self.inject_format_files(format_block, object_name)
         fields = []
         for item_type, definition in format_block:
             if item_type in ("COLUMN", "FIELD"):
-                obj = dict(definition)
+                obj = dict(definition) | {'BLOCK_NAME': block_name}
                 repeat_count = definition.get("ITEMS")
                 obj = bit_handling.add_bit_column_info(obj, definition, self)
             elif item_type == "CONTAINER":
