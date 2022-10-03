@@ -53,8 +53,10 @@ def compute_offsets(fmtdef):
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
         fmt_block = fmtdef.loc[fmtdef['BLOCK_NAME'] == block_name]
-        prior_offset = fmtdef.loc[fmt_block.index[0] - 1]['OFFSET']
-        fmtdef.loc[fmt_block.index, 'OFFSET'] += prior_offset
+        prior = fmtdef.loc[fmt_block.index[0] - 1]
+        fmtdef.loc[
+            fmt_block.index, 'OFFSET'
+        ] += prior['OFFSET'] + prior['BYTES']
     if 'ITEM_BYTES' not in fmtdef:
         return fmtdef
     column_groups = fmtdef.loc[fmtdef['ITEM_BYTES'].notna()]
