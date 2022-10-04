@@ -118,6 +118,13 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and pointer == "IMAGE_REPLY_TABLE"
     ):
         return True, formats.msl_ccam.image_reply_table_loader(data)
+    if (
+        data.metaget_("DATA_SET_ID").startswith("JNO-E/J/SS")
+        and (data.metaget_("STANDARD_DATA_PRODUCT_ID") == "BURST")
+        and ("FREQ_OFFSET_TABLE" in data.keys())
+        and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
+    ):
+        return True, formats.juno.waves_burst_with_offset_loader(data)
     return False, None
 
 
