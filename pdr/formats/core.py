@@ -119,7 +119,7 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         return True, formats.msl_ccam.image_reply_table_loader(data)
     if (
-        data.metaget_("DATA_SET_ID").startswith("JNO-E/J/SS")
+        data.metaget_("DATA_SET_ID", "").startswith("JNO-E/J/SS")
         and (data.metaget_("STANDARD_DATA_PRODUCT_ID") == "BURST")
         and ("FREQ_OFFSET_TABLE" in data.keys())
         and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
