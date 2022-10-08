@@ -68,6 +68,15 @@ of their metadata appear to match other sources.
 - Juno
   - FGM tables
   - Gravity Science tables (EDR, RSR, and TNF)
+  - JADE EDRs and RDRs
+  - JEDI EDRs and RDRs
+  - JIRAM EDRs and RDRs *note: RDRs may not read correctly from their PDS4
+  labels. We recommend opening them from their PDS3 labels.*
+  - JunoCam EDRs, RDRs, and maps
+  - MWR EDRs and RDRs *note: performance is better if read from the PDS3 labels. this
+  requires .FMT (format) files, available in the root directories of the MWR
+  volumes.*
+  - Waves RDR 'Burst' tables
 - Apollo
   - all PDS3 datasets that have not been deprecated by PDS4 versions. 
     specifically:
@@ -106,17 +115,8 @@ of their metadata appear to match other sources.
   - WAC derived tif files without labels (under EXTRAS folder at LROC
   mission node)
 - Juno
-  - JunoCam EDRs and RDRs
-  - JIRAM EDRs and RDRs *note: RDRs may not read correctly from their PDS4
-  labels. We recommend opening them from their PDS3 labels.*
-  - JEDI EDRs and RDRs
-  - MWR *note: performance is better if read from the PDS3 labels. this
-  requires .FMT (format) files, available in the root directories of the MWR
-  volumes.*
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
-  - Juno Waves reduced tables
-  - JADE EDRs and RDRs
 - Apollo
   - PDS3 versions of Apollo 15 and 17 Heat Flow Experiment tables -- 
     however, we recommend using the PDS4 collection a15_17_hfe_concatenated,
@@ -138,8 +138,10 @@ of their metadata appear to match other sources.
     Python. Help is welcomed with either of these efforts! The MSL
     "calibrated" (RDR) files for these cameras are not compressed in this way.
 - Juno
+  - JADE Ion sensor housekeeping data prior to arrival at Jupiter (support not planned)
   - UVS (support planned)
-  - Waves EDR (support not planned)
+  - Waves EDR (support not planned) and RDR 'Survey' tables (support planned)
+    - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
 - Galileo
   - magnetometer summary tables (other tables supported)
 - Mars Odyssey
