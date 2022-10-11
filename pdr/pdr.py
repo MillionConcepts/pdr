@@ -53,7 +53,7 @@ from pdr.utils import (
     append_repeated_object,
     head_file,
     decompress,
-    with_extension,
+    with_extension, find_repository_root,
 )
 
 
@@ -319,7 +319,7 @@ class Data:
         self.file_mapping = {}
         # known special constants per data object
         self.specials = {}
-        # where can we look for files contaniing data objects?
+        # where can we look for files contaning data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + list(search_paths)
         self.standard = None
@@ -381,14 +381,14 @@ class Data:
     def _object_to_filename(self, object_name):
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
-            return self.get_absolute_path(special_target)
+            return self.get_absolute_paths(special_target)
         target = self.metaget_(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
         # TODO: should we move every check_cases call here?
         if isinstance(target, str):
-            return self.get_absolute_path(target)
+            return self.get_absolute_paths(target)
         else:
             return self.filename
 
@@ -619,8 +619,17 @@ class Data:
         return fmtdef
 
     def load_format_file(self, format_file, object_name):
+        label_fns = self.get_absolute_paths(format_file)
         try:
-            fmtpath = check_cases(self.get_absolute_path(format_file))
+            repo_paths = [
+                Path(find_repository_root(Path(self.filename)), l)
+                for l in ("label", "LABEL")
+            ]
+            label_fns += [Path(path, format_file) for path in repo_paths]
+        except ValueError:
+            pass
+        try:
+            fmtpath = check_cases(label_fns)
             aggregations, _ = read_pvl_label(fmtpath)
             return literalize_pvl(aggregations)
         except FileNotFoundError:
@@ -846,7 +855,10 @@ class Data:
             if isinstance(local_path, str):
                 return open(check_cases(local_path)).read()
             elif isinstance(local_path, list):
-                return [open(check_cases(each_local_path)).read() for each_local_path in local_path]
+                return [
+                    open(check_cases(each_local_path)).read()
+                    for each_local_path in local_path
+                ]
         except FileNotFoundError as ex:
             exception = ex
             warnings.warn(f"couldn't find {target}")
@@ -1153,14 +1165,20 @@ class Data:
         return target
 
     # TODO: have this iterate through scopes
-    def get_absolute_path(self, filename):
-        return str(Path(self.search_paths[0], filename))
+    def get_absolute_paths(self, filename: Union[str, Path]) -> list[str]:
+        return [
+            str(Path(search_path, filename).absolute())
+            for search_path in self.search_paths
+        ]
 
     # TODO: reorganize this -- common dispatch funnel with dump_browse,
     #  split up the image-gen part of _browsify_array, something like that
     def show(self, object_name=None, scaled=True, **browse_kwargs):
         if object_name is None:
-            raise ValueError(f"please specify the name of an image object. keys include {self.index}")
+            raise ValueError(
+                f"please specify the name of an image object. "
+                f"keys include {self.index}"
+            )
         if not isinstance(self[object_name], np.ndarray):
             raise TypeError("Data.show only works on array data.")
         if scaled is True:

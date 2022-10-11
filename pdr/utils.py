@@ -7,8 +7,10 @@ from io import BytesIO
 from itertools import chain
 from numbers import Number
 from pathlib import Path
-from typing import Union, Sequence, Mapping, MutableSequence, IO
+from typing import Union, Sequence, Mapping, MutableSequence, IO, Collection
 from zipfile import ZipFile
+
+from dustgoggles.structures import listify
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -53,7 +55,10 @@ def stem_path(path: Path):
     return lowercase
 
 
-def check_cases(filename: Union[Path, str], skip: bool = False) -> str:
+def check_cases(
+    filenames: Union[Collection[Union[Path, str]], Union[Path, str]],
+    skip: bool = False
+) -> str:
     """
     check for oddly-cased versions of a specified filename in local path --
     very common to have case mismatches between PDS3 labels and actual archive
@@ -61,26 +66,29 @@ def check_cases(filename: Union[Path, str], skip: bool = False) -> str:
 
     the skip argument makes the function simply return filename.
     """
-    if skip is True:
-        return str(filename)
-    if Path(filename).exists():
-        return str(filename)
-    matches = tuple(
-        filter(
-            lambda path: stem_path(path) == Path(filename).name.lower(),
-            Path(filename).parent.iterdir(),
+    filenames = listify(filenames)
+    for filename in filenames:
+        if skip is True:
+            return str(filename)
+        if Path(filename).exists():
+            return str(filename)
+        matches = tuple(
+            filter(
+                lambda path: stem_path(path) == Path(filename).name.lower(),
+                Path(filename).parent.iterdir(),
+            )
         )
-    )
-    if len(matches) == 0:
-        raise FileNotFoundError
-    if len(matches) > 1:
-        warning_list = ", ".join([path.name for path in matches])
-        warnings.warn(
-            f"Multiple off-case or possibly-compressed versions of {filename} "
-            f"found in search path: {warning_list}. Using {matches[0].name}."
-        )
-    return str(matches[0])
-
+        if len(matches) == 0:
+            continue
+        if len(matches) > 1:
+            warning_list = ", ".join([path.name for path in matches])
+            warnings.warn(
+                f"Multiple off-case or possibly-compressed versions of "
+                f"{filename} found in search path: {warning_list}. Using "
+                f"{matches[0].name}."
+            )
+        return str(matches[0])
+    raise FileNotFoundError
 
 def append_repeated_object(
     obj: Union[Sequence[Mapping], Mapping],
@@ -118,3 +126,9 @@ def decompress(filename):
 
 def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
     return str(Path(fn).with_suffix(new_suffix))
+
+
+def find_repository_root(absolute_path):
+    parts = Path(absolute_path).parts
+    data_ix = tuple(map(str.lower, parts)).index('data')
+    return Path(*parts[:data_ix])
