@@ -238,7 +238,12 @@ def generic_image_properties(object_name, block, data) -> dict:
             props["prefix_cols"], props["prefix_bytes"] = 0, 0
         if "BANDS" in block:
             props["BANDS"] = block["BANDS"]
-            props["band_storage_type"] = block["BAND_STORAGE_TYPE"]
+            props["band_storage_type"] = block.get("BAND_STORAGE_TYPE", None)
+            # TODO: assess whether this is always ok
+            if props["band_storage_type"] is None and props["BANDS"] > 1:
+                raise ValueError(
+                    "Cannot read 3D image with no specified band storage type."
+                )
         else:
             props["BANDS"] = 1
             props["band_storage_type"] = None
