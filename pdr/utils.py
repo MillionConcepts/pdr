@@ -130,5 +130,7 @@ def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
 
 def find_repository_root(absolute_path):
     parts = Path(absolute_path).parts
-    data_ix = tuple(map(str.lower, parts)).index('data')
-    return Path(*parts[:data_ix])
+    data_indices = [
+        ix for ix, part in enumerate(parts) if part.lower() == 'data'
+    ]
+    return Path(*parts[:data_indices[-1]])

@@ -5,13 +5,13 @@ from io import StringIO
 from itertools import chain
 from operator import contains
 from pathlib import Path
-from typing import Mapping, Optional, Union, Sequence
+from typing import Mapping, Optional, Union, Sequence, Collection
 
 import Levenshtein as lev
 import numpy as np
 import pandas as pd
 from cytoolz import countby, identity
-from dustgoggles.structures import dig_for_value
+from dustgoggles.structures import dig_for_value, listify
 from multidict import MultiDict
 from pandas.errors import ParserError
 
@@ -306,8 +306,8 @@ class Data:
         *,
         debug: bool = False,
         label_fn: Optional[Union[Path, str]] = None,
-        search_paths=(),
-        skip_existence_check=False
+        search_paths: Union[Collection[str], str] = (),
+        skip_existence_check: bool = False
     ):
         # list of the product's associated data objects
         self.index = []
@@ -321,7 +321,7 @@ class Data:
         self.specials = {}
         # where can we look for files contaning data objects?
         # not yet fully implemented; only uses first (automatic) one.
-        self.search_paths = [self._init_search_paths()] + list(search_paths)
+        self.search_paths = [self._init_search_paths()] + listify(search_paths)
         self.standard = None
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
@@ -622,8 +622,8 @@ class Data:
         label_fns = self.get_absolute_paths(format_file)
         try:
             repo_paths = [
-                Path(find_repository_root(Path(self.filename)), l)
-                for l in ("label", "LABEL")
+                Path(find_repository_root(Path(self.filename)), label_path)
+                for label_path in ("label", "LABEL")
             ]
             label_fns += [Path(path, format_file) for path in repo_paths]
         except ValueError:
