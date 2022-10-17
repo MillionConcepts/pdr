@@ -758,15 +758,21 @@ class Data:
         string_buffer.seek(0)
         if "BYTES" in fmtdef.columns:
             try:
-                fields = []
-                for ix, row in fmtdef.iterrows():
-                    # note that these are 1-indexed
-                    interval = (
-                        row['START_BYTE'] - 1,
-                        row['BYTES'] + row['START_BYTE'] - 1
+                from pdr.pd_utils import compute_offsets
+
+                colspecs = []
+                position_records = compute_offsets(fmtdef).to_dict('records')
+                for record in position_records:
+                    if record.get('ITEM_BYTES') is not None:
+                        col_length = record['ITEM_BYTES']
+                    else:
+                        col_length = record['BYTES']
+                    colspecs.append(
+                        (record['OFFSET'], record['OFFSET'] + col_length)
                     )
-                    fields.append(interval)
-                table = pd.read_fwf(string_buffer, header=None, colspecs=fields)
+                table = pd.read_fwf(
+                    string_buffer, header=None, colspecs=colspecs
+                )
                 string_buffer.close()
                 return table
             except (pd.errors.EmptyDataError, pd.errors.ParserError):
@@ -877,22 +883,36 @@ class Data:
     def table_position(self, object_name):
         target = self._get_target(object_name)
         block = self.metablock_(object_name)
+        if 'RECORDS' in block.keys():
+            n_records = block['RECORDS']
+        elif 'ROWS' in block.keys():
+            n_records = block['ROWS']
+        else:
+            n_records = None
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
             if isinstance(target[1], dict):
                 start = target[1]['value'] - 1
             else:
                 start = target[1] - 1
-            if "RECORDS" in block.keys():
-                length = block["RECORDS"]
+            if n_records is not None:
+                length = n_records
         else:
             start = self.data_start_byte(object_name)
             if "BYTES" in block.keys():
                 length = block["BYTES"]
-            elif ("RECORDS" in block.keys()) and (
+            elif n_records is not None:
+                if "RECORD_BYTES" in block.keys():
+                    record_length = block['RECORD_BYTES']
+                elif "ROW_BYTES" in block.keys():
+                    record_length = block['ROW_BYTES']
+                else:
+                    record_length = None
+                length = record_length * n_records
+            elif (n_records is not None) and (
                 self.metaget_("RECORD_BYTES") is not None
             ):
-                length = block["RECORDS"] * self.metaget_("RECORD_BYTES")
+                length = n_records * self.metaget_("RECORD_BYTES")
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
@@ -1084,7 +1104,7 @@ class Data:
     def _check_delimiter_stream(self, object_name):
         """
         do I appear to point to a delimiter-separated file without
-        explicit record byte length?
+        explicit record byte length
         """
         # TODO: this may be deprecated. assess against notionally-supported
         #  products.
