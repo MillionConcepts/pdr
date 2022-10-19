@@ -1,9 +1,11 @@
+import warnings
 from functools import partial
 from operator import contains
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 from pdr import formats
+from pdr.utils import check_cases
 from pdr.datatypes import sample_types
 
 
@@ -285,3 +287,12 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
 OBJECTS_IGNORED_BY_DEFAULT = (
     "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC", "ERROR_MODEL_DESC"
 )
+
+
+def ignore_if_pdf(data, object_name, path):
+    if looks_like_this_kind_of_file(path, [".pdf"]):
+        warnings.warn(
+            f"Cannot open {path}; PDF files are not supported."
+        )
+        return data.metaget_(object_name)
+    return open(check_cases(path)).read()

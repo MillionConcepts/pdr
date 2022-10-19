@@ -31,6 +31,7 @@ from pdr.formats import (
     check_special_fn,
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
+    ignore_if_pdf,
 )
 from pdr.np_utils import enforce_order_and_object, casting_to_float, \
     np_from_buffered_io
@@ -859,10 +860,14 @@ class Data:
         local_path = self.file_mapping[object_name]
         try:
             if isinstance(local_path, str):
-                return open(check_cases(local_path)).read()
+                return ignore_if_pdf(
+                    self, object_name, check_cases(local_path)
+                )
             elif isinstance(local_path, list):
                 return [
-                    open(check_cases(each_local_path)).read()
+                    ignore_if_pdf(
+                        self, object_name, check_cases(each_local_path)
+                    )
                     for each_local_path in local_path
                 ]
         except FileNotFoundError as ex:
@@ -1352,7 +1357,7 @@ def _scale_pds4_tools_struct(struct):
     """see pds4_tools.reader.read_arrays.new_array"""
     # TODO: apply bit_mask
     from pds4_tools.reader.data_types import (
-        apply_scaling_and_value_offset, pds_to_numpy_type
+        apply_scaling_and_value_offset
     )
     array = struct.data
     element_array = struct.meta_data['Element_Array']
