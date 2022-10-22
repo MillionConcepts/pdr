@@ -911,13 +911,12 @@ class Data:
                     record_length = block['RECORD_BYTES']
                 elif "ROW_BYTES" in block.keys():
                     record_length = block['ROW_BYTES']
+                elif self.metaget_("RECORD_BYTES") is not None:
+                    record_length = self.metaget_("RECORD_BYTES")
                 else:
                     record_length = None
-                length = record_length * n_records
-            elif (n_records is not None) and (
-                self.metaget_("RECORD_BYTES") is not None
-            ):
-                length = n_records * self.metaget_("RECORD_BYTES")
+                if record_length is not None:
+                    length = record_length * n_records
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
