@@ -911,6 +911,7 @@ class Data:
                     record_length = block['RECORD_BYTES']
                 elif "ROW_BYTES" in block.keys():
                     record_length = block['ROW_BYTES']
+                    record_length += block.get("ROW_SUFFIX_BYTES", 0)
                 elif self.metaget_("RECORD_BYTES") is not None:
                     record_length = self.metaget_("RECORD_BYTES")
                 else:
