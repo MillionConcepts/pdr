@@ -767,7 +767,7 @@ class Data:
                     if np.isnan(record.get('ITEM_BYTES', np.nan)):
                         col_length = record['BYTES']
                     else:
-                        col_length = record['ITEM_BYTES']
+                        col_length = int(record['ITEM_BYTES'])
                     colspecs.append(
                         (record['OFFSET'], record['OFFSET'] + col_length)
                     )
