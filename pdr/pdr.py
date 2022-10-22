@@ -1035,14 +1035,22 @@ class Data:
         # we're casting to float, we can't
         # TODO: detect rollover cases, etc.
         if inplace is True and not casting_to_float(obj, scale, offset):
-            obj *= scale
-            obj += offset
+            if len(obj) == len(scale) == len(offset) > 1:
+                for ix, _ in enumerate(scale):
+                    obj[ix] = obj[ix] * scale[ix] + offset[ix]
+            else:
+                obj *= scale
+                obj += offset
             return obj
         # if we're casting to float, permit specification of dtype
         # prior to operation (float64 is numpy's default and often excessive)
         if casting_to_float(obj, scale, offset):
             if float_dtype is not None:
                 obj = obj.astype(float_dtype)
+        if len(obj) == len(scale) == len(offset) > 1:
+            planes = [obj[ix] * scale[ix] + offset[ix] for ix in range(len(scale)-1)]
+            stacked = np.rollaxis(np.dstack(planes), 2)
+            return stacked
         return obj * scale + offset
 
     def _init_array_method(
