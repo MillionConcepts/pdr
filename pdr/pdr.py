@@ -627,7 +627,7 @@ class Data:
                 for label_path in ("label", "LABEL")
             ]
             label_fns += [Path(path, format_file) for path in repo_paths]
-        except ValueError:
+        except (ValueError, IndexError):
             pass
         try:
             fmtpath = check_cases(label_fns)
@@ -764,10 +764,10 @@ class Data:
                 colspecs = []
                 position_records = compute_offsets(fmtdef).to_dict('records')
                 for record in position_records:
-                    if record.get('ITEM_BYTES') is not None:
-                        col_length = record['ITEM_BYTES']
-                    else:
+                    if np.isnan(record.get('ITEM_BYTES', np.nan)):
                         col_length = record['BYTES']
+                    else:
+                        col_length = record['ITEM_BYTES']
                     colspecs.append(
                         (record['OFFSET'], record['OFFSET'] + col_length)
                     )
