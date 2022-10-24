@@ -1022,10 +1022,13 @@ class Data:
         if casting_to_float(obj, scale, offset):
             if float_dtype is not None:
                 obj = obj.astype(float_dtype)
-        if len(obj) == len(scale) == len(offset) > 1:
-            planes = [obj[ix] * scale[ix] + offset[ix] for ix in range(len(scale)-1)]
-            stacked = np.rollaxis(np.dstack(planes), 2)
-            return stacked
+        try:
+            if len(obj) == len(scale) == len(offset) > 1:
+                planes = [obj[ix] * scale[ix] + offset[ix] for ix in range(len(scale))]
+                stacked = np.rollaxis(np.dstack(planes), 2)
+                return stacked
+        except TypeError:
+            pass  # len() is not usable on a float object
         return obj * scale + offset
 
     def _init_array_method(
