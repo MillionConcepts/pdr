@@ -16,6 +16,7 @@ TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
 FITS_EXTENSIONS = (".fits", ".fit")
 TIFF_EXTENSIONS = (".tif", ".tiff")
+JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
@@ -40,6 +41,8 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
         return data.read_text
     if looks_like_this_kind_of_file(filename, TABLE_EXTENSIONS):
         return data.read_table
+    if looks_like_this_kind_of_file(filename, JP2_EXTENSIONS):
+        return
     return data.tbd
 
 
