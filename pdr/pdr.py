@@ -282,6 +282,12 @@ class Metadata(MultiDict):
         """quiet-by-default version of metablock"""
         return self.metablock(text, evaluate, False)
 
+    def __str__(self):
+        return f'Metadata({prettify_multidict(self)})'
+
+    def __repr__(self):
+        return f'Metadata({prettify_multidict(self)})'
+
 
 def associate_label_file(
     data_filename: str,
