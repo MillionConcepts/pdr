@@ -54,7 +54,7 @@ from pdr.utils import (
     append_repeated_object,
     head_file,
     decompress,
-    with_extension, find_repository_root,
+    with_extension, find_repository_root, prettify_multidict,
 )
 
 
