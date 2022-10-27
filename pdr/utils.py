@@ -70,12 +70,15 @@ def check_cases(
     for filename in filenames:
         if skip is True:
             return str(filename)
-        if Path(filename).exists():
+        path = Path(filename)
+        if path.exists():
             return str(filename)
+        if not path.parent.exists():
+            continue
         matches = tuple(
             filter(
-                lambda path: stem_path(path) == Path(filename).name.lower(),
-                Path(filename).parent.iterdir(),
+                lambda p: stem_path(p) == Path(filename).name.lower(),
+                path.parent.iterdir(),
             )
         )
         if len(matches) == 0:
