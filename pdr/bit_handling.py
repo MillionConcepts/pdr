@@ -16,7 +16,7 @@ def expand_bit_strings(table, fmtdef):
 
 
 def convert_to_full_bit_string(table, fmtdef):
-    for column in fmtdef.index:
+    for column in fmtdef.start_bit_list.dropna().index:
         if isinstance(fmtdef.start_bit_list[column], list):
             byte_column = table[fmtdef.NAME[column]]
             byte_order = determine_byte_order(fmtdef.DATA_TYPE[column])
@@ -62,7 +62,7 @@ def convert_byte_column_to_bits(byte_column, byte_order):
 def splice_bit_string(table, fmtdef):
     if "start_bit_list" not in fmtdef.columns:
         return
-    for column in fmtdef.index:
+    for column in fmtdef.start_bit_list.dropna().index:
         if isinstance(fmtdef.start_bit_list[column], list):
             bit_column = table[fmtdef.NAME[column]]
             start_bit_list = [
