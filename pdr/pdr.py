@@ -54,7 +54,7 @@ from pdr.utils import (
     append_repeated_object,
     head_file,
     decompress,
-    with_extension, find_repository_root,
+    with_extension, find_repository_root, prettify_multidict,
 )
 
 
@@ -281,6 +281,12 @@ class Metadata(MultiDict):
     def metablock_(self, text, evaluate=True):
         """quiet-by-default version of metablock"""
         return self.metablock(text, evaluate, False)
+
+    def __str__(self):
+        return f'Metadata({prettify_multidict(self)})'
+
+    def __repr__(self):
+        return f'Metadata({prettify_multidict(self)})'
 
 
 def associate_label_file(

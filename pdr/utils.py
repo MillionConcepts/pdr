@@ -1,16 +1,18 @@
 """generic i/o, parsing, and functional utilities."""
 import bz2
 import gzip
-import struct
-import warnings
 from io import BytesIO
 from itertools import chain
 from numbers import Number
 from pathlib import Path
+import struct
+import textwrap
 from typing import Union, Sequence, Mapping, MutableSequence, IO, Collection
+import warnings
 from zipfile import ZipFile
 
 from dustgoggles.structures import listify
+from multidict import MultiDict
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -137,3 +139,33 @@ def find_repository_root(absolute_path):
         ix for ix, part in enumerate(parts) if part.lower() == 'data'
     ]
     return Path(*parts[:data_indices[-1]])
+
+
+def prettify_multidict(multi, sep=" ", indent=0):
+    indentation, output, first_line = "", "{", True
+    for k, v in multi.items():
+        if sep == "\n":
+            indentation = " " * indent
+            if first_line is True:
+                output += "\n"
+        if isinstance(v, MultiDict):
+            output += (
+                f"{indentation}{k}: "
+                f"{prettify_multidict(v, indent = indent + 2)},{sep}"
+            )
+        elif (not isinstance(v, str)) or (len(v) <= 70):
+            output += f"{indentation}{k}: {v},{sep}"
+        else:
+            lines = textwrap.wrap(v, width=(70 - len(indentation)))
+            vstr = f"{lines[0]}\n" + "\n".join(
+                [(" " * (indent + 1)) + line for line in lines[1:]]
+            )
+            output += f"{indentation}{k}: {vstr},{sep}"
+        first_line = False
+        if sep != " ":
+            continue
+        if len(output) > 70:
+            return prettify_multidict(multi, sep="\n", indent=indent + 1)
+    if len(indentation) > 0:
+        indentation = indentation[:-1]
+    return output + indentation + "}"
