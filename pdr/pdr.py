@@ -5,13 +5,13 @@ from io import StringIO
 from itertools import chain
 from operator import contains
 from pathlib import Path
-from typing import Mapping, Optional, Union, Sequence
+from typing import Mapping, Optional, Union, Sequence, Collection
 
 import Levenshtein as lev
 import numpy as np
 import pandas as pd
 from cytoolz import countby, identity
-from dustgoggles.structures import dig_for_value
+from dustgoggles.structures import dig_for_value, listify
 from multidict import MultiDict
 from pandas.errors import ParserError
 
@@ -31,6 +31,7 @@ from pdr.formats import (
     check_special_fn,
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
+    ignore_if_pdf,
 )
 from pdr.np_utils import enforce_order_and_object, casting_to_float, \
     np_from_buffered_io
@@ -53,7 +54,7 @@ from pdr.utils import (
     append_repeated_object,
     head_file,
     decompress,
-    with_extension,
+    with_extension, find_repository_root, prettify_multidict,
 )
 
 
@@ -281,6 +282,12 @@ class Metadata(MultiDict):
         """quiet-by-default version of metablock"""
         return self.metablock(text, evaluate, False)
 
+    def __str__(self):
+        return f'Metadata({prettify_multidict(self)})'
+
+    def __repr__(self):
+        return f'Metadata({prettify_multidict(self)})'
+
 
 def associate_label_file(
     data_filename: str,
@@ -306,8 +313,8 @@ class Data:
         *,
         debug: bool = False,
         label_fn: Optional[Union[Path, str]] = None,
-        search_paths=(),
-        skip_existence_check=False
+        search_paths: Union[Collection[str], str] = (),
+        skip_existence_check: bool = False
     ):
         # list of the product's associated data objects
         self.index = []
@@ -319,9 +326,9 @@ class Data:
         self.file_mapping = {}
         # known special constants per data object
         self.specials = {}
-        # where can we look for files contaniing data objects?
+        # where can we look for files contaning data objects?
         # not yet fully implemented; only uses first (automatic) one.
-        self.search_paths = [self._init_search_paths()] + list(search_paths)
+        self.search_paths = [self._init_search_paths()] + listify(search_paths)
         self.standard = None
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
@@ -381,14 +388,14 @@ class Data:
     def _object_to_filename(self, object_name):
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
-            return self.get_absolute_path(special_target)
+            return self.get_absolute_paths(special_target)
         target = self.metaget_(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
         # TODO: should we move every check_cases call here?
         if isinstance(target, str):
-            return self.get_absolute_path(target)
+            return self.get_absolute_paths(target)
         else:
             return self.filename
 
@@ -619,8 +626,17 @@ class Data:
         return fmtdef
 
     def load_format_file(self, format_file, object_name):
+        label_fns = self.get_absolute_paths(format_file)
         try:
-            fmtpath = check_cases(self.get_absolute_path(format_file))
+            repo_paths = [
+                Path(find_repository_root(Path(self.filename)), label_path)
+                for label_path in ("label", "LABEL")
+            ]
+            label_fns += [Path(path, format_file) for path in repo_paths]
+        except (ValueError, IndexError):
+            pass
+        try:
+            fmtpath = check_cases(label_fns)
             aggregations, _ = read_pvl_label(fmtpath)
             return literalize_pvl(aggregations)
         except FileNotFoundError:
@@ -635,12 +651,13 @@ class Data:
     def read_format_block(self, block, object_name):
         # load external structure specifications
         format_block = list(block.items())
+        block_name = block.get('NAME')
         while "^STRUCTURE" in [obj[0] for obj in format_block]:
             format_block = self.inject_format_files(format_block, object_name)
         fields = []
         for item_type, definition in format_block:
             if item_type in ("COLUMN", "FIELD"):
-                obj = dict(definition)
+                obj = dict(definition) | {'BLOCK_NAME': block_name}
                 repeat_count = definition.get("ITEMS")
                 obj = bit_handling.add_bit_column_info(obj, definition, self)
             elif item_type == "CONTAINER":
@@ -748,15 +765,21 @@ class Data:
         string_buffer.seek(0)
         if "BYTES" in fmtdef.columns:
             try:
-                fields = []
-                for ix, row in fmtdef.iterrows():
-                    # note that these are 1-indexed
-                    interval = (
-                        row['START_BYTE'] - 1,
-                        row['BYTES'] + row['START_BYTE'] - 1
+                from pdr.pd_utils import compute_offsets
+
+                colspecs = []
+                position_records = compute_offsets(fmtdef).to_dict('records')
+                for record in position_records:
+                    if np.isnan(record.get('ITEM_BYTES', np.nan)):
+                        col_length = record['BYTES']
+                    else:
+                        col_length = int(record['ITEM_BYTES'])
+                    colspecs.append(
+                        (record['OFFSET'], record['OFFSET'] + col_length)
                     )
-                    fields.append(interval)
-                table = pd.read_fwf(string_buffer, header=None, colspecs=fields)
+                table = pd.read_fwf(
+                    string_buffer, header=None, colspecs=colspecs
+                )
                 string_buffer.close()
                 return table
             except (pd.errors.EmptyDataError, pd.errors.ParserError):
@@ -843,9 +866,16 @@ class Data:
         local_path = self.file_mapping[object_name]
         try:
             if isinstance(local_path, str):
-                return open(check_cases(local_path)).read()
+                return ignore_if_pdf(
+                    self, object_name, check_cases(local_path)
+                )
             elif isinstance(local_path, list):
-                return [open(check_cases(each_local_path)).read() for each_local_path in local_path]
+                return [
+                    ignore_if_pdf(
+                        self, object_name, check_cases(each_local_path)
+                    )
+                    for each_local_path in local_path
+                ]
         except FileNotFoundError as ex:
             exception = ex
             warnings.warn(f"couldn't find {target}")
@@ -864,22 +894,36 @@ class Data:
     def table_position(self, object_name):
         target = self._get_target(object_name)
         block = self.metablock_(object_name)
+        if 'RECORDS' in block.keys():
+            n_records = block['RECORDS']
+        elif 'ROWS' in block.keys():
+            n_records = block['ROWS']
+        else:
+            n_records = None
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
             if isinstance(target[1], dict):
                 start = target[1]['value'] - 1
             else:
                 start = target[1] - 1
-            if "RECORDS" in block.keys():
-                length = block["RECORDS"]
+            if n_records is not None:
+                length = n_records
         else:
             start = self.data_start_byte(object_name)
             if "BYTES" in block.keys():
                 length = block["BYTES"]
-            elif ("RECORDS" in block.keys()) and (
-                self.metaget_("RECORD_BYTES") is not None
-            ):
-                length = block["RECORDS"] * self.metaget_("RECORD_BYTES")
+            elif n_records is not None:
+                if "RECORD_BYTES" in block.keys():
+                    record_length = block['RECORD_BYTES']
+                elif "ROW_BYTES" in block.keys():
+                    record_length = block['ROW_BYTES']
+                    record_length += block.get("ROW_SUFFIX_BYTES", 0)
+                elif self.metaget_("RECORD_BYTES") is not None:
+                    record_length = self.metaget_("RECORD_BYTES")
+                else:
+                    record_length = None
+                if record_length is not None:
+                    length = record_length * n_records
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
@@ -997,14 +1041,28 @@ class Data:
         # we're casting to float, we can't
         # TODO: detect rollover cases, etc.
         if inplace is True and not casting_to_float(obj, scale, offset):
-            obj *= scale
-            obj += offset
+            if len(obj) == len(scale) == len(offset) > 1:
+                for ix, _ in enumerate(scale):
+                    obj[ix] = obj[ix] * scale[ix] + offset[ix]
+            else:
+                obj *= scale
+                obj += offset
             return obj
         # if we're casting to float, permit specification of dtype
         # prior to operation (float64 is numpy's default and often excessive)
         if casting_to_float(obj, scale, offset):
             if float_dtype is not None:
                 obj = obj.astype(float_dtype)
+        try:
+            if len(obj) == len(scale) == len(offset) > 1:
+                planes = [
+                    obj[ix] * scale[ix] + offset[ix]
+                    for ix in range(len(scale))
+                ]
+                stacked = np.rollaxis(np.ma.dstack(planes), 2)
+                return stacked
+        except TypeError:
+            pass  # len() is not usable on a float object
         return obj * scale + offset
 
     def _init_array_method(
@@ -1071,7 +1129,7 @@ class Data:
     def _check_delimiter_stream(self, object_name):
         """
         do I appear to point to a delimiter-separated file without
-        explicit record byte length?
+        explicit record byte length
         """
         # TODO: this may be deprecated. assess against notionally-supported
         #  products.
@@ -1152,14 +1210,20 @@ class Data:
         return target
 
     # TODO: have this iterate through scopes
-    def get_absolute_path(self, filename):
-        return str(Path(self.search_paths[0], filename))
+    def get_absolute_paths(self, filename: Union[str, Path]) -> list[str]:
+        return [
+            str(Path(search_path, filename).absolute())
+            for search_path in self.search_paths
+        ]
 
     # TODO: reorganize this -- common dispatch funnel with dump_browse,
     #  split up the image-gen part of _browsify_array, something like that
     def show(self, object_name=None, scaled=True, **browse_kwargs):
         if object_name is None:
-            raise ValueError(f"please specify the name of an image object. keys include {self.index}")
+            raise ValueError(
+                f"please specify the name of an image object. "
+                f"keys include {self.index}"
+            )
         if not isinstance(self[object_name], np.ndarray):
             raise TypeError("Data.show only works on array data.")
         if scaled is True:
@@ -1313,7 +1377,7 @@ def _scale_pds4_tools_struct(struct):
     """see pds4_tools.reader.read_arrays.new_array"""
     # TODO: apply bit_mask
     from pds4_tools.reader.data_types import (
-        apply_scaling_and_value_offset, pds_to_numpy_type
+        apply_scaling_and_value_offset
     )
     array = struct.data
     element_array = struct.meta_data['Element_Array']

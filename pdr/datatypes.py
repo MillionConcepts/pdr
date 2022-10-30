@@ -59,6 +59,7 @@ def sample_types(
         "MAC_REAL":  f">{_float}",
         "SUN_REAL":  f">{_float}",
         "MSB_BIT_STRING": f"{void}{sample_bytes}",
+        "LSB_BIT_STRING": f"{void}{sample_bytes}",
         # "Character string representing a real number"
         "ASCII_REAL": f"S{sample_bytes}",
         # ASCII character string representing an integer

@@ -1,9 +1,12 @@
+import warnings
 from functools import partial
 from operator import contains
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 from pdr import formats
+from pdr.parselabel.pds3 import pointerize
+from pdr.utils import check_cases
 from pdr.datatypes import sample_types
 
 
@@ -16,6 +19,7 @@ TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
 FITS_EXTENSIONS = (".fits", ".fit")
 TIFF_EXTENSIONS = (".tif", ".tiff")
+JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
@@ -40,6 +44,8 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
         return data.read_text
     if looks_like_this_kind_of_file(filename, TABLE_EXTENSIONS):
         return data.read_table
+    if looks_like_this_kind_of_file(filename, JP2_EXTENSIONS):
+        return
     return data.tbd
 
 
@@ -118,6 +124,14 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and pointer == "IMAGE_REPLY_TABLE"
     ):
         return True, formats.msl_ccam.image_reply_table_loader(data)
+    if (
+        not isinstance(data.metaget_("DATA_SET_ID"), set)
+        and data.metaget_("DATA_SET_ID", "").startswith("JNO-E/J/SS")
+        and (data.metaget_("STANDARD_DATA_PRODUCT_ID") == "BURST")
+        and ("FREQ_OFFSET_TABLE" in data.keys())
+        and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
+    ):
+        return True, formats.juno.waves_burst_with_offset_loader(data)
     return False, None
 
 
@@ -231,7 +245,12 @@ def generic_image_properties(object_name, block, data) -> dict:
             props["prefix_cols"], props["prefix_bytes"] = 0, 0
         if "BANDS" in block:
             props["BANDS"] = block["BANDS"]
-            props["band_storage_type"] = block["BAND_STORAGE_TYPE"]
+            props["band_storage_type"] = block.get("BAND_STORAGE_TYPE", None)
+            # TODO: assess whether this is always ok
+            if props["band_storage_type"] is None and props["BANDS"] > 1:
+                raise ValueError(
+                    "Cannot read 3D image with no specified band storage type."
+                )
         else:
             props["BANDS"] = 1
             props["band_storage_type"] = None
@@ -272,3 +291,14 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
 OBJECTS_IGNORED_BY_DEFAULT = (
     "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC", "ERROR_MODEL_DESC"
 )
+
+
+def ignore_if_pdf(data, object_name, path):
+    if looks_like_this_kind_of_file(path, [".pdf"]):
+        warnings.warn(
+            f"Cannot open {path}; PDF files are not supported."
+        )
+        block = data.metaget_(object_name)
+        if block is None:
+            return data.metaget_(pointerize(object_name))
+    return open(check_cases(path)).read()
