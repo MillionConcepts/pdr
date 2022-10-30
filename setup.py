@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pdr",
-    version="0.7.1",
+    version="0.7.2",
     author="Chase Million",
     author_email="chase@millionconcepts.com",
     description="Planetary Data Reader",
