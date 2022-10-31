@@ -30,9 +30,9 @@ def is_an_assignment_line(line):
     there is an issue with people who put '=' in text blocks --
     looking for a block of capital letters is usually good enough
     """
-    if line.startswith("END_OBJECT"):
-        return True
     if "=" not in line:
+        if line.startswith("END_OBJECT"):
+            return True
         return False
     if line[:10] != line[:10].upper():
         return False
