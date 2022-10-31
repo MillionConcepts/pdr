@@ -132,11 +132,7 @@ def colorfill_maskedarray(
     )
 
 
-def browsify(
-    obj: Any,
-    outbase: Union[str, Path],
-    **dump_kwargs
-):
+def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs):
     """
     attempts to dump a browse version of a data object, writing it into a file
     type that can be opened with desktop software: .jpg for most arrays, .csv
@@ -193,27 +189,36 @@ def _browsify_array(
     band_ix: Optional[int] = None,
     save: bool = True,
     override_rgba: bool = False,
+    image_format: str = "jpg",
     **_
 ):
     """
-    attempt to save array as one or more jpegs
+    attempt to save array as one or more images
     """
     if len(obj.shape) == 3:
         obj = _format_multiband_image(obj, band_ix, override_rgba)
     if not isinstance(obj, tuple):
         return _render_and_save(
-            obj, outbase, purge, image_clip, mask_color, save
+            obj, outbase, purge, image_clip, mask_color, save, image_format
         )
     results = []
     for ix, band in enumerate(obj):
         result = _render_and_save(
-            band, outbase + f"_{ix}", purge, image_clip, mask_color, save
+            band,
+            f"{outbase}_{ix}",
+            purge,
+            image_clip,
+            mask_color,
+            save,
+            image_format
         )
         results.append(result)
     return results
 
 
-def _render_and_save(obj, outbase, purge, image_clip, mask_color, save):
+def _render_and_save(
+    obj, outbase, purge, image_clip, mask_color, save, image_format
+):
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
     if (obj.dtype.char in np.typecodes['AllInteger']) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
@@ -240,7 +245,7 @@ def _render_and_save(obj, outbase, purge, image_clip, mask_color, save):
             f"65500; downsampling browse image to {scale * 100}%."
         )
         image.thumbnail([int(axis * scale) for axis in image.size])
-    image.save(outbase + ".jpg")
+    image.save(f"{outbase}.{image_format}")
 
 
 def _format_as_rgb(obj):
