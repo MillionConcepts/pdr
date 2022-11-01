@@ -99,6 +99,7 @@ def check_cases(
         return str(matches[0])
     raise FileNotFoundError
 
+
 def append_repeated_object(
     obj: Union[Sequence[Mapping], Mapping],
     fields: MutableSequence[Mapping],
