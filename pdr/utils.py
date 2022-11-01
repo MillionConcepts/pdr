@@ -1,6 +1,5 @@
 """generic i/o, parsing, and functional utilities."""
 import bz2
-import gzip
 from io import BytesIO
 from itertools import chain
 from numbers import Number
@@ -13,6 +12,11 @@ from zipfile import ZipFile
 
 from dustgoggles.structures import listify
 from multidict import MultiDict
+
+try:
+    from isal import igzip as gzip_lib
+except ImportError:
+    import gzip as gzip_lib
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -117,7 +121,7 @@ def append_repeated_object(
 
 def decompress(filename):
     if filename.lower().endswith(".gz"):
-        f = gzip.open(filename, "rb")
+        f = gzip_lib.open(filename, "rb")
     elif filename.lower().endswith(".bz2"):
         f = bz2.BZ2File(filename, "rb")
     elif filename.lower().endswith(".zip"):
