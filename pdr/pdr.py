@@ -708,6 +708,10 @@ class Data:
             return fmtdef, None
         if fmtdef is None:
             return fmtdef, np.dtype([])
+        for end in ('_PREFIX', '_SUFFIX', ''):
+            length = self.metaget(pointer).get(f'ROW{end}_BYTES')
+            if length is not None:
+                fmtdef[f'ROW{end}_BYTES'] = length
         return insert_sample_types_into_df(fmtdef, self)
 
     # noinspection PyTypeChecker

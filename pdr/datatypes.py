@@ -69,6 +69,7 @@ def sample_types(
         "DATE": f"S{sample_bytes}",
         "CHARACTER": f"S{sample_bytes}",  # ASCII character string
         "TIME": f"S{sample_bytes}",
+        "VOID": f"{void}{sample_bytes}"
     }[sample_type]
 
 

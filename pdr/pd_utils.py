@@ -49,6 +49,8 @@ def compute_offsets(fmtdef):
     # START_BYTE is 1-indexed, but we're preparing these offsets for
     # numpy, which 0-indexes
     fmtdef['OFFSET'] = fmtdef['START_BYTE'] - 1
+    if 'ROW_PREFIX_BYTES' in fmtdef.columns:
+        fmtdef['OFFSET'] += fmtdef['ROW_PREFIX_BYTES']
     block_names = fmtdef['BLOCK_NAME'].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
@@ -66,6 +68,22 @@ def compute_offsets(fmtdef):
             + group['ITEM_BYTES'].iloc[0]
             * np.arange(len(group))
         )
+    pad_length = 0
+    end_byte = fmtdef['OFFSET'].iloc[-1] + fmtdef['BYTES'].iloc[-1]
+    if 'ROW_BYTES' in fmtdef.columns:
+        pad_length += fmtdef['ROW_BYTES'].iloc[0] - end_byte
+    if 'ROW_SUFFIX_BYTES' in fmtdef.columns:
+        pad_length += fmtdef['ROW_SUFFIX_BYTES'].iloc[0]
+    if pad_length > 0:
+        placeholder_rec = {
+            'NAME': 'PLACEHOLDER_0',
+            'DATA_TYPE': 'VOID',
+            'BYTES': pad_length,
+            'OFFSET': end_byte
+        }
+        fmtdef = pd.concat(
+            [fmtdef, pd.DataFrame([placeholder_rec])]
+        ).reset_index(drop=True)
     return fmtdef
 
 
