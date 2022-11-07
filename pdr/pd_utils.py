@@ -79,6 +79,7 @@ def compute_offsets(fmtdef):
             'NAME': 'PLACEHOLDER_0',
             'DATA_TYPE': 'VOID',
             'BYTES': pad_length,
+            'START_BYTE': end_byte,
             'OFFSET': end_byte
         }
         fmtdef = pd.concat(

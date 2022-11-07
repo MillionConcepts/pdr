@@ -703,7 +703,10 @@ class Data:
         to np.fromfile or one of several ASCII table readers.
         """
         fmtdef = self.read_table_structure(pointer)
-        if fmtdef["DATA_TYPE"].str.contains("ASCII").any():
+        if (
+            fmtdef["DATA_TYPE"].str.contains("ASCII").any()
+            or looks_like_ascii(self, pointer)
+        ):
             # don't try to load it as a binary file
             return fmtdef, None
         if fmtdef is None:
@@ -803,7 +806,7 @@ class Data:
         except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)
-        if looks_like_ascii(self, dt, pointer):
+        if dt is None:  # we believe object is an ascii file
             table = self._interpret_as_ascii(fn, fmtdef, pointer)
             table.columns = fmtdef.NAME.tolist()
         else:
@@ -1398,10 +1401,9 @@ def _scale_pds4_tools_struct(struct):
     return array
 
 
-def looks_like_ascii(data, dtype, pointer):
+def looks_like_ascii(data, pointer):
     return (
-        (dtype is None)
-        or ("SPREADSHEET" in pointer)
+        ("SPREADSHEET" in pointer)
         or ("ASCII" in pointer)
         or (data.metablock(pointer).get('INTERCHANGE_FORMAT') == 'ASCII')
     )
