@@ -1,4 +1,5 @@
 import os
+import re
 import warnings
 from functools import partial, cache
 from io import StringIO
@@ -441,15 +442,14 @@ class Data:
         if (object_name != "all") and (object_name not in self.index):
             raise KeyError(f"{object_name} not found in index: {self.index}.")
         if object_name == "all":
-            for name in filter(
-                lambda k: k not in OBJECTS_IGNORED_BY_DEFAULT, self.keys()
-            ):
-                try:
-                    self.load(name)
-                except ValueError as value_error:
-                    if "already loaded" in str(value_error):
-                        continue
-                    raise value_error
+            for name in self.keys():
+                if not OBJECTS_IGNORED_BY_DEFAULT.match(name):
+                    try:
+                        self.load(name)
+                    except ValueError as value_error:
+                        if "already loaded" in str(value_error):
+                            continue
+                        raise value_error
             return
         if (object_name in dir(self)) and (reload is False):
             raise ValueError(

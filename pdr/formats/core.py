@@ -1,3 +1,4 @@
+import re
 import warnings
 from functools import partial
 from operator import contains
@@ -288,10 +289,10 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
 # generally these are reference files, usually throwaway ones, that are not
 # archived in the same place as the data products and add little, if any,
 # context to individual products
-OBJECTS_IGNORED_BY_DEFAULT = (
-    "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC", "ERROR_MODEL_DESC"
-)
-
+objects_to_ignore = [
+    "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC", "ERROR_MODEL_DESC", ".*_DESC"
+]
+OBJECTS_IGNORED_BY_DEFAULT = re.compile('|'.join(objects_to_ignore))
 
 def ignore_if_pdf(data, object_name, path):
     if looks_like_this_kind_of_file(path, [".pdf"]):
