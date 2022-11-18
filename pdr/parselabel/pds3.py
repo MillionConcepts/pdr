@@ -34,7 +34,7 @@ def is_an_assignment_line(line):
         return True
     if "=" not in line:
         return False
-    if line[:10] != line[:10].upper():
+    if line[:8] != line[:8].upper():
         return False
     return True
 
