@@ -8,7 +8,6 @@ from io import BufferedIOBase, BytesIO
 from numbers import Number
 from typing import Collection, Optional
 from zipfile import ZipFile
-from pathlib import Path
 
 import numpy as np
 

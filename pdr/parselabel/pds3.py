@@ -1,9 +1,9 @@
 """simple parsing utilities for PDS3 labels."""
-import warnings
 from ast import literal_eval
 import re
 from operator import eq
 from typing import Iterable, Mapping, Optional
+import warnings
 
 from cytoolz import groupby, identity
 from dustgoggles.func import constant
@@ -30,11 +30,12 @@ def is_an_assignment_line(line):
     there is an issue with people who put '=' in text blocks --
     looking for a block of capital letters is usually good enough
     """
-    if line.startswith("END_OBJECT"):
-        return True
     if "=" not in line:
+        if line.startswith("END_OBJECT"):
+            return True
         return False
-    if line[:10] != line[:10].upper():
+    start = line[:10]
+    if start != start.upper():
         return False
     return True
 
