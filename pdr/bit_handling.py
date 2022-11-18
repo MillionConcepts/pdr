@@ -4,8 +4,9 @@ from operator import add
 
 import numpy as np
 import pandas as pd
-from pdr.datatypes import determine_byte_order
+from pdr.datatypes import determine_byte_order, sample_types
 from pdr.formats import check_special_bit_column_case
+import warnings
 
 
 def expand_bit_strings(table, fmtdef):
@@ -87,8 +88,20 @@ def add_bit_column_info(obj, definition, data):
         if "BIT_STRING" not in obj["DATA_TYPE"]:
             is_special, special_dtype = check_special_bit_column_case(data)
             if is_special is False:
-                raise ValueError("Incompatible data type for bit columns.")
-            obj["DATA_TYPE"] = special_dtype
+                try:
+                    byteorder = sample_types(obj["BIT_COLUMN"]["BIT_DATA_TYPE"], 1, True)[0]
+                except (KeyError, ValueError):
+                    raise ValueError("Incompatible data type for bit columns.")
+                if byteorder == ">":
+                    warnings.warn(f"Data type {obj['DATA_TYPE']} incompatible for bit column. "
+                                  f"Changing to MSB_BIT_STRING.")
+                    obj["DATA_TYPE"] = "MSB_BIT_STRING"
+                elif byteorder == "<":
+                    warnings.warn(f"Data type {obj['DATA_TYPE']} incompatible for bit column. "
+                                  f"Changing to LSB_BIT_STRING.")
+                    obj["DATA_TYPE"] = "LSB_BIT_STRING"
+            else:
+                obj["DATA_TYPE"] = special_dtype
 
         start_bit_list = []
         list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")

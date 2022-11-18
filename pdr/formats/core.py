@@ -290,7 +290,7 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
 # archived in the same place as the data products and add little, if any,
 # context to individual products
 objects_to_ignore = [
-    "DESCRIPTION", "DATA_SET_MAP_PROJECTION", "MODEL_DESC", "ERROR_MODEL_DESC", ".*_DESC"
+    "DESCRIPTION", "DATA_SET_MAP_PROJECTION", ".*_DESC"
 ]
 OBJECTS_IGNORED_BY_DEFAULT = re.compile('|'.join(objects_to_ignore))
 

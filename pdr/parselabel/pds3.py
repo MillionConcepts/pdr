@@ -34,7 +34,7 @@ def is_an_assignment_line(line):
         if line.startswith("END_OBJECT"):
             return True
         return False
-    start = line[:10]
+    start = line[:8]
     if start != start.upper():
         return False
     return True
