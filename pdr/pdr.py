@@ -955,7 +955,7 @@ class Data:
             #  what cases this exception was needed to handle
             self._catch_return_default(self.metaget_(pointer), ex)
 
-    def handle_tiff_file(self, pointer: str, userasterio=False):
+    def handle_compressed_image(self, pointer: str, userasterio=False):
         # optional hook for rasterio usage for regression tests, etc.
         if userasterio:
             import rasterio
@@ -963,6 +963,9 @@ class Data:
             return rasterio.open(self.file_mapping[pointer]).read()
         # otherwise read with pillow
         from PIL import Image
+        # deactivate pillow's DecompressionBombError: many planetary images
+        # are legitimately very large
+        Image.MAX_IMAGE_PIXELS = None
         # noinspection PyTypeChecker
         image = np.ascontiguousarray(Image.open(self.file_mapping[pointer]))
         # pillow reads images as [x, y, channel] rather than [channel, x, y]
