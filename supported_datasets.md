@@ -102,9 +102,37 @@ of their metadata appear to match other sources.
   - XRS EDR, RDR, and CDR
     - *note: RDR maps are defined differently in their PDS3 and PDS4 labels. We recommend opening them from their PDS4 labels.*
   - RSS EDR and RDR
-    - *note: EDR DDOR and TNF products have UNDEFINED record types in their PDS3 labels. We recommend opening them from their PDS4 labels.*
+    - *note: some EDR products (DDOR and TNF) have UNDEFINED record types in their PDS3 labels. We recommend opening them from their PDS4 labels.*
   - Space Weathering maps
   - MEAP electron events tables, thermal neutron map, and image cubes
+- Rosetta
+  - Orbiter:
+    - COSIMA images and feature tables
+    - GIADA EDRs, RDRs, and DDRs
+    - MIDAS RDRs and DDRs (excluding those with a .dat file extension)
+    - MIRO EDRs and RDRs
+    - NAVCAM EDRs and RDRs
+    - OSIRIS EDRs, RDRs, DDRs, and shape models
+      - *note: Images are archived in both .img and .fit file formats. The .img products have attached labels, while the .fit products have detached labels. When downloading the data, make sure to store these in separate directories or pdr will try to open the .img products using the detached labels.*
+    - ROSINA EDRs, RDRs, and DDRs
+    - Rosetta Orbiter Plasma Consortium Instruments:
+      - RPCICA EDRs, RDRs, REFDRs, and DDRs
+      - RPCIES EDRs, RDRs, and DDRs
+      - RPCLAP EDRs, RDRs, and DDRs
+      - RPCMAG EDRs, RDRs, and REFDRs
+      - RPCMIP RDRs
+    - RSI EDRs and RDRs
+    - SREM EDRs and DDRs
+    - VIRTIS DDRs
+  - Lander:
+    - APXS EDRs
+    - COSAC EDRs and RDRs
+    - MODULUS/Ptolemy EDRs, RDRs, and DDRs
+    - MUPUS EDRs and RDRs
+    - ROLIS EDRs and RDRs
+    - ROMAP EDRs, RDRs, and DDRs
+    - SD2 RDRs
+    - SESAME EDRs and RDRs
 
 ## Notionally Supported Datasets:
 - MRO
@@ -124,6 +152,11 @@ of their metadata appear to match other sources.
 - MGS
   - RSS Science Data Products (except PostScript files)
     - *note: There is a known issue where header tables and other ancillary tables open with their corresponding data tables appended as additional rows. Additionally, some '.IMG' products do not open because of a typo in their labels. (A fix for this is planned)*
+- Rosetta
+  - Orbiter:
+    - VIRTIS EDRs and RDRs
+  - Lander:
+    - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
 
 ## Known Unsupported Datasets
 - MRO
@@ -159,4 +192,13 @@ of their metadata appear to match other sources.
 - MESSENGER
   - Ground calibration data (support not planned)
   - MEAP enhanced gamma ray spectrometry data
+- Rosetta
+  - Orbiter:
+    - ALICE EDRs, RDRs, and REFDRs (support planned)
+    - MIDAS RDRs with .dat file extension (support planned)
+    - VIRTIS geometry data
+  - Lander:
+    - CONSERT EDRs, RDRs, and REFDRs (support planned)
+    - SD2 EDRs (support not planned)
+
 

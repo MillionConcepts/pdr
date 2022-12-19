@@ -38,7 +38,7 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
     if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
         return data.handle_fits_file
     if looks_like_this_kind_of_file(filename, TIFF_EXTENSIONS):
-        return data.handle_tiff_file
+        return data.handle_compressed_image
     if looks_like_this_kind_of_file(filename, IMAGE_EXTENSIONS):
         return data.read_image
     if looks_like_this_kind_of_file(filename, TEXT_EXTENSIONS):
@@ -46,7 +46,7 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
     if looks_like_this_kind_of_file(filename, TABLE_EXTENSIONS):
         return data.read_table
     if looks_like_this_kind_of_file(filename, JP2_EXTENSIONS):
-        return
+        return data.handle_compressed_image
     return data.tbd
 
 
@@ -207,7 +207,9 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
     if looks_like_this_kind_of_file(object_filename, FITS_EXTENSIONS):
         return data.handle_fits_file
     if looks_like_this_kind_of_file(object_filename, TIFF_EXTENSIONS):
-        return data.handle_tiff_file
+        return data.handle_compressed_image
+    if looks_like_this_kind_of_file(object_filename, JP2_EXTENSIONS):
+        return data.handle_compressed_image
     return None
 
 
