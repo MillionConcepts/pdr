@@ -164,6 +164,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return loader
     if pointer == "LABEL":
         return data.read_label
+    if pointer == "TEXT":
+        return data.read_text
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
     if "LINE_PREFIX_TABLE" in pointer:
