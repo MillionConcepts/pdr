@@ -286,6 +286,14 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
         and ("-EDR-" not in data.metaget_("DATA_SET_ID", ""))
     ):
         return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']
+    if (data.metaget_("DATA_SET_ID", "").startswith("CLEM1-L-RSS-5-BSR")
+            and object_name in ("HEADER_TABLE", "DATA_TABLE")):
+        # sequence wrapped as string for object names
+        print(f'object name is {object_name}')
+        print(data.metadata[f'^{object_name}'])
+        target = re.split(r',|[(|)]', data.metadata[f'^{object_name}'])[1]
+        print(target)
+        return True, target
     return False, None
 
 
