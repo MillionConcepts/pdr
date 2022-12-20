@@ -3,6 +3,7 @@ methods for working with pandas objects, primarily intended as components of
 pdr.Data's processing pipelines. some may require a Data object as an
 argument.
 """
+import warnings
 from typing import Hashable
 
 import numpy as np
@@ -40,12 +41,26 @@ def reindex_df_values(df: pd.DataFrame, column="NAME") -> pd.DataFrame:
     return df
 
 
+def _check_weird_item_offset(fmtdef):
+    if "ITEM_OFFSET" not in fmtdef.columns:
+        return False
+    # noinspection PyUnresolvedReferences
+    if (
+        fmtdef.loc[fmtdef["ITEM_OFFSET"].notna(), "ITEM_OFFSET"]
+        != fmtdef.loc[fmtdef["ITEM_OFFSET"].notna(), "ITEM_BYTES"]
+    ).all():
+        return True
+    return False
+
+
 def compute_offsets(fmtdef):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
     including a START_BYTE column, add an OFFSET column, unpacking objects
     if necessary
     """
+    if _check_weird_item_offset(fmtdef):
+        raise NotImplementedError
     # START_BYTE is 1-indexed, but we're preparing these offsets for
     # numpy, which 0-indexes
     fmtdef['OFFSET'] = fmtdef['START_BYTE'] - 1
@@ -65,7 +80,7 @@ def compute_offsets(fmtdef):
     for _, group in column_groups.groupby('START_BYTE'):
         fmtdef.loc[group.index, 'OFFSET'] = (
             group['OFFSET']
-            + group['ITEM_BYTES'].iloc[0]
+            + int(group['ITEM_BYTES'].iloc[0])
             * np.arange(len(group))
         )
     pad_length = 0
@@ -88,6 +103,19 @@ def compute_offsets(fmtdef):
     return fmtdef
 
 
+def _fill_empty_byte_rows(fmtdef):
+    nobytes = fmtdef['BYTES'].isna()
+    with warnings.catch_warnings():
+        # we do not care that loc will set items inplace later. at all.
+        warnings.simplefilter("ignore", category=FutureWarning)
+        fmtdef.loc[nobytes, 'BYTES'] = (
+            # TODO, maybe: update with ITEM_OFFSET should we implement that
+            fmtdef.loc[nobytes, 'ITEMS'] * fmtdef.loc[nobytes, 'ITEM_BYTES']
+        )
+    fmtdef['BYTES'] = fmtdef['BYTES'].astype(int)
+    return fmtdef
+
+
 def insert_sample_types_into_df(fmtdef, data):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
@@ -96,6 +124,13 @@ def insert_sample_types_into_df(fmtdef, data):
     used in the Data.read_table pipeline.
     """
     fmtdef['dt'] = None
+    if 'BYTES' not in fmtdef.columns:
+        fmtdef['BYTES'] = np.nan
+    if fmtdef['BYTES'].isna().any():
+        try:
+            fmtdef = _fill_empty_byte_rows(fmtdef)
+        except (KeyError, TypeError, IndexError):
+            raise ValueError("This table's byte sizes are underspecified.")
     if 'ITEM_BYTES' not in fmtdef.columns:
         fmtdef['ITEM_BYTES'] = np.nan
     if 'START_BYTE' in fmtdef.columns:
