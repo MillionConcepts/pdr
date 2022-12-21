@@ -55,7 +55,7 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     # object offset in the ^HISTOGRAM pointer target
     if data.metaget_("INSTRUMENT_ID", "") == "CHEMIN":
         return formats.msl_cmn.get_offset(data, pointer)
-    if (data.metaget_("DATA_SET_ID", "").startswith("CLEM1-L-RSS-5-BSR")
+    if (data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0"
             and pointer in ("HEADER_TABLE", "DATA_TABLE")):
         # sequence wrapped as string for object names
         return formats.clementine.get_offset(data, pointer)
@@ -63,7 +63,7 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
 
 
 def check_special_structure(pointer, data):
-    if (data.metaget_("DATA_SET_ID", "").startswith("CLEM1-L-RSS-5-BSR")
+    if (data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0"
             and pointer == "DATA_TABLE"):
         # sequence wrapped as string for object names
         return formats.clementine.get_structure(pointer, data)
