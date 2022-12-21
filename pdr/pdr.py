@@ -32,7 +32,7 @@ from pdr.formats import (
     check_special_fn,
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
-    ignore_if_pdf,
+    ignore_if_pdf, check_special_structure,
 )
 from pdr.np_utils import enforce_order_and_object, casting_to_float, \
     np_from_buffered_io
@@ -802,7 +802,11 @@ class Data:
         """
         fn = self.file_mapping[pointer]
         try:
-            fmtdef, dt = self.parse_table_structure(pointer)
+            is_special, special_format, special_dt = check_special_structure(pointer, self)
+            if is_special:
+                fmtdef, dt = special_format, special_dt
+            else:
+                fmtdef, dt = self.parse_table_structure(pointer)
         except KeyError as ex:
             warnings.warn(f"Unable to find or parse {pointer}")
             return self._catch_return_default(pointer, ex)

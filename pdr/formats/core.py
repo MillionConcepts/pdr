@@ -55,7 +55,18 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     # object offset in the ^HISTOGRAM pointer target
     if data.metaget_("INSTRUMENT_ID", "") == "CHEMIN":
         return formats.msl_cmn.get_offset(data, pointer)
+    if (data.metaget_("DATA_SET_ID", "").startswith("CLEM1-L-RSS-5-BSR")
+            and pointer in ("HEADER_TABLE", "DATA_TABLE")):
+        # sequence wrapped as string for object names
+        return formats.clementine.get_offset(data, pointer)
     return False, None
+
+
+def check_special_structure(pointer, data):
+    if (data.metaget_("DATA_SET_ID", "").startswith("CLEM1-L-RSS-5-BSR")
+            and pointer == "DATA_TABLE"):
+        # sequence wrapped as string for object names
+        return formats.clementine.get_structure(pointer, data)
 
 
 def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
@@ -289,11 +300,7 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     if (data.metaget_("DATA_SET_ID", "").startswith("CLEM1-L-RSS-5-BSR")
             and object_name in ("HEADER_TABLE", "DATA_TABLE")):
         # sequence wrapped as string for object names
-        print(f'object name is {object_name}')
-        print(data.metadata[f'^{object_name}'])
-        target = re.split(r',|[(|)]', data.metadata[f'^{object_name}'])[1]
-        print(target)
-        return True, target
+        return formats.clementine.get_fn(data, object_name)
     return False, None
 
 
