@@ -180,6 +180,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_text
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
+    if "ARRAY" in pointer:
+        return data.read_array
     if "LINE_PREFIX_TABLE" in pointer:
         return data.tbd
     if (

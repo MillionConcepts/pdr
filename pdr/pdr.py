@@ -553,6 +553,20 @@ class Data:
             return pvl.load(self.labelname)
         raise NotImplementedError(f"The {fmt} format is not yet implemented.")
 
+    def read_array(self, object_name="ARRAY"):
+        """
+        Read an array object from this product and return it as a numpy array.
+        """
+        fn = self.file_mapping[object_name]
+        block = self.metablock_(object_name)
+        if not len(block["AXIS_ITEMS"]) == 2:
+            raise NotImplementedError('ARRAY objects with more than 2 axes are not yet supported.')
+        with open(fn) as stream:
+            text = stream.read()
+        text = re.findall(r'[+-]?\d+\.?\d*', text)
+        array = np.asarray(text).reshape(block['AXIS_ITEMS'][0], block['AXIS_ITEMS'][1])
+        return array
+
     def read_image(
         self, object_name="IMAGE", userasterio=False, special_properties=None
     ):
