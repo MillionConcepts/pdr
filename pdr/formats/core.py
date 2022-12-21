@@ -67,6 +67,7 @@ def check_special_structure(pointer, data):
             and pointer == "DATA_TABLE"):
         # sequence wrapped as string for object names
         return formats.clementine.get_structure(pointer, data)
+    return False, None, None
 
 
 def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
