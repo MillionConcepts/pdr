@@ -145,8 +145,11 @@ def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs):
     elif isinstance(obj, np.ndarray):
         _browsify_array(obj, outbase, **dump_kwargs)
     elif isinstance(obj, pd.DataFrame):
-        # noinspection PyTypeChecker
-        obj.to_csv(outbase + ".csv"),
+        if len(obj) == 1:
+            # noinspection PyTypeChecker
+            obj.T.to_csv(outbase + ".csv"),
+        else:
+            obj.to_csv(outbase + ".csv")
         # TODO: experimental, add more handles
         if any(("spectrum" in c.lower() for c in obj.columns)):
             try:
