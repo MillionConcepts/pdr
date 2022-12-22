@@ -41,16 +41,17 @@ def reindex_df_values(df: pd.DataFrame, column="NAME") -> pd.DataFrame:
     return df
 
 
-def _check_weird_item_offset(fmtdef):
+def _apply_item_offsets(fmtdef):
+    item_offsets = fmtdef['ITEM_BYTES'].copy()
     if "ITEM_OFFSET" not in fmtdef.columns:
-        return False
-    # noinspection PyUnresolvedReferences
-    if (
-        fmtdef.loc[fmtdef["ITEM_OFFSET"].notna(), "ITEM_OFFSET"]
-        != fmtdef.loc[fmtdef["ITEM_OFFSET"].notna(), "ITEM_BYTES"]
-    ).all():
-        return True
-    return False
+        return item_offsets
+    offset = fmtdef.loc[fmtdef['ITEM_OFFSET'].notna()]
+    if (offset['ITEM_OFFSET'] < offset['ITEM_BYTES']).any():
+        raise ValueError(
+            "Don't know how to intepret a field narrower than its value."
+        )
+    item_offsets.loc[offset.index] = offset['ITEM_OFFSET']
+    return item_offsets
 
 
 def compute_offsets(fmtdef):
@@ -59,8 +60,6 @@ def compute_offsets(fmtdef):
     including a START_BYTE column, add an OFFSET column, unpacking objects
     if necessary
     """
-    if _check_weird_item_offset(fmtdef):
-        raise NotImplementedError
     # START_BYTE is 1-indexed, but we're preparing these offsets for
     # numpy, which 0-indexes
     fmtdef['OFFSET'] = fmtdef['START_BYTE'] - 1
@@ -74,15 +73,16 @@ def compute_offsets(fmtdef):
         fmtdef.loc[
             fmt_block.index, 'OFFSET'
         ] += prior['OFFSET'] + prior['BYTES']
-    if 'ITEM_BYTES' not in fmtdef:
-        return fmtdef
-    column_groups = fmtdef.loc[fmtdef['ITEM_BYTES'].notna()]
-    for _, group in column_groups.groupby('START_BYTE'):
-        fmtdef.loc[group.index, 'OFFSET'] = (
-            group['OFFSET']
-            + int(group['ITEM_BYTES'].iloc[0])
-            * np.arange(len(group))
-        )
+    # correctly compute offsets within columns w/multiple items
+    if 'ITEM_BYTES' in fmtdef:
+        fmtdef['ITEM_SIZE'] = _apply_item_offsets(fmtdef)
+        column_groups = fmtdef.loc[fmtdef['ITEM_SIZE'].notna()]
+        for _, group in column_groups.groupby('START_BYTE'):
+            fmtdef.loc[group.index, 'OFFSET'] = (
+                group['OFFSET']
+                + int(group['ITEM_SIZE'].iloc[0])
+                * np.arange(len(group))
+            )
     pad_length = 0
     end_byte = fmtdef['OFFSET'].iloc[-1] + fmtdef['BYTES'].iloc[-1]
     if 'ROW_BYTES' in fmtdef.columns:
