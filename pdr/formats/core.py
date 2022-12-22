@@ -316,6 +316,7 @@ objects_to_ignore = [
 ]
 OBJECTS_IGNORED_BY_DEFAULT = re.compile('|'.join(objects_to_ignore))
 
+
 def ignore_if_pdf(data, object_name, path):
     if looks_like_this_kind_of_file(path, [".pdf"]):
         warnings.warn(
@@ -331,13 +332,16 @@ def check_array_for_subobject(block):
     valid_subobjects = ["ARRAY", "BIT_ELEMENT", "COLLECTION", "ELEMENT"]
     subobj = [sub for sub in valid_subobjects if sub in block]
     if len(subobj) > 1:
-        raise ValueError(f'ARRAY objects may only have one subobject (this has {len(subobj)})')
+        raise ValueError(
+            f'ARRAY objects may only have one subobject (this has '
+            f'{len(subobj)})'
+        )
     if len(subobj) < 1:
-        raise ValueError('This ARRAY object does not have a required subobject')
-    return subobj[0]
+        return block
+    return block[subobj[0]]
 
 
-def get_num_of_items(block):
+def get_array_num_items(block):
     items = block["AXIS_ITEMS"]
     if isinstance(items, int):
         return items
@@ -346,3 +350,4 @@ def get_num_of_items(block):
         for axis in items:
             tot_items *= axis
         return tot_items
+    raise TypeError("can't interpret this item number specification")

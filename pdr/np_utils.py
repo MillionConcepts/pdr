@@ -6,7 +6,7 @@ from bz2 import BZ2File
 from gzip import GzipFile
 from io import BufferedIOBase, BytesIO
 from numbers import Number
-from typing import Collection, Optional
+from typing import Collection, Optional, Union
 from zipfile import ZipFile
 
 import numpy as np
@@ -64,7 +64,7 @@ def casting_to_float(array: np.ndarray, *operands: Collection[Number]) -> bool:
 #  compressed binary tables, etc.
 def np_from_buffered_io(
     buffered_io: BufferedIOBase,
-    dtype: np.dtype,
+    dtype: Union[np.dtype, str],
     offset: Optional[int] = None,
     count: Optional[int] = None
 ):

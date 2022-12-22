@@ -33,7 +33,10 @@ from pdr.formats import (
     check_special_fn,
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
-    ignore_if_pdf, check_special_structure, check_array_for_subobject, get_num_of_items,
+    ignore_if_pdf,
+    check_special_structure,
+    check_array_for_subobject,
+    get_array_num_items,
 )
 from pdr.np_utils import enforce_order_and_object, casting_to_float, \
     np_from_buffered_io
@@ -558,21 +561,33 @@ class Data:
         """
         Read an array object from this product and return it as a numpy array.
         """
-        # TODO: Maybe add block[AXES] as names? Might have to switch to pandas df for that.
+        # TODO: Maybe add block[AXES] as names? Might have to switch to pandas
+        #  or a flattened structured array or something weirder
         fn = self.file_mapping[object_name]
         block = self.metablock_(object_name)
+        # 'obj' will be equal to 'block' if no subobject is found
+        obj = check_array_for_subobject(block)
         if block.get('INTERCHANGE_FORMAT') == "BINARY":
-            subobj = block[check_array_for_subobject(block)]
-            num_of_items = get_num_of_items(block)
             with decompress(fn) as f:
-                binary = np_from_buffered_io(f, dtype=sample_types(subobj["DATA_TYPE"], subobj["BYTES"], True),
-                                             count=num_of_items, offset=self.data_start_byte(pointerize(object_name)))
-            array = binary.reshape(block['AXIS_ITEMS'])
-        else:  # we'll assume objects without the optional interchange_format key are ascii
-            with open(fn) as stream:
-                text = stream.read()
-            text = re.findall(r'[+-]?\d+\.?\d*', text)
-            array = np.asarray(text).reshape(block['AXIS_ITEMS'])
+                binary = np_from_buffered_io(
+                    f,
+                    dtype=sample_types(obj["DATA_TYPE"], obj["BYTES"], True),
+                    count=get_array_num_items(block),
+                    offset=self.data_start_byte(pointerize(object_name))
+                )
+            return binary.reshape(block['AXIS_ITEMS'])
+        # assume objects without the optional interchange_format key are ascii
+        with open(fn) as stream:
+            text = stream.read()
+        try:
+            text = tuple(map(float, re.findall(r'[+-]?\d+\.?\d*', text)))
+        except (TypeError, IndexError, ValueError):
+            text = re.split(r'\s+', text)
+        array = np.asarray(text).reshape(block['AXIS_ITEMS'])
+        if "DATA_TYPE" in obj.keys():
+            array = array.astype(
+                sample_types(obj["DATA_TYPE"], obj["BYTES"], True)
+            )
         return array
 
     def read_image(
