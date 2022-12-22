@@ -558,20 +558,21 @@ class Data:
         """
         Read an array object from this product and return it as a numpy array.
         """
+        # TODO: Maybe add block[AXES] as names? Might have to switch to pandas df for that.
         fn = self.file_mapping[object_name]
         block = self.metablock_(object_name)
         if block.get('INTERCHANGE_FORMAT') == "BINARY":
             subobj = block[check_array_for_subobject(block)]
             num_of_items = get_num_of_items(block)
-            binary = np.fromfile(fn, dtype=sample_types(subobj["DATA_TYPE"], subobj["BYTES"], True),
-                                 count=num_of_items, offset=self.data_start_byte(pointerize(object_name)))
+            with decompress(fn) as f:
+                binary = np_from_buffered_io(f, dtype=sample_types(subobj["DATA_TYPE"], subobj["BYTES"], True),
+                                             count=num_of_items, offset=self.data_start_byte(pointerize(object_name)))
             array = binary.reshape(block['AXIS_ITEMS'])
         else:  # we'll assume objects without the optional interchange_format key are ascii
             with open(fn) as stream:
                 text = stream.read()
             text = re.findall(r'[+-]?\d+\.?\d*', text)
             array = np.asarray(text).reshape(block['AXIS_ITEMS'])
-
         return array
 
     def read_image(
