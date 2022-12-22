@@ -170,6 +170,7 @@ of their metadata appear to match other sources.
     uncompressed raster .IMG files exists in the archive. We plan to either include / compile this code with the installation of this package or (much better) to port `dat2img` to pure
     Python. Help is welcomed with either of these efforts! The MSL
     "calibrated" (RDR) files for these cameras are not compressed in this way.
+  - ChemCam LIBS EDR tables (support not planned)
 - Juno
   - JADE Ion sensor housekeeping data prior to arrival at Jupiter (support not planned)
   - UVS (support planned)
