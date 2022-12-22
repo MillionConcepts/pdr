@@ -20,6 +20,7 @@ from pdr import bit_handling
 from pdr.datatypes import (
     PDS3_CONSTANT_NAMES,
     IMPLICIT_PDS3_CONSTANTS,
+    sample_types,
 )
 from pdr.formats import (
     LABEL_EXTENSIONS,
@@ -32,7 +33,7 @@ from pdr.formats import (
     check_special_fn,
     OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
-    ignore_if_pdf, check_special_structure,
+    ignore_if_pdf, check_special_structure, check_array_for_subobject, get_num_of_items,
 )
 from pdr.np_utils import enforce_order_and_object, casting_to_float, \
     np_from_buffered_io
@@ -559,12 +560,18 @@ class Data:
         """
         fn = self.file_mapping[object_name]
         block = self.metablock_(object_name)
-        if not len(block["AXIS_ITEMS"]) == 2:
-            raise NotImplementedError('ARRAY objects with more than 2 axes are not yet supported.')
-        with open(fn) as stream:
-            text = stream.read()
-        text = re.findall(r'[+-]?\d+\.?\d*', text)
-        array = np.asarray(text).reshape(block['AXIS_ITEMS'][0], block['AXIS_ITEMS'][1])
+        if block.get('INTERCHANGE_FORMAT') == "BINARY":
+            subobj = block[check_array_for_subobject(block)]
+            num_of_items = get_num_of_items(block)
+            binary = np.fromfile(fn, dtype=sample_types(subobj["DATA_TYPE"], subobj["BYTES"], True),
+                                 count=num_of_items, offset=self.data_start_byte(pointerize(object_name)))
+            array = binary.reshape(block['AXIS_ITEMS'])
+        else:  # we'll assume objects without the optional interchange_format key are ascii
+            with open(fn) as stream:
+                text = stream.read()
+            text = re.findall(r'[+-]?\d+\.?\d*', text)
+            array = np.asarray(text).reshape(block['AXIS_ITEMS'])
+
         return array
 
     def read_image(
@@ -1140,7 +1147,7 @@ class Data:
     def metablock(self, text, evaluate=True, warn=True):
         """
         get the first value from this object's metadata whose key exactly
-        matches `text`, even if it is nested inside a mapping, iff the value
+        matches `text`, even if it is nested inside a mapping, if the value
         itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
         evaluate it using self.metadata.formatter. if there is no key matching
         'text', will evaluate and return the metadata as a whole.

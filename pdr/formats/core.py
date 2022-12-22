@@ -3,7 +3,7 @@ import warnings
 from functools import partial
 from operator import contains
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from pdr import formats
 from pdr.parselabel.pds3 import pointerize
@@ -325,3 +325,24 @@ def ignore_if_pdf(data, object_name, path):
         if block is None:
             return data.metaget_(pointerize(object_name))
     return open(check_cases(path)).read()
+
+
+def check_array_for_subobject(block):
+    valid_subobjects = ["ARRAY", "BIT_ELEMENT", "COLLECTION", "ELEMENT"]
+    subobj = [sub for sub in valid_subobjects if sub in block]
+    if len(subobj) > 1:
+        raise ValueError(f'ARRAY objects may only have one subobject (this has {len(subobj)})')
+    if len(subobj) < 1:
+        raise ValueError('This ARRAY object does not have a required subobject')
+    return subobj[0]
+
+
+def get_num_of_items(block):
+    items = block["AXIS_ITEMS"]
+    if isinstance(items, int):
+        return items
+    if isinstance(items, Sequence):
+        tot_items = 1
+        for axis in items:
+            tot_items *= axis
+        return tot_items
