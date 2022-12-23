@@ -63,6 +63,13 @@ of their metadata appear to match other sources.
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*)
+- Clementine
+  - Map-projected Basemap, HiRes, NIR, and UVVIS mosaics
+    - These have been migrated to PDS4, pending archive approval.
+  - Gravity and topography derived products
+  - LWIR RDRs
+  - RSS bistatic radar RDRs
+  - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, but it can be opened with `pdr`*
 - Galileo 
   - magnetometer tables (except summary tables)
 - Juno
@@ -159,6 +166,10 @@ of their metadata appear to match other sources.
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
 
 ## Known Unsupported Datasets
+- Clementine
+  - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
+  - LWIR EDRs (support not planned)
+  - RSS EDRs (support not planned)
 - MRO
   - HiRISE EDRs (IMAGEs from these may open, but we suspect not correctly; other packed binary objects may not)
   - RSS .tnf (support not planned)
