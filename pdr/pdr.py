@@ -1014,7 +1014,9 @@ class Data:
         # are legitimately very large
         Image.MAX_IMAGE_PIXELS = None
         # noinspection PyTypeChecker
-        image = np.ascontiguousarray(Image.open(self.file_mapping[pointer]))
+        image = np.ascontiguousarray(
+            Image.open(self.file_mapping[pointer])
+        ).copy()
         # pillow reads images as [x, y, channel] rather than [channel, x, y]
         if len(image.shape) == 3:
             return np.ascontiguousarray(np.rollaxis(image, 2))
