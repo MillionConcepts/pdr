@@ -70,6 +70,13 @@ def check_special_structure(pointer, data):
     return False, None, None
 
 
+def check_special_position(start, length, as_rows, data):
+    if (data.metaget_("INSTRUMENT_ID", "") == "MARSIS" and
+            " TEC " in data.metaget_("DATA_SET_NAME", "")):
+        return formats.mex_marsis.get_position(start, length, as_rows, data)
+    return False, None, None, None
+
+
 def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
     if (
         data.metaget_("INSTRUMENT_ID") == "MARSIS"

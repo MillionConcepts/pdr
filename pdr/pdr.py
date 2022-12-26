@@ -36,7 +36,7 @@ from pdr.formats import (
     ignore_if_pdf,
     check_special_structure,
     check_array_for_subobject,
-    get_array_num_items,
+    get_array_num_items, check_special_position,
 )
 from pdr.np_utils import enforce_order_and_object, casting_to_float, \
     np_from_buffered_io
@@ -972,6 +972,9 @@ class Data:
                     record_length = None
                 if record_length is not None:
                     length = record_length * n_records
+        is_special, spec_start, spec_length, spec_as_rows = check_special_position(start, length, as_rows, self)
+        if is_special:
+            return spec_start, spec_length, spec_as_rows
         return start, length, as_rows
 
     def handle_fits_file(self, pointer=""):
