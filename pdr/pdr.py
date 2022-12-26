@@ -953,7 +953,10 @@ class Data:
             if isinstance(target[1], dict):
                 start = target[1]['value'] - 1
             else:
-                start = target[1] - 1
+                try:
+                    start = target[1] - 1
+                except TypeError:  # string types cannot have integers subtracted (string implies there is one object)
+                    start = 0
             if n_records is not None:
                 length = n_records
         else:
