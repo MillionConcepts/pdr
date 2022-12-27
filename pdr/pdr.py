@@ -518,7 +518,7 @@ class Data:
             from pdr.pd_utils import structured_array_to_df
             df = structured_array_to_df(structure.data)
             df.columns = df.columns.str.replace(r"GROUP_?\d+", "", regex=True)
-            # df.columns = df.columns.str.strip(", ")
+            df.columns = df.columns.str.strip(", ")
             setattr(self, object_name, df)
         # TODO: do other important cases exist?
         else:
