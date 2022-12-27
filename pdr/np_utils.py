@@ -28,12 +28,13 @@ def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
     """
     if inplace is False:
         array = array.copy()
-    if len(array.dtype) == 1:
-        if "V" in str(array.dtype[0]):
+    if len(array.dtype) < 2:
+        dtype = array.dtype if len(array.dtype) == 0 else array.dtype[0]
+        if "V" in str(dtype):
             # if we don't slice the field out explicitly, numpy will transform
             # it into an array of tuples
-            return array[tuple(array.dtype.fields.keys())[0]].astype("O")
-        if array.dtype.isnative:
+            return array[tuple(dtype.fields.keys())[0]].astype("O")
+        if dtype.isnative:
             return array
         return array.byteswap().newbyteorder("=")
     swap_targets = []

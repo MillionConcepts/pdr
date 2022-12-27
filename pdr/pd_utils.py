@@ -12,6 +12,7 @@ import pandas as pd
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_sample_type
+from pdr.np_utils import enforce_order_and_object
 
 
 def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
@@ -173,6 +174,10 @@ def booleanize_booleans(
     return table
 
 
+def rectified_rec_df(array: np.ndarray) -> pd.DataFrame:
+    return pd.DataFrame.from_records(enforce_order_and_object(array))
+
+
 def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
     sub_dfs = []
     name_buffer = []
@@ -181,15 +186,16 @@ def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
             name_buffer.append(field[0])
         else:
             if len(name_buffer) > 0:
-                sub_dfs.append(pd.DataFrame.from_records(array[name_buffer]))
+                sub_dfs.append(rectified_rec_df(array[name_buffer]))
                 name_buffer = []
-            sub_df = pd.DataFrame.from_records(array[field[0]])
+            sub_df = rectified_rec_df(array[field[0]])
             sub_df.columns = [
                 f"{field[0]}_{ix}" for ix in range(len(sub_df.columns))
             ]
             sub_dfs.append(sub_df)
     if len(name_buffer) > 0:
-        sub_dfs.append(pd.DataFrame.from_records(array[name_buffer]))
+        sub_dfs.append(rectified_rec_df(array[name_buffer]))
     if len(sub_dfs) == 0:
         return sub_dfs[0]
-    return pd.concat(sub_dfs, axis=1)
+    df = pd.concat(sub_dfs, axis=1)
+    return df
