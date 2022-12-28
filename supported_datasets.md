@@ -111,7 +111,7 @@ of their metadata appear to match other sources.
   - RSS EDR and RDR
     - *note: some EDR products (DDOR and TNF) have UNDEFINED record types in their PDS3 labels. We recommend opening them from their PDS4 labels.*
   - Space Weathering maps
-  - MEAP electron events tables, thermal neutron map, and image cubes
+  - MEAP electron events tables, thermal neutron map, enhanced gamma ray spectrometry data, and image cubes
   - Ground calibration data (aside from NS and MASCS)
 - Rosetta
   - Orbiter:
@@ -204,7 +204,6 @@ of their metadata appear to match other sources.
   - RSS PostScript files from both Raw Data and Science Data Products (support not planned)
 - MESSENGER
   - Ground calibration data for MASCS and NS (support not planned)
-  - MEAP enhanced gamma ray spectrometry data
 - Rosetta
   - Orbiter:
     - ALICE EDRs, RDRs, and REFDRs (support planned)
