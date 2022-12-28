@@ -33,7 +33,7 @@ def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
         if "V" in str(dtype):
             # if we don't slice the field out explicitly, numpy will transform
             # it into an array of tuples
-            return array[tuple(dtype.fields.keys())[0]].astype("O")
+            return array[tuple(array.dtype.fields.keys())[0]].astype("O")
         if dtype.isnative:
             return array
         return array.byteswap().newbyteorder("=")
