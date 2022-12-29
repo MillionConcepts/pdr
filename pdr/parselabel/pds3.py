@@ -134,39 +134,39 @@ def multidict_dig_and_edit(
     target,
     input_object=None,
     predicate=eq,
-    value_set_function=None,
+    setter_function=None,
     key_editor=False,
     keep_values=True
 ):
     """This function searches through the keys and children keys of a multidict for those that match "target".
     If "key_editor" is false, when finding that key, the function will either set the value of the key to the value of
-    "input_object" or, if "value_set_function" is not None, will execute the "value_set_function" with "input_object"
+    "input_object" or, if "setter_function" is not None, will execute the "setter_function" with "input_object"
     and the original key value as inputs. If "key_editor" is true, when finding that key, the function will either set
-    the key name to the value of "input_object" or, if "value_set_function" is not None, will execute the
-    "value_set_function" with "input_object" and the original key name as inputs.
+    the key name to the value of "input_object" or, if "setter_function" is not None, will execute the
+    "setter_function" with "input_object" and the original key name as inputs.
 
     If "keep_values" is true the output_multidict will have values from the original multidict that were not edited."""
     output_multidict = MultiDict()
-    if value_set_function is None:
-        value_set_function = constant(input_object)
+    if setter_function is None:
+        setter_function = constant(input_object)
     for key, value in input_multidict.items():
         if isinstance(value, MultiDict):
             edited_multidict = multidict_dig_and_edit(
-                value, target, input_object, predicate, value_set_function, key_editor, keep_values
+                value, target, input_object, predicate, setter_function, key_editor, keep_values
             )
             if not predicate(key, target) or not key_editor:
                 output_multidict.add(key, edited_multidict)
             else:
-                output_multidict.add(value_set_function(input_object, key), edited_multidict)
+                output_multidict.add(setter_function(input_object, key), edited_multidict)
             continue
         if not predicate(key, target):
             if keep_values:
                 output_multidict.add(key, value)
             continue
         if not key_editor:
-            output_multidict.add(key, value_set_function(input_object, value))
+            output_multidict.add(key, setter_function(input_object, value))
         else:
-            output_multidict.add(value_set_function(input_object, key), value)
+            output_multidict.add(setter_function(input_object, key), value)
     return output_multidict
 
 
@@ -188,7 +188,7 @@ def literalize_pvl_block(block):
         block,
         None,
         predicate=lambda x, y: True,
-        value_set_function=lambda _, obj: literalize_pvl(obj)
+        setter_function=lambda _, obj: literalize_pvl(obj)
     )
     return literalized
 
@@ -235,10 +235,10 @@ def index_duplicate_pointers(pointers, mapping, params):
                 indexed_pointer = f'{pointer}_{ix}'
                 indexed_depointer = f'{depointer}_{ix}'
                 mapping = multidict_dig_and_edit(input_multidict=mapping, target=pointer,
-                                                 input_object=list(range(len(group))), value_set_function=set_key_index,
+                                                 input_object=list(range(len(group))), setter_function=set_key_index,
                                                  key_editor=True, keep_values=True)
                 mapping = multidict_dig_and_edit(input_multidict=mapping, target=depointer,
-                                                 input_object=list(range(len(group))), value_set_function=set_key_index,
+                                                 input_object=list(range(len(group))), setter_function=set_key_index,
                                                  key_editor=True, keep_values=True)
                 params.append(indexed_pointer)
                 params.append(indexed_depointer)
