@@ -67,6 +67,10 @@ def check_special_structure(pointer, data):
             and pointer == "DATA_TABLE"):
         # sequence wrapped as string for object names
         return formats.clementine.get_structure(pointer, data)
+    if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "MARS GLOBAL SURVEYOR"
+            and data.metaget_("INSTRUMENT_ID", "") == "RSS"
+            and data.metaget_("PRODUCT_TYPE", "") == "ODF" and pointer == "ODF3B_TABLE"):
+        return formats.mgs.get_structure(pointer, data)
     return False, None, None
 
 
@@ -183,7 +187,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return loader
     if pointer == "LABEL":
         return data.read_label
-    if pointer == "TEXT":
+    if "TEXT" in pointer or "PDF" in pointer:
         return data.read_text
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
@@ -332,6 +336,7 @@ def ignore_if_pdf(data, object_name, path):
         block = data.metaget_(object_name)
         if block is None:
             return data.metaget_(pointerize(object_name))
+        return block
     return open(check_cases(path)).read()
 
 

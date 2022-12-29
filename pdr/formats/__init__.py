@@ -10,3 +10,4 @@ import pdr.formats.mex_marsis as mex_marsis
 import pdr.formats.msl_ccam as msl_ccam
 import pdr.formats.rosetta as rosetta
 import pdr.formats.clementine as clementine
+import pdr.formats.mgs as mgs
