@@ -17,3 +17,5 @@
 data/**
 build/**
 dist/**
+git
+meta.yaml

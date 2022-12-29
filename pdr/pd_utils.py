@@ -144,7 +144,7 @@ def insert_sample_types_into_df(fmtdef, data):
         sample_bytes = total_bytes if np.isnan(item_bytes) else item_bytes
         try:
             is_special, special_type = check_special_sample_type(
-                dt, int(sample_bytes), data, for_numpy=True
+                data, dt, int(sample_bytes), for_numpy=True
             )
             if is_special:
                 fmtdef.loc[group.index, 'dt'] = special_type

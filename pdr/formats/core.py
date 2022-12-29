@@ -81,7 +81,7 @@ def check_special_position(start, length, as_rows, data):
     return False, None, None, None
 
 
-def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
+def check_special_sample_type(data, sample_type, sample_bytes, for_numpy):
     if (
         data.metaget_("INSTRUMENT_ID") == "MARSIS"
         and data.metaget_("PRODUCT_TYPE") == "EDR"
@@ -89,6 +89,11 @@ def check_special_sample_type(sample_type, sample_bytes, data, for_numpy):
         return formats.mex_marsis.get_sample_type(
             sample_type, sample_bytes, for_numpy
         )
+    if (
+        data.metaget_("INSTRUMENT_HOST_NAME") == "MARS GLOBAL SURVEYOR" and
+        data.metaget_("INSTRUMENT_NAME") == "RADIO SCIENCE SUBSYSTEM"
+    ):
+        return formats.mgs.get_sample_type(sample_type, sample_bytes)
     return False, None
 
 
@@ -257,11 +262,16 @@ def generic_image_properties(object_name, block, data) -> dict:
     if object_name == "QUBE":  # ISIS2 QUBE format
         props = qube_image_properties(block)
     else:
-        props = {}
-        props["BYTES_PER_PIXEL"] = int(block["SAMPLE_BITS"] / 8)
-        props["sample_type"] = sample_types(
-            block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
+        props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
+        is_special, special_type = check_special_sample_type(
+            data, block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
         )
+        if is_special:
+            props["sample_type"] = special_type
+        else:
+            props["sample_type"] = sample_types(
+                block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
+            )
         props["nrows"] = block["LINES"]
         props["ncols"] = block["LINE_SAMPLES"]
         if "LINE_PREFIX_BYTES" in block.keys():
