@@ -97,8 +97,7 @@ of their metadata appear to match other sources.
   - TES-TSDR ATM, BOL, GEO, OBS, POS, TLM, IFG and RAD (fixed-length tables only)
   - TES Thermal Inertia and Albedo maps
   - MOLA PRDR, IEGDR (v1 and v2), MEGDR, and SHADR
-  - RSS ECH, ECS, ECT, FBR, MCH, MCT, and RSR 
-    - *note: ECH and MCH should have 'CSV' in their filenames*
+  - RSS most Raw Data and Science Data Products (see Known Unsupported Datasets below for excluded products)
 - MRO
   - CRISM EDR, CDR, DDR, LDR, TER, TRDR, MRDR, and MTRDR
   - CRISM speclib and typespec tables
@@ -154,9 +153,6 @@ of their metadata appear to match other sources.
   - NAC DTM without labels (under EXTRAS folder at LROC mission node)
   - WAC derived tif files without labels (under EXTRAS folder at LROC
   mission node)
-- MGS
-  - RSS Science Data Products (except PostScript files)
-    - *note: There is a known issue where header tables and other ancillary tables open with their corresponding data tables appended as additional rows. Additionally, some '.IMG' products do not open because of a typo in their labels. (A fix for this is planned)*
 - MRO
   - HiRISE RDRs 
 - Rosetta
@@ -185,10 +181,6 @@ of their metadata appear to match other sources.
   - TES-TSDR PCT (support not planned)
   - TES-TSDR variable-length '.VAR' tables (support not planned)
   - MOLA AEDR and PEDR (support planned)
-  - RSS '.IMG' products with filenames beginning with 'j' (support planned)
-    - *These files have a label formatting error.*
-  - RSS ODR, ODF, and TDF(support planned)
-    - *ODF and TDF products open with errors, ODR products do not open at all*
   - RSS Raw Data products with a "stream" or undefined RECORD_TYPE (support not planned)
   - RSS PostScript files from both Raw Data and Science Data Products (support not planned)
 - MRO
