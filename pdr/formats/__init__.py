@@ -11,3 +11,4 @@ import pdr.formats.msl_ccam as msl_ccam
 import pdr.formats.rosetta as rosetta
 import pdr.formats.clementine as clementine
 import pdr.formats.mgs as mgs
+import pdr.formats.cassini as cassini

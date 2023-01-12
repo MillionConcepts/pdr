@@ -161,6 +161,13 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
     ):
         return True, formats.juno.waves_burst_with_offset_loader(data)
+    if (
+        data.metaget_("DATA_SET_ID", "") in ("CO-S-MIMI-4-CHEMS-CALIB-V1.0",
+                                             "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
+                                             "CO-S-MIMI-4-INCA-CALIB-V1.0")
+        and pointer == "SPREADSHEET"
+    ):
+        return True, formats.cassini.ppi_table_loader(data, pointer, data.metaget_("DATA_SET_ID", ""))
     return False, None
 
 
