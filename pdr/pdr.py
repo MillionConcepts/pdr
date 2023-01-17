@@ -311,6 +311,19 @@ def associate_label_file(
     return None
 
 
+def handle_fits_header(hdulist, pointer="", ):
+    astro_hdr = hdulist[pointer_to_fits_key(pointer, hdulist)].header
+    output_hdr = {}
+    for key in astro_hdr.keys():
+        if isinstance(astro_hdr[key], (str, float, int)):
+            output_hdr[key] = astro_hdr[key]
+        else:
+            output_hdr[key] = str(astro_hdr[key])
+        comment_key = key + '_comment'
+        output_hdr[comment_key] = astro_hdr.comments[key]
+    return output_hdr
+
+
 class Data:
     def __init__(
         self,
@@ -389,6 +402,9 @@ class Data:
             if is_trivial(object_name):
                 continue
             self.index.append(object_name)
+
+    def _add_header_keys(self):
+        print('blup')
 
     def _object_to_filename(self, object_name):
         is_special, special_target = check_special_fn(self, object_name)
@@ -935,6 +951,8 @@ class Data:
 
     def read_header(self, object_name="HEADER"):
         """Attempt to read a file header."""
+        if looks_like_this_kind_of_file(self.file_mapping[object_name], FITS_EXTENSIONS):
+            return self.handle_fits_file(object_name)
         start, length, as_rows = self.table_position(object_name)
         return skeptically_load_header(
             self.file_mapping[object_name], object_name, start, length, as_rows
@@ -995,7 +1013,12 @@ class Data:
         try:
             hdulist = fits.open(self.file_mapping[pointer])
             if "HEADER" in pointer:
-                return hdulist[pointer_to_fits_key(pointer, hdulist)].header
+                return handle_fits_header(hdulist, pointer)
+            else:
+                hdr_key = pointer+"_HEADER"
+                hdr_val = handle_fits_header(hdulist, pointer)
+                setattr(self, hdr_key, hdr_val)
+                self.index += [hdr_key]
             return hdulist[pointer_to_fits_key(pointer, hdulist)].data
         except Exception as ex:
             # TODO: assuming this does not need to be specified as f-string
