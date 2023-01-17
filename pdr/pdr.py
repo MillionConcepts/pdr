@@ -313,15 +313,16 @@ def associate_label_file(
 
 def handle_fits_header(hdulist, pointer="", ):
     astro_hdr = hdulist[pointer_to_fits_key(pointer, hdulist)].header
-    output_hdr = {}
-    for key in astro_hdr.keys():
-        if isinstance(astro_hdr[key], (str, float, int)):
-            output_hdr[key] = astro_hdr[key]
-        else:
-            output_hdr[key] = str(astro_hdr[key])
-        if len(astro_hdr.comments[key]) > 0:
-            comment_key = key + '_comment'
-            output_hdr[comment_key] = astro_hdr.comments[key]
+    output_hdr = MultiDict()
+    for key, val, com in astro_hdr.cards:
+        if len(key) > 0:
+            if isinstance(val, (str, float, int)):
+                output_hdr.add(key, val)
+            else:
+                output_hdr.add(key, str(val))
+            if len(com) > 0:
+                comment_key = key + '_comment'
+                output_hdr.add(comment_key, com)
     return output_hdr
 
 
