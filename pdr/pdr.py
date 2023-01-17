@@ -319,8 +319,9 @@ def handle_fits_header(hdulist, pointer="", ):
             output_hdr[key] = astro_hdr[key]
         else:
             output_hdr[key] = str(astro_hdr[key])
-        comment_key = key + '_comment'
-        output_hdr[comment_key] = astro_hdr.comments[key]
+        if len(astro_hdr.comments[key]) > 0:
+            comment_key = key + '_comment'
+            output_hdr[comment_key] = astro_hdr.comments[key]
     return output_hdr
 
 
