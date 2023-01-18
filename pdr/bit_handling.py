@@ -69,17 +69,20 @@ def splice_bit_string(table, fmtdef):
             start_bit_list = [
                 val - 1 for val in fmtdef.start_bit_list[column]
             ]  # python zero indexing
+            bit_size_list = fmtdef.bit_size_list[column]
             bit_list_column = bit_column.map(
-                partial(split_bits, start_bit_list=start_bit_list)
+                partial(split_bits, start_bit_list=start_bit_list, bit_size_list=bit_size_list)
             )
             table[fmtdef.NAME[column]] = bit_list_column
     return table
 
 
-def split_bits(bit_string, start_bit_list):
+def split_bits(bit_string, start_bit_list, bit_size_list):
+    end_bit_list = [start + size
+                    for start, size in zip(start_bit_list, bit_size_list)]
     return [
         bit_string[start:end]
-        for start, end in zip(start_bit_list, start_bit_list[1:] + [None])
+        for start, end in zip(start_bit_list, end_bit_list)
     ]
 
 
@@ -104,9 +107,13 @@ def add_bit_column_info(obj, definition, data):
                 obj["DATA_TYPE"] = special_dtype
 
         start_bit_list = []
+        bit_size_list = []
         list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")
         for pvl_obj in list_of_pvl_objects_for_bit_columns:
             start_bit = pvl_obj.get("START_BIT")
+            bit_size = pvl_obj.get("BITS")
             start_bit_list.append(start_bit)
+            bit_size_list.append(bit_size)
         obj["start_bit_list"] = start_bit_list
+        obj["bit_size_list"] = bit_size_list
     return obj
