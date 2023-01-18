@@ -115,7 +115,7 @@ def eightbit(
 
 def colorfill_maskedarray(
     masked_array: np.ma.MaskedArray,
-    color: Union[int, int, int] = (0, 255, 255),
+    color: Union[int, tuple[int, int, int]] = (0, 255, 255),
 ):
     """
     masked_array: 2-D masked array or a 3-D masked array with last axis of
