@@ -32,3 +32,11 @@ def waves_burst_with_offset_loader(data):
     setattr(data, "metaget", partial(wrap_getter, method="metaget"))
 
     return data.read_table
+
+
+def bit_start_find_and_fix(list_of_pvl_objects_for_bit_columns, start_bit_list):
+    if list_of_pvl_objects_for_bit_columns[-1].get("NAME") == "NADIR_OFFSET_SIGN":
+        special_start_bit_list = start_bit_list
+        special_start_bit_list[-1] = 16
+        return True, special_start_bit_list
+    return False, None

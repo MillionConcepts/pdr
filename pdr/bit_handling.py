@@ -5,7 +5,7 @@ from operator import add
 import numpy as np
 import pandas as pd
 from pdr.datatypes import determine_byte_order, sample_types
-from pdr.formats import check_special_bit_column_case
+from pdr.formats import check_special_bit_column_case, check_special_bit_start_case
 import warnings
 
 
@@ -114,6 +114,11 @@ def add_bit_column_info(obj, definition, data):
             bit_size = pvl_obj.get("BITS")
             start_bit_list.append(start_bit)
             bit_size_list.append(bit_size)
-        obj["start_bit_list"] = start_bit_list
+        is_also_special, special_start_bit_list = \
+            check_special_bit_start_case(data, list_of_pvl_objects_for_bit_columns, start_bit_list)
+        if is_also_special:
+            obj["start_bit_list"] = special_start_bit_list
+        else:
+            obj["start_bit_list"] = start_bit_list
         obj["bit_size_list"] = bit_size_list
     return obj
