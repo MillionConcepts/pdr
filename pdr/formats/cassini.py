@@ -3,11 +3,17 @@ def ppi_table_loader(data, pointer, data_set_id):
     def load_this_table(*_, **__):
         import pandas as pd
         structure = data.read_table_structure(pointer)
+        names = structure.NAME
+        header = None
         if "FULL" in data.file_mapping[pointer]:
             skiprows = 4
+            if data_set_id == "CO-S-MIMI-4-CHEMS-CALIB-V1.0":
+                header = 0
+                names = None
+                skiprows = range(1, 4)
         else:
             skiprows = 7
-        table = pd.read_csv(data.file_mapping[pointer], skiprows=skiprows, header=None, names=structure.NAME)
+        table = pd.read_csv(data.file_mapping[pointer], header=header, skiprows=skiprows, names=names)
         return table
 
     return load_this_table
