@@ -115,14 +115,16 @@ def eightbit(
 
 def colorfill_maskedarray(
     masked_array: np.ma.MaskedArray,
-    color: tuple[int, int, int] = (0, 255, 255),
+    color: Union[int, int, int] = (0, 255, 255),
 ):
     """
     masked_array: 2-D masked array or a 3-D masked array with last axis of
     length 3. for likely uses, this should probably be 8-bit unsigned integer.
     color: optionally-specified RGB color (default cyan)
-    return a 3-D array with masked values filled with color.
+    return a 2-D or 3-D array with masked values filled with color.
     """
+    if isinstance(color, int):
+        return masked_array.filled(color)
     if len(masked_array.shape) == 2:
         return np.dstack([masked_array.filled(color[ix]) for ix in range(3)])
     if masked_array.shape[-1] != 3:
