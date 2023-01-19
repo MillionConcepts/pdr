@@ -111,10 +111,19 @@ def get_bit_start_and_size(obj, definition, data):
     bit_size_list = []
     list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")
     for pvl_obj in list_of_pvl_objects_for_bit_columns:
-        start_bit = pvl_obj.get("START_BIT")
-        bit_size = pvl_obj.get("BITS")
-        start_bit_list.append(start_bit)
-        bit_size_list.append(bit_size)
+        if pvl_obj.get("ITEMS"):
+            items = pvl_obj.get("ITEMS")
+            item_bits = pvl_obj.get("ITEM_BITS")
+            first_item_start_bit = pvl_obj.get("START_BIT")
+            for item_index in range(items):
+                start_bit = first_item_start_bit + item_index*item_bits
+                start_bit_list.append(start_bit)
+                bit_size_list.append(item_bits)
+        else:
+            start_bit = pvl_obj.get("START_BIT")
+            bit_size = pvl_obj.get("BITS")
+            start_bit_list.append(start_bit)
+            bit_size_list.append(bit_size)
     is_also_special, special_start_bit_list = \
         check_special_bit_start_case(data, list_of_pvl_objects_for_bit_columns, start_bit_list)
     if is_also_special:
