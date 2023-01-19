@@ -1,3 +1,7 @@
+##[#.#.#] - YYYY-MM-DD
+### Added
+ - This change log file
+
 ## [0.7.3] - 2023-01-18
 ### Added
  - Array pointers are now supported
