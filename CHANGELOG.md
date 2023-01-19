@@ -70,7 +70,7 @@
 ##Added
  - Initial reference release
 
-## Versions before reference release:
+## Versions not released:
 ###[0.6.0] - 2022-04-13
 
 Versioning becomes consistent at this point (prior to this release the version
