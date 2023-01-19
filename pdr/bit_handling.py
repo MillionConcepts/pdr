@@ -86,39 +86,48 @@ def split_bits(bit_string, start_bit_list, bit_size_list):
     ]
 
 
+def set_bit_string_data_type(obj, data):
+    is_special, special_dtype = check_special_bit_column_case(data)
+    if is_special is False:
+        try:
+            byteorder = sample_types(obj["BIT_COLUMN"]["BIT_DATA_TYPE"], 1, True)[0]
+        except (KeyError, ValueError):
+            raise ValueError("Incompatible data type for bit columns.")
+        if byteorder == ">":
+            warnings.warn(f"Data type {obj['DATA_TYPE']} incompatible for bit column. "
+                          f"Changing to MSB_BIT_STRING.")
+            obj["DATA_TYPE"] = "MSB_BIT_STRING"
+        elif byteorder == "<":
+            warnings.warn(f"Data type {obj['DATA_TYPE']} incompatible for bit column. "
+                          f"Changing to LSB_BIT_STRING.")
+            obj["DATA_TYPE"] = "LSB_BIT_STRING"
+    else:
+        obj["DATA_TYPE"] = special_dtype
+    return obj
+
+
+def get_bit_start_and_size(obj, definition, data):
+    start_bit_list = []
+    bit_size_list = []
+    list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")
+    for pvl_obj in list_of_pvl_objects_for_bit_columns:
+        start_bit = pvl_obj.get("START_BIT")
+        bit_size = pvl_obj.get("BITS")
+        start_bit_list.append(start_bit)
+        bit_size_list.append(bit_size)
+    is_also_special, special_start_bit_list = \
+        check_special_bit_start_case(data, list_of_pvl_objects_for_bit_columns, start_bit_list)
+    if is_also_special:
+        obj["start_bit_list"] = special_start_bit_list
+    else:
+        obj["start_bit_list"] = start_bit_list
+    obj["bit_size_list"] = bit_size_list
+    return obj
+
+
 def add_bit_column_info(obj, definition, data):
     if "BIT_COLUMN" in obj.keys():
         if "BIT_STRING" not in obj["DATA_TYPE"]:
-            is_special, special_dtype = check_special_bit_column_case(data)
-            if is_special is False:
-                try:
-                    byteorder = sample_types(obj["BIT_COLUMN"]["BIT_DATA_TYPE"], 1, True)[0]
-                except (KeyError, ValueError):
-                    raise ValueError("Incompatible data type for bit columns.")
-                if byteorder == ">":
-                    warnings.warn(f"Data type {obj['DATA_TYPE']} incompatible for bit column. "
-                                  f"Changing to MSB_BIT_STRING.")
-                    obj["DATA_TYPE"] = "MSB_BIT_STRING"
-                elif byteorder == "<":
-                    warnings.warn(f"Data type {obj['DATA_TYPE']} incompatible for bit column. "
-                                  f"Changing to LSB_BIT_STRING.")
-                    obj["DATA_TYPE"] = "LSB_BIT_STRING"
-            else:
-                obj["DATA_TYPE"] = special_dtype
-
-        start_bit_list = []
-        bit_size_list = []
-        list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")
-        for pvl_obj in list_of_pvl_objects_for_bit_columns:
-            start_bit = pvl_obj.get("START_BIT")
-            bit_size = pvl_obj.get("BITS")
-            start_bit_list.append(start_bit)
-            bit_size_list.append(bit_size)
-        is_also_special, special_start_bit_list = \
-            check_special_bit_start_case(data, list_of_pvl_objects_for_bit_columns, start_bit_list)
-        if is_also_special:
-            obj["start_bit_list"] = special_start_bit_list
-        else:
-            obj["start_bit_list"] = start_bit_list
-        obj["bit_size_list"] = bit_size_list
+            obj = set_bit_string_data_type(obj, data)
+        obj = get_bit_start_and_size(obj, definition, data)
     return obj
