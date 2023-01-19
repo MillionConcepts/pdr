@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from pdr import formats
+from pdr.formats.cassini import CASSINI_SET_NAMES
 from pdr.parselabel.pds3 import pointerize
 from pdr.utils import check_cases
 from pdr.datatypes import sample_types
@@ -172,12 +173,10 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         return True, formats.juno.waves_burst_with_offset_loader(data)
     if (
-        data.metaget_("DATA_SET_ID", "") in ("CO-S-MIMI-4-CHEMS-CALIB-V1.0",
-                                             "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
-                                             "CO-S-MIMI-4-INCA-CALIB-V1.0")
+        (dsi := data.metaget_("DATA_SET_ID", "")) in CASSINI_SET_NAMES
         and pointer == "SPREADSHEET"
     ):
-        return True, formats.cassini.ppi_table_loader(data, pointer, data.metaget_("DATA_SET_ID", ""))
+        return True, formats.cassini.ppi_table_loader(data, pointer, dsi)
     return False, None
 
 

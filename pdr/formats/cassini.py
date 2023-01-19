@@ -1,10 +1,20 @@
 from pdr.pd_utils import insert_sample_types_into_df
 
+CASSINI_SET_NAMES = (
+    "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
+    "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
+    "CO-S-MIMI-4-INCA-CALIB-V1.0",
+    "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0"
+)
+
 
 def ppi_table_loader(data, pointer, data_set_id):
 
     def load_this_table(*_, **__):
         import pandas as pd
+
+        if "UNCALIB" in data_set_id:
+            return pd.read_csv(data.file_mapping[pointer])
         structure = data.read_table_structure(pointer)
         names = structure.NAME
         header = None
@@ -16,9 +26,11 @@ def ppi_table_loader(data, pointer, data_set_id):
                 skiprows = range(1, 4)
         else:
             skiprows = 7
-        table = pd.read_csv(data.file_mapping[pointer], header=header, skiprows=skiprows, names=names)
+        table = pd.read_csv(data.file_mapping[pointer],
+                            header=header,
+                            skiprows=skiprows,
+                            names=names)
         return table
-
     return load_this_table
 
 
