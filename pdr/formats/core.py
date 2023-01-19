@@ -109,6 +109,12 @@ def check_special_bit_column_case(data):
     return False, None
 
 
+def check_special_bit_start_case(data, list_of_pvl_objects_for_bit_columns, start_bit_list):
+    if data.metaget_("INSTRUMENT_NAME", "") in "JOVIAN INFRARED AURORAL MAPPER":
+        return formats.juno.bit_start_find_and_fix(list_of_pvl_objects_for_bit_columns, start_bit_list)
+    return False, None
+
+
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if pointer == 'SHADR_HEADER_TABLE':
         return True, formats.messenger.shadr_header_table_loader(data)

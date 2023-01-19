@@ -101,7 +101,7 @@ of their metadata appear to match other sources.
 - MRO
   - CRISM EDR, CDR, DDR, LDR, TER, TRDR, MRDR, and MTRDR
   - CRISM speclib and typespec tables
-  - SHARAD EDR and RDR
+  - SHARAD EDR and RDR (*note: EDR science telemetry tables will only open the "science data" column(s) and does not output the columns described in the science_ancillary.fmt)
   - SHARAD rgram and geom files
   - RSS ODF, RSR, RSDMAP, SHADR, and SHBDR
 - MSL
