@@ -71,6 +71,10 @@ def check_special_structure(pointer, data):
             and data.metaget_("INSTRUMENT_ID", "") == "RSS"
             and data.metaget_("PRODUCT_TYPE", "") == "ODF" and pointer == "ODF3B_TABLE"):
         return formats.mgs.get_structure(pointer, data)
+    if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "CASSINI ORBITER"
+            and data.metaget_("INSTRUMENT_ID", "") == "RPWS"
+            and pointer == "TIME_SERIES"):
+        return formats.cassini.get_structure(pointer, data)
     return False, None, None
 
 
@@ -217,6 +221,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         ("TABLE" in pointer)
         or ("SPREADSHEET" in pointer)
         or ("CONTAINER" in pointer)
+        or ("TIME_SERIES" in pointer)
     ):
         return data.read_table
     if "HISTOGRAM" in pointer:
