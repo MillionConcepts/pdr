@@ -1,4 +1,4 @@
-##[#.#.#] - YYYY-MM-DD
+## [#.#.#] - YYYY-MM-DD
 ### Added
  - This change log file
 
@@ -10,12 +10,12 @@
    points to the FITS file then after loading that key, an additional key will appear 
    in the format: `{key}_HEADER` that will contain the FITS header_.
  - `.jp2` files are now supported
- - Many new datatypes from mission susch as MGS, CLementine, Rosetta, and more
+ - Many new datatypes from mission such as MGS, Clementine, Rosetta, and more
    (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
    for specifics)
 
 ### Changed
- - Browse product improvments:
+ - Browse product improvements:
    - Tables with a single row of data will now output as a column for their .csv
      browse products to increase readability
    - Browse images can be specified to output in formats other than .jpg
@@ -28,7 +28,7 @@
 
 ## [0.7.2] - 2022-10-31
 ### Added
- - better search functionaily for format files (description of behavior/usage can be found 
+ - better search functionality for format files (description of behavior/usage can be found 
    [here](https://github.com/MillionConcepts/pdr/issues/36#issuecomment-1276764335))
  - A pretty printer for label metadata is now available. (Use print(data.metadata) to see the
    nicely formatted label information)
