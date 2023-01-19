@@ -1,6 +1,13 @@
 ## [#.#.#] - YYYY-MM-DD
 ### Added
  - This change log file
+ - Support for bit columns with ITEMS
+ - Browse images can now be output in grayscale
+
+### Changed
+ - Bit columns are now split based on both start_bit and number of bits rather than
+   subtracting the start_bit of each column to split (this fixed a number of previously
+   incorrectly read files and mirrors the way columns of tables are determined)
 
 ## [0.7.3] - 2023-01-18
 ### Added
