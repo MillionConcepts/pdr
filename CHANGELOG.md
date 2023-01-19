@@ -5,10 +5,10 @@
 ## [0.7.3] - 2023-01-18
 ### Added
  - Array pointers are now supported
- - FITS headers are now supported. _If a pointer with HEADER in it points to a FITS
+ - FITS headers are now supported. (If a pointer with HEADER in it points to a FITS
    file it will return that header. If there is a pointer without HEADER in it that 
    points to the FITS file then after loading that key, an additional key will appear 
-   in the format: `{key}_HEADER` that will contain the FITS header_.
+   in the format: `{key}_HEADER` that will contain the FITS header).
  - `.jp2` files are now supported
  - Many new datatypes from mission such as MGS, Clementine, Rosetta, and more
    (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
@@ -93,7 +93,7 @@ This version number is in both `__init__.py` and setup.py until setup.py changes
 This is a substantial rewrite of the core module. It generalizes the handling 
 of common data object types, especially images and tables. The returned data object 
 can now be treated somewhat like a dict by invoking the keys() method or using
-__getitem__ behavior, which should make it easier to use generally. It also addresses 
+`__getitem__` behavior, which should make it easier to use generally. It also addresses 
 [issue #6](https://github.com/MillionConcepts/pdr/issues/6).
 
 ###[0.4a1] - 2020-12-31
