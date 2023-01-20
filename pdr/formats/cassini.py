@@ -1,12 +1,5 @@
 from pdr.pd_utils import insert_sample_types_into_df
 
-CASSINI_SET_NAMES = (
-    "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
-    "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
-    "CO-S-MIMI-4-INCA-CALIB-V1.0",
-    "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0"
-)
-
 
 def ppi_table_loader(data, pointer, data_set_id):
 
