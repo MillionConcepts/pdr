@@ -1,6 +1,13 @@
 ## [#.#.#] - YYYY-MM-DD
 ### Added
  - This change log file
+ - Support for bit columns with ITEMS
+ - Browse images can now be output in grayscale
+
+### Changed
+ - Bit columns are now split based on both start_bit and number of bits rather than
+   subtracting the start_bit of each column to split (this fixed a number of previously
+   incorrectly read files and mirrors the way columns of tables are determined)
 
 ## [0.7.3] - 2023-01-18
 ### Added
@@ -67,36 +74,36 @@
    ascii
 
 ## [0.6.2] - 2022-06-27
-###Fixed
+### Fixed
  - Bug fixes for table reading due to signature change in dustgoggles
 
 ## [0.6.1] - 2022-06-01
-##Added
+### Added
  - Initial reference release
 
 ## Versions not released:
-###[0.6.0] - 2022-04-13
+### [0.6.0] - 2022-04-13
 
 Versioning becomes consistent at this point (prior to this release the version
 number in setup.py followed a `0.4.#a` convention while the version in `__init__.py` follows
 a `0.#.0` convention. Due to this the version numbers are enumerated here but are not mutually
 exclusive).
 
-###[0.5.0] - 2021-12-01
+### [0.5.0] - 2021-12-01
 
-###[0.4.3a] - 2021-07-23
+### [0.4.3a] - 2021-07-23
 
-###[0.4.2a] - 2021-02-07
+### [0.4.2a] - 2021-02-07
 This version number is in both `__init__.py` and setup.py until setup.py changes to 0.4.3a
 
-###[0.2.0] - 2021-01-28
+### [0.2.0] - 2021-01-28
 This is a substantial rewrite of the core module. It generalizes the handling 
 of common data object types, especially images and tables. The returned data object 
 can now be treated somewhat like a dict by invoking the keys() method or using
 `__getitem__` behavior, which should make it easier to use generally. It also addresses 
 [issue #6](https://github.com/MillionConcepts/pdr/issues/6).
 
-###[0.4a1] - 2020-12-31
+### [0.4a1] - 2020-12-31
 `setup.py` is created and the package is made installable
 
-###[0.1.0] - 2020-05-24
+### [0.1.0] - 2020-05-24
