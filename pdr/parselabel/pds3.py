@@ -89,7 +89,7 @@ class BlockParser:
 
 
 def read_pvl_label(filename, deduplicate_pointers=True):
-    label = trim_label(decompress(filename)).decode('utf-8')
+    label = trim_label(decompress(filename)).decode("utf-8")
     uncommented_label = re.sub(r"/\*.*?(\*/|$)", "", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
@@ -104,8 +104,8 @@ def read_pvl_label(filename, deduplicate_pointers=True):
 
 def parse_pvl_quantity_object(obj):
     return {
-        'value': literalize_pvl(re.search(r"((\d|\.|-)+|NULL)", obj).group()),
-        'units': literalize_pvl(re.search(r"<(.*)>", obj).group(1))
+        "value": literalize_pvl(re.search(r"((\d|\.|-)+|NULL)", obj).group()),
+        "units": literalize_pvl(re.search(r"<(.*)>", obj).group(1)),
     }
 
 
@@ -136,28 +136,43 @@ def multidict_dig_and_edit(
     predicate=eq,
     setter_function=None,
     key_editor=False,
-    keep_values=True
+    keep_values=True,
 ):
-    """This function searches through the keys and children keys of a multidict for those that match "target".
-    If "key_editor" is false, when finding that key, the function will either set the value of the key to the value of
-    "input_object" or, if "setter_function" is not None, will execute the "setter_function" with "input_object"
-    and the original key value as inputs. If "key_editor" is true, when finding that key, the function will either set
-    the key name to the value of "input_object" or, if "setter_function" is not None, will execute the
-    "setter_function" with "input_object" and the original key name as inputs.
+    """
+    This function searches through a multidict's items, recursively continuing
+    into any children that are themselves multidicts, looking for keys that
+    match "target".
+    If "key_editor" is False, the function changes the values associated with
+    those keys. if it is True, the function changes the key names themselves.
 
-    If "keep_values" is true the output_multidict will have values from the original multidict that were not edited."""
+    If "setter_function" is not None, it replaces those keys/values with the
+    output of "setter function", executed with "input_object" and the original
+    key/value as arguments. If it is None, it will simply replace them with
+    "input_object".
+
+    If "keep_values" is not True, the output_multidict will contain _only_
+    edited values, causing this to also act as a filtering function.
+    """
     output_multidict = MultiDict()
     if setter_function is None:
         setter_function = constant(input_object)
     for key, value in input_multidict.items():
         if isinstance(value, MultiDict):
             edited_multidict = multidict_dig_and_edit(
-                value, target, input_object, predicate, setter_function, key_editor, keep_values
+                value,
+                target,
+                input_object,
+                predicate,
+                setter_function,
+                key_editor,
+                keep_values,
             )
             if not predicate(key, target) or not key_editor:
                 output_multidict.add(key, edited_multidict)
             else:
-                output_multidict.add(setter_function(input_object, key), edited_multidict)
+                output_multidict.add(
+                    setter_function(input_object, key), edited_multidict
+                )
             continue
         if not predicate(key, target):
             if keep_values:
@@ -188,7 +203,7 @@ def literalize_pvl_block(block):
         block,
         None,
         predicate=lambda x, y: True,
-        setter_function=lambda _, obj: literalize_pvl(obj)
+        setter_function=lambda _, obj: literalize_pvl(obj),
     )
     return literalized
 
@@ -221,25 +236,35 @@ def index_duplicate_pointers(pointers, mapping, params):
     # noinspection PyTypeChecker
     pt_groups = groupby(identity, pointers)
     for pointer, group in pt_groups.items():
-        if (
-            (len(group) > 1)
-            and (pointer not in ("^STRUCTURE", "^DESCRIPTION", "^PDS_OBJECT"))
+        if (len(group) > 1) and (
+            pointer not in ("^STRUCTURE", "^DESCRIPTION", "^PDS_OBJECT")
         ):
             # don't waste anyone's time mentioning, that the label
             # references both ODL.TXT and VICAR2.TXT, etc.
             warnings.warn(
-                f"Duplicated {pointer}, indexing with integers after each entry e.g.: {pointer}_0"
+                f"Duplicated {pointer}, indexing with integers after each "
+                f"entry (e.g.: {pointer}_0)"
             )
             for ix in range(len(group)):
                 depointer = depointerize(pointer)
-                indexed_pointer = f'{pointer}_{ix}'
-                indexed_depointer = f'{depointer}_{ix}'
-                mapping = multidict_dig_and_edit(input_multidict=mapping, target=pointer,
-                                                 input_object=list(range(len(group))), setter_function=set_key_index,
-                                                 key_editor=True, keep_values=True)
-                mapping = multidict_dig_and_edit(input_multidict=mapping, target=depointer,
-                                                 input_object=list(range(len(group))), setter_function=set_key_index,
-                                                 key_editor=True, keep_values=True)
+                indexed_pointer = f"{pointer}_{ix}"
+                indexed_depointer = f"{depointer}_{ix}"
+                mapping = multidict_dig_and_edit(
+                    input_multidict=mapping,
+                    target=pointer,
+                    input_object=list(range(len(group))),
+                    setter_function=set_key_index,
+                    key_editor=True,
+                    keep_values=True,
+                )
+                mapping = multidict_dig_and_edit(
+                    input_multidict=mapping,
+                    target=depointer,
+                    input_object=list(range(len(group))),
+                    setter_function=set_key_index,
+                    key_editor=True,
+                    keep_values=True,
+                )
                 params.append(indexed_pointer)
                 params.append(indexed_depointer)
                 params.remove(pointer)
@@ -248,6 +273,6 @@ def index_duplicate_pointers(pointers, mapping, params):
 
 
 def set_key_index(pointer_range: list, key: str) -> str:
-    indexed_key = f'{key}_{pointer_range[0]}'
+    indexed_key = f"{key}_{pointer_range[0]}"
     pointer_range.pop(0)
     return indexed_key
