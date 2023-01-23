@@ -23,9 +23,8 @@ def is_an_assignment_line(line):
     """
     pick lines that begin assignment statements.
 
-    in PDS labels, it never (?) seems to be
-    the case that people use delimiters to put multiple assignment statements
-    on a line
+    in PDS labels, it never (?) seems to be the case that people use
+    delimiters to put multiple assignment statements on a line
 
     there is an issue with people who put '=' in text blocks --
     looking for a block of capital letters is usually good enough
@@ -80,7 +79,11 @@ class BlockParser:
         for parameter, value in statements:
             if parameter in PVL_BLOCK_INITIALS:
                 self._step_in(value)
-            elif parameter.startswith(PVL_BLOCK_TERMINALS):
+            elif (
+                # ignore invalid end block statements at top level
+                parameter.startswith(PVL_BLOCK_TERMINALS)
+                and len(self.names) > 0
+            ):
                 # not bothering with aggregation name verification
                 self._step_out()
             else:
