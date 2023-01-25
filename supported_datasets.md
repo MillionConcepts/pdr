@@ -49,6 +49,13 @@ of their metadata appear to match other sources.
     - Apollo 14 and 15 Cold Cathode Ion Gage digitized plots and index tables
     - Apollo 15 and 16 Lunar Self-Recording Penetrometer transcribed tables
     - BUG soil reflectance tables
+- Cassini
+  - CAPS EDRs, RDRs, and DDRs
+  - INMS level 1A products and housekeeping data
+  - MAG REDRs, RDRs, and most housekeeping data
+  - MIMI EDRs and RDRs
+  - RPWS REFDRs, RDRs, and DDRs
+    - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which uses an illegal data type and could not be parsed.*
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*)
@@ -162,6 +169,9 @@ of their metadata appear to match other sources.
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
 
 ## Known Unsupported Datasets
+- Cassini
+  - MAG error count housekeeping data
+  - RPWS telemetry data
 - Clementine
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
   - LWIR EDRs (support not planned)
