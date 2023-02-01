@@ -2,6 +2,7 @@
 from ast import literal_eval
 import re
 from operator import eq
+from pathlib import Path
 from typing import Iterable, Mapping, Optional
 import warnings
 
@@ -89,7 +90,11 @@ class BlockParser:
 
 
 def read_pvl_label(filename, deduplicate_pointers=True):
-    label = trim_label(decompress(filename)).decode('utf-8')
+    with decompress(filename) as stream:
+        if Path(filename).suffix.lower() in (".lbl", ".fmt"):
+            label = trim_label(stream).decode('utf-8', errors='replace')
+        else:
+            label = trim_label(stream).decode('utf-8')
     uncommented_label = re.sub(r"/\*.*?(\*/|$)", "", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
