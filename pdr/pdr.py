@@ -1362,14 +1362,20 @@ class Data:
             from pdr.browsify import browsify
 
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
+            fdt = browse_kwargs.get("float_dtype")
             if isinstance(self[obj], np.ndarray):
                 if scaled == "both":
                     dump_it(
-                        self.get_scaled(obj), outfile + "_scaled", purge=False
+                        self.get_scaled(obj, float_dtype=fdt),
+                        outfile + "_scaled",
+                        purge=False
                     )
                     dump_it(self[obj], outfile + "_unscaled")
                 elif scaled is True:
-                    dump_it(self.get_scaled(obj, inplace=purge), outfile)
+                    dump_it(
+                        self.get_scaled(obj, inplace=purge, float_dtype=fdt),
+                        outfile
+                    )
                 elif scaled is False:
                     dump_it(self[obj], outfile)
                 else:
