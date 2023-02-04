@@ -343,7 +343,7 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     ):
         return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']
     if (
-        data.metaget_("DATA_SET_ID", "").startswith("LRO-L-DLRE-4-RDR")
+        str(data.metaget_("DATA_SET_ID", "")).startswith("LRO-L-DLRE-4-RDR")
         and (object_name in ("HEADER", "TABLE"))
     ):
         return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']

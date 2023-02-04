@@ -141,7 +141,9 @@ def skeptically_load_header(
             with decompress(check_cases(path)) as file:
                 if start > 0:
                     file.readlines(start)
-                text = "\r\n".join(file.readlines(length))
+                text = "\r\n".join(
+                    map(lambda l: l.decode('utf-8'), file.readlines(length))
+                )
         else:
             with decompress(check_cases(path)) as file:
                 file.seek(start)
