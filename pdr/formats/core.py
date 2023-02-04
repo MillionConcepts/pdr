@@ -354,18 +354,6 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     special-case handling for labels with nonstandard filename specifications
     """
     if (
-        ("HIRISE" in data.metaget_("DATA_SET_ID", ""))
-        and (object_name == "IMAGE")
-        and ("-EDR-" not in data.metaget_("DATA_SET_ID", ""))
-        and ("-EDR-" not in data.metaget_("DATA_SET_ID", ""))
-    ):
-        return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']
-    if (
-        str(data.metaget_("DATA_SET_ID", "")).startswith("LRO-L-DLRE-4-RDR")
-        and (object_name in ("HEADER", "TABLE"))
-    ):
-        return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']
-    if (
         (data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0")
         and (object_name in ("HEADER_TABLE", "DATA_TABLE"))
     ):

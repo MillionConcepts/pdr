@@ -409,6 +409,7 @@ class Data:
                 continue
             self.index.append(object_name)
 
+    # TODO: ?
     def _add_header_keys(self):
         print('blup')
 
@@ -416,7 +417,13 @@ class Data:
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
             return self.get_absolute_paths(special_target)
-        target = self.metaget_(pointerize(object_name))
+        if (
+            "COMPRESSED_FILE" in self.metadata.keys()
+            and object_name in self.metablock_("UNCOMPRESSED_FILE").keys()
+        ):
+            target = self.metablock_("COMPRESSED_FILE")["FILE_NAME"]
+        else:
+            target = self.metaget_(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
