@@ -814,6 +814,10 @@ class Data:
                     np.loadtxt(
                         fn,
                         delimiter=",",
+                        # TODO, maybe: this currently fails -- perhaps
+                        #  correctly -- when there is no LABEL_RECORDS key.
+                        #  but perhaps it is better to set a default of 0
+                        #  and avoid use of read_fwf
                         skiprows=self.metaget_("LABEL_RECORDS"),
                     )
                     .copy()
