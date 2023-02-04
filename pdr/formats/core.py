@@ -193,6 +193,12 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         return True, formats.cassini.ppi_table_loader(
             data, pointer, ids["DATA_SET_ID"]
         )
+    if (
+        ids["INSTRUMENT_ID"] == "DLRE"
+        and ids["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")
+        and pointer == "TABLE"
+    ):
+        return True, formats.diviner.diviner_l4_table_loader(data, pointer)
     return False, None
 
 
@@ -204,7 +210,7 @@ def is_trivial(pointer) -> bool:
         and ("DOCUMENT" not in pointer)
     ):
         return True
-    # we don't present STRUCTURES separately from their tables;
+    # we don't present STRUCTURES separately from their tables
     if "STRUCTURE" in pointer:
         return True
     return False
