@@ -127,21 +127,23 @@ def skeptically_load_header(
     as_rows=False,
     as_pvl=False,
 ):
+    # TODO: all these check_cases calls are probably unnecessary w/new file
+    #  mapping workflow
     try:
         if as_pvl is True:
             try:
                 from pdr.pvl_utils import cached_pvl_load
 
-                return cached_pvl_load(check_cases(path))
+                return cached_pvl_load(decompress(check_cases(path)))
             except ValueError:
                 pass
         if as_rows is True:
-            with open(check_cases(path)) as file:
+            with decompress(check_cases(path)) as file:
                 if start > 0:
                     file.readlines(start)
                 text = "\r\n".join(file.readlines(length))
         else:
-            with open(check_cases(path), 'rb') as file:
+            with decompress(check_cases(path)) as file:
                 file.seek(start)
                 text = file.read(length).decode()
         return text
