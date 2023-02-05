@@ -27,7 +27,8 @@ ID_FIELDS = (
     "INSTRUMENT_NAME",
     "PRODUCT_TYPE",
     "DATA_SET_NAME",
-    "DATA_SET_ID"
+    "DATA_SET_ID",
+    "STANDARD_DATA_PRODUCT_ID"
 )
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
@@ -176,7 +177,7 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         return True, formats.msl_ccam.image_reply_table_loader(data)
     if (
         ids["DATA_SET_ID"].startswith("JNO-E/J/SS")
-        and ids["STANDARD_DATA_PRODUCT_ID"] == "BURST"
+        and "BSTFULL" in ids["DATA_SET_ID"]
         and "FREQ_OFFSET_TABLE" in data.keys()
         and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
     ):
