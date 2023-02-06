@@ -405,9 +405,6 @@ class Data:
                 continue
             self.index.append(object_name)
 
-    def _add_header_keys(self):
-        print('blup')
-
     def _object_to_filename(self, object_name):
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
