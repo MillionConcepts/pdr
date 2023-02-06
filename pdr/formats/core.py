@@ -106,6 +106,11 @@ def check_special_sample_type(data, sample_type, sample_bytes, for_numpy):
         data.metaget_("INSTRUMENT_NAME") == "RADIO SCIENCE SUBSYSTEM"
     ):
         return formats.mgs.get_sample_type(sample_type, sample_bytes)
+    if (
+        data.metaget_("DATA_SET_ID") == "JNO-J-JIRAM-3-RDR-V1.0"
+        and data.metaget("PRODUCT_TYPE") == "RDR"
+    ):
+        return formats.juno.jiram_rdr_sample_type()
     return False, None
 
 
@@ -142,11 +147,6 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_image_loader(data, pointer)
-    if (
-        "JUNO JUPITER JIRAM REDUCED" in ids["DATA_SET_NAME"]
-        and (pointer == "IMAGE")
-    ):
-        return True, formats.juno.jiram_image_loader(data, pointer)
     if (
         ids["INSTRUMENT_NAME"] == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE PROBE"
         and "SPECTRUM_TABLE" in pointer
