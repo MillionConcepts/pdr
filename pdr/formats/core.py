@@ -231,7 +231,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return loader
     if pointer == "LABEL":
         return data.read_label
-    if "TEXT" in pointer or "PDF" in pointer:
+    if "TEXT" in pointer or "PDF" in pointer or "MAP_PROJECTION_CATALOG" in pointer:
         return data.read_text
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
@@ -248,7 +248,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_table
     if "HISTOGRAM" in pointer:
         return data.read_histogram
-    if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
+    if "HEADER" in pointer:
         return data.read_header
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures

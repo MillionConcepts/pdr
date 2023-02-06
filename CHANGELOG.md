@@ -22,6 +22,8 @@
  - malformed labels with extra end-block statements no longer crash `BlockParser`
  - JUNO JIRAM RDR special case now covers tables as well as images
  - HEADER objects in compressed files now load properly
+ - DATA_SET_MAP_PROJECTION_CATALOGS no longer go to read_header (which does
+   not work on them)
 
 ### Removed
  - special-case handling for COMPRESSED_FILEs
