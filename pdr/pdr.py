@@ -413,11 +413,16 @@ class Data:
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
             return self.get_absolute_paths(special_target)
+        compkeys = {"COMPRESSED_FILE", "UNCOMPRESSED_FILE"}
         if (
-            "COMPRESSED_FILE" in self.metadata.keys()
+            len(compkeys.intersection(self.metadata.keys())) == 2
             and object_name in self.metablock_("UNCOMPRESSED_FILE").keys()
         ):
-            target = self.metablock_("COMPRESSED_FILE")["FILE_NAME"]
+            blocks = filter(None, [self.metaget_(k) for k in compkeys])
+            filenames = filter(None, [b.get("FILE_NAME") for b in blocks])
+            return tuple(
+                chain.from_iterable(map(self.get_absolute_paths, filenames))
+            )
         else:
             target = self.metaget_(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
