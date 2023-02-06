@@ -22,6 +22,14 @@ FITS_EXTENSIONS = (".fits", ".fit")
 TIFF_EXTENSIONS = (".tif", ".tiff")
 JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 
+ID_FIELDS = (
+    "INSTRUMENT_ID",
+    "INSTRUMENT_NAME",
+    "PRODUCT_TYPE",
+    "DATA_SET_NAME",
+    "DATA_SET_ID",
+    "STANDARD_DATA_PRODUCT_ID"
+)
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
     is_this_kind_of_extension = partial(contains, kind_extensions)
@@ -98,6 +106,11 @@ def check_special_sample_type(data, sample_type, sample_bytes, for_numpy):
         data.metaget_("INSTRUMENT_NAME") == "RADIO SCIENCE SUBSYSTEM"
     ):
         return formats.mgs.get_sample_type(sample_type, sample_bytes)
+    if (
+        data.metaget_("DATA_SET_ID") == "JNO-J-JIRAM-3-RDR-V1.0"
+        and data.metaget("PRODUCT_TYPE") == "RDR"
+    ):
+        return formats.juno.jiram_rdr_sample_type()
     return False, None
 
 
@@ -113,74 +126,80 @@ def check_special_bit_column_case(data):
     return False, None
 
 
-def check_special_bit_start_case(data, list_of_pvl_objects_for_bit_columns, start_bit_list):
+def check_special_bit_start_case(
+    data, list_of_pvl_objects_for_bit_columns, start_bit_list
+):
     if data.metaget_("INSTRUMENT_NAME", "") in "JOVIAN INFRARED AURORAL MAPPER":
-        return formats.juno.bit_start_find_and_fix(list_of_pvl_objects_for_bit_columns, start_bit_list)
+        return formats.juno.bit_start_find_and_fix(
+            list_of_pvl_objects_for_bit_columns, start_bit_list
+        )
     return False, None
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if pointer == 'SHADR_HEADER_TABLE':
         return True, formats.messenger.shadr_header_table_loader(data)
+    ids = {field: str(data.metaget_(field, "")) for field in ID_FIELDS}
     if (
-        data.metaget_("INSTRUMENT_ID", "") == "LROC"
-        and data.metaget_("PRODUCT_TYPE", "") == "EDR"
+        ids["INSTRUMENT_ID"] == "LROC"
+        and ids["PRODUCT_TYPE"] == "EDR"
         and pointer == "IMAGE"
-    ):  # unsigned integers not specified as such
+    ):
+        # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_image_loader(data, pointer)
     if (
-        ("JUNO JUPITER JIRAM REDUCED" in data.metaget_("DATA_SET_NAME", ""))
-        and (pointer == "IMAGE")
-    ):
-        return True, formats.juno.jiram_image_loader(data, pointer)
-    if (
-        (data.metaget_("INSTRUMENT_NAME", "") == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE PROBE")
-        and ("SPECTRUM_TABLE" in pointer)
+        ids["INSTRUMENT_NAME"] == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE PROBE"
+        and "SPECTRUM_TABLE" in pointer
     ):
         return True, formats.rosetta.rosetta_table_loader(data, pointer)
-    if (
-        data.metaget_("INSTRUMENT_ID") == "APXS" and "TABLE" in pointer
-    ):
+    if ids["INSTRUMENT_ID"] == "APXS" and "TABLE" in pointer:
         # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)
     if (
-        data.metaget_("INSTRUMENT_ID", "") == "CHEMIN"
+        ids["INSTRUMENT_ID"] == "CHEMIN"
         and (("HEADER" in pointer) or ("SPREADSHEET" in pointer))
     ):
         # mangled object names + positions
         return True, formats.msl_cmn.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
-    if data.metaget_("INSTRUMENT_ID", "") == "M3" and pointer == "L0_IMAGE":
+    if ids["INSTRUMENT_ID"] == "M3" and pointer == "L0_IMAGE":
         return True, formats.m3.l0_image_loader(data)
     # difficult table formats that are handled well by astropy.io.ascii
     if (
-        data.metaget_("INSTRUMENT_NAME", "") == "TRIAXIAL FLUXGATE MAGNETOMETER"
+        ids["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
         and pointer == "TABLE"
     ):
         return True, formats.galileo.galileo_table_loader(data)
     if (
-        data.metaget_("INSTRUMENT_NAME", "") == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
+        ids["INSTRUMENT_NAME"] == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
         and pointer == "IMAGE_REPLY_TABLE"
     ):
         return True, formats.msl_ccam.image_reply_table_loader(data)
     if (
-        not isinstance(data.metaget_("DATA_SET_ID"), set)
-        and data.metaget_("DATA_SET_ID", "").startswith("JNO-E/J/SS")
-        and (data.metaget_("STANDARD_DATA_PRODUCT_ID") == "BURST")
-        and ("FREQ_OFFSET_TABLE" in data.keys())
+        ids["DATA_SET_ID"].startswith("JNO-E/J/SS")
+        and "BSTFULL" in ids["DATA_SET_ID"]
+        and "FREQ_OFFSET_TABLE" in data.keys()
         and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
     ):
         return True, formats.juno.waves_burst_with_offset_loader(data)
     if (
-        (dsi := data.metaget_("DATA_SET_ID", "")) in (
-                                    "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
-                                    "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
-                                    "CO-S-MIMI-4-INCA-CALIB-V1.0",
-                                    "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0"
-                                    )
+        ids["DATA_SET_ID"] in (
+            "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
+            "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
+            "CO-S-MIMI-4-INCA-CALIB-V1.0",
+            "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0"
+        )
         and pointer == "SPREADSHEET"
     ):
-        return True, formats.cassini.ppi_table_loader(data, pointer, dsi)
+        return True, formats.cassini.ppi_table_loader(
+            data, pointer, ids["DATA_SET_ID"]
+        )
+    if (
+        ids["INSTRUMENT_ID"] == "DLRE"
+        and ids["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")
+        and pointer == "TABLE"
+    ):
+        return True, formats.diviner.diviner_l4_table_loader(data, pointer)
     return False, None
 
 
@@ -192,7 +211,7 @@ def is_trivial(pointer) -> bool:
         and ("DOCUMENT" not in pointer)
     ):
         return True
-    # we don't present STRUCTURES separately from their tables;
+    # we don't present STRUCTURES separately from their tables
     if "STRUCTURE" in pointer:
         return True
     return False
@@ -212,7 +231,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return loader
     if pointer == "LABEL":
         return data.read_label
-    if "TEXT" in pointer or "PDF" in pointer:
+    if "TEXT" in pointer or "PDF" in pointer or "MAP_PROJECTION_CATALOG" in pointer:
         return data.read_text
     if "DESC" in pointer:  # probably points to a reference file
         return data.read_text
@@ -229,7 +248,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return data.read_table
     if "HISTOGRAM" in pointer:
         return data.read_histogram
-    if "HEADER" in pointer or "DATA_SET_MAP_PROJECTION" in pointer:
+    if "HEADER" in pointer:
         return data.read_header
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
@@ -336,14 +355,9 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     special-case handling for labels with nonstandard filename specifications
     """
     if (
-        ("HIRISE" in data.metaget_("DATA_SET_ID", ""))
-        and (object_name == "IMAGE")
-        and ("-EDR-" not in data.metaget_("DATA_SET_ID", ""))
-        and ("-EDR-" not in data.metaget_("DATA_SET_ID", ""))
+        (data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0")
+        and (object_name in ("HEADER_TABLE", "DATA_TABLE"))
     ):
-        return True, data.metadata['COMPRESSED_FILE']['FILE_NAME']
-    if (data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0"
-            and object_name in ("HEADER_TABLE", "DATA_TABLE")):
         # sequence wrapped as string for object names
         return formats.clementine.get_fn(data, object_name)
     return False, None

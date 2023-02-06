@@ -55,10 +55,12 @@ def stem_path(path: Path):
     convert a Path to lowercase and remove any compression extensions
     from it to stem for loose matching
     """
-    lowercase = path.name.lower()
-    for ext in SUPPORTED_COMPRESSION_EXTENSIONS:
-        lowercase = lowercase.replace(ext, "")
-    return lowercase
+    lowercase = path.stem.lower()
+    exts = tuple(map(str.lower, path.suffixes))
+    # don't remove compression suffix if it's the only suffix
+    if (len(exts) == 1) or (exts[-1] in SUPPORTED_COMPRESSION_EXTENSIONS):
+        return f"{lowercase}{exts[0]}"
+    return f"{lowercase}{''.join(exts)}"
 
 
 def check_cases(

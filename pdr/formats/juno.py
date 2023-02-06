@@ -1,15 +1,12 @@
 from functools import partial
 
-from pdr.formats import generic_image_properties
 
-
-def jiram_image_loader(data, _):
+def jiram_rdr_sample_type():
     """
-    JIRAM RDRs are specified as MSB but appear to be LSB.
+    JIRAM RDRs, both images and tables, are labeled as MSB but
+    are actually LSB.
     """
-    props = generic_image_properties("IMAGE", data.metablock_("IMAGE"), data)
-    props['sample_type'] = '<f'
-    return partial(data.read_image, special_properties=props)
+    return "<f"
 
 
 # noinspection PyProtectedMember

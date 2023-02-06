@@ -127,21 +127,25 @@ def skeptically_load_header(
     as_rows=False,
     as_pvl=False,
 ):
+    # TODO: all these check_cases calls are probably unnecessary w/new file
+    #  mapping workflow
     try:
         if as_pvl is True:
             try:
                 from pdr.pvl_utils import cached_pvl_load
 
-                return cached_pvl_load(check_cases(path))
+                return cached_pvl_load(decompress(check_cases(path)))
             except ValueError:
                 pass
         if as_rows is True:
-            with open(check_cases(path)) as file:
+            with decompress(check_cases(path)) as file:
                 if start > 0:
                     file.readlines(start)
-                text = "\r\n".join(file.readlines(length))
+                text = "\r\n".join(
+                    map(lambda l: l.decode('utf-8'), file.readlines(length))
+                )
         else:
-            with open(check_cases(path), 'rb') as file:
+            with decompress(check_cases(path)) as file:
                 file.seek(start)
                 text = file.read(length).decode()
         return text
@@ -409,7 +413,13 @@ class Data:
         is_special, special_target = check_special_fn(self, object_name)
         if is_special is True:
             return self.get_absolute_paths(special_target)
-        target = self.metaget_(pointerize(object_name))
+        if (
+            "COMPRESSED_FILE" in self.metadata.keys()
+            and object_name in self.metablock_("UNCOMPRESSED_FILE").keys()
+        ):
+            target = self.metablock_("COMPRESSED_FILE")["FILE_NAME"]
+        else:
+            target = self.metaget_(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -807,6 +817,10 @@ class Data:
                     np.loadtxt(
                         fn,
                         delimiter=",",
+                        # TODO, maybe: this currently fails -- perhaps
+                        #  correctly -- when there is no LABEL_RECORDS key.
+                        #  but perhaps it is better to set a default of 0
+                        #  and avoid use of read_fwf
                         skiprows=self.metaget_("LABEL_RECORDS"),
                     )
                     .copy()
@@ -946,6 +960,8 @@ class Data:
         except UnicodeDecodeError as ex:
             exception = ex
             warnings.warn(f"couldn't parse {target}")
+        except Exception:
+            raise
         return self._catch_return_default(object_name, exception)
 
     def read_header(self, object_name="HEADER"):
@@ -1344,14 +1360,20 @@ class Data:
             from pdr.browsify import browsify
 
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
+            fdt = browse_kwargs.get("float_dtype")
             if isinstance(self[obj], np.ndarray):
                 if scaled == "both":
                     dump_it(
-                        self.get_scaled(obj), outfile + "_scaled", purge=False
+                        self.get_scaled(obj, float_dtype=fdt),
+                        outfile + "_scaled",
+                        purge=False
                     )
                     dump_it(self[obj], outfile + "_unscaled")
                 elif scaled is True:
-                    dump_it(self.get_scaled(obj, inplace=purge), outfile)
+                    dump_it(
+                        self.get_scaled(obj, inplace=purge, float_dtype=fdt),
+                        outfile
+                    )
                 elif scaled is False:
                     dump_it(self[obj], outfile)
                 else:

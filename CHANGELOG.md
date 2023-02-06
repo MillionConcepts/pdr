@@ -1,13 +1,34 @@
 ## [#.#.#] - YYYY-MM-DD
 ### Added
+ - support for a variety of LRO Diviner and Cassini data products    
+   (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
+   for specifics)
  - This change log file
  - Support for bit columns with ITEMS
  - Browse images can now be output in grayscale
+ - handling for COMPRESSED_FILE objects 
 
 ### Changed
+ - pdr will now accept non-UTF-8 characters in detached PVL label / format files
+ - refactored special case checking for readability/maintainability
+ - assorted linting and in-code documentation edits
+
+### Fixed
  - Bit columns are now split based on both start_bit and number of bits rather than
-   subtracting the start_bit of each column to split (this fixed a number of previously
-   incorrectly read files and mirrors the way columns of tables are determined)
+   simply start_bit (this fixed a number of previously incorrectly read files, 
+   and mirrors handling for other column types)
+ - `dump_browse` now properly accepts the `float_dtype` argument; reducing
+   bit depth can significantly reduce memory use when browsifying large arrays
+ - malformed labels with extra end-block statements no longer crash `BlockParser`
+ - JUNO JIRAM RDR special case now covers tables as well as images
+ - HEADER objects in compressed files now load properly
+ - DATA_SET_MAP_PROJECTION_CATALOGS no longer go to read_header (which does
+   not work on them)
+
+### Removed
+ - special-case handling for COMPRESSED_FILEs
+ - support for MSL CCAM LIBS EDRs
+ 
 
 ## [0.7.3] - 2023-01-18
 ### Added
@@ -16,8 +37,8 @@
    file it will return that header. If there is a pointer without HEADER in it that 
    points to the FITS file then after loading that key, an additional key will appear 
    in the format: `{key}_HEADER` that will contain the FITS header).
- - `.jp2` files are now supported
- - Many new datatypes from mission such as MGS, Clementine, Rosetta, and more
+ - JPEG2000 (`.jp2`) files are now supported
+ - Many new datatypes from missions including MGS, Clementine, Rosetta, and more
    (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
    for specifics)
 
