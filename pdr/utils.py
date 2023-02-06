@@ -57,6 +57,8 @@ def stem_path(path: Path):
     """
     lowercase = path.stem.lower()
     exts = tuple(map(str.lower, path.suffixes))
+    if len(exts) == 0:
+        return lowercase
     # don't remove compression suffix if it's the only suffix
     if (len(exts) == 1) or (exts[-1] in SUPPORTED_COMPRESSION_EXTENSIONS):
         return f"{lowercase}{exts[0]}"
