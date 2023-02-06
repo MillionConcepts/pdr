@@ -964,6 +964,8 @@ class Data:
         except UnicodeDecodeError as ex:
             exception = ex
             warnings.warn(f"couldn't parse {target}")
+        except Exception:
+            raise
         return self._catch_return_default(object_name, exception)
 
     def read_header(self, object_name="HEADER"):
