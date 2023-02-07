@@ -1,3 +1,5 @@
+import warnings
+
 from pdr.pd_utils import insert_sample_types_into_df
 
 
@@ -33,3 +35,11 @@ def get_structure(pointer, data):
     fmtdef = data.read_table_structure(pointer)
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
     return True, fmtdef, dt
+
+
+def trivial_loader(pointer, data):
+    warnings.warn(
+        f"The Cassini ISS EDR/calibration {pointer} tables are not currently "
+        f"supported."
+    )
+    return data.trivial

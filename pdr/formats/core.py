@@ -202,7 +202,7 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         return True, formats.diviner.diviner_l4_table_loader(data, pointer)
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", ids["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
-            return True, data.trivial
+            return True, formats.cassini.trivial_loader(pointer, data)
     return False, None
 
 
