@@ -52,10 +52,14 @@ of their metadata appear to match other sources.
 - Cassini
   - CAPS EDRs, RDRs, and DDRs
   - INMS level 1A products and housekeeping data
+  - ISS EDRs, MIDRs, and calibration data
   - MAG REDRs, RDRs, and most housekeeping data
   - MIMI EDRs and RDRs
   - RPWS REFDRs, RDRs, and DDRs
     - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which uses an illegal data type and could not be parsed.*
+  - RSS gravity, occultation, solar, and bistatic experiments
+  - RSS ancillary products: ODF, TDF, TLM, 158, and 515
+  - UVIS EUV, FUV, and HDAC products
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*)
@@ -80,11 +84,16 @@ of their metadata appear to match other sources.
   requires .FMT (format) files, available in the root directories of the MWR
   volumes.*
   - Waves RDR 'Burst' tables
-- LROC
-  - WAC EDR and CDR
-  - NAC EDR, CDR, and raw image data (NACR and NACL in image name)
-  - NAC DTM
-  - WAC Derived products: EMP, HAPKE, HAPKE PARAMMAP, ORBITS, POLE ILL, TIO2
+- LRO
+  - DIVINER
+    - EDR and RDR tables
+    - L2 and L3 GDR images/backplanes
+    - L4 tables
+  - LROC
+    - WAC EDR and CDR
+    - NAC EDR, CDR, and raw image data (NACR and NACL in image name)
+    - NAC DTM
+    - WAC Derived products: EMP, HAPKE, HAPKE PARAMMAP, ORBITS, POLE ILL, TIO2
 - Mars Express
   - MARSIS EDRs and RDRs
 - Mars Odyssey
@@ -170,8 +179,10 @@ of their metadata appear to match other sources.
 
 ## Known Unsupported Datasets
 - Cassini
+  - ISS telemetry and prefix tables (support planned)
   - MAG error count housekeeping data
   - RPWS telemetry data
+  - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
 - Clementine
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
   - LWIR EDRs (support not planned)
