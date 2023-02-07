@@ -85,6 +85,8 @@ def process_single_band_image(f, props):
         image = image[:, props["prefix_cols"] :]
     else:
         prefix = None
+    if image.flags['C_CONTIGUOUS'] is False:
+        image = np.ascontiguousarray(image)
     return image, prefix
 
 
