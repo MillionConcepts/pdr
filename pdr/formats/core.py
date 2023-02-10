@@ -288,21 +288,22 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
 
 def qube_image_properties(block):
     props = {}
-    props["BYTES_PER_PIXEL"] = int(block["CORE_ITEM_BYTES"])  # / 8)
+    use_block = block if "CORE" not in block.keys() else block["CORE"]
+    props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
     props["sample_type"] = sample_types(
-        block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
+        use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
     )
-    props["nrows"] = block["CORE_ITEMS"][2]
-    props["ncols"] = block["CORE_ITEMS"][0]
+    props["nrows"] = use_block["CORE_ITEMS"][2]
+    props["ncols"] = use_block["CORE_ITEMS"][0]
     props["prefix_cols"], props["prefix_bytes"] = 0, 0
     # TODO: Handle the QUB suffix data
-    props["BANDS"] = block["CORE_ITEMS"][1]
+    props["BANDS"] = use_block["CORE_ITEMS"][1]
     props["band_storage_type"] = "ISIS2_QUBE"
     return props
 
 
 def generic_image_properties(object_name, block, data) -> dict:
-    if object_name == "QUBE":  # ISIS2 QUBE format
+    if "QUBE" in object_name:  # ISIS2 QUBE format
         props = qube_image_properties(block)
     else:
         props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
