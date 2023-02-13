@@ -131,7 +131,11 @@ def parse_pvl_quantity_statement(statement):
     output = []
     for obj in objects:
         if ("<" in obj) and (">" in obj):
-            output.append(parse_pvl_quantity_object(obj))
+            try:
+                output.append(parse_pvl_quantity_object(obj))
+            except AttributeError:
+                # not actually-matched brackets
+                output.append(obj)
         else:
             output.append(literalize_pvl(obj))
     if len(output) == 1:
@@ -199,7 +203,11 @@ def literalize_pvl(obj):
     if isinstance(obj, Mapping):
         return literalize_pvl_block(obj)
     try:
-        return literal_eval(obj)
+        # with warnings.catch_warnings(record=True) as w:
+        # warnings.simplefilter("always")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SyntaxWarning)
+            return literal_eval(obj)
     except (SyntaxError, ValueError):
         # note: this is probably too permissive. if it causes problems we
         # can replace it with a regex check.
