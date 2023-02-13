@@ -51,10 +51,12 @@ of their metadata appear to match other sources.
     - BUG soil reflectance tables
 - Cassini
   - CAPS EDRs, RDRs, and DDRs
+  - CIRS navigation and housekeeping data
   - INMS level 1A products and housekeeping data
   - ISS EDRs, MIDRs, and calibration data
   - MAG REDRs, RDRs, and most housekeeping data
   - MIMI EDRs and RDRs
+  - RADAR ABDR, ASUM (PDS4 labels), BIDR, LBDR, SBDR, and STDR
   - RPWS REFDRs, RDRs, and DDRs
     - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which uses an illegal data type and could not be parsed.*
   - RSS gravity, occultation, solar, and bistatic experiments
@@ -161,6 +163,8 @@ of their metadata appear to match other sources.
   - PDS3 versions of Apollo 15 and 17 Heat Flow Experiment tables -- 
     however, we recommend using the PDS4 collection a15_17_hfe_concatenated,
     which contains corrections and additional data, instead
+- Cassini
+  - CIRS spectral cubes
 - Juno
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
@@ -179,8 +183,11 @@ of their metadata appear to match other sources.
 
 ## Known Unsupported Datasets
 - Cassini
+  - CIRS variable-length '.VAR' tables (support not planned)
+  - CIRS DIAG housekeeping tables (support planned)
   - ISS telemetry and prefix tables (support planned)
   - MAG error count housekeeping data
+  - RADAR ASUM (PDS3 labels; support planned)
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
 - Clementine
