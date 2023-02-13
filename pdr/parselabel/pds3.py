@@ -130,6 +130,7 @@ def parse_pvl_quantity_statement(statement):
     objects = statement.strip("()").split(",")
     output = []
     for obj in objects:
+        # TODO, maybe: a bit redundant
         if ("<" in obj) and (">" in obj):
             try:
                 output.append(parse_pvl_quantity_object(obj))
@@ -209,8 +210,8 @@ def literalize_pvl(obj):
             warnings.simplefilter("ignore", SyntaxWarning)
             return literal_eval(obj)
     except (SyntaxError, ValueError):
-        # note: this is probably too permissive. if it causes problems we
-        # can replace it with a regex check.
+        # note: this is very permissive, and handled downstream with a simple
+        #  exception catch that should work for most cases.
         if ("<" in obj) and (">" in obj):
             return parse_pvl_quantity_statement(obj)
         return obj
