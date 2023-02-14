@@ -48,4 +48,5 @@ def trivial_loader(pointer, data):
 
 
 def cda_table_filename(data):
-    return Path(Path(data.labelname).parent, f"{data.labelname.stem}.TAB")
+    label = Path(data.labelname)
+    return True, Path(label.parent, f"{label.stem}.TAB")
