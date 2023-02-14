@@ -358,12 +358,17 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     """
     special-case handling for labels with nonstandard filename specifications
     """
+    dsi = data.metaget_("DATA_SET_ID", "")
     if (
-        (data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0")
+        (dsi == "CLEM1-L-RSS-5-BSR-V1.0")
         and (object_name in ("HEADER_TABLE", "DATA_TABLE"))
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_fn(data, object_name)
+    if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
+        return formats.cassini.cda_table_filename(data)
+
+        # filenames are frequently misspecified
     return False, None
 
 

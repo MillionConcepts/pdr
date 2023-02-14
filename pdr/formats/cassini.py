@@ -1,4 +1,5 @@
 import warnings
+from pathlib import Path
 
 from pdr.pd_utils import insert_sample_types_into_df
 
@@ -30,8 +31,9 @@ def ppi_table_loader(data, pointer, data_set_id):
 
 
 def get_structure(pointer, data):
-    # the data type that goes here double defines the 32 byte prefix/offset. By skipping the parse_table_structure
-    # we never add the prefix bytes so it works as is.
+    # the data type that goes here double defines the 32 byte prefix/offset.
+    # By skipping the parse_table_structure we never add the prefix bytes so
+    # it works as is.
     fmtdef = data.read_table_structure(pointer)
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
     return True, fmtdef, dt
@@ -43,3 +45,7 @@ def trivial_loader(pointer, data):
         f"supported."
     )
     return data.trivial
+
+
+def cda_table_filename(data):
+    return Path(Path(data.labelname).parent, f"{data.labelname.stem}.TAB")
