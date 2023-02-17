@@ -51,16 +51,22 @@ of their metadata appear to match other sources.
     - BUG soil reflectance tables
 - Cassini
   - CAPS EDRs, RDRs, and DDRs
+  - CDA
+    - DA area, counter, events, settings, signal, spectra peaks, and status history tables
+      - *Note: Many of the spectra products are placeholder tables composed of missing data constants. These placeholders are not supported.* 
+    - HRD raw and processed data
   - CIRS navigation and housekeeping data
   - INMS level 1A products and housekeeping data
   - ISS EDRs, MIDRs, and calibration data
   - MAG REDRs, RDRs, and most housekeeping data
   - MIMI EDRs and RDRs
-  - RADAR ABDR, ASUM (PDS4 labels), BIDR, LBDR, SBDR, and STDR
+  - RADAR ABDR, ASUM, BIDR, LBDR, SBDR, and STDR
+    - *Note: Some ASUM products do not read correctly from their PDS3 labels. A fix for this is planned. They can be opened correctly from their PDS4 labels.*
   - RPWS REFDRs, RDRs, and DDRs
     - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which uses an illegal data type and could not be parsed.*
   - RSS gravity, occultation, solar, and bistatic experiments
   - RSS ancillary products: ODF, TDF, TLM, 158, and 515
+  - Saturn small moon and Gaskell shape models
   - UVIS EUV, FUV, and HDAC products
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
@@ -184,7 +190,6 @@ of their metadata appear to match other sources.
 ## Known Unsupported Datasets
 - Cassini
   - CIRS variable-length '.VAR' tables (support not planned)
-  - CIRS DIAG housekeeping tables (support planned)
   - ISS telemetry and prefix tables (support planned)
   - MAG error count housekeeping data
   - RADAR ASUM (PDS3 labels; support planned)
