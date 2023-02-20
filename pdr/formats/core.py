@@ -63,10 +63,18 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     # object offset in the ^HISTOGRAM pointer target
     if data.metaget_("INSTRUMENT_ID", "") == "CHEMIN":
         return formats.msl_cmn.get_offset(data, pointer)
-    if (data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0"
-            and pointer in ("HEADER_TABLE", "DATA_TABLE")):
+    if (
+        data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0"
+        and pointer in ("HEADER_TABLE", "DATA_TABLE")
+    ):
         # sequence wrapped as string for object names
         return formats.clementine.get_offset(data, pointer)
+    if (
+        data.metaget_("DATA_SET_ID", "").startswith("ODY-M-THM-5-VISGEO")
+        and (pointer == "QUBE")
+    ):
+        # incorrectly specified record length etc.
+        return formats.themis.get_visgeo_qube_offset(data)
     return False, None
 
 
@@ -200,6 +208,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and pointer == "TABLE"
     ):
         return True, formats.diviner.diviner_l4_table_loader(data, pointer)
+    if (
+        ids["DATA_SET_ID"].startswith("ODY-M-THM-5-VISGEO")
+        and (pointer in ("HEADER", "HISTORY"))
+    ):
+        return True, formats.themis.trivial_visgeo_loader(data, pointer)
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", ids["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer, data)
@@ -293,12 +306,24 @@ def qube_image_properties(block):
     props["sample_type"] = sample_types(
         use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
     )
-    props["nrows"] = use_block["CORE_ITEMS"][2]
-    props["ncols"] = use_block["CORE_ITEMS"][0]
+    if "AXIS_NAME" in block.keys():
+        ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'BANDS'}
+        # TODO: if we end up handling this at higher level in the PVL parser,
+        #  remove this splitting stuff
+        for ax, count in zip(
+            re.sub(r'[)( ]', '', use_block['AXIS_NAME']).split(","),
+            use_block['CORE_ITEMS']
+        ):
+            props[ax_map[ax]] = count
+    else:
+        props["nrows"] = use_block["CORE_ITEMS"][2]
+        props["ncols"] = use_block["CORE_ITEMS"][0]
+        props["BANDS"] = use_block["CORE_ITEMS"][1]
     props["prefix_cols"], props["prefix_bytes"] = 0, 0
     # TODO: Handle the QUB suffix data
-    props["BANDS"] = use_block["CORE_ITEMS"][1]
-    props["band_storage_type"] = "ISIS2_QUBE"
+    props["band_storage_type"] = use_block.get(
+        "BAND_STORAGE_TYPE", "ISIS2_QUBE"
+    )
     return props
 
 

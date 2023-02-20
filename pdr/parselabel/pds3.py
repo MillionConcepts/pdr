@@ -215,6 +215,8 @@ def literalize_pvl(obj):
         if ("<" in obj) and (">" in obj):
             return parse_pvl_quantity_statement(obj)
         return obj
+        # TODO, maybe: handle sequences/sets containing unquoted character
+        #  strings
 
 
 def literalize_pvl_block(block):
