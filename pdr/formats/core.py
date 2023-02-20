@@ -212,7 +212,7 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         ids["DATA_SET_ID"].startswith("ODY-M-THM-5-VISGEO")
         and (pointer in ("HEADER", "HISTORY"))
     ):
-        return True, formats.themis.trivial_visgeo_loader(data, pointer)
+        return True, formats.themis.trivial_visgeo_btr_loader(data, pointer)
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", ids["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer, data)
