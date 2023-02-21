@@ -56,6 +56,7 @@ of their metadata appear to match other sources.
       - *Note: Many of the spectra products are placeholder tables composed of missing data constants. These placeholders are not supported.* 
     - HRD raw and processed data
   - CIRS navigation and housekeeping data
+  - CIRS reformatted products at the RMS node (calibrated spectra)
   - INMS level 1A products and housekeeping data
   - ISS EDRs, MIDRs, and calibration data
   - MAG REDRs, RDRs, and most housekeeping data
@@ -66,8 +67,10 @@ of their metadata appear to match other sources.
     - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which uses an illegal data type and could not be parsed.*
   - RSS gravity, occultation, solar, and bistatic experiments
   - RSS ancillary products: ODF, TDF, TLM, 158, and 515
+  - Saturn rings occultation profiles derived from RSS, UVIS, and VIMS data
   - Saturn small moon and Gaskell shape models
   - UVIS EUV, FUV, and HDAC products
+  - VIMS EDR cubes (PDS4 labels only)
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*)
@@ -195,6 +198,7 @@ of their metadata appear to match other sources.
   - RADAR ASUM (PDS3 labels; support planned)
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
+  - VIMS EDR cubes (PDS3 labels; support planned)
 - Clementine
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
   - LWIR EDRs (support not planned)
