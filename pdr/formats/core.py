@@ -247,6 +247,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         or ("SPREADSHEET" in pointer)
         or ("CONTAINER" in pointer)
         or ("TIME_SERIES" in pointer)
+        or ("SERIES" in pointer)
     ):
         return data.read_table
     if "HISTOGRAM" in pointer:
