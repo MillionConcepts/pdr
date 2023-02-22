@@ -366,10 +366,12 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_fn(data, object_name)
-    if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
-        return formats.cassini.cda_table_filename(data)
-
+    try:
+        if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
+            return formats.cassini.cda_table_filename(data)
         # filenames are frequently misspecified
+    except AttributeError:
+        pass  # multiple datasets in one file returns a set (e.g. messenger_mascs hk_EDR)
     return False, None
 
 
