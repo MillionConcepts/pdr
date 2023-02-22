@@ -1,6 +1,8 @@
 import warnings
 from pathlib import Path
 
+import numpy as np
+
 from pdr.pd_utils import insert_sample_types_into_df
 
 
@@ -37,6 +39,21 @@ def get_structure(pointer, data):
     fmtdef = data.read_table_structure(pointer)
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
     return True, fmtdef, dt
+
+
+def looks_like_ascii(data, pointer):
+    return (
+        ("SPREADSHEET" in pointer)
+        or ("ASCII" in pointer)
+        or (data.metablock(pointer).get('INTERCHANGE_FORMAT') == 'ASCII')
+    )
+
+
+def get_position(start, length, as_rows, data):
+    n_records = data.metaget_("ROWS")
+    record_bytes = data.metaget_("ROW_BYTES")+1
+    length = n_records * record_bytes
+    return True, start, length, as_rows
 
 
 def trivial_loader(pointer, data):

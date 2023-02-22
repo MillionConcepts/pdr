@@ -90,6 +90,9 @@ def check_special_position(start, length, as_rows, data):
     if (data.metaget_("INSTRUMENT_ID", "") == "MARSIS" and
             " TEC " in data.metaget_("DATA_SET_NAME", "")):
         return formats.mex_marsis.get_position(start, length, as_rows, data)
+    if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
+            and "DARK" in data.metaget_("FILE_NAME", "")):
+        return formats.cassini.get_position(start, length, as_rows, data)
     return False, None, None, None
 
 
