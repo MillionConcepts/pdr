@@ -1137,8 +1137,12 @@ class Data:
         offset = 0
         if "SCALING_FACTOR" in block.keys():
             scale = block["SCALING_FACTOR"]
+            if isinstance(scale, dict):
+                scale = scale['value']
         if "OFFSET" in block.keys():
             offset = block["OFFSET"]
+            if isinstance(offset, dict):
+                offset = offset['value']
         # meaningfully better for enormous unscaled arrays
         if (scale == 1) and (offset == 0):
             return obj
