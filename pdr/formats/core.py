@@ -68,7 +68,8 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
         # sequence wrapped as string for object names
         return formats.clementine.get_offset(data, pointer)
     if (data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL RADIOMETER"
-            and data.metaget_("PRODUCT_TYPE", "") == "RDR"):
+            and (data.metaget_("PRODUCT_TYPE", "") == "RDR") or
+            ("STRIP" in data.metaget_("FILE_NAME", ""))):
         return formats.cassini.get_offset(data, pointer)
     return False, None
 
@@ -94,10 +95,10 @@ def check_special_position(start, length, as_rows, data, object_name):
             " TEC " in data.metaget_("DATA_SET_NAME", "")):
         return formats.mex_marsis.get_position(start, length, as_rows, data)
     if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
-            and "DARK" in data.metaget_("FILE_NAME", ""))\
+            and any(sub in data.metaget_("FILE_NAME", "") for sub in ["DARK", "STRIP"])
             or (data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL "
                                                         "RADIOMETER"
-                and data.metaget_("PRODUCT_TYPE", "") == "RDR"):
+                and data.metaget_("PRODUCT_TYPE", "") == "RDR")):
         return formats.cassini.get_position(start, length, as_rows, data, object_name)
     return False, None, None, None
 

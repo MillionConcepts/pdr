@@ -51,8 +51,7 @@ def looks_like_ascii(data, pointer):
 
 def get_position(start, length, as_rows, data, object_name):
     n_records = data.metaget_("ROWS")
-    if "ULVS_DDP" in data.filename or "DLIS_AZ_DDP" in data.filename \
-            or "DLV_DDP" in data.filename:
+    if any(sub in data.filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         record_bytes = data.metaget_("ROW_BYTES")
     else:
         record_bytes = data.metaget_("ROW_BYTES")+1
@@ -74,8 +73,7 @@ def get_position(start, length, as_rows, data, object_name):
 
 
 def get_offset(data, pointer):
-    if "ULVS_DDP" in data.filename or "DLIS_AZ_DDP" in data.filename \
-            or "DLV_DDP" in data.filename:
+    if any(sub in data.filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         row_bytes = data.metaget_("ROW_BYTES")
     else:
         row_bytes = data.metaget_("ROW_BYTES")+1
