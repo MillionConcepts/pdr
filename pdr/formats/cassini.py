@@ -1,7 +1,7 @@
 import warnings
 from pathlib import Path
 
-import numpy as np
+import os
 
 from pdr.pd_utils import insert_sample_types_into_df
 
@@ -49,16 +49,38 @@ def looks_like_ascii(data, pointer):
     )
 
 
-def get_position(start, length, as_rows, data):
+def get_position(start, length, as_rows, data, object_name):
     n_records = data.metaget_("ROWS")
-    record_bytes = data.metaget_("ROW_BYTES")+1
+    if "ULVS_DDP" in data.filename or "DLIS_AZ_DDP" in data.filename \
+            or "DLV_DDP" in data.filename:
+        record_bytes = data.metaget_("ROW_BYTES")
+    else:
+        record_bytes = data.metaget_("ROW_BYTES")+1
     length = n_records * record_bytes
-    return True, start, length, as_rows
+    if object_name == "TABLE":
+        return True, start, length, as_rows
+    elif object_name == "HEADER":
+        tab_size = length
+        filename = data._object_to_filename(object_name)
+        if isinstance(filename, list):
+            filename = filename[0]
+        file = Path(filename)
+        file_size = os.path.getsize(file)
+        length = file_size - tab_size
+        start = 0
+        return True, start, length, as_rows
+    else:
+        return False, None, None, None
+
 
 
 def get_offset(data, pointer):
-    target = data._get_target(pointer)
-    start_byte = data._count_from_bottom_of_file(target)
+    if "ULVS_DDP" in data.filename or "DLIS_AZ_DDP" in data.filename \
+            or "DLV_DDP" in data.filename:
+        row_bytes = data.metaget_("ROW_BYTES")
+    else:
+        row_bytes = data.metaget_("ROW_BYTES")+1
+    start_byte = data._count_from_bottom_of_file(pointer, row_bytes=row_bytes)
     return True, start_byte
 
 

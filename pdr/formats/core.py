@@ -89,7 +89,7 @@ def check_special_structure(pointer, data):
     return False, None, None
 
 
-def check_special_position(start, length, as_rows, data):
+def check_special_position(start, length, as_rows, data, object_name):
     if (data.metaget_("INSTRUMENT_ID", "") == "MARSIS" and
             " TEC " in data.metaget_("DATA_SET_NAME", "")):
         return formats.mex_marsis.get_position(start, length, as_rows, data)
@@ -98,7 +98,7 @@ def check_special_position(start, length, as_rows, data):
             or (data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL "
                                                         "RADIOMETER"
                 and data.metaget_("PRODUCT_TYPE", "") == "RDR"):
-        return formats.cassini.get_position(start, length, as_rows, data)
+        return formats.cassini.get_position(start, length, as_rows, data, object_name)
     return False, None, None, None
 
 

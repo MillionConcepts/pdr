@@ -149,7 +149,7 @@ def skeptically_load_header(
         else:
             with decompress(check_cases(path)) as file:
                 file.seek(start)
-                text = file.read(length).decode()
+                text = file.read(min(length, 80000)).decode('ISO-8859-1')
         return text
     except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
@@ -991,11 +991,14 @@ class Data:
     def table_position(self, object_name):
         target = self._get_target(object_name)
         block = self.metablock_(object_name)
-        if 'RECORDS' in block.keys():
-            n_records = block['RECORDS']
-        elif 'ROWS' in block.keys():
-            n_records = block['ROWS']
-        else:
+        try:
+            if 'RECORDS' in block.keys():
+                n_records = block['RECORDS']
+            elif 'ROWS' in block.keys():
+                n_records = block['ROWS']
+            else:
+                n_records = None
+        except AttributeError:
             n_records = None
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
@@ -1010,21 +1013,25 @@ class Data:
                 length = n_records
         else:
             start = self.data_start_byte(object_name)
-            if "BYTES" in block.keys():
-                length = block["BYTES"]
-            elif n_records is not None:
-                if "RECORD_BYTES" in block.keys():
-                    record_length = block['RECORD_BYTES']
-                elif "ROW_BYTES" in block.keys():
-                    record_length = block['ROW_BYTES']
-                    record_length += block.get("ROW_SUFFIX_BYTES", 0)
-                elif self.metaget_("RECORD_BYTES") is not None:
-                    record_length = self.metaget_("RECORD_BYTES")
-                else:
-                    record_length = None
-                if record_length is not None:
-                    length = record_length * n_records
-        is_special, spec_start, spec_length, spec_as_rows = check_special_position(start, length, as_rows, self)
+            try:
+                if "BYTES" in block.keys():
+                    length = block["BYTES"]
+                elif n_records is not None:
+                    if "RECORD_BYTES" in block.keys():
+                        record_length = block['RECORD_BYTES']
+                    elif "ROW_BYTES" in block.keys():
+                        record_length = block['ROW_BYTES']
+                        record_length += block.get("ROW_SUFFIX_BYTES", 0)
+                    elif self.metaget_("RECORD_BYTES") is not None:
+                        record_length = self.metaget_("RECORD_BYTES")
+                    else:
+                        record_length = None
+                    if record_length is not None:
+                        length = record_length * n_records
+            except AttributeError:
+                length = None
+        is_special, spec_start, spec_length, spec_as_rows = check_special_position(
+            start, length, as_rows, self, object_name)
         if is_special:
             return spec_start, spec_length, spec_as_rows
         return start, length, as_rows
@@ -1272,15 +1279,16 @@ class Data:
             return True
         return False
 
-    def _count_from_bottom_of_file(self, target):
+    def _count_from_bottom_of_file(self, object_name, row_bytes=None):
         rows = self.metaget_("ROWS")
-        row_bytes = self.metaget_("ROW_BYTES")+1
+        if not row_bytes:
+            row_bytes = self.metaget_("ROW_BYTES")
         tab_size = rows * row_bytes
-        # necessary for use in special cases
-        if isinstance(target, (tuple, list)):
-            file_size = os.path.getsize(target[0])
-        else:
-            file_size = os.path.getsize(self.filename)
+        filename = self._object_to_filename(object_name)
+        if isinstance(filename, list):
+            filename = filename[0]
+        file = Path(filename)
+        file_size = os.path.getsize(file)
         return file_size - tab_size
 
     def data_start_byte(self, object_name):
@@ -1315,7 +1323,7 @@ class Data:
             return start_byte
         if record_bytes is None:
             if isinstance(target, int):
-                return self._count_from_bottom_of_file(target)
+                return self._count_from_bottom_of_file(object_name)
             if isinstance(target, (list, tuple)):
                 return _assume_data_start_given_in_bytes(target)
         raise ValueError(f"Unknown data pointer format: {target}")
