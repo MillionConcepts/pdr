@@ -56,6 +56,12 @@ def get_position(start, length, as_rows, data):
     return True, start, length, as_rows
 
 
+def get_offset(data, pointer):
+    target = data._get_target(pointer)
+    start_byte = data._count_from_bottom_of_file(target)
+    return True, start_byte
+
+
 def trivial_loader(pointer, data):
     warnings.warn(
         f"The Cassini ISS EDR/calibration {pointer} tables are not currently "

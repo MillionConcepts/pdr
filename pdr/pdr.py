@@ -333,7 +333,8 @@ def handle_fits_header(hdulist, pointer="", ):
 
 
 def _assume_data_start_given_in_bytes(target):
-    # TODO: Nothing in our test database uses this.
+    # TODO: Nothing in our test database uses this. It also seems like it's calling the
+    #  wrong index (should be -1?)
     if isinstance(target[0], int):
         return target[0]
     raise ValueError(f"unknown data pointer format: {target}")
@@ -1271,16 +1272,15 @@ class Data:
             return True
         return False
 
-    def _count_from_bottom_of_file(self):
-        # Counts up from the bottom of the file
+    def _count_from_bottom_of_file(self, target):
         rows = self.metaget_("ROWS")
-        row_bytes = self.metaget_("ROW_BYTES")
+        row_bytes = self.metaget_("ROW_BYTES")+1
         tab_size = rows * row_bytes
-        # TODO: should be the filename of the target (this is only reachable if the
-        #  target is only an integer so we don't have the filename of the target if
-        #  it's in this area of the code--though that should be kept in mind for
-        #  special cases that are using this function)
-        file_size = os.path.getsize(self.filename)
+        # necessary for use in special cases
+        if isinstance(target, (tuple, list)):
+            file_size = os.path.getsize(target[0])
+        else:
+            file_size = os.path.getsize(self.filename)
         return file_size - tab_size
 
     def data_start_byte(self, object_name):
@@ -1315,7 +1315,7 @@ class Data:
             return start_byte
         if record_bytes is None:
             if isinstance(target, int):
-                return self._count_from_bottom_of_file()
+                return self._count_from_bottom_of_file(target)
             if isinstance(target, (list, tuple)):
                 return _assume_data_start_given_in_bytes(target)
         raise ValueError(f"Unknown data pointer format: {target}")
