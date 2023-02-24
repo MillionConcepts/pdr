@@ -73,7 +73,6 @@ def get_position(start, length, as_rows, data, object_name):
         return False, None, None, None
 
 
-
 def get_offset(data, pointer):
     if "ULVS_DDP" in data.filename or "DLIS_AZ_DDP" in data.filename \
             or "DLV_DDP" in data.filename:
