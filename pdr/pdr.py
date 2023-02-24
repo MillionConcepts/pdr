@@ -332,6 +332,13 @@ def handle_fits_header(hdulist, pointer="", ):
     return output_hdr
 
 
+def _assume_data_start_given_in_bytes(target):
+    # TODO: Nothing in our test database uses this.
+    if isinstance(target[0], int):
+        return target[0]
+    raise ValueError(f"unknown data pointer format: {target}")
+
+
 class Data:
     def __init__(
         self,
@@ -1264,19 +1271,17 @@ class Data:
             return True
         return False
 
-    def _count_from_bottom_of_file(self, target):
-        if isinstance(target, int):
-            # Counts up from the bottom of the file
-            rows = self.metaget_("ROWS")
-            row_bytes = self.metaget_("ROW_BYTES")
-            tab_size = rows * row_bytes
-            # TODO: should be the filename of the target
-            file_size = os.path.getsize(self.filename)
-            return file_size - tab_size
-        if isinstance(target, (list, tuple)):
-            if isinstance(target[0], int):
-                return target[0]
-        raise ValueError(f"unknown data pointer format: {target}")
+    def _count_from_bottom_of_file(self):
+        # Counts up from the bottom of the file
+        rows = self.metaget_("ROWS")
+        row_bytes = self.metaget_("ROW_BYTES")
+        tab_size = rows * row_bytes
+        # TODO: should be the filename of the target (this is only reachable if the
+        #  target is only an integer so we don't have the filename of the target if
+        #  it's in this area of the code--though that should be kept in mind for
+        #  special cases that are using this function)
+        file_size = os.path.getsize(self.filename)
+        return file_size - tab_size
 
     def data_start_byte(self, object_name):
         """
@@ -1309,7 +1314,10 @@ class Data:
         if start_byte is not None:
             return start_byte
         if record_bytes is None:
-            return self._count_from_bottom_of_file(target)
+            if isinstance(target, int):
+                return self._count_from_bottom_of_file()
+            if isinstance(target, (list, tuple)):
+                return _assume_data_start_given_in_bytes(target)
         raise ValueError(f"Unknown data pointer format: {target}")
 
     def _get_target(self, object_name):
