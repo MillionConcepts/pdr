@@ -44,11 +44,11 @@ from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     depointerize,
-    read_pvl_label,
+    read_pvl,
     literalize_pvl,
 )
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
-from pdr.parselabel.utils import trim_label
+from pdr.parselabel.utils import trim_label, DEFAULT_PVL_LIMIT
 from pdr.pd_utils import (
     insert_sample_types_into_df,
     reindex_df_values,
@@ -348,7 +348,8 @@ class Data:
         debug: bool = False,
         label_fn: Optional[Union[Path, str]] = None,
         search_paths: Union[Collection[str], str] = (),
-        skip_existence_check: bool = False
+        skip_existence_check: bool = False,
+        pvl_limit: int = DEFAULT_PVL_LIMIT
     ):
         # list of the product's associated data objects
         self.index = []
@@ -377,7 +378,7 @@ class Data:
         else:
             self.standard = "PDS3"
         try:
-            self.metadata = self.read_metadata()
+            self.metadata = self.read_metadata(pvl_limit=pvl_limit)
         except (UnicodeError, FileNotFoundError) as ex:
             raise ValueError(
                 f"Can't load this product's metadata: {ex}, {type(ex)}"
@@ -388,8 +389,9 @@ class Data:
             return
         self.pointers = get_pds3_pointers(self.metadata)
         # if self.pointers is None, we've probably got a weird edge case where
-        # someone directly opened a PVL file that's not a label -- a format
-        # file or something -- but there's no reason to not allow it.
+        # someone directly opened a PVL file that's not an individual product
+        # label (e.g. a format file or a non-PDS PVL file) -- but there's no
+        # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
 
@@ -564,25 +566,26 @@ class Data:
         else:
             setattr(self, object_name, structure.data)
 
-    def read_metadata(self):
+    def read_metadata(self, pvl_limit=DEFAULT_PVL_LIMIT):
         """
-        Attempt to ingest a product's metadata. if it is a PDS4 product, its
-        XML label will have been ingested by pds4_tools in self._init_pds4().
-        in that case, simply preprocess it for Metadata.__init__.
-        otherwise, if it has a detached PDS3/PVL label, ingest it with
+        Attempt to ingest a product's metadata. if it is a PDS4 product,
+        pds4_tools will already have ingested its detached XML label in
+        Data._init_pds4(). In that case, simply preprocess it for
+        Metadata.__init__.
+        Otherwise, if it has a detached PDS3/PVL label, ingest it with
         pdr.parselabel.pds3.read_pvl_label.
-        If we have found no detached label of any kind, attempt to ingest
-        attached PVL from the product's nominal path using read_pvl_label.
+        Finally, if we have found no detached label, look for an attached PVL
+        label (also using read_pvl_label).
         """
         if self.standard == "PDS4":
             return Metadata(reformat_pds4_tools_label(self.label))
-        if self.labelname is not None:  # a detached label exists
-            metadata = Metadata(read_pvl_label(self.labelname))
-        else:
-            # look for attached label
-            metadata = Metadata(read_pvl_label(self.filename))
-            self.labelname = self.filename
-        self.file_mapping["LABEL"] = self.labelname
+        # self.labelname is None means we didn't find a detached label
+        target = self.filename if self.labelname is None else self.labelname
+        metadata = Metadata(read_pvl(target, max_size=pvl_limit))
+        # we wait until after the read step to make these assignments in order
+        # to facilitate debugging in cases where there is not in fact an
+        # attached label or we couldn't read it
+        self.labelname, self.file_mapping["LABEL"] = target, target
         self.index.append("LABEL")
         return metadata
 
@@ -715,7 +718,7 @@ class Data:
             pass
         try:
             fmtpath = check_cases(label_fns)
-            aggregations, _ = read_pvl_label(fmtpath)
+            aggregations, _ = read_pvl(fmtpath)
             return literalize_pvl(aggregations)
         except FileNotFoundError:
             warnings.warn(

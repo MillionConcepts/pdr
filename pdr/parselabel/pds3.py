@@ -12,7 +12,7 @@ from dustgoggles.structures import dig_for_keys
 from more_itertools import split_before
 from multidict import MultiDict
 
-from pdr.parselabel.utils import trim_label
+from pdr.parselabel.utils import trim_label, DEFAULT_PVL_LIMIT
 from pdr.utils import decompress
 
 
@@ -89,15 +89,26 @@ class BlockParser:
                 self._step_out()
             else:
                 self.add_statement(parameter, value)
+        if len(self.aggregations) > 1:
+            warnings.warn(
+                "Leftover aggregations. This may indicate malformatted PVL, "
+                "premature label truncation, or the existence of multiple "
+                "distinct PVL-texts in the file. If the label is very large, "
+                "consider increasing max_size or passing a larger number as "
+                "the pvl_limit parameter when initializing the calling "
+                "pdr.Data object."
+            )
         return self.aggregations[0], self.parameters
 
 
-def read_pvl_label(filename, deduplicate_pointers=True):
+def looks_pvl(filename):
+    return Path(filename).suffix.lower() in (".lbl", ".fmt")
+
+
+def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
     with decompress(filename) as stream:
-        if Path(filename).suffix.lower() in (".lbl", ".fmt"):
-            label = trim_label(stream).decode('utf-8', errors='replace')
-        else:
-            label = trim_label(stream).decode('utf-8')
+        errors = 'replace' if looks_pvl(filename) else 'strict'
+        label = trim_label(stream, max_size).decode('utf-8', errors=errors)
     uncommented_label = re.sub(r"/\*.*?(\*/|$)", "", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
