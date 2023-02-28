@@ -267,7 +267,7 @@ class Metadata(MultiDict):
     def metablock(self, text, evaluate=True, warn=True):
         """
         get the first value from this object whose key exactly
-        matches `text`, even if it is nested inside a mapping, iff the value
+        matches `text`, even if it is nested inside a mapping, if the value
         itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
         evaluate it using self.formatter. raise a warning if there are
         multiple keys matching this.

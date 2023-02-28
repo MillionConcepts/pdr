@@ -11,7 +11,7 @@ KNOWN_LABEL_ENDINGS = (
 )
 
 # heuristic for max label size. we know it's not a real rule.
-MAX_LABEL_SIZE = 500 * 1024
+MAX_LABEL_SIZE = 1000 * 1024
 
 
 def trim_label(
