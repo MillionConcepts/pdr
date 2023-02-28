@@ -87,6 +87,9 @@ def check_special_structure(pointer, data):
             and data.metaget_("INSTRUMENT_ID", "") == "RPWS"
             and pointer == "TIME_SERIES"):
         return formats.cassini.get_structure(pointer, data)
+    if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
+            and "HUY_DTWG_ENTRY_AERO" in data.filename):
+        return formats.cassini.get_structure(pointer, data)
     return False, None, None
 
 
