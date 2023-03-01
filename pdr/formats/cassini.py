@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 
 from pdr.pd_utils import insert_sample_types_into_df
+from pdr.datatypes import sample_types
 
 
 def ppi_table_loader(data, pointer, data_set_id):
@@ -35,7 +36,7 @@ def ppi_table_loader(data, pointer, data_set_id):
 def get_structure(pointer, data):
     # the data type that goes here double defines the 32 byte prefix/offset.
     # By skipping the parse_table_structure we never add the prefix bytes so
-    # it works as is.
+    # it works as is. (added HUY if block after this comment)
     fmtdef = data.read_table_structure(pointer)
     if "HUY_DTWG_ENTRY_AERO" in data.filename:
         fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
@@ -98,3 +99,27 @@ def trivial_loader(pointer, data):
 def cda_table_filename(data):
     label = Path(data.labelname)
     return True, Path(label.parent, f"{label.stem}.TAB")
+
+
+def xdr_loader(pointer, data):
+    def read_xdr_image(*_, **__):
+        object_name = "IMAGE"
+        block = data.metablock_(object_name)
+        props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
+        props["sample_type"] = sample_types(
+                block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
+            )
+        props["nrows"] = block["LINES"]
+        props["ncols"] = block["LINE_SAMPLES"]
+        props["prefix_cols"], props["prefix_bytes"] = 0, 0
+        props["BANDS"] = 1
+        props["band_storage_type"] = None
+        props["pixels"] = (
+            props["nrows"]
+            * (props["ncols"] + props["prefix_cols"])
+            * props["BANDS"]
+        )
+        props["start_byte"] = 0
+        return data.read_image(object_name=pointer, special_properties=props)
+    return read_xdr_image
+

@@ -31,6 +31,7 @@ ID_FIELDS = (
     "STANDARD_DATA_PRODUCT_ID"
 )
 
+
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
     is_this_kind_of_extension = partial(contains, kind_extensions)
     return any(
@@ -222,6 +223,8 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", ids["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer, data)
+    if pointer == "XDR_DOCUMENT":
+        return True, formats.cassini.xdr_loader(pointer, data)
     return False, None
 
 
