@@ -71,6 +71,7 @@ of their metadata appear to match other sources.
   - Saturn small moon and Gaskell shape models
   - UVIS EUV, FUV, and HDAC products
   - VIMS EDR cubes (PDS4 labels only)
+  - All Huygens Probe data except DISR IR tables
 - Chandrayaan-1
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*)
@@ -199,6 +200,7 @@ of their metadata appear to match other sources.
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
   - VIMS EDR cubes (PDS3 labels; support planned)
+  - Huygens Probe DISR IR tables (support planned; low priority )
 - Clementine
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
   - LWIR EDRs (support not planned)
