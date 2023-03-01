@@ -123,3 +123,11 @@ def xdr_loader(pointer, data):
         return data.read_image(object_name=pointer, special_properties=props)
     return read_xdr_image
 
+
+def hasi_loader(pointer, data):
+    def read_hasi_table(*_, **__):
+        fn = data.file_mapping[pointer]
+        fmtdef = data.read_table_structure(pointer)
+        import pandas as pd
+        return pd.read_csv(fn, sep=";", header=None, names=fmtdef["NAME"])
+    return read_hasi_table

@@ -225,6 +225,10 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
             return True, formats.cassini.trivial_loader(pointer, data)
     if pointer == "XDR_DOCUMENT":
         return True, formats.cassini.xdr_loader(pointer, data)
+    if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
+            and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
+            data.metaget_("FILE_NAME", "") and pointer == "TABLE"):
+        return True, formats.cassini.hasi_loader(pointer, data)
     return False, None
 
 
