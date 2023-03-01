@@ -71,7 +71,7 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     if (data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL RADIOMETER"
             and (data.metaget_("PRODUCT_TYPE", "") == "RDR") or
             (any(sub in data.metaget_("FILE_NAME", "") for sub in ["STRIP", "VISIBL",
-                                                                   "IMAGE",
+                                                                   "IMAGE", "IR_"
                                                                    "TIME", "SUN", "SOLAR"
                                                                    ]))):
         return formats.cassini.get_offset(data, pointer)

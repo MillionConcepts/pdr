@@ -57,6 +57,8 @@ def looks_like_ascii(data, pointer):
 
 
 def get_position(start, length, as_rows, data, object_name):
+    if "IR_" in data.filename:
+        data.tbd(object_name)
     n_records = data.metaget_("ROWS")
     if any(sub in data.filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         record_bytes = data.metaget_("ROW_BYTES")
