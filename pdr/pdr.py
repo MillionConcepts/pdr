@@ -915,7 +915,7 @@ class Data:
     def read_histogram(self, object_name):
         # TODO: build this out for text examples
         block = self.metablock_(object_name)
-        if block.get("INTERCHANGE_FORMAT") != "BINARY":
+        if block.get("INTERCHANGE_FORMAT") == "ASCII":
             raise NotImplementedError(
                 "ASCII histograms are not currently supported."
             )
