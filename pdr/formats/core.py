@@ -25,6 +25,7 @@ JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 ID_FIELDS = (
     "INSTRUMENT_ID",
     "INSTRUMENT_NAME",
+    "SPACECRAFT_NAME",
     "PRODUCT_TYPE",
     "DATA_SET_NAME",
     "DATA_SET_ID",
@@ -167,6 +168,11 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_image_loader(data, pointer)
+    if (
+        ids["SPACECRAFT_NAME"] == "MAGELLAN"
+        and data.metaget_("NOTE").startswith("Geometry")
+    ):
+        return True, formats.mgn.geom_table_loader(data, pointer)
     if (
         ids["INSTRUMENT_NAME"] == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE PROBE"
         and "SPECTRUM_TABLE" in pointer
