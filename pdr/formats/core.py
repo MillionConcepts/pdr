@@ -402,8 +402,8 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_fn(data, object_name)
-    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and data.filename.endswith(
-            '.img') and object_name == "TABLE"):
+    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and (data.filename.endswith(
+            '.img') or data.filename.endswith('ibg')) and object_name == "TABLE"):
         return formats.mgn.get_fn(data)
     try:
         if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
