@@ -235,6 +235,9 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
             and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
             data.metaget_("FILE_NAME", "") and pointer == "TABLE"):
         return True, formats.cassini.hasi_loader(pointer, data)
+    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and data.filename.endswith(
+            '.img') and pointer == "TABLE"):
+        return True, formats.mgn.orbit_table_in_img_loader(data, pointer)
     return False, None
 
 
@@ -399,6 +402,9 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_fn(data, object_name)
+    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and data.filename.endswith(
+            '.img') and object_name == "TABLE"):
+        return formats.mgn.get_fn(data)
     try:
         if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
             return formats.cassini.cda_table_filename(data)
