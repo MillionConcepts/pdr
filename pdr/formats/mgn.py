@@ -1,5 +1,5 @@
 from io import StringIO
-from pdr.parselabel.pds3 import pointerize
+
 
 def geom_table_loader(data, pointer):
     """
@@ -23,10 +23,7 @@ def geom_table_loader(data, pointer):
 
 
 def orbit_table_in_img_loader(data, pointer):
-    def load_orbit_table_in_img(*_, **__):
-        orbit_file = data.metaget_(pointerize(pointer))
-        return f'Orbit table in file {orbit_file}. Please pass that file or its label.'
-    return load_orbit_table_in_img
+    return data.trivial
 
 
 def get_fn(data):
