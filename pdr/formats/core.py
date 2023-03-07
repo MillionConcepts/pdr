@@ -235,8 +235,8 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
             and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
             data.metaget_("FILE_NAME", "") and pointer == "TABLE"):
         return True, formats.cassini.hasi_loader(pointer, data)
-    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and data.filename.endswith(
-            '.img') and pointer == "TABLE"):
+    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and (data.filename.endswith(
+            '.img') or data.filename.endswith('.ibg')) and pointer == "TABLE"):
         return True, formats.mgn.orbit_table_in_img_loader(data, pointer)
     return False, None
 
