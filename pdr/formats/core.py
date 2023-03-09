@@ -238,6 +238,8 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and (data.filename.endswith(
             '.img') or data.filename.endswith('.ibg')) and pointer == "TABLE"):
         return True, formats.mgn.orbit_table_in_img_loader(data, pointer)
+    if ids["DATA_SET_ID"].startswith("MGN-V-RSS-5-OCC-PROF"):
+    	return True, formats.mgn.occultation_loader(data, pointer)
     return False, None
 
 
