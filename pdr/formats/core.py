@@ -169,9 +169,9 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_image_loader(data, pointer)
     if (
-        ids["SPACECRAFT_NAME"] == "MAGELLAN"
-        and data.metaget_("NOTE").startswith("Geometry")
+        ids["SPACECRAFT_NAME"] == "MAGELLAN" 
         and pointer == "TABLE"
+        and data.metaget_("NOTE").startswith("Geometry")
     ):
         return True, formats.mgn.geom_table_loader(data, pointer)
     if (
