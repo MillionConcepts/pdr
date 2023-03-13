@@ -223,7 +223,6 @@ of their metadata appear to match other sources.
   - RSS Raw Data products with a "stream" or undefined RECORD_TYPE (support not planned)
   - RSS PostScript files from both Raw Data and Science Data Products (support not planned)
 - MRO
-  - HiRISE EDRs (IMAGEs from these may open, but we suspect not correctly; other packed binary objects may not)
   - RSS .tnf (support not planned)
 - MSL
   - Malin Space Science Systems (MSSS) Camera EDRs: "Raw" (EDR) data from the
