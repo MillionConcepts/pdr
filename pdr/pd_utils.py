@@ -78,7 +78,7 @@ def compute_offsets(fmtdef):
     if 'ITEM_BYTES' in fmtdef:
         fmtdef['ITEM_SIZE'] = _apply_item_offsets(fmtdef)
         column_groups = fmtdef.loc[fmtdef['ITEM_SIZE'].notna()]
-        for _, group in column_groups.groupby('START_BYTE'):
+        for _, group in column_groups.groupby('OFFSET'):
             fmtdef.loc[group.index, 'OFFSET'] = (
                 group['OFFSET']
                 + int(group['ITEM_SIZE'].iloc[0])

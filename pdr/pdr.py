@@ -44,11 +44,11 @@ from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     depointerize,
-    read_pvl_label,
+    read_pvl,
     literalize_pvl,
 )
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
-from pdr.parselabel.utils import trim_label
+from pdr.parselabel.utils import trim_label, DEFAULT_PVL_LIMIT
 from pdr.pd_utils import (
     insert_sample_types_into_df,
     reindex_df_values,
@@ -149,7 +149,7 @@ def skeptically_load_header(
         else:
             with decompress(check_cases(path)) as file:
                 file.seek(start)
-                text = file.read(length).decode()
+                text = file.read(min(length, 80000)).decode('ISO-8859-1')
         return text
     except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
@@ -267,7 +267,7 @@ class Metadata(MultiDict):
     def metablock(self, text, evaluate=True, warn=True):
         """
         get the first value from this object whose key exactly
-        matches `text`, even if it is nested inside a mapping, iff the value
+        matches `text`, even if it is nested inside a mapping, if the value
         itself is a mapping (e.g., nested PVL block, XML 'area', etc.)
         evaluate it using self.formatter. raise a warning if there are
         multiple keys matching this.
@@ -332,6 +332,14 @@ def handle_fits_header(hdulist, pointer="", ):
     return output_hdr
 
 
+def _assume_data_start_given_in_bytes(target):
+    # TODO: Nothing in our test database uses this. It also seems like it's calling the
+    #  wrong index (should be -1?)
+    if isinstance(target[0], int):
+        return target[0]
+    raise ValueError(f"unknown data pointer format: {target}")
+
+
 class Data:
     def __init__(
         self,
@@ -340,7 +348,8 @@ class Data:
         debug: bool = False,
         label_fn: Optional[Union[Path, str]] = None,
         search_paths: Union[Collection[str], str] = (),
-        skip_existence_check: bool = False
+        skip_existence_check: bool = False,
+        pvl_limit: int = DEFAULT_PVL_LIMIT
     ):
         # list of the product's associated data objects
         self.index = []
@@ -369,7 +378,7 @@ class Data:
         else:
             self.standard = "PDS3"
         try:
-            self.metadata = self.read_metadata()
+            self.metadata = self.read_metadata(pvl_limit=pvl_limit)
         except (UnicodeError, FileNotFoundError) as ex:
             raise ValueError(
                 f"Can't load this product's metadata: {ex}, {type(ex)}"
@@ -380,8 +389,9 @@ class Data:
             return
         self.pointers = get_pds3_pointers(self.metadata)
         # if self.pointers is None, we've probably got a weird edge case where
-        # someone directly opened a PVL file that's not a label -- a format
-        # file or something -- but there's no reason to not allow it.
+        # someone directly opened a PVL file that's not an individual product
+        # label (e.g. a format file or a non-PDS PVL file) -- but there's no
+        # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
 
@@ -556,25 +566,26 @@ class Data:
         else:
             setattr(self, object_name, structure.data)
 
-    def read_metadata(self):
+    def read_metadata(self, pvl_limit=DEFAULT_PVL_LIMIT):
         """
-        Attempt to ingest a product's metadata. if it is a PDS4 product, its
-        XML label will have been ingested by pds4_tools in self._init_pds4().
-        in that case, simply preprocess it for Metadata.__init__.
-        otherwise, if it has a detached PDS3/PVL label, ingest it with
+        Attempt to ingest a product's metadata. if it is a PDS4 product,
+        pds4_tools will already have ingested its detached XML label in
+        Data._init_pds4(). In that case, simply preprocess it for
+        Metadata.__init__.
+        Otherwise, if it has a detached PDS3/PVL label, ingest it with
         pdr.parselabel.pds3.read_pvl_label.
-        If we have found no detached label of any kind, attempt to ingest
-        attached PVL from the product's nominal path using read_pvl_label.
+        Finally, if we have found no detached label, look for an attached PVL
+        label (also using read_pvl_label).
         """
         if self.standard == "PDS4":
             return Metadata(reformat_pds4_tools_label(self.label))
-        if self.labelname is not None:  # a detached label exists
-            metadata = Metadata(read_pvl_label(self.labelname))
-        else:
-            # look for attached label
-            metadata = Metadata(read_pvl_label(self.filename))
-            self.labelname = self.filename
-        self.file_mapping["LABEL"] = self.labelname
+        # self.labelname is None means we didn't find a detached label
+        target = self.filename if self.labelname is None else self.labelname
+        metadata = Metadata(read_pvl(target, max_size=pvl_limit))
+        # we wait until after the read step to make these assignments in order
+        # to facilitate debugging in cases where there is not in fact an
+        # attached label or we couldn't read it
+        self.labelname, self.file_mapping["LABEL"] = target, target
         self.index.append("LABEL")
         return metadata
 
@@ -707,7 +718,7 @@ class Data:
             pass
         try:
             fmtpath = check_cases(label_fns)
-            aggregations, _ = read_pvl_label(fmtpath)
+            aggregations, _ = read_pvl(fmtpath)
             return literalize_pvl(aggregations)
         except FileNotFoundError:
             warnings.warn(
@@ -904,7 +915,7 @@ class Data:
     def read_histogram(self, object_name):
         # TODO: build this out for text examples
         block = self.metablock_(object_name)
-        if block.get("INTERCHANGE_FORMAT") != "BINARY":
+        if block.get("INTERCHANGE_FORMAT") == "ASCII":
             raise NotImplementedError(
                 "ASCII histograms are not currently supported."
             )
@@ -983,11 +994,14 @@ class Data:
     def table_position(self, object_name):
         target = self._get_target(object_name)
         block = self.metablock_(object_name)
-        if 'RECORDS' in block.keys():
-            n_records = block['RECORDS']
-        elif 'ROWS' in block.keys():
-            n_records = block['ROWS']
-        else:
+        try:
+            if 'RECORDS' in block.keys():
+                n_records = block['RECORDS']
+            elif 'ROWS' in block.keys():
+                n_records = block['ROWS']
+            else:
+                n_records = None
+        except AttributeError:
             n_records = None
         length = None
         if (as_rows := self._check_delimiter_stream(object_name)) is True:
@@ -1002,21 +1016,25 @@ class Data:
                 length = n_records
         else:
             start = self.data_start_byte(object_name)
-            if "BYTES" in block.keys():
-                length = block["BYTES"]
-            elif n_records is not None:
-                if "RECORD_BYTES" in block.keys():
-                    record_length = block['RECORD_BYTES']
-                elif "ROW_BYTES" in block.keys():
-                    record_length = block['ROW_BYTES']
-                    record_length += block.get("ROW_SUFFIX_BYTES", 0)
-                elif self.metaget_("RECORD_BYTES") is not None:
-                    record_length = self.metaget_("RECORD_BYTES")
-                else:
-                    record_length = None
-                if record_length is not None:
-                    length = record_length * n_records
-        is_special, spec_start, spec_length, spec_as_rows = check_special_position(start, length, as_rows, self)
+            try:
+                if "BYTES" in block.keys():
+                    length = block["BYTES"]
+                elif n_records is not None:
+                    if "RECORD_BYTES" in block.keys():
+                        record_length = block['RECORD_BYTES']
+                    elif "ROW_BYTES" in block.keys():
+                        record_length = block['ROW_BYTES']
+                        record_length += block.get("ROW_SUFFIX_BYTES", 0)
+                    elif self.metaget_("RECORD_BYTES") is not None:
+                        record_length = self.metaget_("RECORD_BYTES")
+                    else:
+                        record_length = None
+                    if record_length is not None:
+                        length = record_length * n_records
+            except AttributeError:
+                length = None
+        is_special, spec_start, spec_length, spec_as_rows = check_special_position(
+            start, length, as_rows, self, object_name)
         if is_special:
             return spec_start, spec_length, spec_as_rows
         return start, length, as_rows
@@ -1137,8 +1155,12 @@ class Data:
         offset = 0
         if "SCALING_FACTOR" in block.keys():
             scale = block["SCALING_FACTOR"]
+            if isinstance(scale, dict):
+                scale = scale['value']
         if "OFFSET" in block.keys():
             offset = block["OFFSET"]
+            if isinstance(offset, dict):
+                offset = offset['value']
         # meaningfully better for enormous unscaled arrays
         if (scale == 1) and (offset == 0):
             return obj
@@ -1260,19 +1282,17 @@ class Data:
             return True
         return False
 
-    def _count_from_bottom_of_file(self, target):
-        if isinstance(target, int):
-            # Counts up from the bottom of the file
-            rows = self.metaget_("ROWS")
+    def _count_from_bottom_of_file(self, object_name, row_bytes=None):
+        rows = self.metaget_("ROWS")
+        if not row_bytes:
             row_bytes = self.metaget_("ROW_BYTES")
-            tab_size = rows * row_bytes
-            # TODO: should be the filename of the target
-            file_size = os.path.getsize(self.filename)
-            return file_size - tab_size
-        if isinstance(target, (list, tuple)):
-            if isinstance(target[0], int):
-                return target[0]
-        raise ValueError(f"unknown data pointer format: {target}")
+        tab_size = rows * row_bytes
+        filename = self._object_to_filename(object_name)
+        if isinstance(filename, list):
+            filename = filename[0]
+        file = Path(filename)
+        file_size = os.path.getsize(file)
+        return file_size - tab_size
 
     def data_start_byte(self, object_name):
         """
@@ -1305,7 +1325,10 @@ class Data:
         if start_byte is not None:
             return start_byte
         if record_bytes is None:
-            return self._count_from_bottom_of_file(target)
+            if isinstance(target, int):
+                return self._count_from_bottom_of_file(object_name)
+            if isinstance(target, (list, tuple)):
+                return _assume_data_start_given_in_bytes(target)
         raise ValueError(f"Unknown data pointer format: {target}")
 
     def _get_target(self, object_name):

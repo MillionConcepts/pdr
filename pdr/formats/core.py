@@ -25,11 +25,13 @@ JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 ID_FIELDS = (
     "INSTRUMENT_ID",
     "INSTRUMENT_NAME",
+    "SPACECRAFT_NAME",
     "PRODUCT_TYPE",
     "DATA_SET_NAME",
     "DATA_SET_ID",
     "STANDARD_DATA_PRODUCT_ID"
 )
+
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
     is_this_kind_of_extension = partial(contains, kind_extensions)
@@ -75,6 +77,16 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     ):
         # incorrectly specified record length etc.
         return formats.themis.get_visgeo_qube_offset(data)
+    if (
+            data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL RADIOMETER"
+            and (data.metaget_("PRODUCT_TYPE", "") == "RDR")
+            or any(
+                sub in data.metaget_("FILE_NAME", "") for sub in
+                ["STRIP", "VISIBL", "IMAGE", "IR_", "TIME", "SUN", "SOLAR"]
+            )
+    ):
+        return formats.cassini.get_offset(data, pointer)
+
     return False, None
 
 
@@ -91,13 +103,27 @@ def check_special_structure(pointer, data):
             and data.metaget_("INSTRUMENT_ID", "") == "RPWS"
             and pointer == "TIME_SERIES"):
         return formats.cassini.get_structure(pointer, data)
+    if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
+            and "HUY_DTWG_ENTRY_AERO" in data.filename):
+        return formats.cassini.get_structure(pointer, data)
     return False, None, None
 
 
-def check_special_position(start, length, as_rows, data):
+def check_special_position(start, length, as_rows, data, object_name):
     if (data.metaget_("INSTRUMENT_ID", "") == "MARSIS" and
             " TEC " in data.metaget_("DATA_SET_NAME", "")):
         return formats.mex_marsis.get_position(start, length, as_rows, data)
+    if (
+            data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
+            and any(
+                sub in data.metaget_("FILE_NAME", "")
+                for sub in ["DARK", "STRIP", "VIS_EX", "SUN", "VISIBL", "TIME", "SOLAR", "IMAGE"]
+            )
+            or (
+                data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL RADIOMETER"
+                and data.metaget_("PRODUCT_TYPE", "") == "RDR")
+            ):
+        return formats.cassini.get_position(start, length, as_rows, data, object_name)
     return False, None, None, None
 
 
@@ -155,6 +181,12 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_image_loader(data, pointer)
+    if (
+        ids["SPACECRAFT_NAME"] == "MAGELLAN"
+        and data.metaget_("NOTE").startswith("Geometry")
+        and pointer == "TABLE"
+    ):
+        return True, formats.mgn.geom_table_loader(data, pointer)
     if (
         ids["INSTRUMENT_NAME"] == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE PROBE"
         and "SPECTRUM_TABLE" in pointer
@@ -216,6 +248,17 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", ids["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer, data)
+    if pointer == "XDR_DOCUMENT":
+        return True, formats.cassini.xdr_loader(pointer, data)
+    if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
+            and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
+            data.metaget_("FILE_NAME", "") and pointer == "TABLE"):
+        return True, formats.cassini.hasi_loader(pointer, data)
+    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and (data.filename.endswith(
+            '.img') or data.filename.endswith('.ibg')) and pointer == "TABLE"):
+        return True, formats.mgn.orbit_table_in_img_loader(data, pointer)
+    if ids["DATA_SET_ID"].startswith("MGN-V-RSS-5-OCC-PROF") and pointer == "TABLE":
+        return True, formats.mgn.occultation_loader(data, pointer)
     return False, None
 
 
@@ -260,6 +303,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         or ("SPREADSHEET" in pointer)
         or ("CONTAINER" in pointer)
         or ("TIME_SERIES" in pointer)
+        or ("SERIES" in pointer)
+        or ("SPECTRUM" in pointer)
     ):
         return data.read_table
     if "HISTOGRAM" in pointer:
@@ -390,10 +435,15 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_fn(data, object_name)
-    if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
-        return formats.cassini.cda_table_filename(data)
-
+    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and (data.filename.endswith(
+            '.img') or data.filename.endswith('ibg')) and object_name == "TABLE"):
+        return formats.mgn.get_fn(data)
+    try:
+        if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
+            return formats.cassini.cda_table_filename(data)
         # filenames are frequently misspecified
+    except AttributeError:
+        pass  # multiple datasets in one file returns a set (e.g. messenger_mascs hk_EDR)
     return False, None
 
 
@@ -402,7 +452,7 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
 # archived in the same place as the data products and add little, if any,
 # context to individual products
 objects_to_ignore = [
-    "DESCRIPTION", "DATA_SET_MAP_PROJECTION", ".*_DESC"
+    "DESCRIPTION", "DATA_SET_MAP_PROJECT.*", ".*_DESC"
 ]
 OBJECTS_IGNORED_BY_DEFAULT = re.compile('|'.join(objects_to_ignore))
 

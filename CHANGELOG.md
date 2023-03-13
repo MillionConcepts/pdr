@@ -1,6 +1,6 @@
-## [#.#.#] - YYYY-MM-DD
+## [0.7.4] - 2023-03-13
 ### Added
- - support for a variety of LRO Diviner and Cassini data products    
+ - support for a variety of LRO Diviner, Cassini, and Huygens data products    
    (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
    for specifics)
  - This change log file
@@ -12,9 +12,17 @@
  - pdr will now accept non-UTF-8 characters in detached PVL label / format files
  - refactored special case checking for readability/maintainability
  - assorted linting and in-code documentation edits
+ - labels will by default read in up to 1 MB of the file (previously 500 bytes). If 
+   you're trying to get faster performance for shorter attached labels en masse, pass 
+   the new --pvl_limit parameter. If you're not running large numbers of attached 
+   label files in sequence this is largely irrelevant.
 
 ### Fixed
- - Bit columns are now split based on both start_bit and number of bits rather than
+ - label comments that are left unclosed by the data providers no longer prevent 
+   reading in the data
+ - group offset computations by offset not start byte (allows opening of Juno Jane V04 
+   products, closes [issue 43](https://github.com/MillionConcepts/pdr/issues/43))
+ - bit columns are now split based on both start_bit and number of bits rather than
    simply start_bit (this fixed a number of previously incorrectly read files, 
    and mirrors handling for other column types)
  - `dump_browse` now properly accepts the `float_dtype` argument; reducing

@@ -6,17 +6,17 @@ from pdr.utils import head_file
 
 
 KNOWN_LABEL_ENDINGS = (
-    b"\nEND(\r\n|        )",  # PVL
+    b"\nEND(\r|        )",  # PVL
     b"\x00{3}",  # just null bytes
 )
 
 # heuristic for max label size. we know it's not a real rule.
-MAX_LABEL_SIZE = 500 * 1024
+DEFAULT_PVL_LIMIT = 1000 * 1024
 
 
 def trim_label(
     fn: Union[IO, Path, str],
-    max_size: int = MAX_LABEL_SIZE,
+    max_size: int = DEFAULT_PVL_LIMIT,
     raise_for_failure: bool = False,
 ) -> Union[str, bytes]:
     head = head_file(fn, max_size).read()
