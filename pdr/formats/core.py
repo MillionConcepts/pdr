@@ -127,7 +127,12 @@ def check_special_position(start, length, as_rows, data, object_name):
     return False, None, None, None
 
 
-def check_special_sample_type(data, sample_type, sample_bytes, for_numpy):
+def check_special_sample_type(
+    data: "Data",
+    sample_type: str,
+    sample_bytes: int,
+    for_numpy: bool
+) -> tuple[bool, Optional[str]]:
     if (
         data.metaget_("INSTRUMENT_ID") == "MARSIS"
         and data.metaget_("PRODUCT_TYPE") == "EDR"
