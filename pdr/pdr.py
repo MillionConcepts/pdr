@@ -3,7 +3,7 @@ import re
 import warnings
 from functools import partial, cache
 from io import StringIO
-from itertools import chain
+from itertools import chain, product
 from operator import contains
 from pathlib import Path
 from typing import Mapping, Optional, Union, Sequence, Collection
@@ -12,6 +12,7 @@ import Levenshtein as lev
 import numpy as np
 import pandas as pd
 from cytoolz import countby, identity
+from dustgoggles.func import gmap
 from dustgoggles.structures import dig_for_value, listify
 from multidict import MultiDict
 from pandas.errors import ParserError
@@ -39,7 +40,7 @@ from pdr.formats import (
     get_array_num_items, check_special_position,
 )
 from pdr.np_utils import enforce_order_and_object, casting_to_float, \
-    np_from_buffered_io
+    np_from_buffered_io, make_c_contiguous
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
@@ -78,47 +79,49 @@ def process_single_band_image(f, props):
     #  the multiband loaders too.
     image = np_from_buffered_io(f, dtype=numpy_dtype, count=props['pixels'])
     image = image.reshape(
-        (props["nrows"], props["ncols"] + props["prefix_cols"])
+        (props["nrows"] + props["rowpad"], props["ncols"] + props["colpad"])
     )
-    if props["prefix_cols"] > 0:
-        prefix = image[:, : props["prefix_cols"]]
-        image = image[:, props["prefix_cols"] :]
-    else:
-        prefix = None
-    if image.flags['C_CONTIGUOUS'] is False:
-        image = np.ascontiguousarray(image)
-    return image, prefix
+    image, prefix, suffix = extract_axplanes(image, props)
+    return make_c_contiguous(image), prefix, suffix
 
 
-def process_band_sequential_image(f, props):
+def process_multiband_image(f, props):
+    bst = props['band_storage_type']
+    if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED"):
+        warnings.warn(
+            f"Unknown BAND_STORAGE_TYPE={props['band_storage_type']}. "
+            f"Guessing BAND_SEQUENTIAL."
+        )
+        bst = "BAND_SEQUENTIAL"
     _, numpy_dtype = make_format_specifications(props)
     image = np_from_buffered_io(f, numpy_dtype, count=props["pixels"])
-    image = image.reshape(
-        (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
+    bands, lines, samples = (
+        props["BANDS"],
+        props["nrows"] + props['rowpad'],
+        props["ncols"] + props["colpad"]
     )
-    if props["prefix_cols"] > 0:
-        prefix = image[:, : props["prefix_cols"]]
-        image = image[:, props["prefix_cols"] :]
+    if bst == "BAND_SEQUENTIAL":
+        image = image.reshape(bands, lines, samples)
+    elif bst == "LINE_INTERLEAVED":
+        image = image.reshape(samples, bands, lines)
+        image = np.moveaxis(image, 0, 1)
+    image, prefix, suffix = extract_axplanes(image, props)
+    return make_c_contiguous(image), prefix, suffix
+
+
+def extract_axplanes(image, props):
+    # TODO, maybe: pre/suffix rows
+    if props.get("prefix_cols") is not None:
+        prefix = image[..., :, :props["prefix_cols"]]
+        image = image[..., :, props["prefix_cols"]:]
     else:
         prefix = None
-    return image, prefix
-
-
-def process_line_interleaved_image(f, props):
-    # pixels per frame
-    props["pixels"] = props["BANDS"] * props["ncols"]
-    _, numpy_dtype = make_format_specifications(props)
-    image, prefix = [], []
-    for _ in np.arange(props["nrows"]):
-        prefix.append(f.read(props["prefix_bytes"]))
-        frame = np_from_buffered_io(
-            f, numpy_dtype, count=props["pixels"]).reshape(
-                props["BANDS"], props["ncols"]
-            )
-        image.append(frame)
-        del frame
-    image = np.ascontiguousarray(np.array(image).swapaxes(0, 1))
-    return image, prefix
+    if props.get("suffix_cols") is not None:
+        suffix = image[..., :, -props["suffix_cols"]:]
+        image = image[..., :, :-props["suffix_cols"]]
+    else:
+        suffix = None
+    return image, prefix, suffix
 
 
 def skeptically_load_header(
@@ -415,6 +418,7 @@ class Data:
         raise FileNotFoundError
 
     def _find_objects(self):
+        # TODO: make this not add objects multiple times if called multiple times
         for pointer in self.pointers:
             object_name = depointerize(pointer)
             if is_trivial(object_name):
@@ -665,23 +669,17 @@ class Data:
         try:
             # Make sure that single-band images are 2-dim arrays.
             if props["BANDS"] == 1:
-                image, prefix = process_single_band_image(f, props)
-            elif props["band_storage_type"] == "BAND_SEQUENTIAL":
-                image, prefix = process_band_sequential_image(f, props)
-            elif props["band_storage_type"] == "LINE_INTERLEAVED":
-                image, prefix = process_line_interleaved_image(f, props)
+                image, prefix, suffix = process_single_band_image(f, props)
             else:
-                warnings.warn(
-                    f"Unknown BAND_STORAGE_TYPE={props['band_storage_type']}. "
-                    f"Guessing BAND_SEQUENTIAL."
-                )
-                image, prefix = process_band_sequential_image(f, props)
+                image, prefix, suffix = process_multiband_image(f, props)
         except Exception as ex:
             raise ex
         finally:
             f.close()
         if "PREFIX" in object_name:
             return prefix
+        elif "SUFFIX" in object_name:
+            return suffix
         return image
 
     def read_table_structure(self, pointer):
@@ -1337,12 +1335,12 @@ class Data:
             target = self.metaget_(pointerize(object_name))
         return target
 
-    # TODO: have this iterate through scopes
     def get_absolute_paths(self, filename: Union[str, Path]) -> list[str]:
-        return [
-            str(Path(search_path, filename).absolute())
-            for search_path in self.search_paths
-        ]
+        return gmap(
+            lambda sf: Path(*sf).absolute(),
+            product(self.search_paths, listify(filename)),
+            evaluator=list
+        )
 
     # TODO: reorganize this -- common dispatch funnel with dump_browse,
     #  split up the image-gen part of _browsify_array, something like that

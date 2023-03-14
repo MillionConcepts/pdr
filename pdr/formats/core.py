@@ -1,9 +1,11 @@
 import re
 import warnings
-from functools import partial
-from operator import contains
+from functools import partial, reduce
+from operator import contains, mul
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Sequence, MutableMapping
+
+from multidict import MultiDict
 
 from pdr import formats
 from pdr.parselabel.pds3 import pointerize
@@ -246,10 +248,10 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         return True, formats.diviner.diviner_l4_table_loader(data, pointer)
     if (
-        ids["DATA_SET_ID"].startswith("ODY-M-THM-5-VISGEO")
+        ids["DATA_SET_ID"].startswith("ODY-M-THM-5")
         and (pointer in ("HEADER", "HISTORY"))
     ):
-        return True, formats.themis.trivial_visgeo_btr_loader(data, pointer)
+        return True, formats.themis.trivial_themis_geo_loader(data, pointer)
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", ids["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer, data)
@@ -349,7 +351,7 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
     return None
 
 
-def qube_image_properties(block):
+def qube_image_properties(block: MultiDict) -> dict:
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
     props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
@@ -357,24 +359,60 @@ def qube_image_properties(block):
         use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
     )
     if "AXIS_NAME" in block.keys():
-        ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'BANDS'}
         # TODO: if we end up handling this at higher level in the PVL parser,
         #  remove this splitting stuff
-        for ax, count in zip(
-            re.sub(r'[)( ]', '', use_block['AXIS_NAME']).split(","),
-            use_block['CORE_ITEMS']
-        ):
+        axes = tuple(re.sub(r'[)( ]', '', use_block['AXIS_NAME']).split(","))
+        ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'BANDS'}
+        for ax, count in zip(axes, use_block['CORE_ITEMS']):
             props[ax_map[ax]] = count
     else:
+        axes = None
         props["nrows"] = use_block["CORE_ITEMS"][2]
         props["ncols"] = use_block["CORE_ITEMS"][0]
         props["BANDS"] = use_block["CORE_ITEMS"][1]
-    props["prefix_cols"], props["prefix_bytes"] = 0, 0
-    # TODO: Handle the QUB suffix data
-    props["band_storage_type"] = use_block.get(
-        "BAND_STORAGE_TYPE", "ISIS2_QUBE"
-    )
-    return props
+    props['band_storage_type'] = use_block.get("BAND_STORAGE_TYPE")
+    if props['band_storage_type'] is None:
+        if axes is not None:
+            # noinspection PyTypeChecker
+            props['band_storage_type'] = {
+                ('BAND', 'LINE', 'SAMPLE'): 'BAND_SEQUENTIAL',
+                ('LINE', 'SAMPLE', 'BAND'): 'SAMPLE_INTERLEAVED',
+                ('LINE', 'BAND', 'SAMPLE'): 'LINE_INTERLEAVED'
+                # ISIS always (?) uses first-index fastest, hence reversed
+            }[tuple(reversed(axes))]
+        else:
+            props['band_storage_type'] = 'ISIS2_QUBE'
+    return props | extract_axplane_metadata(use_block, props, isis=True)
+
+
+def extract_axplane_metadata(
+    block: MultiDict, props: dict, isis: bool = False
+) -> dict:
+    """
+    extract metadata for line/sample pre/suffixes, e.g. ISIS side/backplanes
+    """
+    axplane_metadata = {'rowpad': 0, 'colpad': 0}
+    for k in filter(lambda r: r.endswith("FIX_ITEM_BYTES"), block.keys()):
+        ax, which = k.split("_")[:2]
+        if ax == "BAND":
+            # unclear if these actually exist in the wild
+            raise NotImplementedError("Band pre/suffixes are not supported.")
+        if ax == {True: "LINE", False: "SAMPLE"}[isis]:
+            # TODO, probably: deal with this when we have an example
+            raise NotImplementedError("Sample pre/suffixes are not supported.")
+        if isis is True:
+            # ISIS and PDS3 use opposite conventions for side/backplanes
+            rowcol = {'SAMPLE': "col", "LINE": "row"}
+        else:
+            rowcol = {"SAMPLE": "row", "LINE": "col"}
+        fix_pix = block[k] / props['BYTES_PER_PIXEL']
+        if int(fix_pix) != fix_pix:
+            raise NotImplementedError(
+                "Pre/suffix itemsize < array itemsize is not supported."
+            )
+        axplane_metadata[f"{which.lower()}_{rowcol[ax]}s"] = int(fix_pix)
+        axplane_metadata[f"{rowcol[ax]}pad"] += int(fix_pix)
+    return axplane_metadata
 
 
 def generic_image_properties(object_name, block, data) -> dict:
@@ -383,7 +421,7 @@ def generic_image_properties(object_name, block, data) -> dict:
     else:
         props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
         is_special, special_type = check_special_sample_type(
-            data, block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
+            data, block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], True
         )
         if is_special:
             props["sample_type"] = special_type
@@ -393,15 +431,6 @@ def generic_image_properties(object_name, block, data) -> dict:
             )
         props["nrows"] = block["LINES"]
         props["ncols"] = block["LINE_SAMPLES"]
-        if "LINE_PREFIX_BYTES" in block.keys():
-            props["prefix_cols"] = int(
-                block["LINE_PREFIX_BYTES"] / props["BYTES_PER_PIXEL"]
-            )
-            props["prefix_bytes"] = (
-                props["prefix_cols"] * props["BYTES_PER_PIXEL"]
-            )
-        else:
-            props["prefix_cols"], props["prefix_bytes"] = 0, 0
         if "BANDS" in block:
             props["BANDS"] = block["BANDS"]
             props["band_storage_type"] = block.get("BAND_STORAGE_TYPE", None)
@@ -413,9 +442,11 @@ def generic_image_properties(object_name, block, data) -> dict:
         else:
             props["BANDS"] = 1
             props["band_storage_type"] = None
+        props |= extract_axplane_metadata(block, props)
+    # note that we can't actually have pre/suffix rows atm
     props["pixels"] = (
-        props["nrows"]
-        * (props["ncols"] + props["prefix_cols"])
+        (props["nrows"] + props['rowpad'])
+        * (props["ncols"] + props['colpad'])
         * props["BANDS"]
     )
     props["start_byte"] = data.data_start_byte(object_name)
@@ -440,15 +471,18 @@ def check_special_fn(data, object_name) -> tuple[bool, Optional[str]]:
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_fn(data, object_name)
-    if (data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN" and (data.filename.endswith(
-            '.img') or data.filename.endswith('ibg')) and object_name == "TABLE"):
+    if (
+        data.metaget_("SPACECRAFT_NAME", "") == "MAGELLAN"
+        and (data.filename.endswith('.img') or data.filename.endswith('ibg'))
+        and object_name == "TABLE"
+    ):
         return formats.mgn.get_fn(data)
-    try:
-        if dsi.startswith("CO-D-CDA") and (object_name == "TABLE"):
-            return formats.cassini.cda_table_filename(data)
-        # filenames are frequently misspecified
-    except AttributeError:
-        pass  # multiple datasets in one file returns a set (e.g. messenger_mascs hk_EDR)
+    # filenames are frequently misspecified
+    if str(dsi).startswith("CO-D-CDA") and (object_name == "TABLE"):
+        return formats.cassini.cda_table_filename(data)
+    # THEMIS labels don't always mention when a file is stored gzipped
+    if data.metaget("INSTRUMENT_ID") == "THEMIS":
+        return formats.themis.check_gzip_fn(data, object_name)
     return False, None
 
 
@@ -492,8 +526,5 @@ def get_array_num_items(block):
     if isinstance(items, int):
         return items
     if isinstance(items, Sequence):
-        tot_items = 1
-        for axis in items:
-            tot_items *= axis
-        return tot_items
+        return reduce(mul, items)
     raise TypeError("can't interpret this item number specification")

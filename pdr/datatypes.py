@@ -90,9 +90,9 @@ PDS3_ISIS_CONSTANT_NAMES = tuple(
     [
         f"{category}{direction}{entity}{prop}"
         for category, direction, entity, prop in product(
-            ("CORE_", "BAND_SUFFIX_", "SAMPLE_SUFFIX", "LINE_SUFFIX", ""),
-            ("HIGH_", "LOW_"),
-            ("INST_", "REPR_"),
+            ("CORE_", "BAND_SUFFIX_", "SAMPLE_SUFFIX_", "LINE_SUFFIX_", ""),
+            ("HIGH_", "LOW_", ""),
+            ("INST_", "REPR_", ""),
             ("NULL", "SATURATION", "SAT"),
         )
     ]

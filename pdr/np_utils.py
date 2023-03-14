@@ -87,3 +87,9 @@ def np_from_buffered_io(
         return np.frombuffer(stream.getbuffer(), dtype=dtype)
     count = -1 if count is None else count
     return np.fromfile(buffered_io, dtype=dtype, count=count)
+
+
+def make_c_contiguous(image: np.ndarray) -> np.ndarray:
+    if image.flags['C_CONTIGUOUS'] is False:
+        return np.ascontiguousarray(image)
+    return image
