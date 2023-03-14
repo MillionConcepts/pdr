@@ -103,7 +103,7 @@ def process_multiband_image(f, props):
         image = image.reshape(bands, lines, samples)
     elif bst == "LINE_INTERLEAVED":
         image = image.reshape(samples, bands, lines)
-        image = np.moveaxis(image, 0, 1)
+        image = np.moveaxis(image, 0, 2)
     image, prefix, suffix = extract_axplanes(image, props)
     return make_c_contiguous(image), prefix, suffix
 
