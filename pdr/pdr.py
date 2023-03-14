@@ -89,8 +89,7 @@ def process_multiband_image(f, props):
     bst = props['band_storage_type']
     if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED"):
         warnings.warn(
-            f"Unknown BAND_STORAGE_TYPE={props['band_storage_type']}. "
-            f"Guessing BAND_SEQUENTIAL."
+            f"Unknown BAND_STORAGE_TYPE={bst}. Guessing BAND_SEQUENTIAL."
         )
         bst = "BAND_SEQUENTIAL"
     _, numpy_dtype = make_format_specifications(props)
