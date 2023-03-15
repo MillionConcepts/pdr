@@ -72,7 +72,7 @@ def sample_types(
         "TIME": f"S{sample_bytes}",
         "VOID": f"{void}{sample_bytes}",
         "BCD": f"{void}{sample_bytes}",
-        "BINARY CODED DECIMAL": f"{void}{sample_bytes}"
+        "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}"
     }[sample_type]
 
 

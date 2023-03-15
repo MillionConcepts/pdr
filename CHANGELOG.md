@@ -1,3 +1,13 @@
+## [X.X.X] - 20XX-XX-XX
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+
 ## [0.7.4] - 2023-03-13
 ### Added
  - support for a variety of LRO Diviner, Cassini, and Huygens data products    

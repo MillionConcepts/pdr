@@ -123,11 +123,6 @@ def check_special_sample_type(data, sample_type, sample_bytes, for_numpy):
             sample_type, sample_bytes, for_numpy
         )
     if (
-        data.metaget_("INSTRUMENT_HOST_NAME") == "MARS GLOBAL SURVEYOR" and
-        data.metaget_("INSTRUMENT_NAME") == "RADIO SCIENCE SUBSYSTEM"
-    ):
-        return formats.mgs.get_sample_type(sample_type, sample_bytes)
-    if (
         data.metaget_("DATA_SET_ID") == "JNO-J-JIRAM-3-RDR-V1.0"
         and data.metaget("PRODUCT_TYPE") == "RDR"
     ):
