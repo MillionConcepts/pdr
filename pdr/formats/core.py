@@ -171,7 +171,7 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
         ids["SPACECRAFT_NAME"] == "MAGELLAN" 
         and pointer == "TABLE"
-        and data.metaget_("NOTE").startswith("Geometry")
+        and data.metaget_("NOTE", "").startswith("Geometry")
     ):
         return True, formats.mgn.geom_table_loader(data, pointer)
     if (
