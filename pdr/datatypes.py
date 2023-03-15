@@ -43,6 +43,7 @@ def sample_types(
     format strings, using both the type and bytes specified (because the
     mapping to type alone is not consistent across PDS3).
     """
+    sample_type = sample_type.replace(" ", "_")
     if (("INTEGER" in sample_type) or (sample_type == "BOOLEAN")) and (
         "ASCII" not in sample_type
     ):
