@@ -106,6 +106,17 @@ of their metadata appear to match other sources.
     - NAC EDR, CDR, and raw image data (NACR and NACL in image name)
     - NAC DTM
     - WAC Derived products: EMP, HAPKE, HAPKE PARAMMAP, ORBITS, POLE ILL, TIO2
+- Magellan
+  - FMAPs
+  - Stereo-Derived Topography
+  - C-BIDR images *note: `pdr` reads these correctly as the labels are written, but there are unaccounted for offsets in the images.*
+  - F-MIDR and C-MIDR
+  - GxDR: GTDR, GEDR, GSDR, and GREDR
+  - BSR raw data and calibrated spectra
+  - LOSAPDR
+  - Spherical Harmonic, Topography, and Gravity models and maps
+  - Occultation raw data and derived profiles
+  - Radio Tracking Data (except ODF3B tables)
 - Mars Express
   - MARSIS EDRs and RDRs
 - Mars Odyssey
@@ -212,6 +223,17 @@ of their metadata appear to match other sources.
   - UVS (support planned)
   - Waves EDR (support not planned) and RDR 'Survey' tables (support planned)
     - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
+- Magellan
+  - C-BIDR ancillary tables (support not planned)
+  - F-BIDR (support not planned)
+  - ALT-EDR (support not planned)
+  - ARCDR (support planned)
+  - SCVDR (support planned)
+  - GVDR (support planned)
+  - BSR calibrated time samples (support planned)
+  - Radio Tracking ODF3B tables (support planned)
+  - RSS solar wind experiment ('safed' dataset)
+  - SAR EDR ('safed' dataset)
 - Mars Odyssey
   - THEMIS EDR, RDR, and GEO (support planned)
 - MESSENGER
