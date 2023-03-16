@@ -1,3 +1,12 @@
+## [X.X.X] - 20XX-XX-XX
+###  Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
 ## [0.7.5] - 2023-03-16
 ### Added
  - support for a variety of Magellan data (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
