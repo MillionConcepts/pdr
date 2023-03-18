@@ -4,7 +4,7 @@ from functools import partial, reduce
 from itertools import product
 from operator import contains, mul
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Sequence, MutableMapping
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from multidict import MultiDict
 
@@ -209,9 +209,6 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         # mangled object names + positions
         return True, formats.msl_cmn.table_loader(data, pointer)
-    # unusual line prefixes; rasterio happily reads it, but incorrectly
-    # if ids["INSTRUMENT_ID"] == "M3" and pointer == "L0_IMAGE":
-    #     return True, formats.m3.l0_image_loader(data)
     # difficult table formats that are handled well by astropy.io.ascii
     if (
         ids["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
