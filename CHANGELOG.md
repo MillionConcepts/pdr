@@ -1,3 +1,29 @@
+## [X.X.X] - 20XX-XX-XX
+###  Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.7.5] - 2023-03-16
+### Added
+ - support for a variety of Magellan data (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
+   for specifics)
+
+### Changed
+ - sample types are now more permissive and allow spaces
+ - line endings are less strict and allow between 0-2 carriage returns 
+
+### Fixed
+ - HiRISE EDRs are now only listed as notionally supported (rather than known 
+   unsupported and notionally supported)
+
+### Removed
+ - special case for mgs-rss data with IEEE REAL sample types (now supported in core 
+   functionality)
+
 ## [0.7.4] - 2023-03-13
 ### Added
  - support for a variety of LRO Diviner, Cassini, and Huygens data products    

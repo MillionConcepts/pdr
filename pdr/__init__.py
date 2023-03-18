@@ -3,7 +3,7 @@ import os.path as _osp
 from pdr.pdr import Data, Metadata
 from pdr.utils import check_cases
 
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 pkg_dir = _osp.abspath(_osp.dirname(__file__))
 
