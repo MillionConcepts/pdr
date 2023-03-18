@@ -1,6 +1,7 @@
 import re
 import warnings
 from functools import partial, reduce
+from itertools import product
 from operator import contains, mul
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Sequence, MutableMapping
@@ -209,8 +210,8 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         # mangled object names + positions
         return True, formats.msl_cmn.table_loader(data, pointer)
     # unusual line prefixes; rasterio happily reads it, but incorrectly
-    if ids["INSTRUMENT_ID"] == "M3" and pointer == "L0_IMAGE":
-        return True, formats.m3.l0_image_loader(data)
+    # if ids["INSTRUMENT_ID"] == "M3" and pointer == "L0_IMAGE":
+    #     return True, formats.m3.l0_image_loader(data)
     # difficult table formats that are handled well by astropy.io.ascii
     if (
         ids["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
@@ -361,58 +362,82 @@ def qube_image_properties(block: MultiDict) -> dict:
     if "AXIS_NAME" in block.keys():
         # TODO: if we end up handling this at higher level in the PVL parser,
         #  remove this splitting stuff
-        axes = tuple(re.sub(r'[)( ]', '', use_block['AXIS_NAME']).split(","))
-        ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'BANDS'}
-        for ax, count in zip(axes, use_block['CORE_ITEMS']):
+        props['axnames'] = tuple(
+            re.sub(r'[)( ]', '', use_block['AXIS_NAME']).split(",")
+        )
+        ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'nbands'}
+        for ax, count in zip(props['axnames'], use_block['CORE_ITEMS']):
             props[ax_map[ax]] = count
     else:
-        axes = None
         props["nrows"] = use_block["CORE_ITEMS"][2]
         props["ncols"] = use_block["CORE_ITEMS"][0]
-        props["BANDS"] = use_block["CORE_ITEMS"][1]
+        props["nbands"] = use_block["CORE_ITEMS"][1]
     props['band_storage_type'] = use_block.get("BAND_STORAGE_TYPE")
     if props['band_storage_type'] is None:
-        if axes is not None:
+        if props.get('axnames') is not None:
             # noinspection PyTypeChecker
             props['band_storage_type'] = {
                 ('BAND', 'LINE', 'SAMPLE'): 'BAND_SEQUENTIAL',
                 ('LINE', 'SAMPLE', 'BAND'): 'SAMPLE_INTERLEAVED',
                 ('LINE', 'BAND', 'SAMPLE'): 'LINE_INTERLEAVED'
                 # ISIS always (?) uses first-index fastest, hence reversed
-            }[tuple(reversed(axes))]
+            }[tuple(reversed(props['axnames']))]
         else:
             props['band_storage_type'] = 'ISIS2_QUBE'
-    return props | extract_axplane_metadata(use_block, props, isis=True)
+    props |= extract_axplane_metadata(use_block, props)
+    # TODO: unclear whether lower-level linefixes ever appear on qubes
+    return props | extract_linefix_metadata(use_block, props)
 
 
-def extract_axplane_metadata(
-    block: MultiDict, props: dict, isis: bool = False
-) -> dict:
-    """
-    extract metadata for line/sample pre/suffixes, e.g. ISIS side/backplanes
-    """
-    axplane_metadata = {'rowpad': 0, 'colpad': 0}
-    for k in filter(lambda r: r.endswith("FIX_ITEM_BYTES"), block.keys()):
-        ax, which = k.split("_")[:2]
-        if ax == "BAND":
-            # unclear if these actually exist in the wild
-            raise NotImplementedError("Band pre/suffixes are not supported.")
-        if ax == {True: "LINE", False: "SAMPLE"}[isis]:
-            # TODO, probably: deal with this when we have an example
-            raise NotImplementedError("Sample pre/suffixes are not supported.")
-        if isis is True:
-            # ISIS and PDS3 use opposite conventions for side/backplanes
-            rowcol = {'SAMPLE': "col", "LINE": "row"}
-        else:
-            rowcol = {"SAMPLE": "row", "LINE": "col"}
-        fix_pix = block[k] / props['BYTES_PER_PIXEL']
+def extract_axplane_metadata(block: MultiDict, props: dict) -> dict:
+    """extract metadata for ISIS-style side/back/bottomplanes"""
+    # shorthand relating side/backplane "direction" to row/column axes.
+    rowcol = {'SAMPLE': "col", "LINE": "row", "BAND": "band"}
+    axplane_metadata = {'rowpad': 0, 'colpad': 0, 'bandpad': 0}
+    for ax, side in product(("BAND", "LINE", "SAMPLE"), ("PREFIX", "SUFFIX")):
+        if (itembytes := block.get(f"{ax}_{side}_ITEM_BYTES")) is None:
+            continue
+        if (itemcount := block.get(f"{side}_ITEMS")) is None:
+            raise ValueError(
+                f"Specified {ax} {side} item bytes with no specified "
+                f"number of items; can't interpret."
+            )
+        if props.get('axnames') is None:
+            raise ValueError(
+                f"Specified {ax} {side} items with no specified axis "
+                f"order; can't interpret."
+            )
+        # TODO: handle variable-length axplanes
+        fixbytes = itemcount[props['axnames'].index(ax)] * itembytes
+        fix_pix = fixbytes / props['BYTES_PER_PIXEL']
         if int(fix_pix) != fix_pix:
             raise NotImplementedError(
                 "Pre/suffix itemsize < array itemsize is not supported."
             )
-        axplane_metadata[f"{which.lower()}_{rowcol[ax]}s"] = int(fix_pix)
+        axplane_metadata[f"{side.lower()}_{rowcol[ax]}s"] = int(fix_pix)
         axplane_metadata[f"{rowcol[ax]}pad"] += int(fix_pix)
     return axplane_metadata
+
+
+def extract_linefix_metadata(block: MultiDict, props: dict) -> dict:
+    """extract metadata for line prefix/suffix 'tables'"""
+    linefix_metadata = {"linepad": 0}
+    for side in ("PREFIX", "SUFFIX"):
+        if (fixbytes := block.get(f"LINE_{side}_BYTES")) in (0, None):
+            continue
+        fix_pix = fixbytes / props['BYTES_PER_PIXEL']
+        if fix_pix != int(fix_pix):
+            raise NotImplementedError(
+                "Line pre/suffixes not aligned with array element size are "
+                "not supported."
+            )
+        linefix_metadata[f"line_{side.lower()}_pix"] = int(fix_pix)
+        linefix_metadata["linepad"] += int(fix_pix)
+    return linefix_metadata
+
+
+def gt0f(seq):
+    return tuple(filter(lambda x: x > 0, seq))
 
 
 def generic_image_properties(object_name, block, data) -> dict:
@@ -432,22 +457,42 @@ def generic_image_properties(object_name, block, data) -> dict:
         props["nrows"] = block["LINES"]
         props["ncols"] = block["LINE_SAMPLES"]
         if "BANDS" in block:
-            props["BANDS"] = block["BANDS"]
+            props["nbands"] = block["BANDS"]
             props["band_storage_type"] = block.get("BAND_STORAGE_TYPE", None)
             # TODO: assess whether this is always ok
-            if props["band_storage_type"] is None and props["BANDS"] > 1:
+            if props["band_storage_type"] is None and props["nbands"] > 1:
                 raise ValueError(
                     "Cannot read 3D image with no specified band storage type."
                 )
         else:
-            props["BANDS"] = 1
+            props["nbands"] = 1
             props["band_storage_type"] = None
         props |= extract_axplane_metadata(block, props)
-    # note that we can't actually have pre/suffix rows atm
+        props |= extract_linefix_metadata(block, props)
+    if (
+        (props['linepad'] > 0)
+        and ((props['rowpad'] + props['colpad'] + props['bandpad']) > 0)
+    ):
+        raise NotImplementedError(
+            "Objects that contain both 'conventional' line pre/suffixes and "
+            "ISIS-style side/back/bottomplanes are not supported."
+        )
+    if len(gt0f((props['rowpad'], props['colpad'], props['bandpad']))) > 1:
+        raise NotImplementedError(
+            "ISIS-style axplanes along multiple axes are not supported."
+        )
+    if (
+        (props['linepad'] > 0)
+        and props['band_storage_type'] not in (None, "LINE_INTERLEAVED")
+    ):
+        raise NotImplementedError(
+            "'Conventional' line pre/suffixes are not supported for non-BIL "
+            "multiband images."
+        )
     props["pixels"] = (
         (props["nrows"] + props['rowpad'])
-        * (props["ncols"] + props['colpad'])
-        * props["BANDS"]
+        * (props["ncols"] + props['colpad'] + props['linepad'])
+        * (props["nbands"] + props['bandpad'])
     )
     props["start_byte"] = data.data_start_byte(object_name)
     return props

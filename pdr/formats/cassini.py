@@ -114,7 +114,7 @@ def xdr_loader(pointer, data):
         props["nrows"] = block["LINES"]
         props["ncols"] = block["LINE_SAMPLES"]
         props["prefix_cols"], props["prefix_bytes"] = 0, 0
-        props["BANDS"] = 1
+        props["nbands"] = 1
         props["band_storage_type"] = None
         props["pixels"] = (
             props["nrows"]
