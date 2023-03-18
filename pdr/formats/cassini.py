@@ -113,14 +113,10 @@ def xdr_loader(pointer, data):
             )
         props["nrows"] = block["LINES"]
         props["ncols"] = block["LINE_SAMPLES"]
-        props["prefix_cols"], props["prefix_bytes"] = 0, 0
+        props |= {'rowpad': 0, 'colpad': 0, 'bandpad': 0, 'linepad': 0}
         props["nbands"] = 1
         props["band_storage_type"] = None
-        props["pixels"] = (
-            props["nrows"]
-            * (props["ncols"] + props["prefix_cols"])
-            * props["BANDS"]
-        )
+        props["pixels"] = props['nrows'] * props['ncols'] * props['bands']
         props["start_byte"] = 0
         return data.read_image(object_name=pointer, special_properties=props)
     return read_xdr_image
