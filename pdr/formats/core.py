@@ -1,3 +1,4 @@
+import os
 import re
 import warnings
 from functools import partial, reduce
@@ -74,12 +75,15 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_offset(data, pointer)
-    if (
-        data.metaget_("DATA_SET_ID", "").startswith("ODY-M-THM-5-VISGEO")
-        and (pointer == "QUBE")
-    ):
-        # incorrectly specified record length etc.
-        return formats.themis.get_visgeo_qube_offset(data)
+    # if (
+    #     data.metaget_("DATA_SET_ID", "").startswith("ODY-M-THM-5-VISGEO")
+    #     and (pointer == "QUBE")
+    # ):
+    #     # incorrectly specified record length etc.
+    #     return formats.themis.get_visgeo_qube_offset(data)
+    #
+    if data.metaget_("INSTRUMENT_ID") == "THEMIS" and pointer == "QUBE":
+        return formats.themis.get_qube_offset(data)
     if (
             data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL RADIOMETER"
             and (data.metaget_("PRODUCT_TYPE", "") == "RDR")
@@ -89,6 +93,7 @@ def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
             )
     ):
         return formats.cassini.get_offset(data, pointer)
+
 
     return False, None
 
