@@ -103,6 +103,8 @@ def cda_table_filename(data):
     return True, Path(label.parent, f"{label.stem}.TAB")
 
 
+# TODO: find a way to point find_special_constants at this so we can write
+#  scaled versions of these images
 def xdr_loader(pointer, data):
     def read_xdr_image(*_, **__):
         object_name = "IMAGE"
