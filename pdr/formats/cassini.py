@@ -136,7 +136,6 @@ def hasi_loader(pointer, data):
 
 def get_special_qube_props(block):
     props = {}
-    print(block.keys())
     props["BYTES_PER_PIXEL"] = int(block["CORE_ITEM_BYTES"])  # / 8)
     props["sample_type"] = sample_types(
         block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
