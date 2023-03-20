@@ -1,11 +1,23 @@
 ## [X.X.X] - 20XX-XX-XX
 ###  Added
+- handling for a wider array of ISIS-style "qube" data and metadata, 
+  including side/back/bottom/topplanes (as long as they are along only one
+  image axis)
+- support for (most) THEMIS qube products
+- TODO for cassini XDR image scaling functionality
 
 ### Changed
+- reworked image-loading flow for better handling of various band storage
+  types and pre/suffixes
+- BIL images now retain original byteorder
+- reworked cassini xdr special case for compatibility
 
 ### Fixed
+- discovered some rosetta VIRTIS and cassini UVIS product types were not 
+  actually reading correctly, marked them out of support
 
 ### Removed
+- m3 special case module (deprecated by new image-loading flow)
 
 ## [0.7.5] - 2023-03-16
 ### Added

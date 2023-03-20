@@ -69,7 +69,7 @@ of their metadata appear to match other sources.
   - RSS ancillary products: ODF, TDF, TLM, 158, and 515
   - Saturn rings occultation profiles derived from RSS, UVIS, and VIMS data
   - Saturn small moon and Gaskell shape models
-  - UVIS EUV, FUV, and HDAC products
+  - UVIS HDAC products
   - VIMS EDR cubes (PDS4 labels only)
   - All Huygens Probe data except DISR IR tables
 - Chandrayaan-1
@@ -120,7 +120,13 @@ of their metadata appear to match other sources.
 - Mars Express
   - MARSIS EDRs and RDRs
 - Mars Odyssey
-  - THEMIS BTR, ABR, PBT, and ALB
+  - THEMIS 
+    - spectral qubes: VIS and IR v2 geoprojected images, VIS EDR and RDR,
+      IR EDR
+      - *note: ISIS history and header objects are not supported. Also, some
+        products have sideplanes giving destripe metadata; these sideplanes 
+        are discarded rather than returned to the user.* 
+    - derived products: BTR, ABR, PBT, and ALB
 - MESSENGER
   - GRNS EDR, RDR, CDR, DDR, and DAP
   - MASCS EDR, CDR, DDR, and DAP
@@ -197,8 +203,6 @@ of their metadata appear to match other sources.
 - MRO
   - HiRISE RDRs 
 - Rosetta
-  - Orbiter:
-    - VIRTIS EDRs and RDRs
   - Lander:
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
 
@@ -211,6 +215,7 @@ of their metadata appear to match other sources.
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
   - VIMS EDR cubes (PDS3 labels; support planned)
+  - UVIS EUV/FUV products (support planned)
   - Huygens Probe DISR IR tables (support planned; low priority )
 - Clementine
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
@@ -235,7 +240,11 @@ of their metadata appear to match other sources.
   - RSS solar wind experiment ('safed' dataset)
   - SAR EDR ('safed' dataset)
 - Mars Odyssey
-  - THEMIS EDR, RDR, and GEO (support planned)
+  - THEMIS
+    - IR RDRs (support planned)
+    - v1 VIS/IR geoprojected products (support not planned. v2 are supported. 
+      v1 is, per data providers, unsuitable for science due to cosmetic 
+      processing)
 - MESSENGER
   - Ground calibration data for MASCS and NS (support not planned)
 - MGS
@@ -259,6 +268,7 @@ of their metadata appear to match other sources.
   - Orbiter:
     - ALICE EDRs, RDRs, and REFDRs (support planned)
     - MIDAS RDRs with .dat file extension (support planned)
+    - VIRTIS EDRs and RDRs (support planned)
     - VIRTIS geometry data
   - Lander:
     - CONSERT EDRs, RDRs, and REFDRs (support planned)
