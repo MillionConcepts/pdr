@@ -2,6 +2,7 @@ import warnings
 from pathlib import Path
 
 import os
+import re
 
 from pdr.pd_utils import insert_sample_types_into_df
 from pdr.datatypes import sample_types
@@ -131,3 +132,21 @@ def hasi_loader(pointer, data):
         import pandas as pd
         return pd.read_csv(fn, sep=";", header=None, names=fmtdef["NAME"])
     return read_hasi_table
+
+
+def get_special_qube_props(block):
+    props = {}
+    print(block.keys())
+    props["BYTES_PER_PIXEL"] = int(block["CORE_ITEM_BYTES"])  # / 8)
+    props["sample_type"] = sample_types(
+        block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
+    )
+    axnames = block.get('AXIS_NAME')
+    props['axnames'] = tuple(re.sub(r'[)( ]', '', axnames).split(","))
+    ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'nbands'}
+    for ax, count in zip(props['axnames'], block['CORE_ITEMS']):
+        props[ax_map[ax]] = count
+    props['band_storage_type'] = 'BAND_SEQUENTIAL'
+    #props |= extract_axplane_metadata(use_block, props)
+    # TODO: unclear whether lower-level linefixes ever appear on qubes
+    return True, props, block #props | extract_linefix_metadata(use_block, props)

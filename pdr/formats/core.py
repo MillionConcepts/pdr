@@ -349,6 +349,15 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
     return None
 
 
+def check_special_qube_props(object_name, block, data):
+    if (
+            data.metaget_("INSTRUMENT_HOST_NAME", "") == "CASSINI_ORBITER"
+            and object_name == "QUBE"
+    ):
+        return formats.cassini.get_special_qube_props(block)
+    return False, None, None
+
+
 def qube_image_properties(block: MultiDict) -> dict:
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
@@ -441,7 +450,14 @@ def gt0f(seq):
 
 def generic_image_properties(object_name, block, data) -> dict:
     if "QUBE" in object_name:  # ISIS2 QUBE format
-        props = qube_image_properties(block)
+        is_special, special_props, special_block = check_special_qube_props(
+            object_name, block, data)
+        if is_special:
+            props = special_props
+            props |= extract_axplane_metadata(special_block, props)
+            props |= extract_linefix_metadata(special_block, props)
+        else:
+            props = qube_image_properties(block)
     else:
         props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
         is_special, special_type = check_special_sample_type(
