@@ -356,12 +356,13 @@ def qube_image_properties(block: MultiDict) -> dict:
     props["sample_type"] = sample_types(
         use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
     )
-    if "AXIS_NAME" in block.keys():
+    if "AXIS_NAME" in set(block.keys()).union(use_block.keys()):
         # TODO: if we end up handling this at higher level in the PVL parser,
         #  remove this splitting stuff
-        props['axnames'] = tuple(
-            re.sub(r'[)( ]', '', use_block['AXIS_NAME']).split(",")
-        )
+        axnames = block.get('AXIS_NAME')
+        if axnames is None:
+            axnames = use_block.get('AXIS_NAME')
+        props['axnames'] = tuple(re.sub(r'[)( ]', '', axnames).split(","))
         ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'nbands'}
         for ax, count in zip(props['axnames'], use_block['CORE_ITEMS']):
             props[ax_map[ax]] = count
