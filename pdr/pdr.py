@@ -77,10 +77,10 @@ def extract_single_band_linefix(image, props):
         return image, None, None
     prefix, suffix = None, None
     image = image.reshape(props['nrows'], props['ncols'] + props['linepad'])
-    if props['line_suffix_pix'] > 0:
+    if props.get('line_suffix_pix', 0) > 0:
         suffix = image[:, -props['line_suffix_pix']:]
         image = image[:, :-props['line_suffix_pix']]
-    if props['line_prefix_pix'] > 0:
+    if props.get('line_prefix_pix', 0) > 0:
         prefix = image[:, :props['line_prefix_pix']]
         image = image[:, props['line_prefix_pix']:]
     return image, prefix, suffix

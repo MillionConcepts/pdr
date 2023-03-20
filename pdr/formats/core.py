@@ -373,11 +373,12 @@ def qube_image_properties(block: MultiDict) -> dict:
     if props['band_storage_type'] is None:
         if props.get('axnames') is not None:
             # noinspection PyTypeChecker
+            # writing keys in last-axis-fastest for clarity. however,
+            # ISIS always (?) uses first-axis-fastest, hence `reversed` below.
             props['band_storage_type'] = {
                 ('BAND', 'LINE', 'SAMPLE'): 'BAND_SEQUENTIAL',
                 ('LINE', 'SAMPLE', 'BAND'): 'SAMPLE_INTERLEAVED',
                 ('LINE', 'BAND', 'SAMPLE'): 'LINE_INTERLEAVED'
-                # ISIS always (?) uses first-index fastest, hence reversed
             }[tuple(reversed(props['axnames']))]
         else:
             props['band_storage_type'] = 'ISIS2_QUBE'
