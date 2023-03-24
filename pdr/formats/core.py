@@ -1,22 +1,17 @@
-import os
+from __future__ import annotations
 import re
 import warnings
-from functools import partial, reduce
-from itertools import product
-from operator import contains, mul
+from functools import partial
+from operator import contains
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Sequence
-
-from multidict import MultiDict
+from typing import TYPE_CHECKING, Callable, Optional
 
 from pdr import formats
 from pdr.parselabel.pds3 import pointerize
 from pdr.utils import check_cases
-from pdr.datatypes import sample_types
-
 
 if TYPE_CHECKING:
-    from pdr import Data
+    from pdr.pdrtypes import PDRLike
 
 LABEL_EXTENSIONS = (".xml", ".lbl")
 IMAGE_EXTENSIONS = (".img", ".rgb")
@@ -64,37 +59,30 @@ def file_extension_to_loader(filename: str, data: "Data") -> Callable:
     return data.tbd
 
 
-def check_special_offset(pointer, data) -> tuple[bool, Optional[int]]:
+def check_special_offset(
+    name: str, data: PDRLike
+) -> tuple[bool, Optional[int]]:
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
     if data.metaget_("INSTRUMENT_ID", "") == "CHEMIN":
-        return formats.msl_cmn.get_offset(data, pointer)
+        return formats.msl_cmn.get_offset(data, name)
     if (
         data.metaget_("DATA_SET_ID", "") == "CLEM1-L-RSS-5-BSR-V1.0"
-        and pointer in ("HEADER_TABLE", "DATA_TABLE")
+        and name in ("HEADER_TABLE", "DATA_TABLE")
     ):
         # sequence wrapped as string for object names
-        return formats.clementine.get_offset(data, pointer)
-    # if (
-    #     data.metaget_("DATA_SET_ID", "").startswith("ODY-M-THM-5-VISGEO")
-    #     and (pointer == "QUBE")
-    # ):
-    #     # incorrectly specified record length etc.
-    #     return formats.themis.get_visgeo_qube_offset(data)
-    #
-    if data.metaget_("INSTRUMENT_ID") == "THEMIS" and pointer == "QUBE":
+        return formats.clementine.get_offset(data, name)
+    if data.metaget_("INSTRUMENT_ID") == "THEMIS" and name == "QUBE":
         return formats.themis.get_qube_offset(data)
     if (
-            data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL RADIOMETER"
-            and (data.metaget_("PRODUCT_TYPE", "") == "RDR")
-            or any(
-                sub in data.metaget_("FILE_NAME", "") for sub in
-                ["STRIP", "VISIBL", "IMAGE", "IR_", "TIME", "SUN", "SOLAR"]
-            )
+        data.metaget_("INSTRUMENT_NAME", "") == "DESCENT IMAGER SPECTRAL RADIOMETER"
+        and (data.metaget_("PRODUCT_TYPE", "") == "RDR")
+        or any(
+            sub in data.metaget_("FILE_NAME", "") for sub in
+            ["STRIP", "VISIBL", "IMAGE", "IR_", "TIME", "SUN", "SOLAR"]
+        )
     ):
-        return formats.cassini.get_offset(data, pointer)
-
-
+        return formats.cassini.get_offset(data, name)
     return False, None
 
 
@@ -349,170 +337,6 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
     return None
 
 
-def check_special_qube_props(object_name, block, data):
-    if (
-            data.metaget_("INSTRUMENT_HOST_NAME", "") == "CASSINI_ORBITER"
-            and object_name == "QUBE"
-    ):
-        return formats.cassini.get_special_qube_props(block)
-    return False, None, None
-
-
-def qube_image_properties(block: MultiDict) -> dict:
-    props = {}
-    use_block = block if "CORE" not in block.keys() else block["CORE"]
-    props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
-    props["sample_type"] = sample_types(
-        use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
-    )
-    if "AXIS_NAME" in set(block.keys()).union(use_block.keys()):
-        # TODO: if we end up handling this at higher level in the PVL parser,
-        #  remove this splitting stuff
-        axnames = block.get('AXIS_NAME')
-        if axnames is None:
-            axnames = use_block.get('AXIS_NAME')
-        props['axnames'] = tuple(re.sub(r'[)( ]', '', axnames).split(","))
-        ax_map = {'LINE': 'nrows', 'SAMPLE': 'ncols', 'BAND': 'nbands'}
-        for ax, count in zip(props['axnames'], use_block['CORE_ITEMS']):
-            props[ax_map[ax]] = count
-    else:
-        props["nrows"] = use_block["CORE_ITEMS"][2]
-        props["ncols"] = use_block["CORE_ITEMS"][0]
-        props["nbands"] = use_block["CORE_ITEMS"][1]
-    props['band_storage_type'] = use_block.get("BAND_STORAGE_TYPE")
-    if props['band_storage_type'] is None:
-        if props.get('axnames') is not None:
-            # noinspection PyTypeChecker
-            # writing keys in last-axis-fastest for clarity. however,
-            # ISIS always (?) uses first-axis-fastest, hence `reversed` below.
-            props['band_storage_type'] = {
-                ('BAND', 'LINE', 'SAMPLE'): 'BAND_SEQUENTIAL',
-                ('LINE', 'SAMPLE', 'BAND'): 'SAMPLE_INTERLEAVED',
-                ('LINE', 'BAND', 'SAMPLE'): 'LINE_INTERLEAVED'
-            }[tuple(reversed(props['axnames']))]
-        else:
-            props['band_storage_type'] = 'ISIS2_QUBE'
-    props |= extract_axplane_metadata(use_block, props)
-    # TODO: unclear whether lower-level linefixes ever appear on qubes
-    return props | extract_linefix_metadata(use_block, props)
-
-
-def extract_axplane_metadata(block: MultiDict, props: dict) -> dict:
-    """extract metadata for ISIS-style side/back/bottomplanes"""
-    # shorthand relating side/backplane "direction" to row/column axes.
-    rowcol = {'SAMPLE': "col", "LINE": "row", "BAND": "band"}
-    axplane_metadata = {'rowpad': 0, 'colpad': 0, 'bandpad': 0}
-    for ax, side in product(("BAND", "LINE", "SAMPLE"), ("PREFIX", "SUFFIX")):
-        if (itembytes := block.get(f"{ax}_{side}_ITEM_BYTES")) is None:
-            continue
-        if (itemcount := block.get(f"{side}_ITEMS")) is None:
-            raise ValueError(
-                f"Specified {ax} {side} item bytes with no specified "
-                f"number of items; can't interpret."
-            )
-        if props.get('axnames') is None:
-            raise ValueError(
-                f"Specified {ax} {side} items with no specified axis "
-                f"order; can't interpret."
-            )
-        # TODO: handle variable-length axplanes
-        fixbytes = itemcount[props['axnames'].index(ax)] * itembytes
-        fix_pix = fixbytes / props['BYTES_PER_PIXEL']
-        if int(fix_pix) != fix_pix:
-            raise NotImplementedError(
-                "Pre/suffix itemsize < array itemsize is not supported."
-            )
-        axplane_metadata[f"{side.lower()}_{rowcol[ax]}s"] = int(fix_pix)
-        axplane_metadata[f"{rowcol[ax]}pad"] += int(fix_pix)
-    return axplane_metadata
-
-
-def extract_linefix_metadata(block: MultiDict, props: dict) -> dict:
-    """extract metadata for line prefix/suffix 'tables'"""
-    linefix_metadata = {"linepad": 0}
-    for side in ("PREFIX", "SUFFIX"):
-        if (fixbytes := block.get(f"LINE_{side}_BYTES")) in (0, None):
-            continue
-        fix_pix = fixbytes / props['BYTES_PER_PIXEL']
-        if fix_pix != int(fix_pix):
-            raise NotImplementedError(
-                "Line pre/suffixes not aligned with array element size are "
-                "not supported."
-            )
-        linefix_metadata[f"line_{side.lower()}_pix"] = int(fix_pix)
-        linefix_metadata["linepad"] += int(fix_pix)
-    return linefix_metadata
-
-
-def gt0f(seq):
-    return tuple(filter(lambda x: x > 0, seq))
-
-
-def generic_image_properties(object_name, block, data) -> dict:
-    if "QUBE" in object_name:  # ISIS2 QUBE format
-        is_special, special_props, special_block = check_special_qube_props(
-            object_name, block, data)
-        if is_special:
-            props = special_props
-            props |= extract_axplane_metadata(special_block, props)
-            props |= extract_linefix_metadata(special_block, props)
-        else:
-            props = qube_image_properties(block)
-    else:
-        props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
-        is_special, special_type = check_special_sample_type(
-            data, block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], True
-        )
-        if is_special:
-            props["sample_type"] = special_type
-        else:
-            props["sample_type"] = sample_types(
-                block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
-            )
-        props["nrows"] = block["LINES"]
-        props["ncols"] = block["LINE_SAMPLES"]
-        if "BANDS" in block:
-            props["nbands"] = block["BANDS"]
-            props["band_storage_type"] = block.get("BAND_STORAGE_TYPE", None)
-            # TODO: assess whether this is always ok
-            if props["band_storage_type"] is None and props["nbands"] > 1:
-                raise ValueError(
-                    "Cannot read 3D image with no specified band storage type."
-                )
-        else:
-            props["nbands"] = 1
-            props["band_storage_type"] = None
-        props |= extract_axplane_metadata(block, props)
-        props |= extract_linefix_metadata(block, props)
-    if (
-        (props['linepad'] > 0)
-        and ((props['rowpad'] + props['colpad'] + props['bandpad']) > 0)
-    ):
-        raise NotImplementedError(
-            "Objects that contain both 'conventional' line pre/suffixes and "
-            "ISIS-style side/back/bottomplanes are not supported."
-        )
-    if len(gt0f((props['rowpad'], props['colpad'], props['bandpad']))) > 1:
-        raise NotImplementedError(
-            "ISIS-style axplanes along multiple axes are not supported."
-        )
-    if (
-        (props['linepad'] > 0)
-        and props['band_storage_type'] not in (None, "LINE_INTERLEAVED")
-    ):
-        raise NotImplementedError(
-            "'Conventional' line pre/suffixes are not supported for non-BIL "
-            "multiband images."
-        )
-    props["pixels"] = (
-        (props["nrows"] + props['rowpad'])
-        * (props["ncols"] + props['colpad'] + props['linepad'])
-        * (props["nbands"] + props['bandpad'])
-    )
-    props["start_byte"] = data.data_start_byte(object_name)
-    return props
-
-
 def special_image_constants(data):
     consts = {}
     if data.metaget_("INSTRUMENT_ID") == "CRISM":
@@ -568,23 +392,10 @@ def ignore_if_pdf(data, object_name, path):
     return open(check_cases(path)).read()
 
 
-def check_array_for_subobject(block):
-    valid_subobjects = ["ARRAY", "BIT_ELEMENT", "COLLECTION", "ELEMENT"]
-    subobj = [sub for sub in valid_subobjects if sub in block]
-    if len(subobj) > 1:
-        raise ValueError(
-            f'ARRAY objects may only have one subobject (this has '
-            f'{len(subobj)})'
-        )
-    if len(subobj) < 1:
-        return block
-    return block[subobj[0]]
-
-
-def get_array_num_items(block):
-    items = block["AXIS_ITEMS"]
-    if isinstance(items, int):
-        return items
-    if isinstance(items, Sequence):
-        return reduce(mul, items)
-    raise TypeError("can't interpret this item number specification")
+def check_special_qube_props(object_name, block, data):
+    if (
+        data.metaget_("INSTRUMENT_HOST_NAME", "") == "CASSINI_ORBITER"
+        and object_name == "QUBE"
+    ):
+        return formats.cassini.get_special_qube_props(block)
+    return False, None, None

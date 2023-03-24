@@ -6,17 +6,13 @@ from numbers import Number
 from pathlib import Path
 import struct
 import textwrap
-from typing import Union, Sequence, Mapping, MutableSequence, IO, Collection
+from typing import Union, Sequence, Mapping, MutableSequence, IO, Collection, \
+    Optional
 import warnings
 from zipfile import ZipFile
 
 from dustgoggles.structures import listify
 from multidict import MultiDict
-
-try:
-    from isal import igzip as gzip_lib
-except ImportError:
-    import gzip as gzip_lib
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -123,10 +119,17 @@ def append_repeated_object(
             fields.append(obj)
     return fields
 
+def import_best_gzip():
+    try:
+        from isal import igzip as gzip_lib
+    except ImportError:
+        import gzip as gzip_lib
+    return gzip_lib
+
 
 def decompress(filename):
     if filename.lower().endswith(".gz"):
-        f = gzip_lib.open(filename, "rb")
+        f = import_best_gzip().open(filename, "rb")
     elif filename.lower().endswith(".bz2"):
         f = bz2.BZ2File(filename, "rb")
     elif filename.lower().endswith(".zip"):
@@ -178,3 +181,22 @@ def prettify_multidict(multi, sep=" ", indent=0):
     if len(indentation) > 0:
         indentation = indentation[:-1]
     return output + indentation + "}"
+
+
+def associate_label_file(
+    data_filename: str,
+    label_filename: Optional[str] = None,
+    skip_check: bool = False,
+) -> Optional[str]:
+    from pdr.formats import LABEL_EXTENSIONS
+
+    if label_filename is not None:
+        return check_cases(Path(label_filename).absolute(), skip_check)
+    elif data_filename.lower().endswith(LABEL_EXTENSIONS):
+        return check_cases(data_filename)
+    for lext in LABEL_EXTENSIONS:
+        try:
+            return check_cases(with_extension(data_filename, lext))
+        except FileNotFoundError:
+            continue
+    return None

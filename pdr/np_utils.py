@@ -89,7 +89,7 @@ def np_from_buffered_io(
     return np.fromfile(buffered_io, dtype=dtype, count=count)
 
 
-def make_c_contiguous(image: np.ndarray) -> np.ndarray:
-    if image.flags['C_CONTIGUOUS'] is False:
-        return np.ascontiguousarray(image)
-    return image
+def make_c_contiguous(arr: np.ndarray) -> np.ndarray:
+    if arr.flags['C_CONTIGUOUS'] is False:
+        return np.ascontiguousarray(arr)
+    return arr
