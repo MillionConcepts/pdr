@@ -3,7 +3,6 @@ from pdr.utils import head_file
 from pdr.pd_utils import compute_offsets
 import pandas as pd
 
-
 def geom_table_loader(data, pointer):
     """
     The Magellan radar system geometry tables include null bytes between rows.
@@ -65,3 +64,10 @@ def occultation_loader(data, pointer):
         table.columns = fmtdef.NAME.tolist()
         return table
     return load_occult_table
+
+def gvanf_sample_type(sample_type, sample_bytes, for_numpy):
+    from pdr.datatypes import sample_types
+    if 'N/A' in sample_type:
+        sample_type = 'MSB_UNSIGEND_INTEGER'
+        return True, sample_types(sample_type, int(sample_bytes), for_numpy=True)
+    return False, None

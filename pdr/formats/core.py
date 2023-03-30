@@ -153,6 +153,10 @@ def check_special_sample_type(
         and data.metaget("PRODUCT_TYPE") == "RDR"
     ):
         return formats.juno.jiram_rdr_sample_type()
+    if (data.metaget_("DATA_SET_ID") == "MGN-V-RDRS-5-GVDR-V1.0"
+        and "GVANF" in data.metaget("PRODUCT_ID")
+    ):
+        return formats.mgn.gvanf_sample_type(sample_type, sample_bytes, for_numpy)
     return False, None
 
 
