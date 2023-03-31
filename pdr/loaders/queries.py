@@ -183,7 +183,7 @@ def generic_image_properties(block, data):
 
 def qube_image_properties(block, meta, object_name):
     props, block = generic_qube_properties(block)
-    is_special, special_props, special_block = check_special_qube_band_storage(
+    is_special, special_props = check_special_qube_band_storage(
         object_name, props, meta
     )
     if is_special:
@@ -191,9 +191,9 @@ def qube_image_properties(block, meta, object_name):
     else:
         props = get_qube_band_storage_type(props, block)
     # noinspection PyTypeChecker
-    props |= extract_axplane_metadata(special_block, props)
+    props |= extract_axplane_metadata(block, props)
     # noinspection PyTypeChecker
-    props |= extract_linefix_metadata(special_block, props)
+    props |= extract_linefix_metadata(block, props)
 
     return props
 
