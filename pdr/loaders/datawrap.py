@@ -94,7 +94,7 @@ class ReadFits(Loader):
 
 
 class ReadCompressedImage(Loader):
-    """wrapper for handle_compresse_image"""
+    """wrapper for handle_compressed_image"""
 
     def __init__(self):
         from pdr.loaders.dispatch import handle_compressed_image

@@ -1,3 +1,6 @@
+from multidict import MultiDict
+import Levenshtein as lev
+import numpy as np
 
 
 def handle_fits_file(self, pointer=""):
@@ -70,8 +73,6 @@ def pointer_to_fits_key(pointer, hdulist):
         for i in hdulist.info(output=False)
     ]
     return levratio.index(max(levratio))
-
-
 
 
 def handle_fits_header(hdulist, pointer="", ):
