@@ -9,7 +9,7 @@ from typing import Sequence, Mapping, TYPE_CHECKING
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types
-from pdr.formats import check_special_sample_type, check_special_qube_props, \
+from pdr.formats import check_special_sample_type, check_special_qube_band_storage, \
     check_special_offset
 from pdr.func import specialize
 from pdr.loaders._helpers import quantity_start_byte, \
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
 
 
-def generic_qube_properties(block: MultiDict) -> dict:
+def generic_qube_properties(block: MultiDict) -> tuple:
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
     props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
@@ -41,23 +41,8 @@ def generic_qube_properties(block: MultiDict) -> dict:
     else:
         props["nrows"] = use_block["CORE_ITEMS"][2]
         props["ncols"] = use_block["CORE_ITEMS"][0]
-        props["nbands"] = use_block["CORE_ITEMS"][1]
-    props["band_storage_type"] = use_block.get("BAND_STORAGE_TYPE")
-    if props["band_storage_type"] is None:
-        if props.get("axnames") is not None:
-            # noinspection PyTypeChecker
-            # writing keys in last-axis-fastest for clarity. however,
-            # ISIS always (?) uses first-axis-fastest, hence `reversed` below.
-            props["band_storage_type"] = {
-                ("BAND", "LINE", "SAMPLE"): "BAND_SEQUENTIAL",
-                ("LINE", "SAMPLE", "BAND"): "SAMPLE_INTERLEAVED",
-                ("LINE", "BAND", "SAMPLE"): "LINE_INTERLEAVED",
-            }[tuple(reversed(props["axnames"]))]
-        else:
-            props["band_storage_type"] = "ISIS2_QUBE"
-    props |= extract_axplane_metadata(use_block, props)
     # TODO: unclear whether lower-level linefixes ever appear on qubes
-    return props | extract_linefix_metadata(use_block, props)
+    return props, use_block
 
 
 def extract_axplane_metadata(block: MultiDict, props: dict) -> dict:
@@ -197,19 +182,37 @@ def generic_image_properties(block, data):
 
 
 def qube_image_properties(block, meta, object_name):
-    is_special, special_props, special_block = check_special_qube_props(
-        object_name, block, meta
+    props, block = generic_qube_properties(block)
+    is_special, special_props, special_block = check_special_qube_band_storage(
+        object_name, props, meta
     )
-    if is_special is True:
+    if is_special:
         props = special_props
-        # noinspection PyTypeChecker
-        props |= extract_axplane_metadata(special_block, props)
-        # noinspection PyTypeChecker
-        props |= extract_linefix_metadata(special_block, props)
     else:
-        props = generic_qube_properties(block)
+        props = get_qube_band_storage_type(props, block)
+    # noinspection PyTypeChecker
+    props |= extract_axplane_metadata(special_block, props)
+    # noinspection PyTypeChecker
+    props |= extract_linefix_metadata(special_block, props)
+
     return props
 
+
+def get_qube_band_storage_type(props, use_block):
+    props["band_storage_type"] = use_block.get("BAND_STORAGE_TYPE")
+    if props["band_storage_type"] is None:
+        if props.get("axnames") is not None:
+            # noinspection PyTypeChecker
+            # writing keys in last-axis-fastest for clarity. however,
+            # ISIS always (?) uses first-axis-fastest, hence `reversed` below.
+            props["band_storage_type"] = {
+                ("BAND", "LINE", "SAMPLE"): "BAND_SEQUENTIAL",
+                ("LINE", "SAMPLE", "BAND"): "SAMPLE_INTERLEAVED",
+                ("LINE", "BAND", "SAMPLE"): "LINE_INTERLEAVED",
+            }[tuple(reversed(props["axnames"]))]
+        else:
+            props["band_storage_type"] = "ISIS2_QUBE"
+    return props
 
 def check_array_for_subobject(block):
     valid_subobjects = ["ARRAY", "BIT_ELEMENT", "COLLECTION", "ELEMENT"]
