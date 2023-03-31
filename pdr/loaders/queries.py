@@ -10,10 +10,10 @@ from multidict import MultiDict
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage, \
-    check_special_offset
+    check_special_offset, check_special_position
 from pdr.func import specialize
 from pdr.loaders._helpers import quantity_start_byte, \
-    _count_from_bottom_of_file, _assume_data_start_given_in_bytes
+    _count_from_bottom_of_file
 from pdr.parselabel.pds3 import pointerize
 
 if TYPE_CHECKING:
@@ -140,7 +140,6 @@ def get_image_properties(meta, object_name) -> dict:
     return props
 
 
-
 def im_sample_type(base_samp_info):
     return sample_types(
         base_samp_info["SAMPLE_TYPE"],
@@ -214,6 +213,7 @@ def get_qube_band_storage_type(props, use_block):
             props["band_storage_type"] = "ISIS2_QUBE"
     return props
 
+
 def check_array_for_subobject(block):
     valid_subobjects = ["ARRAY", "BIT_ELEMENT", "COLLECTION", "ELEMENT"]
     subobj = [sub for sub in valid_subobjects if sub in block]
@@ -276,9 +276,56 @@ def data_start_byte(data: PDRLike, block: Mapping, target, filename) -> int:
     if record_bytes is None:
         if isinstance(target, int):
             return _count_from_bottom_of_file(filename)
-        if isinstance(target, (list, tuple)):
-            return _assume_data_start_given_in_bytes(target)
     raise ValueError(f"Unknown data pointer format: {target}")
+
+
+def table_position(self, object_name):
+    target = self._get_target(object_name)
+    block = self.metablock_(object_name)
+    try:
+        if 'RECORDS' in block.keys():
+            n_records = block['RECORDS']
+        elif 'ROWS' in block.keys():
+            n_records = block['ROWS']
+        else:
+            n_records = None
+    except AttributeError:
+        n_records = None
+    length = None
+    if (as_rows := self._check_delimiter_stream(object_name)) is True:
+        if isinstance(target[1], dict):
+            start = target[1]['value'] - 1
+        else:
+            try:
+                start = target[1] - 1
+            except TypeError:  # string types cannot have integers subtracted (string implies there is one object)
+                start = 0
+        if n_records is not None:
+            length = n_records
+    else:
+        start = data_start_byte(object_name)
+        try:
+            if "BYTES" in block.keys():
+                length = block["BYTES"]
+            elif n_records is not None:
+                if "RECORD_BYTES" in block.keys():
+                    record_length = block['RECORD_BYTES']
+                elif "ROW_BYTES" in block.keys():
+                    record_length = block['ROW_BYTES']
+                    record_length += block.get("ROW_SUFFIX_BYTES", 0)
+                elif self.metaget_("RECORD_BYTES") is not None:
+                    record_length = self.metaget_("RECORD_BYTES")
+                else:
+                    record_length = None
+                if record_length is not None:
+                    length = record_length * n_records
+        except AttributeError:
+            length = None
+    is_special, spec_start, spec_length, spec_as_rows = check_special_position(
+        start, length, as_rows, self, object_name)
+    if is_special:
+        return spec_start, spec_length, spec_as_rows
+    return start, length, as_rows
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
@@ -289,12 +336,6 @@ DEFAULT_DATA_QUERIES = MappingProxyType(
         'start_byte': specialize(data_start_byte, check_special_offset)
     }
 )
-
-
-
-
-
-
 
 
 

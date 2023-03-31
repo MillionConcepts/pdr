@@ -2,10 +2,10 @@ import warnings
 from pathlib import Path
 
 import os
-import re
 
 from pdr.pd_utils import insert_sample_types_into_df
 from pdr.datatypes import sample_types
+from pdr.loaders._helpers import _count_from_bottom_of_file
 
 
 def ppi_table_loader(data, pointer, data_set_id):
@@ -87,7 +87,7 @@ def get_offset(data, pointer):
         row_bytes = data.metaget_("ROW_BYTES")
     else:
         row_bytes = data.metaget_("ROW_BYTES")+1
-    start_byte = data._count_from_bottom_of_file(pointer, row_bytes=row_bytes)
+    start_byte = _count_from_bottom_of_file(pointer, row_bytes=row_bytes)
     return True, start_byte
 
 
@@ -136,5 +136,4 @@ def hasi_loader(pointer, data):
 
 def get_special_qube_band_storage(props):
     props['band_storage_type'] = 'BAND_SEQUENTIAL'
-    # TODO: unclear whether lower-level linefixes ever appear on qubes
     return True, props
