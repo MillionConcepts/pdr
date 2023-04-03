@@ -112,6 +112,7 @@ of their metadata appear to match other sources.
   - C-BIDR images *note: `pdr` reads these correctly as the labels are written, but there are unaccounted for offsets in the images.*
   - F-MIDR and C-MIDR
   - GxDR: GTDR, GEDR, GSDR, and GREDR
+  - GVDR
   - BSR raw data and calibrated spectra
   - LOSAPDR
   - Spherical Harmonic, Topography, and Gravity models and maps
@@ -234,7 +235,6 @@ of their metadata appear to match other sources.
   - ALT-EDR (support not planned)
   - ARCDR (support planned)
   - SCVDR (support planned)
-  - GVDR (support planned)
   - BSR calibrated time samples (support planned)
   - Radio Tracking ODF3B tables (support planned)
   - RSS solar wind experiment ('safed' dataset)
