@@ -149,3 +149,10 @@ def get_special_qube_props(block):
     #props |= extract_axplane_metadata(use_block, props)
     # TODO: unclear whether lower-level linefixes ever appear on qubes
     return True, props, block #props | extract_linefix_metadata(use_block, props)
+
+def radar_asum_loader(pointer, data):
+    def read_asum_table(*_, **__):
+        fmtdef = data.read_table_structure(pointer)
+        import pandas as pd
+        return pd.read_csv(data.file_mapping[pointer], sep=",", header=None, names=fmtdef["NAME"])
+    return read_asum_table

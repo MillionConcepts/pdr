@@ -62,7 +62,6 @@ of their metadata appear to match other sources.
   - MAG REDRs, RDRs, and most housekeeping data
   - MIMI EDRs and RDRs
   - RADAR ABDR, ASUM, BIDR, LBDR, SBDR, and STDR
-    - *Note: Some ASUM products do not read correctly from their PDS3 labels. A fix for this is planned. They can be opened correctly from their PDS4 labels.*
   - RPWS REFDRs, RDRs, and DDRs
     - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which uses an illegal data type and could not be parsed.*
   - RSS gravity, occultation, solar, and bistatic experiments
@@ -212,7 +211,6 @@ of their metadata appear to match other sources.
   - CIRS variable-length '.VAR' tables (support not planned)
   - ISS telemetry and prefix tables (support planned)
   - MAG error count housekeeping data
-  - RADAR ASUM (PDS3 labels; support planned)
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
   - VIMS EDR cubes (PDS3 labels; support planned)
