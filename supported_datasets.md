@@ -84,6 +84,9 @@ of their metadata appear to match other sources.
   - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, but it can be opened with `pdr`*
 - Galileo 
   - magnetometer tables (except summary tables)
+- GRAIL
+  - LGRS RDR: SHADR, SHBDR, and RSDMAP
+  - RSS: BOF, ODF, OLF, and RSR
 - Juno
   - FGM tables
   - Gravity Science tables (EDR, RSR, and TNF)
@@ -157,6 +160,10 @@ of their metadata appear to match other sources.
   - CCAM LIBS EDR, L1B, and L2; CCAM RMI EDR and RDR
   - APXS EDR and RDR (*note: the EDR checksum suffix is not supported*)
   - Chemin L1B and L2 RDRs, and EDRs
+- Pre-Magellan
+  - Earth-based Mars, Mercury, Lunar, and Venus observations
+  - Pioneer-Venus orbiter radar and gravity tables
+  - Viking orbiter gravity data
 - Rosetta
   - Orbiter:
     - COSIMA images and feature tables
@@ -185,6 +192,9 @@ of their metadata appear to match other sources.
     - ROMAP EDRs, RDRs, and DDRs
     - SD2 RDRs
     - SESAME EDRs and RDRs
+- Venus Radar Data (Earth-based)
+  - Uncalibrated, Delay-Doppler Images
+  - Calibrated, Multi-Look Maps
 
 ## Notionally Supported Datasets:
 - Apollo
@@ -224,6 +234,9 @@ of their metadata appear to match other sources.
   - RSS EDRs (support not planned)
 - Galileo
   - magnetometer summary tables (other tables supported)
+- GRAIL
+  - LGRS: EDR and CDR (support not planned)
+  - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
 - Juno
   - JADE Ion sensor housekeeping data prior to arrival at Jupiter (support not planned)
   - UVS (support planned)
@@ -264,6 +277,9 @@ of their metadata appear to match other sources.
     Python. Help is welcomed with either of these efforts! The MSL
     "calibrated" (RDR) files for these cameras are not compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
+- Pre-Magellan
+  - AIRSAR (support planned)
+  - Pioneer-Venus orbiter radar images (support planned)
 - Rosetta
   - Orbiter:
     - ALICE EDRs, RDRs, and REFDRs (support planned)
