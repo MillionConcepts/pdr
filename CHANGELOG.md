@@ -6,6 +6,9 @@
 - support for (most) THEMIS qube products
 - TODO for cassini XDR image scaling functionality
 - support for Magellan GVDR products
+- support for Pre-Magellan products
+- support for GRAIL products
+- support for Earth-based Venus radar observations
 
 ### Changed
 - reworked image-loading flow for better handling of various band storage
