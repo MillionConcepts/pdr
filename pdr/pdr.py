@@ -171,7 +171,7 @@ class Data:
         self.file_mapping = {}
         # known special constants per data object
         self.specials = {}
-        # where can we look for files contaning data objects?
+        # where can we look for files containing data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + listify(search_paths)
         self.standard = None
