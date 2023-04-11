@@ -9,6 +9,7 @@
 - support for Pre-Magellan products
 - support for GRAIL products
 - support for Earth-based Venus radar observations
+- support for Earth-based Lunar radar and spectroscopy data
 
 ### Changed
 - reworked image-loading flow for better handling of various band storage

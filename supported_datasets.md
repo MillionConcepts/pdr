@@ -108,6 +108,11 @@ of their metadata appear to match other sources.
     - NAC EDR, CDR, and raw image data (NACR and NACL in image name)
     - NAC DTM
     - WAC Derived products: EMP, HAPKE, HAPKE PARAMMAP, ORBITS, POLE ILL, TIO2
+- Lunar Radar (Earth-based)
+  - 70 cm radar maps
+  - 12.6 cm (S-band) backscatter maps
+- Lunar Spectroscopy (Earth-based)
+  - RELAB spectra
 - Magellan
   - FMAPs
   - Stereo-Derived Topography
