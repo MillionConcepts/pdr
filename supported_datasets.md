@@ -99,6 +99,15 @@ of their metadata appear to match other sources.
   requires .FMT (format) files, available in the root directories of the MWR
   volumes.*
   - Waves RDR 'Burst' tables
+- Kaguya/Selene
+  - Spectral Profiler data
+  - other datasets have been migrated to PDS4 and are notionally supported
+- Lunar Prospector
+  - all PDS3 datasets that have not been deprecated by PDS4 versions. 
+    specifically:
+    - LOSAPDR
+    - ER: RDR, SUMM, and level 2 products
+    - MAG: SUMM, and level 2, 3, and 4 products
 - LRO
   - DIVINER
     - EDR and RDR tables
@@ -218,6 +227,8 @@ of their metadata appear to match other sources.
   mission node)
 - MRO
   - HiRISE RDRs 
+- MSX
+  - QUBE images
 - Rosetta
   - Lander:
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
