@@ -5,11 +5,8 @@
   image axis)
 - support for (most) THEMIS qube products
 - TODO for cassini XDR image scaling functionality
-- support for Magellan GVDR products
-- support for Pre-Magellan products
-- support for GRAIL products
-- support for Earth-based Venus radar observations
-- support for Earth-based Lunar radar and spectroscopy data
+- support for several Venusian datasets including: Magellan GVDR, Pre-Magellan products, and Earth-based radar observations.
+- support for several Lunar datasets including: GRAIL, Lunar Prospector, MSX, Kaguya/Selene, and Earth-based radar and spectroscopy data.
 
 ### Changed
 - reworked image-loading flow for better handling of various band storage
