@@ -194,6 +194,22 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_image_loader(data, pointer)
     if (
+        ids["INSTRUMENT_ID"] == "LAMP"
+        and ids["PRODUCT_TYPE"] == "RDR"
+        and "HEADER" in pointer
+        and "HISTOGRAM" in pointer
+    ):
+        # FITS headers with 'histogram' in pointer name
+        return True, formats.lro_lamp.rdr_histogram_header_loader(data)
+    if (
+        ids["INSTRUMENT_ID"] == "LAMP"
+        and ids["PRODUCT_TYPE"] == "RDR"
+        and "IMAGE" in pointer
+        and "HISTOGRAM" in pointer
+    ):
+        # multiple image objects are defined by one non-unique image object
+        return True, formats.lro_lamp.rdr_histogram_image_loader(data, pointer)
+    if (
         ids["SPACECRAFT_NAME"] == "MAGELLAN" 
         and pointer == "TABLE"
         and data.metaget_("NOTE", "").startswith("Geometry")
