@@ -157,6 +157,8 @@ def check_special_sample_type(
         and "GVANF" in data.metaget("PRODUCT_ID")
     ):
         return formats.mgn.gvanf_sample_type(sample_type, sample_bytes, for_numpy)
+    if data.metaget_("DATA_SET_ID") == "LRO-L-CRAT-2-EDR-RAWDATA-V1.0":
+        return formats.lro.crater_bit_col_sample_type(sample_type, sample_bytes, for_numpy)
     return False, None
 
 
@@ -196,19 +198,17 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
         ids["INSTRUMENT_ID"] == "LAMP"
         and ids["PRODUCT_TYPE"] == "RDR"
-        and "HEADER" in pointer
-        and "HISTOGRAM" in pointer
+        and "HEADER" in pointer and "HISTOGRAM" in pointer
     ):
         # FITS headers with 'histogram' in pointer name
-        return True, formats.lro_lamp.rdr_histogram_header_loader(data)
+        return True, formats.lro.lamp_rdr_histogram_header_loader(data)
     if (
         ids["INSTRUMENT_ID"] == "LAMP"
         and ids["PRODUCT_TYPE"] == "RDR"
-        and "IMAGE" in pointer
-        and "HISTOGRAM" in pointer
+        and "IMAGE" in pointer and "HISTOGRAM" in pointer
     ):
         # multiple image objects are defined by one non-unique image object
-        return True, formats.lro_lamp.rdr_histogram_image_loader(data, pointer)
+        return True, formats.lro.lamp_rdr_histogram_image_loader(data, pointer)
     if (
         ids["SPACECRAFT_NAME"] == "MAGELLAN" 
         and pointer == "TABLE"
