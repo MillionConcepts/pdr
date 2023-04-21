@@ -17,6 +17,6 @@ def crater_bit_col_sample_type(sample_type, sample_bytes, for_numpy):
         sample_type = 'MSB_BIT_STRING'
         return True, sample_types(sample_type, int(sample_bytes), for_numpy=True)
     if 'N/A' in sample_type:
-        sample_type = 'MSB_UNSIGEND_INTEGER'
+        sample_type = 'MSB_UNSIGNED_INTEGER'
         return True, sample_types(sample_type, int(sample_bytes), for_numpy=True)
     return False, None

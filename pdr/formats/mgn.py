@@ -68,6 +68,6 @@ def occultation_loader(data, pointer):
 def gvanf_sample_type(sample_type, sample_bytes, for_numpy):
     from pdr.datatypes import sample_types
     if 'N/A' in sample_type:
-        sample_type = 'MSB_UNSIGEND_INTEGER'
+        sample_type = 'MSB_UNSIGNED_INTEGER'
         return True, sample_types(sample_type, int(sample_bytes), for_numpy=True)
     return False, None
