@@ -20,3 +20,10 @@ def crater_bit_col_sample_type(sample_type, sample_bytes, for_numpy):
         sample_type = 'MSB_UNSIGNED_INTEGER'
         return True, sample_types(sample_type, int(sample_bytes), for_numpy=True)
     return False, None
+
+def rss_get_position(start, length, as_rows, data, object_name):
+    # The RSS WEA products' WEAREC_TABLE undercounts ROW_BYTES by 1
+    n_records = data.metaget_(object_name)['ROWS']
+    record_bytes = data.metaget_(object_name)['ROW_BYTES']+1
+    length = n_records * record_bytes
+    return True, start, length, as_rows

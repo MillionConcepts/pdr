@@ -132,6 +132,9 @@ def check_special_position(start, length, as_rows, data, object_name):
                 and data.metaget_("PRODUCT_TYPE", "") == "RDR")
             ):
         return formats.cassini.get_position(start, length, as_rows, data, object_name)
+    if (data.metaget_("DATA_SET_ID", "") == "LRO-L-RSS-1-TRACKING-V1.0" and
+            object_name == "WEAREC_TABLE"):
+        return formats.lro.rss_get_position(start, length, as_rows, data, object_name)
     return False, None, None, None
 
 
