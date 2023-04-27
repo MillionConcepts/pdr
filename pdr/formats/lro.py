@@ -27,3 +27,10 @@ def rss_get_position(start, length, as_rows, data, object_name):
     record_bytes = data.metaget_(object_name)['ROW_BYTES']+1
     length = n_records * record_bytes
     return True, start, length, as_rows
+
+def mini_rf_image_loader(data, pointer):
+    # one of the mosaic labels has the wrong values for lines/line_samples
+    block = data.metablock_(pointer)
+    block['LINES'] = 5760
+    block['LINE_SAMPLES'] = 11520
+    return data.read_image

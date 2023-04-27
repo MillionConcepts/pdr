@@ -213,6 +213,13 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         # multiple image objects are defined by one non-unique image object
         return True, formats.lro.lamp_rdr_histogram_image_loader(data, pointer)
     if (
+        ids["DATA_SET_ID"] == "LRO-L-MRFLRO-5-GLOBAL-MOSAIC-V1.0"
+        and "GLOBAL_S4_32PPD" in data.metaget_("PRODUCT_ID")
+        and pointer == "IMAGE"
+    ):
+        # typo in one of the labels
+        return True, formats.lro.mini_rf_image_loader(data, pointer)
+    if (
         ids["SPACECRAFT_NAME"] == "MAGELLAN" 
         and pointer == "TABLE"
         and data.metaget_("NOTE", "").startswith("Geometry")
