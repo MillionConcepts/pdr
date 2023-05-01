@@ -109,15 +109,26 @@ of their metadata appear to match other sources.
     - ER: RDR, SUMM, and level 2 products
     - MAG: SUMM, and level 2, 3, and 4 products
 - LRO
+  - CRaTER CDR and DDR
   - DIVINER
     - EDR and RDR tables
     - L2 and L3 GDR images/backplanes
     - L4 tables
+  - LAMP 
+    - EDR and RDR (except acquisition list tables and spectral image 'door open' headers)
+    - GDR
+  - LEND EDR and RDR
+  - LOLA RDR (*note: other LOLA datasets have been migrated to PDS4 and are notionally supported*)
   - LROC
     - WAC EDR and CDR
     - NAC EDR, CDR, and raw image data (NACR and NACL in image name)
     - NAC DTM
     - WAC Derived products: EMP, HAPKE, HAPKE PARAMMAP, ORBITS, POLE ILL, TIO2
+  - Mini-RF
+    - Bistatic Radar EDR, RDR, and DDR
+    - Global mosaics
+    - SAR raw, level 1 and level 2 data
+  - Radio Science RANGE, SFF, TRK, and WEA
 - Lunar Radar (Earth-based)
   - 70 cm radar maps
   - 12.6 cm (S-band) backscatter maps
@@ -258,6 +269,9 @@ of their metadata appear to match other sources.
   - UVS (support planned)
   - Waves EDR (support not planned) and RDR 'Survey' tables (support planned)
     - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
+- LRO
+    - CRaTER EDR (support planned)
+    - LAMP EDR/RDR acquisition list tables and spectral image 'door open' headers (support planned)
 - Magellan
   - C-BIDR ancillary tables (support not planned)
   - F-BIDR (support not planned)
