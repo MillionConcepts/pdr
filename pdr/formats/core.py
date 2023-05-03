@@ -299,6 +299,17 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         return True, formats.mgn.orbit_table_in_img_loader(data, pointer)
     if ids["DATA_SET_ID"].startswith("MGN-V-RSS-5-OCC-PROF") and pointer == "TABLE":
         return True, formats.mgn.occultation_loader(data, pointer)
+    if (
+        ids["DATA_SET_ID"] == "PVO-V-ORPA-5-ELE/ION/PHOTO/UADS-V1.0"
+        and "ORPA_LOW_RES" in data.metaget_("PRODUCT_ID")
+        and pointer == "TABLE"
+        ):
+        return True, formats.pvo.orpa_low_res_loader(data, pointer)
+    if (
+        ids["DATA_SET_ID"] == "PVO-V-OIMS-4-IONDENSITY-12S-V1.0"
+        and pointer == "TABLE"
+        ):
+        return True, formats.pvo.oims_12s_loader(data, pointer)
     return False, None
 
 
