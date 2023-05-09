@@ -400,5 +400,5 @@ def check_special_qube_band_storage(props, data):
         # and object_name == "QUBE" #should be repetitive because it's only called
             # inside a QUBE reading function.
     ):
-        return formats.cassini.get_special_qube_band_storage()
+        return formats.cassini.get_special_qube_band_storage
     return False, None
