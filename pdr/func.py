@@ -41,11 +41,10 @@ def specialize(func: Callable, check: Callable[[Any], tuple[bool, Any]]):
     function together"""
     @wraps(func)
     def preempt_if_special(*args, **kwargs):
-        is_special, special_result = check(*args, **kwargs)
+        is_special, special_result = call_kwargfiltered(check, *args, **kwargs)
         if is_special is True:
             return special_result
         return call_kwargfiltered(func, *args, **kwargs)
-
     preempt_if_special.__signature__ = sig_union(func, check)
     return preempt_if_special
 

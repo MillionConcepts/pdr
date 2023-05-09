@@ -134,9 +134,9 @@ def check_fix_validity(props):
         )
 
 
-def check_if_qube(name):
+def check_if_qube(name, block, band_storage_type):
     if "QUBE" in name:  # ISIS2 QUBE format
-        return True, generic_qube_properties
+        return True, generic_qube_properties(block, band_storage_type)
     else:
         return False, None
 

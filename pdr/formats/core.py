@@ -125,22 +125,20 @@ def check_special_position(start, length, as_rows, data, object_name):
 
 def check_special_sample_type(
     data: PDRLike,
-    sample_type: str,
-    sample_bytes: int,
-    for_numpy: bool
+    base_samp_info,
 ) -> tuple[bool, Optional[str]]:
     if (
         data.metaget_("INSTRUMENT_ID") == "MARSIS"
         and data.metaget_("PRODUCT_TYPE") == "EDR"
     ):
         return formats.mex_marsis.get_sample_type(
-            sample_type, sample_bytes, for_numpy
+           base_samp_info["SAMPLE_TYPE"], base_samp_info["BYTES_PER_PIXEL"]
         )
     if (
         data.metaget_("DATA_SET_ID") == "JNO-J-JIRAM-3-RDR-V1.0"
         and data.metaget("PRODUCT_TYPE") == "RDR"
     ):
-        return formats.juno.jiram_rdr_sample_type()
+        return True, formats.juno.jiram_rdr_sample_type()
     if (
         data.metaget_("INSTRUMENT_ID") == "LROC"
         and data.metaget_("PRODUCT_TYPE") == "EDR"
@@ -394,11 +392,11 @@ def ignore_if_pdf(data, object_name, path):
     return open(check_cases(path)).read()
 
 
-def check_special_qube_band_storage(props, data):
+def check_special_qube_band_storage(data):
     if (
         data.metaget_("INSTRUMENT_HOST_NAME", "") == "CASSINI_ORBITER"
         # and object_name == "QUBE" #should be repetitive because it's only called
             # inside a QUBE reading function.
     ):
-        return formats.cassini.get_special_qube_band_storage
+        return formats.cassini.get_special_qube_band_storage()
     return False, None

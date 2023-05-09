@@ -43,7 +43,6 @@ class ReadImage(Loader):
     queries = DEFAULT_DATA_QUERIES | {
 
         'base_samp_info': base_sample_info,
-        # TODO: need to be able to pass the for_numpy kwarg through without triggering softquery
         'sample_type': specialize(im_sample_type, check_special_sample_type),
         'band_storage_type': specialize(get_qube_band_storage_type,
                                         check_special_qube_band_storage),

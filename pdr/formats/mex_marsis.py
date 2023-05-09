@@ -1,7 +1,7 @@
 
-def get_sample_type(sample_type, sample_bytes, for_numpy=False):
+def get_sample_type(sample_type, sample_bytes):
     if sample_type == "CHARACTER":
-        char = "V" if for_numpy is True else "s"
+        char = "V"
         return True, f"{char}{sample_bytes}"
     return False, None
 
