@@ -185,7 +185,17 @@ of their metadata appear to match other sources.
   - CCAM LIBS EDR, L1B, and L2; CCAM RMI EDR and RDR
   - APXS EDR and RDR (*note: the EDR checksum suffix is not supported*)
   - Chemin L1B and L2 RDRs, and EDRs
-- Pre-Magellan
+- Pioneer Venus Orbiter
+  - OEFD HIRES data and 24 second averages
+  - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and solar EUV data
+  - OIMS HIRES data and 12 second averages
+  - OMAG
+    - P-sensor HIRES data and 24 second averages
+    - Spacecraft coordinates HIRES data and 24 second averages (*note: only the binary versions have been extensively tested*)
+  - ONMS HIRES data and 12 second averages
+  - ORPA processed data
+  - POS VSO coordinates
+- Pre-Magellan collection at the GEO node
   - Earth-based Mars, Mercury, Lunar, and Venus observations
   - Pioneer-Venus orbiter radar and gravity tables
   - Viking orbiter gravity data
@@ -240,6 +250,8 @@ of their metadata appear to match other sources.
   - HiRISE RDRs 
 - MSX
   - QUBE images
+- Pioneer Venus Orbiter
+  - OMAG spacecraft coordinates: HIRES data and 24 second averages (ASCII versions)
 - Rosetta
   - Lander:
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
@@ -307,7 +319,12 @@ of their metadata appear to match other sources.
     Python. Help is welcomed with either of these efforts! The MSL
     "calibrated" (RDR) files for these cameras are not compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
-- Pre-Magellan
+- Pioneer Venus Orbiter
+  - ORPA raw data (support not planned)
+  - ORSE ODRs (support not planned)
+  - OUVS IMIDR images (support planned)
+  - POS SEDR (support planned)
+- Pre-Magellan collection at the GEO node
   - AIRSAR (support planned)
   - Pioneer-Venus orbiter radar images (support planned)
 - Rosetta
