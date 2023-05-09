@@ -392,10 +392,11 @@ def ignore_if_pdf(data, object_name, path):
     return open(check_cases(path)).read()
 
 
-def check_special_qube_band_storage(object_name, props, data):
+def check_special_qube_band_storage(props, data):
     if (
         data.metaget_("INSTRUMENT_HOST_NAME", "") == "CASSINI_ORBITER"
-        and object_name == "QUBE"
+        # and object_name == "QUBE" #should be repetitive because it's only called
+            # inside a QUBE reading function.
     ):
         return formats.cassini.get_special_qube_band_storage(props)
     return False, None

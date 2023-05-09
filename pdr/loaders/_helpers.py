@@ -18,10 +18,7 @@ def quantity_start_byte(quantity_dict, record_bytes):
         return record_bytes * max(quantity_dict["value"] - 1, 0)
 
 
-def _count_from_bottom_of_file(meta, filename, row_bytes=None):
-    rows = meta.metaget_("ROWS")
-    if not row_bytes:
-        row_bytes = meta.metaget_("ROW_BYTES")
+def _count_from_bottom_of_file(filename, rows, row_bytes):
     tab_size = rows * row_bytes
     if isinstance(filename, list):
         filename = filename[0]

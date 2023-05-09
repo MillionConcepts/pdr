@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
 
 
-def generic_qube_properties(block: MultiDict) -> tuple:
+def generic_qube_properties(block: MultiDict, band_storage_type) -> tuple:
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
     props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
@@ -41,6 +41,23 @@ def generic_qube_properties(block: MultiDict) -> tuple:
     else:
         props["nrows"] = use_block["CORE_ITEMS"][2]
         props["ncols"] = use_block["CORE_ITEMS"][0]
+    props["band_storage_type"] = band_storage_type
+    if props["band_storage_type"] is None:
+        if props.get("axnames") is not None:
+            # noinspection PyTypeChecker
+            # writing keys in last-axis-fastest for clarity. however,
+            # ISIS always (?) uses first-axis-fastest, hence `reversed` below.
+            props["band_storage_type"] = {
+                ("BAND", "LINE", "SAMPLE"): "BAND_SEQUENTIAL",
+                ("LINE", "SAMPLE", "BAND"): "SAMPLE_INTERLEAVED",
+                ("LINE", "BAND", "SAMPLE"): "LINE_INTERLEAVED",
+            }[tuple(reversed(props["axnames"]))]
+        else:
+            props["band_storage_type"] = "ISIS2_QUBE"
+    # noinspection PyTypeChecker
+    props |= extract_axplane_metadata(block, props)
+    # noinspection PyTypeChecker
+    props |= extract_linefix_metadata(block, props)
     # TODO: unclear whether lower-level linefixes ever appear on qubes
     return props, use_block
 
@@ -118,19 +135,18 @@ def check_fix_validity(props):
         )
 
 
-def image_sample_type(block):
-    props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
-    props['sample_type'] = sample_types(
-        block['SAMPLE_TYPE'], props['BYTES_PER_PIXEL'], True
-    )
-    return props
-
-
-def get_image_properties(meta, object_name) -> dict:
-    if "QUBE" in object_name:  # ISIS2 QUBE format
-        props = qube_image_properties(block, meta, object_name)
+def check_if_qube(name):
+    if "QUBE" in name:  # ISIS2 QUBE format
+        return True
     else:
-        props = generic_image_properties(block, meta)
+        return False
+
+
+def get_image_properties(block, is_qube, sample_type) -> dict:
+    if is_qube:  # ISIS2 QUBE format
+        props = qube_image_properties(block, meta)
+    else:
+        props = generic_image_properties(block, sample_type)
     check_fix_validity(props)
     props["pixels"] = (
         (props["nrows"] + props["rowpad"])
@@ -147,23 +163,17 @@ def im_sample_type(base_samp_info):
         for_numpy=True
     )
 
+
 def base_sample_info(block):
     return {
         'BYTES_PER_PIXEL': int(block['SAMPLE_BITS'] / 8),
         'SAMPLE_TYPE': block["SAMPLE_TYPE"]
     }
 
-def generic_image_properties(block, data):
-    props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
-    is_special, special_type = check_special_sample_type(
-        data, block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], True
-    )
-    if is_special:
-        props["sample_type"] = special_type
-    else:
-        props["sample_type"] =
-    props["nrows"] = block["LINES"]
-    props["ncols"] = block["LINE_SAMPLES"]
+
+def generic_image_properties(block, sample_type):
+    props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8), "sample_type": sample_type,
+             "nrows": block["LINES"], "ncols": block["LINE_SAMPLES"]}
     if "BANDS" in block:
         props["nbands"] = block["BANDS"]
         props["band_storage_type"] = block.get("BAND_STORAGE_TYPE", None)
@@ -180,38 +190,9 @@ def generic_image_properties(block, data):
     return props
 
 
-def qube_image_properties(block, meta, object_name):
-    props, block = generic_qube_properties(block)
-    is_special, special_props = check_special_qube_band_storage(
-        object_name, props, meta
-    )
-    if is_special:
-        props = special_props
-    else:
-        props = get_qube_band_storage_type(props, block)
-    # noinspection PyTypeChecker
-    props |= extract_axplane_metadata(block, props)
-    # noinspection PyTypeChecker
-    props |= extract_linefix_metadata(block, props)
-
-    return props
-
-
-def get_qube_band_storage_type(props, use_block):
-    props["band_storage_type"] = use_block.get("BAND_STORAGE_TYPE")
-    if props["band_storage_type"] is None:
-        if props.get("axnames") is not None:
-            # noinspection PyTypeChecker
-            # writing keys in last-axis-fastest for clarity. however,
-            # ISIS always (?) uses first-axis-fastest, hence `reversed` below.
-            props["band_storage_type"] = {
-                ("BAND", "LINE", "SAMPLE"): "BAND_SEQUENTIAL",
-                ("LINE", "SAMPLE", "BAND"): "SAMPLE_INTERLEAVED",
-                ("LINE", "BAND", "SAMPLE"): "LINE_INTERLEAVED",
-            }[tuple(reversed(props["axnames"]))]
-        else:
-            props["band_storage_type"] = "ISIS2_QUBE"
-    return props
+def get_qube_band_storage_type(block):
+    band_storage_type = block.get("BAND_STORAGE_TYPE")
+    return band_storage_type
 
 
 def check_array_for_subobject(block):
@@ -275,13 +256,13 @@ def data_start_byte(data: PDRLike, block: Mapping, target, filename) -> int:
         return start_byte
     if record_bytes is None:
         if isinstance(target, int):
-            return _count_from_bottom_of_file(filename)
+            rows = data.metaget_("ROWS")
+            row_bytes = data.metaget_("ROW_BYTES")
+            return _count_from_bottom_of_file(filename, rows, row_bytes)
     raise ValueError(f"Unknown data pointer format: {target}")
 
 
-def table_position(self, object_name):
-    target = self._get_target(object_name)
-    block = self.metablock_(object_name)
+def table_position(data, block, target, name, filename):
     try:
         if 'RECORDS' in block.keys():
             n_records = block['RECORDS']
@@ -292,7 +273,7 @@ def table_position(self, object_name):
     except AttributeError:
         n_records = None
     length = None
-    if (as_rows := self._check_delimiter_stream(object_name)) is True:
+    if (as_rows := self._check_delimiter_stream(name)) is True:
         if isinstance(target[1], dict):
             start = target[1]['value'] - 1
         else:
@@ -303,7 +284,7 @@ def table_position(self, object_name):
         if n_records is not None:
             length = n_records
     else:
-        start = data_start_byte(object_name)
+        start = data_start_byte(data, block, target, filename)
         try:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
@@ -313,8 +294,8 @@ def table_position(self, object_name):
                 elif "ROW_BYTES" in block.keys():
                     record_length = block['ROW_BYTES']
                     record_length += block.get("ROW_SUFFIX_BYTES", 0)
-                elif self.metaget_("RECORD_BYTES") is not None:
-                    record_length = self.metaget_("RECORD_BYTES")
+                elif data.metaget_("RECORD_BYTES") is not None:
+                    record_length = data.metaget_("RECORD_BYTES")
                 else:
                     record_length = None
                 if record_length is not None:
@@ -322,7 +303,7 @@ def table_position(self, object_name):
         except AttributeError:
             length = None
     is_special, spec_start, spec_length, spec_as_rows = check_special_position(
-        start, length, as_rows, self, object_name)
+        start, length, as_rows, data, name)
     if is_special:
         return spec_start, spec_length, spec_as_rows
     return start, length, as_rows

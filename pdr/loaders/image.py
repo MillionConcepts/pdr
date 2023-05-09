@@ -30,9 +30,9 @@ def read_image(name, block, filename, props):
         raise ex
     finally:
         f.close()
-    if "PREFIX" in object_name:
+    if "PREFIX" in name:
         return pre
-    elif "SUFFIX" in object_name:
+    elif "SUFFIX" in name:
         return suf
     return image
 

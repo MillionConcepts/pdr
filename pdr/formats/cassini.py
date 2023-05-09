@@ -82,12 +82,13 @@ def get_position(start, length, as_rows, data, object_name):
         return False, None, None, None
 
 
-def get_offset(data, pointer):
+def get_offset(data):
     if any(sub in data.filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         row_bytes = data.metaget_("ROW_BYTES")
     else:
         row_bytes = data.metaget_("ROW_BYTES")+1
-    start_byte = _count_from_bottom_of_file(pointer, row_bytes=row_bytes)
+    rows = data.metaget_("ROWS")
+    start_byte = _count_from_bottom_of_file(data.filename, rows, row_bytes=row_bytes)
     return True, start_byte
 
 
