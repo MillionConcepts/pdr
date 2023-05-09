@@ -124,7 +124,7 @@ def check_special_position(start, length, as_rows, data, object_name):
 
 
 def check_special_sample_type(
-    data: "Data",
+    data: PDRLike,
     sample_type: str,
     sample_bytes: int,
     for_numpy: bool
@@ -141,6 +141,12 @@ def check_special_sample_type(
         and data.metaget("PRODUCT_TYPE") == "RDR"
     ):
         return formats.juno.jiram_rdr_sample_type()
+    if (
+        data.metaget_("INSTRUMENT_ID") == "LROC"
+        and data.metaget_("PRODUCT_TYPE") == "EDR"
+    ):
+        # unsigned integers not specified as such
+        return True, formats.lroc.lroc_edr_sample_type()
     return False, None
 
 
@@ -166,17 +172,15 @@ def check_special_bit_start_case(
     return False, None
 
 
+def check_special_block(pointer, data):
+    if pointer == "XDR_DOCUMENT":
+        return True, formats.cassini.xdr_redirect_to_image_block(data)
+
+
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if pointer == 'SHADR_HEADER_TABLE':
         return True, formats.messenger.shadr_header_table_loader(data)
     ids = {field: str(data.metaget_(field, "")) for field in ID_FIELDS}
-    if (
-        ids["INSTRUMENT_ID"] == "LROC"
-        and ids["PRODUCT_TYPE"] == "EDR"
-        and pointer == "IMAGE"
-    ):
-        # unsigned integers not specified as such
-        return True, formats.lroc.lroc_edr_image_loader(data, pointer)
     if (
         ids["SPACECRAFT_NAME"] == "MAGELLAN" 
         and pointer == "TABLE"
@@ -241,8 +245,6 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", ids["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer, data)
-    if pointer == "XDR_DOCUMENT":
-        return True, formats.cassini.xdr_loader(pointer, data)
     if (data.metaget_("INSTRUMENT_HOST_NAME", "") == "HUYGENS PROBE"
             and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
             data.metaget_("FILE_NAME", "") and pointer == "TABLE"):
@@ -398,5 +400,5 @@ def check_special_qube_band_storage(props, data):
         # and object_name == "QUBE" #should be repetitive because it's only called
             # inside a QUBE reading function.
     ):
-        return formats.cassini.get_special_qube_band_storage(props)
+        return formats.cassini.get_special_qube_band_storage()
     return False, None

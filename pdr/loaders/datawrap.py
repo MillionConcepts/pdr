@@ -7,7 +7,8 @@ from cytoolz import keyfilter
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage
 from pdr.func import get_argnames, softquery, specialize
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
-    base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type
+    base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
+    generic_image_properties
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
 
@@ -40,13 +41,13 @@ class ReadImage(Loader):
         super().__init__(read_image)
 
     queries = DEFAULT_DATA_QUERIES | {
-        'is_qube': check_if_qube,
+
         'base_samp_info': base_sample_info,
         # TODO: need to be able to pass the for_numpy kwarg through without triggering softquery
         'sample_type': specialize(im_sample_type, check_special_sample_type),
         'band_storage_type': specialize(get_qube_band_storage_type,
                                         check_special_qube_band_storage),
-        'gen_props':
+        'gen_props': specialize(generic_image_properties, check_if_qube),
     }
 
 

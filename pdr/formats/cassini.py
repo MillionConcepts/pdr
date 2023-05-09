@@ -107,23 +107,10 @@ def cda_table_filename(data):
 
 # TODO: find a way to point find_special_constants at this so we can write
 #  scaled versions of these images
-def xdr_loader(pointer, data):
-    def read_xdr_image(*_, **__):
-        object_name = "IMAGE"
-        block = data.metablock_(object_name)
-        props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8)}
-        props["sample_type"] = sample_types(
-                block["SAMPLE_TYPE"], props["BYTES_PER_PIXEL"], for_numpy=True
-            )
-        props["nrows"] = block["LINES"]
-        props["ncols"] = block["LINE_SAMPLES"]
-        props |= {'rowpad': 0, 'colpad': 0, 'bandpad': 0, 'linepad': 0}
-        props["nbands"] = 1
-        props["band_storage_type"] = None
-        props["pixels"] = props['nrows'] * props['ncols'] * props['nbands']
-        props["start_byte"] = 0
-        return data.read_image(object_name=pointer, special_properties=props)
-    return read_xdr_image
+def xdr_redirect_to_image_block(data):
+    object_name = "IMAGE"
+    block = data.metablock_(object_name)
+    return block
 
 
 def hasi_loader(pointer, data):
@@ -135,6 +122,6 @@ def hasi_loader(pointer, data):
     return read_hasi_table
 
 
-def get_special_qube_band_storage(props):
-    props['band_storage_type'] = 'BAND_SEQUENTIAL'
-    return True, props
+def get_special_qube_band_storage():
+    band_storage_type = 'BAND_SEQUENTIAL'
+    return True, band_storage_type

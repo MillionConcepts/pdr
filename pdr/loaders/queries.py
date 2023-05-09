@@ -9,8 +9,7 @@ from typing import Sequence, Mapping, TYPE_CHECKING
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types
-from pdr.formats import check_special_sample_type, check_special_qube_band_storage, \
-    check_special_offset, check_special_position
+from pdr.formats import check_special_offset, check_special_position, check_special_block
 from pdr.func import specialize
 from pdr.loaders._helpers import quantity_start_byte, \
     _count_from_bottom_of_file
@@ -137,16 +136,13 @@ def check_fix_validity(props):
 
 def check_if_qube(name):
     if "QUBE" in name:  # ISIS2 QUBE format
-        return True
+        return True, generic_qube_properties
     else:
-        return False
+        return False, None
 
 
-def get_image_properties(block, is_qube, sample_type) -> dict:
-    if is_qube:  # ISIS2 QUBE format
-        props = qube_image_properties(block, meta)
-    else:
-        props = generic_image_properties(block, sample_type)
+def get_image_properties(gen_props) -> dict:
+    props = gen_props
     check_fix_validity(props)
     props["pixels"] = (
         (props["nrows"] + props["rowpad"])
@@ -311,7 +307,7 @@ def table_position(data, block, target, name, filename):
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
     {
-        'block': get_block,
+        'block': specialize(get_block, check_special_block),
         'filename': check_file_mapping,
         'target': get_target,
         'start_byte': specialize(data_start_byte, check_special_offset)

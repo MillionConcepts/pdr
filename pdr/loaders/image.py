@@ -5,19 +5,15 @@ import numpy as np
 
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import np_from_buffered_io
-from pdr.parselabel.pds3 import depointerize
 from pdr.utils import decompress
 
 
-def read_image(name, block, filename, props):
+def read_image(name, gen_props, filename):
     """
     Read an image object from this product and return it as a numpy array.
     """
     # TODO: Check for and apply BIT_MASK.
-    if special_properties is not None:
-        props = special_properties
-    else:
-        props = get_image_properties(name, block, meta)
+    props = get_image_properties(gen_props)
     f = decompress(filename)  # seamlessly deal with compression
     f.seek(props["start_byte"])
     try:

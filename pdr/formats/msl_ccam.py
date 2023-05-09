@@ -6,5 +6,6 @@ if TYPE_CHECKING:
 
 
 def image_reply_table_loader(data: "Data") -> Callable:
-    warnings.warn("MSL ChemCam IMAGE_REPLY binary tables are not supported due to a formatting error in label files.")
+    warnings.warn("MSL ChemCam IMAGE_REPLY binary tables are not supported "
+                  "due to a formatting error in label files.")
     return data.trivial
