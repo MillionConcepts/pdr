@@ -6,7 +6,7 @@
 - support for (most) THEMIS qube products
 - TODO for cassini XDR image scaling functionality
 - support for additional LRO datasets: CRaTER, LAMP, LEND, LOLA, Mini-RF, and Radio Science
-- support for several Venusian datasets including: Magellan GVDR, Pre-Magellan products, and Earth-based radar observations.
+- support for several Venusian datasets including: Magellan GVDR, Pioneer Venus, "Pre-Magellan" products at the GEO node, and Earth-based radar observations.
 - support for several Lunar datasets including: GRAIL, Lunar Prospector, MSX, Kaguya/Selene, and Earth-based radar and spectroscopy data.
 
 ### Changed
