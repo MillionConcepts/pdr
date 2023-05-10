@@ -11,6 +11,11 @@ def get_argnames(func: Callable) -> set[str]:
     return set(signature(func).parameters.keys())
 
 
+def get_all_argnames(*funcs: Callable) -> set[str]:
+    """reads the names of the arguments the function will accept"""
+    return reduce(set.union, map(get_argnames, funcs))
+
+
 def filterkwargs(
     func: Callable, kwargdict: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -83,7 +88,13 @@ def softquery(
     """accumulating pipeline of information gathering. later functions in the pipeline
     can use information gathered by earlier functions as long as the keys correspond to
     the argument names in the later functions"""
-    need_args = get_argnames(func).difference(set(kwargdict.keys()))
-    for qname, query in keyfilter(lambda k: k in need_args, querydict).items():
-        kwargdict[qname] = call_kwargfiltered(query, **kwargdict)
+    # explanatory variables
+    have_args = kwargdict.keys()
+    require_args = get_all_argnames(func, *querydict.values())
+    args_to_get = require_args.difference(have_args)
+    missing = args_to_get.difference(querydict)
+    if len(missing) > 0:
+        raise TypeError(f"Missing args in querydict: {missing}")
+    for qname in args_to_get.intersection(querydict):
+        kwargdict[qname] = call_kwargfiltered(querydict[qname], **kwargdict)
     return kwargdict
