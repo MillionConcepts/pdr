@@ -1,13 +1,12 @@
 import re
-import warnings
 from typing import Optional, Callable
-
 import pdr.loaders.handlers
-from pdr import check_cases
 from pdr.formats import check_special_case
-from pdr.loaders._helpers import looks_like_this_kind_of_file
-from pdr.loaders.handlers import handle_fits_file, handle_compressed_image
-from pdr.parselabel.pds3 import pointerize
+from pdr.loaders.handlers import handle_fits_file, handle_compressed_image, \
+    looks_like_this_kind_of_file
+from pdr.loaders.datawrap import ReadLabel, ReadArray, ReadFits, ReadText, ReadImage, \
+    ReadHeader, \
+    ReadCompressedImage, ReadTable, TBD
 
 LABEL_EXTENSIONS = (".xml", ".lbl")
 IMAGE_EXTENSIONS = (".img", ".rgb")
@@ -47,15 +46,15 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     if is_special is True:
         return loader
     if pointer == "LABEL":
-        return data.read_label
+        return ReadLabel()
     if "TEXT" in pointer or "PDF" in pointer or "MAP_PROJECTION_CATALOG" in pointer:
-        return data.read_text
+        return ReadText()
     if "DESC" in pointer:  # probably points to a reference file
-        return data.read_text
+        return ReadText()
     if "ARRAY" in pointer:
-        return data.read_array
+        return ReadArray()
     if "LINE_PREFIX_TABLE" in pointer:
-        return data.tbd
+        return TBD()
     if (
         ("TABLE" in pointer)
         or ("SPREADSHEET" in pointer)
@@ -64,11 +63,11 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         or ("SERIES" in pointer)
         or ("SPECTRUM" in pointer)
     ):
-        return data.read_table
+        return ReadTable()
     if "HISTOGRAM" in pointer:
         return data.read_histogram
     if "HEADER" in pointer:
-        return data.read_header
+        return ReadHeader()
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
@@ -77,13 +76,13 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         #  products with a 'secondary' fits file, etc.
         if image_lib_dispatch(pointer, data) is not None:
             return image_lib_dispatch(pointer, data)
-        return data.read_image
+        return ReadImage()
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer, data)
     # TODO: sloppy pt. 2
     if image_lib_dispatch(pointer, data) is not None:
         return image_lib_dispatch(pointer, data)
-    return data.tbd
+    return TBD()
 
 
 def file_extension_to_loader(filename: str, data: "Data") -> Callable:
@@ -129,17 +128,5 @@ def is_trivial(pointer) -> bool:
     if "STRUCTURE" in pointer:
         return True
     return False
-
-
-def ignore_if_pdf(data, object_name, path):
-    if looks_like_this_kind_of_file(path, [".pdf"]):
-        warnings.warn(
-            f"Cannot open {path}; PDF files are not supported."
-        )
-        block = data.metaget_(object_name)
-        if block is None:
-            return data.metaget_(pointerize(object_name))
-        return block
-    return open(check_cases(path)).read()
 
 

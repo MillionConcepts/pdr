@@ -378,7 +378,7 @@ class Data:
         return metadata
 
     def load_from_pointer(self, pointer, **load_kwargs):
-        return pointer_to_loader(pointer, self)(pointer, **load_kwargs)
+        return pointer_to_loader(pointer, self)(self, pointer, **load_kwargs)
 
     def _catch_return_default(self, pointer: str, exception: Exception):
         """

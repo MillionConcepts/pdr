@@ -1,9 +1,10 @@
 import warnings
 
-import pdr.loaders.handlers
+from pdr.loaders.handlers import handle_fits_file, ignore_if_pdf, FITS_EXTENSIONS, \
+    looks_like_this_kind_of_file
+from pdr.parselabel.pds3 import pointerize
 from pdr.parselabel.utils import trim_label
 from pdr.utils import check_cases, decompress
-from pdr.loaders._helpers import looks_like_this_kind_of_file
 
 
 def read_text(self, object_name):
@@ -33,7 +34,7 @@ def read_header(self, object_name="HEADER"):
     if looks_like_this_kind_of_file(
         self.file_mapping[object_name], FITS_EXTENSIONS
     ):
-        return pdr.loaders.handlers.handle_fits_file(object_name)
+        return handle_fits_file(object_name)
     start, length, as_rows = self.table_position(object_name)
     return skeptically_load_header(
         self.file_mapping[object_name], object_name, start, length, as_rows

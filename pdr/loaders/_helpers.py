@@ -1,6 +1,4 @@
 import os
-from functools import partial
-from operator import contains
 from pathlib import Path
 
 
@@ -25,10 +23,3 @@ def _count_from_bottom_of_file(filename, rows, row_bytes):
     if isinstance(filename, list):
         filename = filename[0]
     return os.path.getsize(Path(filename)) - tab_size
-
-
-def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
-    is_this_kind_of_extension = partial(contains, kind_extensions)
-    return any(
-        map(is_this_kind_of_extension, Path(filename.lower()).suffixes)
-    )
