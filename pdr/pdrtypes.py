@@ -1,6 +1,6 @@
 from typing import Any, Callable, TYPE_CHECKING, Union
 
-from pdr import Data, Metadata
+from pdr.pdr import Data, Metadata
 
 if TYPE_CHECKING:
     from multidict import MultiDict

@@ -1,12 +1,11 @@
-from typing import Union, TYPE_CHECKING
+from typing import Union
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage
 from pdr.func import get_argnames, softquery, specialize
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
     base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
     generic_image_properties
 from pdr.parselabel.pds3 import depointerize
-if TYPE_CHECKING:
-    from pdr.pdrtypes import LoaderFunction, PDRLike
+from pdr.pdrtypes import LoaderFunction, PDRLike
 
 
 class Loader:
@@ -16,11 +15,11 @@ class Loader:
     delays imports, etc.
     """
 
-    def __init__(self, loader_function: Union['LoaderFunction', str]):
+    def __init__(self, loader_function: Union[LoaderFunction, str]):
         self.loader_function = loader_function
         self.argnames = get_argnames(loader_function)
 
-    def __call__(self, pdrlike: 'PDRLike', name: str, **kwargs):
+    def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
         kwargdict = {'data': pdrlike, 'name': depointerize(name)} | kwargs
         info = softquery(self.loader_function, self.queries, kwargdict)
         return self.loader_function(**info)
