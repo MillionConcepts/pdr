@@ -1,16 +1,6 @@
-import warnings
-from functools import partial
-from operator import contains
-from pathlib import Path
-
 import Levenshtein as lev
 import numpy as np
 from multidict import MultiDict
-
-from pdr.utils import check_cases
-from pdr.parselabel.pds3 import pointerize
-
-FITS_EXTENSIONS = (".fits", ".fit")
 
 
 def handle_fits_file(self, pointer=""):
@@ -98,22 +88,3 @@ def pointer_to_fits_key(pointer, hdulist):
         for i in hdulist.info(output=False)
     ]
     return levratio.index(max(levratio))
-
-
-def ignore_if_pdf(data, object_name, path):
-    if looks_like_this_kind_of_file(path, [".pdf"]):
-        warnings.warn(
-            f"Cannot open {path}; PDF files are not supported."
-        )
-        block = data.metaget_(object_name)
-        if block is None:
-            return data.metaget_(pointerize(object_name))
-        return block
-    return open(check_cases(path)).read()
-
-
-def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
-    is_this_kind_of_extension = partial(contains, kind_extensions)
-    return any(
-        map(is_this_kind_of_extension, Path(filename.lower()).suffixes)
-    )

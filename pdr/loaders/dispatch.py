@@ -1,20 +1,12 @@
 import re
 from typing import Optional, Callable
-import pdr.loaders.handlers
 from pdr.formats import check_special_case
-from pdr.loaders.handlers import handle_fits_file, handle_compressed_image, \
-    looks_like_this_kind_of_file
+from pdr.loaders.utility import looks_like_this_kind_of_file, FITS_EXTENSIONS, \
+    TIFF_EXTENSIONS, JP2_EXTENSIONS, IMAGE_EXTENSIONS, TABLE_EXTENSIONS, \
+    TEXT_EXTENSIONS
 from pdr.loaders.datawrap import ReadLabel, ReadArray, ReadFits, ReadText, ReadImage, \
     ReadHeader, \
     ReadCompressedImage, ReadTable, TBD
-
-LABEL_EXTENSIONS = (".xml", ".lbl")
-IMAGE_EXTENSIONS = (".img", ".rgb")
-TABLE_EXTENSIONS = (".tab", ".csv")
-TEXT_EXTENSIONS = (".txt", ".md")
-FITS_EXTENSIONS = (".fits", ".fit")
-TIFF_EXTENSIONS = (".tif", ".tiff")
-JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 
 
 def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
@@ -25,11 +17,11 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
     """
     object_filename = data._target_path(pointer)
     if looks_like_this_kind_of_file(object_filename, FITS_EXTENSIONS):
-        return pdr.loaders.handlers.handle_fits_file
+        return ReadFits()
     if looks_like_this_kind_of_file(object_filename, TIFF_EXTENSIONS):
-        return pdr.loaders.handlers.handle_compressed_image
+        return ReadCompressedImage()
     if looks_like_this_kind_of_file(object_filename, JP2_EXTENSIONS):
-        return pdr.loaders.handlers.handle_compressed_image
+        return ReadCompressedImage()
     return None
 
 
@@ -78,31 +70,31 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
             return image_lib_dispatch(pointer, data)
         return ReadImage()
     if "FILE_NAME" in pointer:
-        return file_extension_to_loader(pointer, data)
+        return file_extension_to_loader(pointer)
     # TODO: sloppy pt. 2
     if image_lib_dispatch(pointer, data) is not None:
         return image_lib_dispatch(pointer, data)
     return TBD()
 
 
-def file_extension_to_loader(filename: str, data: "Data") -> Callable:
+def file_extension_to_loader(filename: str) -> Callable:
     """
     attempt to select the correct method of pdr.Data for objects only
     specified by a PDS3 FILE_NAME pointer (or by filename otherwise).
     """
     if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
-        return handle_fits_file
+        return ReadFits()
     if looks_like_this_kind_of_file(filename, TIFF_EXTENSIONS):
-        return handle_compressed_image
+        return ReadCompressedImage()
     if looks_like_this_kind_of_file(filename, IMAGE_EXTENSIONS):
-        return data.read_image
+        return ReadImage()
     if looks_like_this_kind_of_file(filename, TEXT_EXTENSIONS):
-        return data.read_text
+        return ReadText()
     if looks_like_this_kind_of_file(filename, TABLE_EXTENSIONS):
-        return data.read_table
+        return ReadTable()
     if looks_like_this_kind_of_file(filename, JP2_EXTENSIONS):
-        return handle_compressed_image
-    return data.tbd
+        return ReadCompressedImage()
+    return TBD()
 
 
 # pointers we do not automatically load even when loading greedily --

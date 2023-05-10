@@ -189,7 +189,7 @@ def associate_label_file(
     label_filename: Optional[str] = None,
     skip_check: bool = False,
 ) -> Optional[str]:
-    from pdr.loaders.dispatch import LABEL_EXTENSIONS
+    from pdr.loaders.utility import LABEL_EXTENSIONS
 
     if label_filename is not None:
         return check_cases(Path(label_filename).absolute(), skip_check)

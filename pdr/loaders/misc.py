@@ -1,7 +1,7 @@
 import warnings
 
-from pdr.loaders.handlers import handle_fits_file, ignore_if_pdf, FITS_EXTENSIONS, \
-    looks_like_this_kind_of_file
+from pdr.loaders.handlers import handle_fits_file
+from pdr.loaders.utility import looks_like_this_kind_of_file, FITS_EXTENSIONS
 from pdr.parselabel.pds3 import pointerize
 from pdr.parselabel.utils import trim_label
 from pdr.utils import check_cases, decompress
@@ -83,3 +83,15 @@ def skeptically_load_header(
         return text
     except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {object_name}: {ex}")
+
+
+def ignore_if_pdf(data, object_name, path):
+    if looks_like_this_kind_of_file(path, [".pdf"]):
+        warnings.warn(
+            f"Cannot open {path}; PDF files are not supported."
+        )
+        block = data.metaget_(object_name)
+        if block is None:
+            return data.metaget_(pointerize(object_name))
+        return block
+    return open(check_cases(path)).read()

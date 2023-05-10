@@ -1,6 +1,17 @@
 import warnings
-
+from functools import partial
+from operator import contains
+from pathlib import Path
 from multidict import MultiDict
+
+
+LABEL_EXTENSIONS = (".xml", ".lbl")
+IMAGE_EXTENSIONS = (".img", ".rgb")
+TABLE_EXTENSIONS = (".tab", ".csv")
+TEXT_EXTENSIONS = (".txt", ".md")
+FITS_EXTENSIONS = (".fits", ".fit")
+TIFF_EXTENSIONS = (".tif", ".tiff")
+JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 
 
 def trivial(*_, **__):
@@ -20,3 +31,9 @@ def tbd(name: str, block: MultiDict, *_, **__):
     warnings.warn(f"The {name} pointer is not yet fully supported.")
     return block
 
+
+def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
+    is_this_kind_of_extension = partial(contains, kind_extensions)
+    return any(
+        map(is_this_kind_of_extension, Path(filename.lower()).suffixes)
+    )
