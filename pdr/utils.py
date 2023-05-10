@@ -119,6 +119,7 @@ def append_repeated_object(
             fields.append(obj)
     return fields
 
+
 def import_best_gzip():
     try:
         from isal import igzip as gzip_lib

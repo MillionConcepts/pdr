@@ -1,9 +1,4 @@
-from inspect import getfullargspec
-from itertools import chain
-from typing import Union, Sequence
-
-from cytoolz import keyfilter
-
+from typing import Union
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage
 from pdr.func import get_argnames, softquery, specialize
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
@@ -90,7 +85,7 @@ class ReadFits(Loader):
     """wrapper for handle_fits_file"""
 
     def __init__(self):
-        from pdr.loaders.dispatch import handle_fits_file
+        from pdr.loaders.handlers import handle_fits_file
 
         super().__init__(handle_fits_file)
 
@@ -99,7 +94,7 @@ class ReadCompressedImage(Loader):
     """wrapper for handle_compressed_image"""
 
     def __init__(self):
-        from pdr.loaders.dispatch import handle_compressed_image
+        from pdr.loaders.handlers import handle_compressed_image
 
         super().__init__(handle_compressed_image)
 

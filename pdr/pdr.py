@@ -19,12 +19,10 @@ from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
 from pdr.formats import (
-    pointer_to_loader,
-    is_trivial,
     check_special_fn,
-    OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
 )
+from pdr.loaders.dispatch import pointer_to_loader, OBJECTS_IGNORED_BY_DEFAULT, is_trivial
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
