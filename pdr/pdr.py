@@ -1,3 +1,4 @@
+import warnings
 from functools import partial, cache
 from itertools import chain, product
 from pathlib import Path
@@ -7,9 +8,7 @@ from typing import (
     Union,
     Sequence,
     Collection,
-    TYPE_CHECKING,
 )
-import warnings
 
 import Levenshtein as lev
 from cytoolz import countby, identity
@@ -22,7 +21,6 @@ from pdr.formats import (
     check_special_fn,
     special_image_constants,
 )
-from pdr.loaders.dispatch import pointer_to_loader, OBJECTS_IGNORED_BY_DEFAULT, is_trivial
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
@@ -223,6 +221,8 @@ class Data:
         raise FileNotFoundError
 
     def _find_objects(self):
+        from pdr.loaders.dispatch import is_trivial
+
         # TODO: make this not add objects again if called multiple times
         for pointer in self.pointers:
             object_name = depointerize(pointer)
@@ -314,6 +314,8 @@ class Data:
             setattr(self, name, self._catch_return_default(name, ex))
 
     def load_all(self):
+        from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
+
         for name in self.keys():
             if OBJECTS_IGNORED_BY_DEFAULT.match(name):
                 continue
@@ -378,6 +380,8 @@ class Data:
         return metadata
 
     def load_from_pointer(self, pointer, **load_kwargs):
+        from pdr.loaders.dispatch import pointer_to_loader
+
         return pointer_to_loader(pointer, self)(self, pointer, **load_kwargs)
 
     def _catch_return_default(self, pointer: str, exception: Exception):
@@ -478,7 +482,7 @@ class Data:
                 f"please specify the name of an image object. "
                 f"keys include {self.index}"
             )
-        if not isinstance(self[object_name], np.ndarray):
+        if not self[object_name].__class__.__name__ == 'ndarray':
             raise TypeError("Data.show only works on array data.")
         if scaled is True:
             obj = self.get_scaled(object_name)
@@ -517,7 +521,7 @@ class Data:
 
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
             fdt = browse_kwargs.get("float_dtype")
-            if isinstance(self[obj], np.ndarray):
+            if self[obj].__class__.__name__ == 'ndarray':
                 if scaled == "both":
                     dump_it(
                         self.get_scaled(obj, float_dtype=fdt),

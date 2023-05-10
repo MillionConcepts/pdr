@@ -10,5 +10,5 @@ if TYPE_CHECKING:
 
 PDRLike = Union[Data, Metadata]
 LoaderFunction = Callable[
-    [Any, ...], Union[str, MultiDict, pd.DataFrame, np.ndarray]
+    [Any, ...], Union[str, "MultiDict", "pd.DataFrame", "np.ndarray"]
 ]
