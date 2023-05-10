@@ -1,6 +1,6 @@
 from functools import wraps, reduce
 from inspect import signature, _empty, Signature
-from itertools import product, combinations
+from itertools import combinations
 from typing import Callable, Any, Mapping
 
 from cytoolz import keyfilter
@@ -95,6 +95,8 @@ def softquery(
     missing = args_to_get.difference(querydict)
     if len(missing) > 0:
         raise TypeError(f"Missing args in querydict: {missing}")
-    for qname in args_to_get.intersection(querydict):
+    for qname in querydict:
+        if qname not in args_to_get.intersection(querydict):
+            continue
         kwargdict[qname] = call_kwargfiltered(querydict[qname], **kwargdict)
     return kwargdict

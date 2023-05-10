@@ -130,9 +130,10 @@ def check_special_bit_start_case(
     return False, None
 
 
-def check_special_block(pointer, data):
-    if pointer == "XDR_DOCUMENT":
+def check_special_block(name, data):
+    if name == "XDR_DOCUMENT":
         return True, formats.cassini.xdr_redirect_to_image_block(data)
+    return False, None
 
 
 def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:

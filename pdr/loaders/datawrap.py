@@ -1,6 +1,6 @@
 from typing import Union
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage
-from pdr.func import get_argnames, softquery, specialize
+from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
     base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
     generic_image_properties
@@ -22,7 +22,7 @@ class Loader:
     def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
         kwargdict = {'data': pdrlike, 'name': depointerize(name)} | kwargs
         info = softquery(self.loader_function, self.queries, kwargdict)
-        return self.loader_function(**info)
+        return call_kwargfiltered(self.loader_function, **info)
 
     queries = DEFAULT_DATA_QUERIES
 

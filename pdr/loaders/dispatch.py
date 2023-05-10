@@ -5,8 +5,7 @@ from pdr.loaders.utility import looks_like_this_kind_of_file, FITS_EXTENSIONS, \
     TIFF_EXTENSIONS, JP2_EXTENSIONS, IMAGE_EXTENSIONS, TABLE_EXTENSIONS, \
     TEXT_EXTENSIONS
 from pdr.loaders.datawrap import ReadLabel, ReadArray, ReadFits, ReadText, ReadImage, \
-    ReadHeader, \
-    ReadCompressedImage, ReadTable, TBD
+    ReadHeader, ReadCompressedImage, ReadTable, TBD
 
 
 def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:

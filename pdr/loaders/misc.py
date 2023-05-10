@@ -41,13 +41,12 @@ def read_header(self, object_name="HEADER"):
     )
 
 
-def read_label(labelname, _pointer, fmt="text"):
+def read_label(filename, fmt="text"):
     if fmt == "text":
-        return trim_label(decompress(labelname)).decode("utf-8")
+        return trim_label(decompress(filename)).decode("utf-8")
     elif fmt == "pvl":
         import pvl
-
-        return pvl.load(labelname)
+        return pvl.load(filename)
     raise NotImplementedError(f"The {fmt} format is not yet implemented.")
 
 
