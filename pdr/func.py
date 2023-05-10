@@ -1,5 +1,6 @@
 from functools import wraps, reduce
-from inspect import signature
+from inspect import signature, _empty, Signature
+from itertools import product, combinations
 from typing import Callable, Any, Mapping
 
 from cytoolz import keyfilter
@@ -31,9 +32,34 @@ def sigparams(func):
     return set(signature(func).parameters.values())
 
 
+# noinspection PyProtectedMember
 def sig_union(*funcs):
     """smushes the parameters from multiple function signatures together"""
-    return list(reduce(set.union, map(sigparams, funcs)))
+    params = reduce(set.union, map(sigparams, funcs))
+    outparams = set(p for p in params)
+    for p1, p2 in combinations(params, r=2):
+        # filter duplicate parameter names caused by mismatched type
+        # annotations (other causes of mismatches indicate real problems)
+        try:
+            if p1.name != p2.name:
+                continue
+            if (p1._annotation == _empty) and (p2._annotation != _empty):
+                outparams.remove(p1)
+            elif (p1._annotation != _empty) and (p2._annotation == _empty):
+                outparams.remove(p2)
+            elif (p1._annotation == _empty) and (p2._annotation == _empty):
+                outparams.remove(p2)
+            elif p1._annotation != p2._annotation:
+                raise TypeError(
+                    f"{p1.name} and {p2.name} have different annotations in "
+                    f"some of {funcs}, suggesting possible type mismatch."
+                )
+            else:
+                outparams.remove(p2)
+        except KeyError:
+            # we already removed it
+            continue
+    return Signature(list(outparams))
 
 
 def specialize(func: Callable, check: Callable[[Any], tuple[bool, Any]]):
