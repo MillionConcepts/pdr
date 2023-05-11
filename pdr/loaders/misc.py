@@ -1,4 +1,5 @@
 import warnings
+from typing import Optional
 
 from pdr.loaders.handlers import handle_fits_file
 from pdr.loaders.utility import looks_like_this_kind_of_file, FITS_EXTENSIONS
@@ -41,7 +42,7 @@ def read_header(self, object_name="HEADER"):
     )
 
 
-def read_label(filename, fmt="text"):
+def read_label(filename, fmt: Optional[str] = "text"):
     if fmt == "text":
         return trim_label(decompress(filename)).decode("utf-8")
     elif fmt == "pvl":

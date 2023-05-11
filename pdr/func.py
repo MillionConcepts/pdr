@@ -11,8 +11,19 @@ def get_argnames(func: Callable) -> set[str]:
     return set(signature(func).parameters.keys())
 
 
-def get_all_argnames(*funcs: Callable) -> set[str]:
-    """reads the names of the arguments the function will accept"""
+def get_non_optional_argnames(func: Callable) -> set[str]:
+    """reads the names of the arguments the function will accept, filters out any
+    arguments set to :Optional in the signature"""
+    sig_dict = dict(signature(func).parameters)
+    return {key[0] for key in
+            filter(lambda item: "Optional" not in str(item[1]), sig_dict.items())}
+
+
+def get_all_argnames(*funcs: Callable, nonoptional=False) -> set[str]:
+    """reads the names of the arguments the function will accept, can filter out
+    :Optional arguments by setting nonoptional=True"""
+    if nonoptional is True:
+        return reduce(set.union, map(get_non_optional_argnames, funcs))
     return reduce(set.union, map(get_argnames, funcs))
 
 
@@ -90,7 +101,7 @@ def softquery(
     the argument names in the later functions"""
     # explanatory variables
     have_args = kwargdict.keys()
-    require_args = get_all_argnames(func, *querydict.values())
+    require_args = get_all_argnames(func, *querydict.values(), nonoptional=True)
     args_to_get = require_args.difference(have_args)
     missing = args_to_get.difference(querydict)
     if len(missing) > 0:
