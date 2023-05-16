@@ -33,7 +33,7 @@ from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
 from pdr.utils import (
     check_cases,
     prettify_multidict,
-    associate_label_file,
+    associate_label_file, catch_return_default,
 )
 
 
@@ -311,7 +311,8 @@ class Data:
             warnings.warn(f"Unable to find files required by {name}.")
         except Exception as ex:
             warnings.warn(f"Unable to load {name}: {ex}")
-            setattr(self, name, self._catch_return_default(name, ex))
+            return_default = self._metaget(name)
+            setattr(self, name, catch_return_default(self.debug, return_default, ex))
 
     def load_all(self):
         from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
@@ -329,7 +330,8 @@ class Data:
             f"{object_name} file {self._object_to_filename(object_name)} "
             f"not found in path."
         )
-        maybe = self._catch_return_default(object_name, FileNotFoundError())
+        return_default = self.metaget_(object_name)
+        maybe = catch_return_default(self.debug, return_default, FileNotFoundError())
         setattr(self, object_name, maybe)
 
     def _load_pds4(self, object_name):
@@ -383,15 +385,6 @@ class Data:
         from pdr.loaders.dispatch import pointer_to_loader
 
         return pointer_to_loader(pointer, self)(self, pointer, **load_kwargs)
-
-    def _catch_return_default(self, pointer: str, exception: Exception):
-        """
-        if we are in debug mode, reraise an exception. otherwise, return
-        the label block only.
-        """
-        if self.debug is True:
-            raise exception
-        return self.metaget_(pointer)
 
     def get_scaled(
         self, object_name: str, inplace=False, float_dtype=None

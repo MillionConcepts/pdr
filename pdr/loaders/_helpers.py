@@ -1,12 +1,16 @@
 import os
+from functools import partial
+from operator import contains
 from pathlib import Path
 
+from pdr.loaders.queries import get_target
 
-def looks_like_ascii(data, pointer):
+
+def looks_like_ascii(block, name):
     return (
-        ("SPREADSHEET" in pointer)
-        or ("ASCII" in pointer)
-        or (data.metablock(pointer).get('INTERCHANGE_FORMAT') == 'ASCII')
+        ("SPREADSHEET" in name)
+        or ("ASCII" in name)
+        or (block.get('INTERCHANGE_FORMAT') == 'ASCII')
     )
 
 
@@ -23,3 +27,44 @@ def _count_from_bottom_of_file(filename, rows, row_bytes):
     if isinstance(filename, list):
         filename = filename[0]
     return os.path.getsize(Path(filename)) - tab_size
+
+
+def _check_delimiter_stream(data, name, target):
+    """
+    do I appear to point to a delimiter-separated file without
+    explicit record byte length
+    """
+    # TODO: this may be deprecated. assess against notionally-supported
+    #  products.
+    if isinstance(target, dict):
+        if target.get("units") == "BYTES":
+            return False
+    # TODO: untangle this, everywhere
+    if isinstance(target, (list, tuple)):
+        if isinstance(target[-1], dict):
+            if target[-1].get("units") == "BYTES":
+                return False
+    # TODO: not sure this is a good assumption -- it is a bad assumption
+    #  for the CHEMIN RDRs, but those labels are just wrong
+    if data.metaget_("RECORD_BYTES") is not None:
+        return False
+    # TODO: not sure this is a good assumption
+    if not data.metaget_("RECORD_TYPE") == "STREAM":
+        return False
+    textish = map(
+        partial(contains, name), ("ASCII", "SPREADSHEET", "HEADER")
+    )
+    if any(textish):
+        return True
+    return False
+
+
+def check_explicit_delimiter(block):
+    if "FIELD_DELIMITER" in block.keys():
+        return {
+            "COMMA": ",",
+            "VERTICAL_BAR": "|",
+            "SEMICOLON": ";",
+            "TAB": "\t",
+        }[block["FIELD_DELIMITER"]]
+    return ","

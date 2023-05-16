@@ -1,19 +1,29 @@
 from __future__ import annotations
 import re
+import warnings
 from _operator import mul
 from functools import reduce
-from itertools import product
+from itertools import product, chain
+from pathlib import Path
 from types import MappingProxyType
 from typing import Sequence, Mapping, TYPE_CHECKING
 
+import numpy as np
+import pandas as pd
 from multidict import MultiDict
 
+from pdr import bit_handling
+from pdr.bit_handling import get_bit_column_objects
 from pdr.datatypes import sample_types
-from pdr.formats import check_special_offset, check_special_position, check_special_block
+from pdr.formats import check_special_offset, check_special_position, check_special_block, \
+    check_special_structure
 from pdr.func import specialize
 from pdr.loaders._helpers import quantity_start_byte, \
-    _count_from_bottom_of_file
-from pdr.parselabel.pds3 import pointerize
+    _count_from_bottom_of_file, looks_like_ascii, _check_delimiter_stream
+from pdr.parselabel.pds3 import pointerize, read_pvl, literalize_pvl
+from pdr.pd_utils import insert_sample_types_into_df, reindex_df_values
+from pdr.utils import catch_return_default, append_repeated_object, find_repository_root, \
+    check_cases
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
@@ -269,13 +279,14 @@ def table_position(data, block, target, name, filename):
     except AttributeError:
         n_records = None
     length = None
-    if (as_rows := self._check_delimiter_stream(name)) is True:
+    if (as_rows := _check_delimiter_stream(data, name, target)) is True:
         if isinstance(target[1], dict):
             start = target[1]['value'] - 1
         else:
             try:
                 start = target[1] - 1
-            except TypeError:  # string types cannot have integers subtracted (string implies there is one object)
+            except TypeError:  # string types cannot have integers subtracted
+                # (string implies there is one object)
                 start = 0
         if n_records is not None:
             length = n_records
@@ -305,18 +316,171 @@ def table_position(data, block, target, name, filename):
     return start, length, as_rows
 
 
+def get_table_structure(name: str, debug: bool, return_default):
+    try:
+        fmtdef, dt = specialize(parse_table_structure, check_special_structure)
+    except KeyError as ex:
+        warnings.warn(f"Unable to find or parse {name}")
+        return catch_return_default(debug, return_default, ex)
+    return fmtdef, dt
+
+
+def get_return_default(data: PDRLike, name: str):
+    return data.metaget_(name)
+
+
+def check_debug(data: PDRLike):
+    return data.debug
+
+
+def parse_table_structure(name, block, filename, data):
+    """
+    Read a table's format specification and generate a DataFrame
+    and -- if it's binary -- a numpy dtype object. These are later passed
+    to np.fromfile or one of several ASCII table readers.
+    """
+    fmtdef = read_table_structure(block, name, filename)
+    if (
+        fmtdef["DATA_TYPE"].str.contains("ASCII").any()
+        or looks_like_ascii(block, name)
+    ):
+        # don't try to load it as a binary file
+        return fmtdef, None
+    if fmtdef is None:
+        return fmtdef, np.dtype([])
+    for end in ('_PREFIX', '_SUFFIX', ''):
+        length = data.metaget(name).get(f'ROW{end}_BYTES')
+        if length is not None:
+            fmtdef[f'ROW{end}_BYTES'] = length
+    return insert_sample_types_into_df(fmtdef, data)
+
+
+def read_table_structure(block, name, filename):
+    """
+    Try to turn the TABLE definition into a column name / data type
+    array. Requires renaming some columns to maintain uniqueness. Also
+    requires unpacking columns that contain multiple entries. Also
+    requires adding "placeholder" entries for undefined data (e.g.
+    commas in cases where the allocated bytes is larger than given by
+    BYTES, so we need to read in the "placeholder" space and then
+    discard it later).
+
+    If the table format is defined in an external FMT file, then this
+    will attempt to locate it in the same directory as the data / label,
+    and throw an error if it's not there.
+    TODO, maybe: Grab external format files as needed.
+    """
+    fields = read_format_block(block, name, filename)
+    # give columns unique names so that none of our table handling explodes
+    fmtdef = pd.DataFrame.from_records(fields)
+    fmtdef = reindex_df_values(fmtdef)
+    return fmtdef
+
+
+def read_format_block(block, object_name, filename, data):
+    # load external structure specifications
+    format_block = list(block.items())
+    block_name = block.get('NAME')
+    while "^STRUCTURE" in [obj[0] for obj in format_block]:
+        format_block = inject_format_files(format_block, object_name, filename, data)
+    fields = []
+    for item_type, definition in format_block:
+        if item_type in ("COLUMN", "FIELD"):
+            obj = dict(definition) | {'BLOCK_NAME': block_name}
+            repeat_count = definition.get("ITEMS")
+            obj = bit_handling.add_bit_column_info(obj, definition, data)
+        elif item_type == "CONTAINER":
+            obj = read_format_block(definition, object_name, filename, data)
+            repeat_count = definition.get("REPETITIONS")
+        else:
+            continue
+        # containers can have REPETITIONS,
+        # and some "columns" contain a lot of columns (ITEMS)
+        # repeat the definition, renaming duplicates, for these cases
+        if repeat_count is not None:
+            fields = append_repeated_object(obj, fields, repeat_count)
+        else:
+            fields.append(obj)
+    # semi-legal top-level containers not wrapped in other objects
+    if object_name == "CONTAINER":
+        repeat_count = block.get("REPETITIONS")
+        if repeat_count is not None:
+            fields = list(
+                chain.from_iterable([fields for _ in range(repeat_count)])
+            )
+    return fields
+
+
+def inject_format_files(block, name, filename, data):
+    format_filenames = {
+        ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
+    }
+    # make sure to insert the structure blocks in the correct order --
+    # and remember that keys are not unique, so we have to use the index
+    assembled_structure = []
+    last_ix = 0
+    for ix, format_filename in format_filenames.items():
+        fmt = list(load_format_file(format_filename, name, filename, data).items())
+        assembled_structure += block[last_ix:ix] + fmt
+        last_ix = ix + 1
+    assembled_structure += block[last_ix:]
+    return assembled_structure
+
+
+def load_format_file(data, format_file, name, filename):
+    label_fns = data.get_absolute_paths(format_file)
+    try:
+        repo_paths = [
+            Path(find_repository_root(Path(filename)), label_path)
+            for label_path in ("label", "LABEL")
+        ]
+        label_fns += [Path(path, format_file) for path in repo_paths]
+    except (ValueError, IndexError):
+        pass
+    try:
+        fmtpath = check_cases(label_fns)
+        aggregations, _ = read_pvl(fmtpath)
+        return literalize_pvl(aggregations)
+    except FileNotFoundError:
+        warnings.warn(
+            f"Unable to locate external table format file:\n\t"
+            f"{format_file}. Try retrieving this file and "
+            f"placing it in the same path as the {name} "
+            f"file."
+        )
+        raise FileNotFoundError
+
+
+def get_identifiers(data):
+    return {field: str(data.metaget_(field, "")) for field in ID_FIELDS}
+
+
+ID_FIELDS = (
+    # used during special case checks
+    "INSTRUMENT_ID",
+    "INSTRUMENT_NAME",
+    "SPACECRAFT_NAME",
+    "PRODUCT_TYPE",
+    "DATA_SET_NAME",
+    "DATA_SET_ID",
+    "STANDARD_DATA_PRODUCT_ID",
+    "FILE_NAME",
+    "INSTRUMENT_HOST_NAME",
+    "PRODUCT_TYPE",
+    # TODO: not "identifiers" but need to be pulled in the same way...rename?
+    "RECORD_BYTES",
+    "ROW_BYTES",
+    "ROWS",
+    "FILE_RECORDS",
+    )
+
 DEFAULT_DATA_QUERIES = MappingProxyType(
     {
         'block': specialize(get_block, check_special_block),
         'filename': check_file_mapping,
         'target': get_target,
-        'start_byte': specialize(data_start_byte, check_special_offset)
+        'start_byte': specialize(data_start_byte, check_special_offset),
+        'list_of_pvl_objects_for_bit_columns': get_bit_column_objects,
+        'identifiers': get_identifiers,
     }
 )
-
-
-
-
-
-
-

@@ -1,5 +1,7 @@
 from typing import Callable, TYPE_CHECKING
 
+from pdr.loaders.utility import trivial
+
 if TYPE_CHECKING:
     from pdr import Data
 
@@ -16,13 +18,13 @@ def table_loader(data, object_name):
         data.file_mapping['CHMN_HSKN_HEADER_TABLE'] = data.file_mapping['CHMN_HSK_HEADER_TABLE']
         return override_name(data.read_table, "CHMN_HSKN_HEADER_TABLE")
     if object_name == "HEADER":
-        return data.trivial
+        return trivial
     if object_name == "SPREADSHEET":
         return chemin_spreadsheet_loader(data)
     return data.read_table
 
 
-def get_offset(_data, object_name):
+def get_offset(object_name):
     # incorrectly specifies object length rather than start byte
     if object_name == "HISTOGRAM":
         return True, 300

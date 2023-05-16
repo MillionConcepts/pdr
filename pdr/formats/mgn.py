@@ -1,4 +1,6 @@
 from io import StringIO
+
+import pdr.loaders.queries
 from pdr.utils import head_file
 from pdr.pd_utils import compute_offsets
 import pandas as pd
@@ -12,7 +14,7 @@ def geom_table_loader(data, pointer):
         import pandas as pd
         from pdr.utils import head_file
 
-        fmtdef, dt = data.parse_table_structure(pointer)
+        fmtdef, dt = pdr.loaders.queries.parse_table_structure(pointer)
         with head_file(data.file_mapping[pointer]) as buf:
             bytes_ = buf.read().replace(b"\x00", b"")
         string_buffer = StringIO(bytes_.decode())
@@ -36,7 +38,7 @@ def get_fn(data):
 
 def occultation_loader(data, pointer):
     def load_occult_table(*_, **__):
-        fmtdef, dt = data.parse_table_structure(pointer)
+        fmtdef, dt = pdr.loaders.queries.parse_table_structure(pointer)
         record_length = data.metablock_(pointer)['ROW_BYTES']
 
         # Checks end of each row for newline character. If missing, removes extraneous

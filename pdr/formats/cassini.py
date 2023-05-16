@@ -3,6 +3,8 @@ from pathlib import Path
 
 import os
 
+import pdr.loaders.queries
+from pdr.loaders.utility import tbd
 from pdr.pd_utils import insert_sample_types_into_df
 from pdr.datatypes import sample_types
 from pdr.loaders._helpers import _count_from_bottom_of_file
@@ -15,7 +17,7 @@ def ppi_table_loader(data, pointer, data_set_id):
 
         if "UNCALIB" in data_set_id:
             return pd.read_csv(data.file_mapping[pointer])
-        structure = data.read_table_structure(pointer)
+        structure = pdr.loaders.queries.read_table_structure(pointer)
         names = structure.NAME
         header = None
         if "FULL" in data.file_mapping[pointer]:
@@ -38,7 +40,7 @@ def get_structure(pointer, data):
     # the data type that goes here double defines the 32 byte prefix/offset.
     # By skipping the parse_table_structure we never add the prefix bytes so
     # it works as is. (added HUY if block after this comment)
-    fmtdef = data.read_table_structure(pointer)
+    fmtdef = pdr.loaders.queries.read_table_structure(pointer)
     if "HUY_DTWG_ENTRY_AERO" in data.filename:
         fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
         fmtdef.at[6, "NAME"] = "KNUDSEN NR. [=1.2533*SQRT(2)*Ma/Re]"
@@ -57,9 +59,9 @@ def looks_like_ascii(data, pointer):
     )
 
 
-def get_position(start, length, as_rows, data, object_name):
+def get_position(start, as_rows, data, object_name, block):
     if "IR_" in data.filename:
-        data.tbd(object_name)
+        tbd(object_name, block)
     n_records = data.metaget_("ROWS")
     if any(sub in data.filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         record_bytes = data.metaget_("ROW_BYTES")
@@ -82,13 +84,13 @@ def get_position(start, length, as_rows, data, object_name):
         return False, None, None, None
 
 
-def get_offset(data):
-    if any(sub in data.filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
-        row_bytes = data.metaget_("ROW_BYTES")
+def get_offset(filename, identifiers):
+    if any(sub in filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
+        row_bytes = identifiers["ROW_BYTES"]
     else:
-        row_bytes = data.metaget_("ROW_BYTES")+1
-    rows = data.metaget_("ROWS")
-    start_byte = _count_from_bottom_of_file(data.filename, rows, row_bytes=row_bytes)
+        row_bytes = identifiers["ROW_BYTES"]+1
+    rows = identifiers["ROWS"]
+    start_byte = _count_from_bottom_of_file(filename, rows, row_bytes=row_bytes)
     return True, start_byte
 
 
@@ -116,7 +118,7 @@ def xdr_redirect_to_image_block(data):
 def hasi_loader(pointer, data):
     def read_hasi_table(*_, **__):
         fn = data.file_mapping[pointer]
-        fmtdef = data.read_table_structure(pointer)
+        fmtdef = pdr.loaders.queries.read_table_structure(pointer)
         import pandas as pd
         return pd.read_csv(fn, sep=";", header=None, names=fmtdef["NAME"])
     return read_hasi_table

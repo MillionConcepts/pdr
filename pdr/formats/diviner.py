@@ -3,6 +3,8 @@ from typing import Callable, TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
+import pdr.loaders.queries
+
 if TYPE_CHECKING:
     from pdr import Data
 
@@ -15,7 +17,7 @@ if TYPE_CHECKING:
 def diviner_l4_table_loader(data: "Data", pointer: str) -> Callable:
 
     def read_diviner_l4_table(*_, **__):
-        fmtdef, _ = data.parse_table_structure(pointer)
+        fmtdef, _ = pdr.loaders.queries.parse_table_structure(pointer)
         return pd.DataFrame(
             np.loadtxt(data.file_mapping['TABLE'], delimiter=",", skiprows=1),
             columns=fmtdef['NAME'].tolist()

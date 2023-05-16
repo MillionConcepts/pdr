@@ -1,5 +1,7 @@
 import re
 import pandas as pd
+
+import pdr.loaders.queries
 from pdr.pd_utils import insert_sample_types_into_df
 
 
@@ -14,7 +16,7 @@ def get_fn(data, object_name):
 
 
 def get_structure(pointer, data):
-    fmtdef = data.read_table_structure(pointer)
+    fmtdef = pdr.loaders.queries.read_table_structure(pointer)
     fmtdef = pd.concat([fmtdef, fmtdef], ignore_index=True)
     fmtdef['NAME'] = fmtdef['NAME'].str.split('_', expand=True)[0]
     fmtdef['NAME'] = fmtdef['NAME'].str.cat(map(str, fmtdef.index), sep='_')
