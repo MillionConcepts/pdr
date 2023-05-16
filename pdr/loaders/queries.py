@@ -13,9 +13,8 @@ import pandas as pd
 from multidict import MultiDict
 
 from pdr import bit_handling
-from pdr.bit_handling import get_bit_column_objects
 from pdr.datatypes import sample_types
-from pdr.formats import check_special_offset, check_special_position, check_special_block, \
+from pdr.formats import check_special_offset, check_special_block, \
     check_special_structure
 from pdr.func import specialize
 from pdr.loaders._helpers import quantity_start_byte, \
@@ -238,14 +237,14 @@ def get_target(data: PDRLike, name: str):
     return target
 
 
-def data_start_byte(data: PDRLike, block: Mapping, target, filename) -> int:
+def data_start_byte(identifiers: dict, block: Mapping, target, filename) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
     """
     if "RECORD_BYTES" in block.keys():
         record_bytes = block["RECORD_BYTES"]
     else:
-        record_bytes = data.metaget_("RECORD_BYTES")
+        record_bytes = identifiers["RECORD_BYTES"]
     start_byte = None
     if isinstance(target, int) and (record_bytes is not None):
         start_byte = record_bytes * max(target - 1, 0)
@@ -262,13 +261,13 @@ def data_start_byte(data: PDRLike, block: Mapping, target, filename) -> int:
         return start_byte
     if record_bytes is None:
         if isinstance(target, int):
-            rows = data.metaget_("ROWS")
-            row_bytes = data.metaget_("ROW_BYTES")
+            rows = identifiers["ROWS"]
+            row_bytes = identifiers["ROW_BYTES"]
             return _count_from_bottom_of_file(filename, rows, row_bytes)
     raise ValueError(f"Unknown data pointer format: {target}")
 
 
-def table_position(data, block, target, name, filename):
+def table_position(identifiers: dict, block, target, name, filename):
     try:
         if 'RECORDS' in block.keys():
             n_records = block['RECORDS']
@@ -279,7 +278,7 @@ def table_position(data, block, target, name, filename):
     except AttributeError:
         n_records = None
     length = None
-    if (as_rows := _check_delimiter_stream(data, name, target)) is True:
+    if (as_rows := _check_delimiter_stream(identifiers, name, target)) is True:
         if isinstance(target[1], dict):
             start = target[1]['value'] - 1
         else:
@@ -291,7 +290,7 @@ def table_position(data, block, target, name, filename):
         if n_records is not None:
             length = n_records
     else:
-        start = data_start_byte(data, block, target, filename)
+        start = data_start_byte(identifiers, block, target, filename)
         try:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
@@ -301,19 +300,16 @@ def table_position(data, block, target, name, filename):
                 elif "ROW_BYTES" in block.keys():
                     record_length = block['ROW_BYTES']
                     record_length += block.get("ROW_SUFFIX_BYTES", 0)
-                elif data.metaget_("RECORD_BYTES") is not None:
-                    record_length = data.metaget_("RECORD_BYTES")
+                elif identifiers["RECORD_BYTES"] is not None:
+                    record_length = identifiers["RECORD_BYTES"]
                 else:
                     record_length = None
                 if record_length is not None:
                     length = record_length * n_records
         except AttributeError:
             length = None
-    is_special, spec_start, spec_length, spec_as_rows = check_special_position(
-        start, length, as_rows, data, name)
-    if is_special:
-        return spec_start, spec_length, spec_as_rows
-    return start, length, as_rows
+    table_props = {'start': start, 'length': length, 'as_rows': as_rows}
+    return table_props
 
 
 def get_table_structure(name: str, debug: bool, return_default):
@@ -333,13 +329,13 @@ def check_debug(data: PDRLike):
     return data.debug
 
 
-def parse_table_structure(name, block, filename, data):
+def parse_table_structure(name, block, filename, data, identifiers):
     """
     Read a table's format specification and generate a DataFrame
     and -- if it's binary -- a numpy dtype object. These are later passed
     to np.fromfile or one of several ASCII table readers.
     """
-    fmtdef = read_table_structure(block, name, filename)
+    fmtdef = read_table_structure(block, name, filename, data)
     if (
         fmtdef["DATA_TYPE"].str.contains("ASCII").any()
         or looks_like_ascii(block, name)
@@ -352,10 +348,10 @@ def parse_table_structure(name, block, filename, data):
         length = data.metaget(name).get(f'ROW{end}_BYTES')
         if length is not None:
             fmtdef[f'ROW{end}_BYTES'] = length
-    return insert_sample_types_into_df(fmtdef, data)
+    return insert_sample_types_into_df(fmtdef, identifiers)
 
 
-def read_table_structure(block, name, filename):
+def read_table_structure(block, name, filename, data):
     """
     Try to turn the TABLE definition into a column name / data type
     array. Requires renaming some columns to maintain uniqueness. Also
@@ -370,7 +366,7 @@ def read_table_structure(block, name, filename):
     and throw an error if it's not there.
     TODO, maybe: Grab external format files as needed.
     """
-    fields = read_format_block(block, name, filename)
+    fields = read_format_block(block, name, filename, data)
     # give columns unique names so that none of our table handling explodes
     fmtdef = pd.DataFrame.from_records(fields)
     fmtdef = reindex_df_values(fmtdef)
@@ -467,11 +463,13 @@ ID_FIELDS = (
     "FILE_NAME",
     "INSTRUMENT_HOST_NAME",
     "PRODUCT_TYPE",
-    # TODO: not "identifiers" but need to be pulled in the same way...rename?
+    # TODO: not "identifiers" but pulled in the same way...split/rename?
     "RECORD_BYTES",
+    "RECORD_TYPE",
     "ROW_BYTES",
     "ROWS",
     "FILE_RECORDS",
+    "LABEL_RECORDS",
     )
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
@@ -480,7 +478,6 @@ DEFAULT_DATA_QUERIES = MappingProxyType(
         'filename': check_file_mapping,
         'target': get_target,
         'start_byte': specialize(data_start_byte, check_special_offset),
-        'list_of_pvl_objects_for_bit_columns': get_bit_column_objects,
         'identifiers': get_identifiers,
     }
 )

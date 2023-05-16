@@ -29,7 +29,7 @@ def _count_from_bottom_of_file(filename, rows, row_bytes):
     return os.path.getsize(Path(filename)) - tab_size
 
 
-def _check_delimiter_stream(data, name, target):
+def _check_delimiter_stream(identifiers, name, target):
     """
     do I appear to point to a delimiter-separated file without
     explicit record byte length
@@ -46,10 +46,10 @@ def _check_delimiter_stream(data, name, target):
                 return False
     # TODO: not sure this is a good assumption -- it is a bad assumption
     #  for the CHEMIN RDRs, but those labels are just wrong
-    if data.metaget_("RECORD_BYTES") is not None:
+    if identifiers["RECORD_BYTES"] is not None:
         return False
     # TODO: not sure this is a good assumption
-    if not data.metaget_("RECORD_TYPE") == "STREAM":
+    if not identifiers["RECORD_TYPE"] == "STREAM":
         return False
     textish = map(
         partial(contains, name), ("ASCII", "SPREADSHEET", "HEADER")

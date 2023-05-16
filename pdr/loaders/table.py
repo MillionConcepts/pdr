@@ -48,22 +48,17 @@ def read_array(filename, block, start_byte):
     return array
 
 
-def read_table(filename, fmtdef_dt, block, start_byte, debug, return_default,
-               name="TABLE"):
+def read_table(identifiers, filename, fmtdef_dt, table_props, block, start_byte, debug,
+               return_default):
     """
     Read a table. Parse the label format definition and then decide
     whether to parse it as text or binary.
     """
-    try:
-        fmtdef, dt = fmtdef_dt
-    except KeyError as ex:
-        warnings.warn(f"Unable to find or parse {name}")
-        return catch_return_default(debug, return_default, ex)
+    fmtdef, dt = fmtdef_dt
     if dt is None:  # we believe object is an ascii file
-        table = _interpret_as_ascii(filename, fmtdef, name)
+        table = _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props)
     else:
-
-        table = _interpret_as_binary(fmtdef, dt, filename, block, start_byte)
+        table = _interpret_as_binary(filename, fmtdef, dt, block, start_byte)
     try:
         # If there were any cruft "placeholder" columns, discard them
         table = table.drop(
@@ -99,7 +94,7 @@ def read_histogram(self, object_name):
     )
 
 
-def _interpret_as_binary(fmtdef, dt, fn, block, start_byte):
+def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     # TODO: this works poorly (from a usability and performance
     #  perspective; it's perfectly stable) for tables defined as
     #  a single row with tens or hundreds of thousands of columns
@@ -118,26 +113,26 @@ def _interpret_as_binary(fmtdef, dt, fn, block, start_byte):
 
 
 # noinspection PyTypeChecker
-def _interpret_as_ascii(data: PDRLike, filename, fmtdef, name, block, target):
+def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
     """
     read an ASCII table. first assume it's delimiter-separated; attempt to
     parse it as a fixed-width table if that fails.
     """
     # TODO, maybe: add better delimiter detection & dispatch
-    start, length, as_rows = table_position(data, block, target, name, filename)
     sep = check_explicit_delimiter(block)
     with decompress(filename) as f:
-        if as_rows is False:
-            bytes_buffer = head_file(f, nbytes=length, offset=start)
+        if table_props["as_rows"] is False:
+            bytes_buffer = head_file(f, nbytes=table_props["length"],
+                                     offset=table_props["start"])
             string_buffer = StringIO(bytes_buffer.read().decode())
             bytes_buffer.close()
         else:
-            if start > 0:
-                [next(f) for _ in range(start)]
-            if length is None:
+            if table_props["start"] > 0:
+                [next(f) for _ in range(table_props["start"])]
+            if table_props["length"] is None:
                 lines = f.readlines()
             else:
-                lines = [next(f) for _ in range(length)]
+                lines = [next(f) for _ in range(table_props["length"])]
             string_buffer = StringIO("\r\n".join(map(bytes.decode, lines)))
         string_buffer.seek(0)
     try:
@@ -157,8 +152,9 @@ def _interpret_as_ascii(data: PDRLike, filename, fmtdef, name, block, target):
                     # TODO, maybe: this currently fails -- perhaps
                     #  correctly -- when there is no LABEL_RECORDS key.
                     #  but perhaps it is better to set a default of 0
-                    #  and avoid use of read_fwf
-                    skiprows=self.metaget_("LABEL_RECORDS"),
+                    #  and avoid use of read_fwf. Update: Now has the possibility of
+                    #  the key being "None". Unsure how this will affect the behavior.
+                    skiprows=identifiers["LABEL_RECORDS"],
                 )
                 .copy()
                 .newbyteorder("=")

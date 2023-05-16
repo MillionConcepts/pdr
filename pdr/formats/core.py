@@ -54,10 +54,10 @@ def check_special_structure(pointer, filename, identifiers, data):
     return False, None, None
 
 
-def check_special_position(start, length, as_rows, data, object_name, block, identifiers):
+def check_special_position(identifiers, block, target, name, filename):
     if (identifiers["INSTRUMENT_ID"] == "MARSIS" and
             " TEC " in identifiers["DATA_SET_NAME"]):
-        return formats.mex_marsis.get_position(start, length, as_rows, identifiers)
+        return formats.mex_marsis.get_position(identifiers, block, target, name, filename)
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
             and any(
@@ -69,7 +69,7 @@ def check_special_position(start, length, as_rows, data, object_name, block, ide
                 identifiers["INSTRUMENT_NAME"] == "DESCENT IMAGER SPECTRAL RADIOMETER"
                 and identifiers["PRODUCT_TYPE"] == "RDR")
             ):
-        return formats.cassini.get_position(start, as_rows, data, object_name, block)
+        return formats.cassini.get_position(identifiers, block, target, name, filename)
     return False, None, None, None
 
 

@@ -117,7 +117,7 @@ def _fill_empty_byte_rows(fmtdef):
     return fmtdef
 
 
-def insert_sample_types_into_df(fmtdef, data):
+def insert_sample_types_into_df(fmtdef, identifiers):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
     insert numpy-compatible data type strings into that DataFrame;
@@ -143,9 +143,8 @@ def insert_sample_types_into_df(fmtdef, data):
         dt, item_bytes, total_bytes = data_type
         sample_bytes = total_bytes if np.isnan(item_bytes) else item_bytes
         try:
-            is_special, special_type = check_special_sample_type(
-                data, dt, int(sample_bytes), for_numpy=True
-            )
+            samp_info = {"SAMPLE_TYPE": dt, "BYTES_PER_PIXEL": sample_bytes}
+            is_special, special_type = check_special_sample_type(samp_info, identifiers)
             if is_special:
                 fmtdef.loc[group.index, 'dt'] = special_type
             else:

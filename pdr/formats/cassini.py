@@ -6,8 +6,8 @@ import os
 import pdr.loaders.queries
 from pdr.loaders.utility import tbd
 from pdr.pd_utils import insert_sample_types_into_df
-from pdr.datatypes import sample_types
 from pdr.loaders._helpers import _count_from_bottom_of_file
+from pdr.loaders.queries import table_position
 
 
 def ppi_table_loader(data, pointer, data_set_id):
@@ -59,29 +59,30 @@ def looks_like_ascii(data, pointer):
     )
 
 
-def get_position(start, as_rows, data, object_name, block):
-    if "IR_" in data.filename:
-        tbd(object_name, block)
-    n_records = data.metaget_("ROWS")
-    if any(sub in data.filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
-        record_bytes = data.metaget_("ROW_BYTES")
+def get_position(identifiers, block, target, name, filename):
+    if "IR_" in filename:
+        tbd(name, block)
+    table_props = table_position(identifiers, block, target, name, filename)
+    n_records = identifiers["ROWS"]
+    if any(sub in filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
+        record_bytes = identifiers["ROW_BYTES"]
     else:
-        record_bytes = data.metaget_("ROW_BYTES")+1
+        record_bytes = identifiers["ROW_BYTES"]+1
     length = n_records * record_bytes
-    if object_name == "TABLE":
-        return True, start, length, as_rows
-    elif object_name == "HEADER":
+    if name == "HEADER":
         tab_size = length
-        filename = data._object_to_filename(object_name)
         if isinstance(filename, list):
             filename = filename[0]
         file = Path(filename)
         file_size = os.path.getsize(file)
         length = file_size - tab_size
         start = 0
-        return True, start, length, as_rows
+        table_props['start'] = start
+    if name in ("TABLE", "HEADER"):
+        table_props['length'] = length
+        return True, table_props
     else:
-        return False, None, None, None
+        return False, None
 
 
 def get_offset(filename, identifiers):
