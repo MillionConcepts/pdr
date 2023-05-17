@@ -246,24 +246,21 @@ def data_start_byte(identifiers: dict, block: Mapping, target, filename) -> int:
     else:
         record_bytes = identifiers["RECORD_BYTES"]
     start_byte = None
-    if isinstance(target, int) and (record_bytes is not None):
-        start_byte = record_bytes * max(target - 1, 0)
     if isinstance(target, (list, tuple)):
-        if isinstance(target[-1], int) and (record_bytes is not None):
-            start_byte = record_bytes * max(target[-1] - 1, 0)
-        if isinstance(target[-1], dict):
-            start_byte = quantity_start_byte(target[-1], record_bytes)
-    elif isinstance(target, dict):
-        start_byte = quantity_start_byte(target, record_bytes)
-    if isinstance(target, str):
-        start_byte = 0
-    if start_byte is not None:
-        return start_byte
-    if record_bytes is None:
-        if isinstance(target, int):
+        target = target[-1]
+    if isinstance(target, int):
+        if record_bytes not in [None, ""]:
+            start_byte = record_bytes * max(target - 1, 0)
+        else:
             rows = identifiers["ROWS"]
             row_bytes = identifiers["ROW_BYTES"]
             return _count_from_bottom_of_file(filename, rows, row_bytes)
+    elif isinstance(target, dict):
+        start_byte = quantity_start_byte(target, record_bytes)
+    elif isinstance(target, str):
+        start_byte = 0
+    if start_byte is not None:
+        return start_byte
     raise ValueError(f"Unknown data pointer format: {target}")
 
 
@@ -312,13 +309,14 @@ def table_position(identifiers: dict, block, target, name, filename):
     return table_props
 
 
-def get_table_structure(name: str, debug: bool, return_default):
-    try:
-        fmtdef, dt = specialize(parse_table_structure, check_special_structure)
-    except KeyError as ex:
-        warnings.warn(f"Unable to find or parse {name}")
-        return catch_return_default(debug, return_default, ex)
-    return fmtdef, dt
+# TODO: How to add error handling inside of softquery for specific functions?
+# def get_table_structure(name: str, debug: bool, return_default):
+#     try:
+#         fmtdef_dt = specialize(parse_table_structure, check_special_structure)
+#     except KeyError as ex:
+#         warnings.warn(f"Unable to find or parse {name}")
+#         return catch_return_default(debug, return_default, ex)
+#     return fmtdef_dt
 
 
 def get_return_default(data: PDRLike, name: str):
@@ -448,36 +446,15 @@ def load_format_file(data, format_file, name, filename):
 
 
 def get_identifiers(data):
-    return {field: str(data.metaget_(field, "")) for field in ID_FIELDS}
+    return data.identifiers
 
-
-ID_FIELDS = (
-    # used during special case checks
-    "INSTRUMENT_ID",
-    "INSTRUMENT_NAME",
-    "SPACECRAFT_NAME",
-    "PRODUCT_TYPE",
-    "DATA_SET_NAME",
-    "DATA_SET_ID",
-    "STANDARD_DATA_PRODUCT_ID",
-    "FILE_NAME",
-    "INSTRUMENT_HOST_NAME",
-    "PRODUCT_TYPE",
-    # TODO: not "identifiers" but pulled in the same way...split/rename?
-    "RECORD_BYTES",
-    "RECORD_TYPE",
-    "ROW_BYTES",
-    "ROWS",
-    "FILE_RECORDS",
-    "LABEL_RECORDS",
-    )
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
     {
         'block': specialize(get_block, check_special_block),
         'filename': check_file_mapping,
         'target': get_target,
-        'start_byte': specialize(data_start_byte, check_special_offset),
         'identifiers': get_identifiers,
+        'start_byte': specialize(data_start_byte, check_special_offset),
     }
 )

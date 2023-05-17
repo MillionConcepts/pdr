@@ -3,8 +3,6 @@ from functools import partial
 from operator import contains
 from pathlib import Path
 
-from pdr.loaders.queries import get_target
-
 
 def looks_like_ascii(block, name):
     return (

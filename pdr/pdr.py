@@ -37,6 +37,28 @@ from pdr.utils import (
 )
 
 
+ID_FIELDS = (
+    # used during special case checks
+    "INSTRUMENT_ID",
+    "INSTRUMENT_NAME",
+    "SPACECRAFT_NAME",
+    "PRODUCT_TYPE",
+    "DATA_SET_NAME",
+    "DATA_SET_ID",
+    "STANDARD_DATA_PRODUCT_ID",
+    "FILE_NAME",
+    "INSTRUMENT_HOST_NAME",
+    "PRODUCT_TYPE",
+    # TODO: not "identifiers" but pulled in the same way...split/rename?
+    "RECORD_BYTES",
+    "RECORD_TYPE",
+    "ROW_BYTES",
+    "ROWS",
+    "FILE_RECORDS",
+    "LABEL_RECORDS",
+    )
+
+
 class Metadata(MultiDict):
     """
     MultiDict subclass intended primarily as a helper class for Data.
@@ -200,6 +222,7 @@ class Data:
         # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
+        self.identifiers = {field: self.metaget_(field, "") for field in ID_FIELDS}
 
     def _init_pds4(self):
         # Just use pds4_tools if this is a PDS4 file
@@ -231,7 +254,8 @@ class Data:
             self.index.append(object_name)
 
     def _object_to_filename(self, object_name):
-        is_special, special_target = check_special_fn(self, object_name)
+        is_special, special_target = check_special_fn(self, object_name,
+                                                      self.identifiers)
         if is_special is True:
             return self.get_absolute_paths(special_target)
         is_comp, comp_paths = self._check_compressed_file_pointer(object_name)

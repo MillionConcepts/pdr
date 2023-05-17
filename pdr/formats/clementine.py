@@ -23,4 +23,4 @@ def get_structure(pointer, data):
     fmtdef.ITEM_OFFSET = 8
     fmtdef.ITEM_BYTES = 8
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
-    return True, fmtdef, dt
+    return True, (fmtdef, dt)

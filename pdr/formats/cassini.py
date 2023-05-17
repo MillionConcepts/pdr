@@ -48,7 +48,7 @@ def get_structure(pointer, data):
         dt = None
         return True, fmtdef, dt
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
-    return True, fmtdef, dt
+    return True, (fmtdef, dt)
 
 
 def looks_like_ascii(data, pointer):

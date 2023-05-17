@@ -1,11 +1,11 @@
 from typing import Union
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage, \
-    check_special_position
+    check_special_position, check_special_structure
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
     base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
     generic_image_properties, get_return_default, check_debug, table_position, \
-    get_table_structure
+    parse_table_structure
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
 
@@ -58,7 +58,7 @@ class ReadTable(Loader):
     queries = DEFAULT_DATA_QUERIES | {
         'debug': check_debug,
         'return_default': get_return_default,
-        'fmtdef_dt': get_table_structure,
+        'fmtdef_dt': specialize(parse_table_structure, check_special_structure),
         'table_props': specialize(table_position, check_special_position)
     }
 

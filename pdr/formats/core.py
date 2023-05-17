@@ -35,23 +35,23 @@ def check_special_offset(
     return False, None
 
 
-def check_special_structure(pointer, filename, identifiers, data):
+def check_special_structure(name, filename, identifiers, data):
     if (identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
-            and pointer == "DATA_TABLE"):
+            and name == "DATA_TABLE"):
         # sequence wrapped as string for object names
-        return formats.clementine.get_structure(pointer, data)
+        return formats.clementine.get_structure(name, data)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "MARS GLOBAL SURVEYOR"
             and identifiers["INSTRUMENT_ID"] == "RSS"
-            and identifiers["PRODUCT_TYPE"] == "ODF" and pointer == "ODF3B_TABLE"):
-        return formats.mgs.get_structure(pointer, data)
+            and identifiers["PRODUCT_TYPE"] == "ODF" and name == "ODF3B_TABLE"):
+        return formats.mgs.get_structure(name, data)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "CASSINI ORBITER"
             and identifiers["INSTRUMENT_ID"] == "RPWS"
-            and pointer == "TIME_SERIES"):
-        return formats.cassini.get_structure(pointer, data)
+            and name == "TIME_SERIES"):
+        return formats.cassini.get_structure(name, data)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
             and "HUY_DTWG_ENTRY_AERO" in filename):
-        return formats.cassini.get_structure(pointer, data)
-    return False, None, None
+        return formats.cassini.get_structure(name, data)
+    return False, None
 
 
 def check_special_position(identifiers, block, target, name, filename):
@@ -70,7 +70,7 @@ def check_special_position(identifiers, block, target, name, filename):
                 and identifiers["PRODUCT_TYPE"] == "RDR")
             ):
         return formats.cassini.get_position(identifiers, block, target, name, filename)
-    return False, None, None, None
+    return False, None
 
 
 def check_special_sample_type(

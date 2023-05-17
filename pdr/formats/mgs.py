@@ -7,4 +7,4 @@ def get_structure(pointer, data):
     fmtdef.at[7, "BYTES"] = 2
     fmtdef[f'ROW_BYTES'] = data.metaget(pointer).get(f'ROW_BYTES')
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
-    return True, fmtdef, dt
+    return True, (fmtdef, dt)

@@ -6,14 +6,12 @@ from io import StringIO
 from pandas.errors import ParserError
 
 from pdr.loaders._helpers import check_explicit_delimiter
-from pdr.loaders.queries import get_array_num_items, check_array_for_subobject, \
-    table_position
+from pdr.loaders.queries import get_array_num_items, check_array_for_subobject
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
 from pdr.pd_utils import reindex_df_values, insert_sample_types_into_df, \
     booleanize_booleans
-from pdr.pdrtypes import PDRLike
 from pdr.utils import decompress, append_repeated_object, head_file, catch_return_default
 
 
@@ -61,6 +59,8 @@ def read_table(identifiers, filename, fmtdef_dt, table_props, block, start_byte,
         table = _interpret_as_binary(filename, fmtdef, dt, block, start_byte)
     try:
         # If there were any cruft "placeholder" columns, discard them
+        print(type(table))
+        print(table)
         table = table.drop(
             [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
         )

@@ -33,7 +33,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     """
     if is_trivial(pointer) is True:
         return data.trivial
-    is_special, loader = check_special_case(pointer, data)
+    is_special, loader = check_special_case(pointer, data.identifiers, data)
     if is_special is True:
         return loader
     if pointer == "LABEL":
