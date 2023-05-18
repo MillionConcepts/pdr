@@ -1,7 +1,7 @@
 from functools import wraps, reduce
 from inspect import signature, _empty, Signature
 from itertools import combinations
-from typing import Callable, Any, Mapping
+from typing import Callable, Any, Mapping, Optional
 
 from cytoolz import keyfilter
 
@@ -78,15 +78,24 @@ def sig_union(*funcs):
     return Signature(list(outparams))
 
 
-def specialize(func: Callable, check: Callable[[Any], tuple[bool, Any]]):
+def specialize(
+    func: Callable,
+    check: Callable[[Any], tuple[bool, Any]],
+    error: Optional[Callable[[Exception], str]],
+):
     """replaces the common pdr special checks by wrapping a special and non-special
     function together"""
     @wraps(func)
     def preempt_if_special(*args, **kwargs):
-        is_special, special_result = call_kwargfiltered(check, *args, **kwargs)
-        if is_special is True:
-            return special_result
-        return call_kwargfiltered(func, *args, **kwargs)
+        try:
+            is_special, special_result = call_kwargfiltered(check, *args, **kwargs)
+            if is_special is True:
+                return special_result
+            return call_kwargfiltered(func, *args, **kwargs)
+        except Exception as ex:
+            if error is None:
+                raise
+            return error(ex)
     preempt_if_special.__signature__ = sig_union(func, check)
     return preempt_if_special
 
