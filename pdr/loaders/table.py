@@ -1,5 +1,4 @@
 import re
-import warnings
 import numpy as np
 import pandas as pd
 from io import StringIO
@@ -55,12 +54,11 @@ def read_table(identifiers, filename, fmtdef_dt, table_props, block, start_byte,
     fmtdef, dt = fmtdef_dt
     if dt is None:  # we believe object is an ascii file
         table = _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props)
+        table.columns = fmtdef.NAME.tolist()
     else:
         table = _interpret_as_binary(filename, fmtdef, dt, block, start_byte)
     try:
         # If there were any cruft "placeholder" columns, discard them
-        print(type(table))
-        print(table)
         table = table.drop(
             [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
         )
@@ -129,7 +127,7 @@ def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
         else:
             if table_props["start"] > 0:
                 [next(f) for _ in range(table_props["start"])]
-            if table_props["length"] is None:
+            if table_props["length"] in (None, ""):
                 lines = f.readlines()
             else:
                 lines = [next(f) for _ in range(table_props["length"])]
@@ -193,7 +191,6 @@ def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
             string_buffer.seek(0)
     table = pd.read_fwf(string_buffer, header=None)
     string_buffer.close()
-    table.columns = fmtdef.NAME.tolist()
     return table
 
 
