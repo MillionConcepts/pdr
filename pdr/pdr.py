@@ -13,6 +13,7 @@ from typing import (
 
 import Levenshtein as lev
 from cytoolz import countby, identity
+from dustgoggles.dynamic import Dynamic
 from dustgoggles.func import gmap
 from dustgoggles.structures import dig_for_value, listify
 from multidict import MultiDict
@@ -22,6 +23,7 @@ from pdr.formats import (
     check_special_fn,
     special_image_constants,
 )
+from pdr.func import callwrap
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
@@ -187,6 +189,7 @@ class Data:
         self.debug = debug
         self.debug_id = randint(1000000, 2000000) if debug is True else None
         self.filename = check_cases(Path(fn).absolute(), skip_existence_check)
+        self.loaders = {}
         # mappings from data objects to local paths
         self.file_mapping = {}
         # known special constants per data object
@@ -340,7 +343,7 @@ class Data:
         except Exception as ex:
             warnings.warn(f"Unable to load {name}: {ex}")
             return_default = self.metaget_(name)
-            setattr(self, name, catch_return_default(self.debug, return_default, ex))
+            setattr(self, name, self.metaget_(name))
 
     def load_all(self):
         from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
@@ -411,8 +414,11 @@ class Data:
 
     def load_from_pointer(self, pointer, **load_kwargs):
         from pdr.loaders.dispatch import pointer_to_loader
-
-        return pointer_to_loader(pointer, self)(self, pointer, **load_kwargs)
+        loader = pointer_to_loader(pointer, self)
+        if self.debug is True:
+            loader = Dynamic.from_function(callwrap(loader), optional=True)
+        self.loaders[pointer] = loader
+        return self.loaders[pointer](self, pointer, **load_kwargs)
 
     def get_scaled(
         self, object_name: str, inplace=False, float_dtype=None
