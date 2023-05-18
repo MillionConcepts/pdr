@@ -162,6 +162,12 @@ def check_special_sample_type(
         return formats.mgn.gvanf_sample_type(sample_type, sample_bytes, for_numpy)
     if data.metaget_("DATA_SET_ID") == "LRO-L-CRAT-2-EDR-RAWDATA-V1.0":
         return formats.lro.crater_bit_col_sample_type(sample_type, sample_bytes, for_numpy)
+    if (
+        data.metaget_("SPACECRAFT_NAME") == "GALILEO_ORBITER"
+        and "-NIMS-2-EDR-V1.0" in data.metaget_("DATA_SET_ID") 
+        ):
+        return formats.galileo.nims_edr_sample_type(sample_type, sample_bytes,
+                                                    for_numpy)
     return False, None
 
 
