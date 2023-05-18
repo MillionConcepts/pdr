@@ -254,6 +254,7 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     if (
         "GO-A-SSI-3-" in ids["DATA_SET_ID"]
         and "-CALIMAGES-V1.0" in ids["DATA_SET_ID"]
+        and "QUB" in data.metaget_("PRODUCT_ID", "")
         and pointer == "HEADER"
     ):
         return True, formats.galileo.ssi_cubes_header_loader(data)
