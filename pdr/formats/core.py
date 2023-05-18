@@ -246,6 +246,12 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
     ):
         return True, formats.galileo.galileo_table_loader(data)
     if (
+        "GO-A-SSI-3-" in ids["DATA_SET_ID"]
+        and "-CALIMAGES-V1.0" in ids["DATA_SET_ID"]
+        and pointer == "HEADER"
+    ):
+        return True, formats.galileo.ssi_cubes_header_loader(data)
+    if (
         ids["INSTRUMENT_NAME"] == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
         and pointer == "IMAGE_REPLY_TABLE"
     ):

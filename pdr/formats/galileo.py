@@ -17,3 +17,7 @@ def galileo_table_loader(data: "Data") -> Callable:
     #     return table
 
     return data.read_table
+
+def ssi_cubes_header_loader(data):
+    # The Ida and Gaspra cubes have HEADER pointers but no defined HEADER objects
+    return data.trivial
