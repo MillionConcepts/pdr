@@ -81,7 +81,7 @@ def sig_union(*funcs):
 def specialize(
     func: Callable,
     check: Callable[[Any], tuple[bool, Any]],
-    error: Optional[Callable[[Exception], str]],
+    error: Optional[Callable[[Exception], str]] = None,
 ):
     """replaces the common pdr special checks by wrapping a special and non-special
     function together"""
