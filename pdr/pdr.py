@@ -2,6 +2,7 @@ import warnings
 from functools import partial, cache
 from itertools import chain, product
 from pathlib import Path
+from random import randint
 from typing import (
     Mapping,
     Optional,
@@ -184,6 +185,7 @@ class Data:
         # do we raise an exception rather than a warning if loading a data
         # object fails?
         self.debug = debug
+        self.debug_id = randint(1000000, 2000000) if debug is True else None
         self.filename = check_cases(Path(fn).absolute(), skip_existence_check)
         # mappings from data objects to local paths
         self.file_mapping = {}
@@ -323,7 +325,9 @@ class Data:
                 return self._file_not_found(name)
             self.file_mapping[name] = target
         try:
-            obj = self.load_from_pointer(name, **load_kwargs)
+            obj = self.load_from_pointer(
+                name, debug_id=self.debug_id, **load_kwargs
+            )
             if obj is not None:  # None means trivially loaded
                 setattr(self, name, obj)
             return
@@ -335,7 +339,7 @@ class Data:
             warnings.warn(f"Unable to find files required by {name}.")
         except Exception as ex:
             warnings.warn(f"Unable to load {name}: {ex}")
-            return_default = self._metaget(name)
+            return_default = self.metaget_(name)
             setattr(self, name, catch_return_default(self.debug, return_default, ex))
 
     def load_all(self):

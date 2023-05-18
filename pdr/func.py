@@ -1,9 +1,12 @@
 from functools import wraps, reduce
-from inspect import signature, _empty, Signature
+from inspect import signature, _empty, Signature, Parameter
 from itertools import combinations
 from typing import Callable, Any, Mapping, Optional
 
 from cytoolz import keyfilter
+from cytoolz.curried import valfilter
+
+from pdr.loaders._helpers import TrivialTracker
 
 
 def get_argnames(func: Callable) -> set[str]:
@@ -11,12 +14,19 @@ def get_argnames(func: Callable) -> set[str]:
     return set(signature(func).parameters.keys())
 
 
+def not_optional(param: Parameter):
+    if "Optional" in str(param):
+        return False
+    if param.name in ("_", "__"):
+        return False
+    return True
+
+
 def get_non_optional_argnames(func: Callable) -> set[str]:
     """reads the names of the arguments the function will accept, filters out any
     arguments set to :Optional in the signature"""
-    sig_dict = dict(signature(func).parameters)
-    return {key[0] for key in
-            filter(lambda item: "Optional" not in str(item[1]), sig_dict.items())}
+    sig_dict = valfilter(not_optional, dict(signature(func).parameters))
+    return set(sig_dict.keys())
 
 
 def get_all_argnames(*funcs: Callable, nonoptional=False) -> set[str]:
@@ -82,13 +92,19 @@ def specialize(
     func: Callable,
     check: Callable[[Any], tuple[bool, Any]],
     error: Optional[Callable[[Exception], str]] = None,
+    tracker: TrivialTracker = TrivialTracker()
 ):
     """replaces the common pdr special checks by wrapping a special and non-special
     function together"""
     @wraps(func)
     def preempt_if_special(*args, **kwargs):
         try:
+            # TODO: if we want to catch the _name_ of the special case at this
+            #  level, we need to change the default signature of special case
+            #  checks to return the name of the special case, or do more
+            #  digging into deeper levels than I like
             is_special, special_result = call_kwargfiltered(check, *args, **kwargs)
+            tracker.track(check, is_special=is_special)
             if is_special is True:
                 return special_result
             return call_kwargfiltered(func, *args, **kwargs)
@@ -118,5 +134,6 @@ def softquery(
     for qname in querydict:
         if qname not in args_to_get.intersection(querydict):
             continue
+        kwargdict['tracker'].track(querydict[qname])
         kwargdict[qname] = call_kwargfiltered(querydict[qname], **kwargdict)
     return kwargdict

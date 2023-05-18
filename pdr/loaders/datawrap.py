@@ -2,6 +2,7 @@ from typing import Union
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage, \
     check_special_position, check_special_structure
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
+from pdr.loaders._helpers import TrivialTracker, Tracker
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
     base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
     generic_image_properties, get_return_default, check_debug, table_position, \
@@ -21,9 +22,17 @@ class Loader:
         self.loader_function = loader_function
         self.argnames = get_argnames(loader_function)
 
-    def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
+    def __call__(self, pdrlike: PDRLike, name: str, debug_id=None, **kwargs):
         kwargdict = {'data': pdrlike, 'name': depointerize(name)} | kwargs
+        if debug_id is None:
+            kwargdict['tracker'] = TrivialTracker()
+        else:
+            kwargdict['tracker'] = Tracker(
+                f"{debug_id}_{self.__class__.__name__}"
+            )
         info = softquery(self.loader_function, self.queries, kwargdict)
+        kwargdict['tracker'].track(self.loader_function)
+        kwargdict['tracker'].dump()
         return call_kwargfiltered(self.loader_function, **info)
 
     queries = DEFAULT_DATA_QUERIES

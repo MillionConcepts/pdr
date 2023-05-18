@@ -1,7 +1,12 @@
+import datetime as dt
+import json
 import os
 from functools import partial
+from inspect import currentframe, getframeinfo
+from itertools import count
 from operator import contains
 from pathlib import Path
+from random import randint
 
 
 def looks_like_ascii(block, name):
@@ -66,3 +71,48 @@ def check_explicit_delimiter(block):
             "TAB": "\t",
         }[block["FIELD_DELIMITER"]]
     return ","
+
+
+class TrivialTracker:
+
+    def dump(self):
+        pass
+
+    def track(self, *_, **__):
+        pass
+
+
+class Tracker(TrivialTracker):
+    """watches where it's been"""
+
+    def __init__(self, name=None, outdir=None):
+        self.history = []
+        self.counter = count(1)
+        self.id_ = randint(1000000, 2000000)
+        self.name = name
+        if outdir is None:
+            outdir = Path(__file__).parent.parent / ".tracker_logs"
+        outdir.mkdir(exist_ok=True)
+        self.outpath = Path(outdir, f"{self.id_}_{self.name}.json")
+
+    def track(self, func, **metadata):
+        if "__name__" in dir(func):
+            target = func.__name__
+        else:
+            target = str(func)
+        caller = currentframe().f_back
+        info = getframeinfo(caller)
+        rec = {
+            'target': target,
+            'caller': info.function,
+            'lineno': info.lineno,
+            'trackcount': next(self.counter),
+            'trackid': self.id_,
+            'trackname': self.name
+        } | metadata
+        self.history.append(rec)
+
+    def dump(self):
+        log = {'time': dt.datetime.now().isoformat(), 'history': self.history}
+        with self.outpath.open("w") as stream:
+            json.dump(log, stream)
