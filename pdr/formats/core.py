@@ -322,6 +322,14 @@ def check_special_case(pointer, data) -> tuple[bool, Optional[Callable]]:
         and pointer == "TABLE"
         ):
         return True, formats.pvo.oims_12s_loader(data, pointer)
+    if (
+        ids["DATA_SET_ID"] == "GO-J-NIMS-4-ADR-SL9IMPACT-V1.0"
+        and pointer == "TABLE"
+        and ("CAL_DATA.TAB" in data.metaget_("PRODUCT_ID", "")
+             or "G_DATA.TAB" in data.metaget_("PRODUCT_ID", "")
+             or "R_DATA.TAB" in data.metaget_("PRODUCT_ID", ""))
+        ):
+        return True, formats.mgn.geom_table_loader(data, pointer)
     return False, None
 
 
