@@ -55,11 +55,11 @@ def check_special_structure(block, name, filename, identifiers, data):
     return False, None
 
 
-def check_special_position(identifiers, block, target, name, filename):
+def check_special_position(identifiers, block, target, name, filename, start_byte):
     if (identifiers["INSTRUMENT_ID"] == "MARSIS" and
             " TEC " in identifiers["DATA_SET_NAME"]):
         return True, formats.mex_marsis.get_position(identifiers, block, target, name,
-                                                filename)
+                                                     start_byte)
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
             and any(
@@ -73,7 +73,7 @@ def check_special_position(identifiers, block, target, name, filename):
             and (name in ("TABLE", "HEADER"))
     ):
         return True, formats.cassini.get_position(identifiers, block, target, name,
-                                                  filename)
+                                                  filename, start_byte)
     return False, None
 
 

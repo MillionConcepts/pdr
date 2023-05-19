@@ -60,10 +60,10 @@ def looks_like_ascii(data, pointer):
     )
 
 
-def get_position(identifiers, block, target, name, filename):
+def get_position(identifiers, block, target, name, filename, start_byte):
     if "IR_" in filename:
         tbd(name, block)
-    table_props = table_position(identifiers, block, target, name, filename)
+    table_props = table_position(identifiers, block, target, name, start_byte)
     n_records = identifiers["ROWS"]
     if any(sub in filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         record_bytes = identifiers["ROW_BYTES"]

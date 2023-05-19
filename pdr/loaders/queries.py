@@ -264,7 +264,7 @@ def data_start_byte(identifiers: dict, block: Mapping, target, filename) -> int:
     raise ValueError(f"Unknown data pointer format: {target}")
 
 
-def table_position(identifiers: dict, block, target, name, filename):
+def table_position(identifiers: dict, block, target, name, start_byte):
     try:
         if 'RECORDS' in block.keys():
             n_records = block['RECORDS']
@@ -287,7 +287,7 @@ def table_position(identifiers: dict, block, target, name, filename):
         if n_records is not None:
             length = n_records
     else:
-        start = data_start_byte(identifiers, block, target, filename)
+        start = start_byte
         try:
             if "BYTES" in block.keys():
                 length = block["BYTES"]
