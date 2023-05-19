@@ -15,12 +15,12 @@ def get_fn(data, object_name):
     return True, target
 
 
-def get_structure(pointer, data):
-    fmtdef = pdr.loaders.queries.read_table_structure(pointer)
+def get_structure(block, name, filename, data):
+    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data)
     fmtdef = pd.concat([fmtdef, fmtdef], ignore_index=True)
     fmtdef['NAME'] = fmtdef['NAME'].str.split('_', expand=True)[0]
     fmtdef['NAME'] = fmtdef['NAME'].str.cat(map(str, fmtdef.index), sep='_')
     fmtdef.ITEM_OFFSET = 8
     fmtdef.ITEM_BYTES = 8
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
-    return True, (fmtdef, dt)
+    return fmtdef, dt

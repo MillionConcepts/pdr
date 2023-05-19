@@ -39,18 +39,17 @@ def check_special_structure(block, name, filename, identifiers, data):
     if (identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
             and name == "DATA_TABLE"):
         # sequence wrapped as string for object names
-        return formats.clementine.get_structure(name, data)
+        return formats.clementine.get_structure(block, name, filename, data)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "MARS GLOBAL SURVEYOR"
             and identifiers["INSTRUMENT_ID"] == "RSS"
             and identifiers["PRODUCT_TYPE"] == "ODF" and name == "ODF3B_TABLE"):
-        return formats.mgs.get_structure(name, data)
+        return True, formats.mgs.get_structure(block, name, filename, data)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "CASSINI ORBITER"
             and identifiers["INSTRUMENT_ID"] == "RPWS"
-            and name == "TIME_SERIES"):
-        return formats.cassini.get_structure(name, data)
-    if (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
-            and "HUY_DTWG_ENTRY_AERO" in filename):
-        return formats.cassini.get_structure(name, data)
+            and name == "TIME_SERIES") \
+            or (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
+                and "HUY_DTWG_ENTRY_AERO" in filename):
+        return True, formats.cassini.get_structure(block, name, filename, data)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
             and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
             identifiers["FILE_NAME"] and name == "TABLE"):

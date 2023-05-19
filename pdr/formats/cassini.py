@@ -36,19 +36,19 @@ def ppi_table_loader(data, pointer, data_set_id):
     return load_this_table
 
 
-def get_structure(pointer, data):
+def get_structure(block, name, filename, data):
     # the data type that goes here double defines the 32 byte prefix/offset.
     # By skipping the parse_table_structure we never add the prefix bytes so
     # it works as is. (added HUY if block after this comment)
-    fmtdef = pdr.loaders.queries.read_table_structure(pointer)
+    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data)
     if "HUY_DTWG_ENTRY_AERO" in data.filename:
         fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
         fmtdef.at[6, "NAME"] = "KNUDSEN NR. [=1.2533*SQRT(2)*Ma/Re]"
         fmtdef.at[7, "NAME"] = "REYNOLD NR. [=RHO*VREL*D/Mu]"
         dt = None
-        return True, fmtdef, dt
+        return fmtdef, dt
     fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
-    return True, (fmtdef, dt)
+    return fmtdef, dt
 
 
 def looks_like_ascii(data, pointer):
