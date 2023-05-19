@@ -30,16 +30,13 @@ def read_text(self, object_name):
     return self._catch_return_default(object_name, exception)
 
 
-def read_header(self, object_name="HEADER"):
+def read_header(filename, table_props, name="HEADER"):
     """Attempt to read a file header."""
     if looks_like_this_kind_of_file(
-        self.file_mapping[object_name], FITS_EXTENSIONS
+        filename, FITS_EXTENSIONS
     ):
-        return handle_fits_file(object_name)
-    start, length, as_rows = self.table_position(object_name)
-    return skeptically_load_header(
-        self.file_mapping[object_name], object_name, start, length, as_rows
-    )
+        return handle_fits_file(name)
+    return skeptically_load_header(filename, table_props, name)
 
 
 def read_label(filename, fmt: Optional[str] = "text"):
@@ -52,37 +49,36 @@ def read_label(filename, fmt: Optional[str] = "text"):
 
 
 def skeptically_load_header(
-    path,
-    object_name="header",
-    start=0,
-    length=None,
-    as_rows=False,
-    as_pvl=False,
+    filename,
+    table_props,
+    name="header",
+    fmt: Optional[str] = "text",
 ):
     # TODO: all these check_cases calls are probably unnecessary w/new file
     #  mapping workflow
     try:
-        if as_pvl is True:
+        if fmt == "pvl":
             try:
                 from pdr.pvl_utils import cached_pvl_load
 
-                return cached_pvl_load(decompress(check_cases(path)))
+                return cached_pvl_load(decompress(check_cases(filename)))
             except ValueError:
                 pass
-        if as_rows is True:
-            with decompress(check_cases(path)) as file:
-                if start > 0:
-                    file.readlines(start)
+        if table_props["as_rows"] is True:
+            with decompress(check_cases(filename)) as file:
+                if table_props["start"] > 0:
+                    file.readlines(table_props["start"])
                 text = "\r\n".join(
-                    map(lambda l: l.decode('utf-8'), file.readlines(length))
+                    map(lambda l: l.decode('utf-8'),
+                        file.readlines(table_props["length"]))
                 )
         else:
-            with decompress(check_cases(path)) as file:
-                file.seek(start)
-                text = file.read(min(length, 80000)).decode('ISO-8859-1')
+            with decompress(check_cases(filename)) as file:
+                file.seek(table_props["start"])
+                text = file.read(min(table_props["length"], 80000)).decode('ISO-8859-1')
         return text
     except (ValueError, OSError) as ex:
-        warnings.warn(f"unable to parse {object_name}: {ex}")
+        warnings.warn(f"unable to parse {name}: {ex}")
 
 
 def ignore_if_pdf(data, object_name, path):

@@ -80,6 +80,10 @@ class ReadHeader(Loader):
 
         super().__init__(read_header)
 
+    queries = DEFAULT_DATA_QUERIES | {
+        'table_props': specialize(table_position, check_special_position)
+    }
+
 
 class ReadText(Loader):
     """wrapper for read_text"""
