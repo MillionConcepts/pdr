@@ -414,7 +414,7 @@ def inject_format_files(block, name, filename, data):
     assembled_structure = []
     last_ix = 0
     for ix, format_filename in format_filenames.items():
-        fmt = list(load_format_file(format_filename, name, filename, data).items())
+        fmt = list(load_format_file(data, format_filename, name, filename).items())
         assembled_structure += block[last_ix:ix] + fmt
         last_ix = ix + 1
     assembled_structure += block[last_ix:]
