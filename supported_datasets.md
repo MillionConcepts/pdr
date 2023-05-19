@@ -156,8 +156,12 @@ of their metadata appear to match other sources.
         are discarded rather than returned to the user.* 
     - derived products: BTR, ABR, PBT, and ALB
 - MESSENGER
-  - GRNS EDR, RDR, CDR, DDR, and DAP
-  - MASCS EDR, CDR, DDR, and DAP
+  - GRNS
+    - NS EDR, CDR, DDR
+    - GRS EDR, RDR, CDR, DAP
+  - MASCS
+    - UVVS EDR, CDR, and DDR
+    - VIRS EDR, CDR, DDR, and DAP
   - MLA EDR, RDR, RADR, CDR, and GDR
   - XRS EDR, RDR, and CDR
     - *note: RDR maps are defined differently in their PDS3 and PDS4 labels. We recommend opening them from their PDS4 labels.*
@@ -184,6 +188,10 @@ of their metadata appear to match other sources.
   - CCAM LIBS EDR, L1B, and L2; CCAM RMI EDR and RDR
   - APXS EDR and RDR (*note: the EDR checksum suffix is not supported*)
   - Chemin L1B and L2 RDRs, and EDRs
+- MSX
+  - Infrared Minor Planet Survey
+  - Small Bodies Images
+  - Zodiacal Dust Data
 - Pioneer Venus Orbiter
   - OEFD HIRES data and 24 second averages
   - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and solar EUV data
