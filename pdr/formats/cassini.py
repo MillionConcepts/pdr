@@ -39,15 +39,16 @@ def ppi_table_loader(data, pointer, data_set_id):
 def get_structure(block, name, filename, data):
     # the data type that goes here double defines the 32 byte prefix/offset.
     # By skipping the parse_table_structure we never add the prefix bytes so
-    # it works as is. (added HUY if block after this comment)
+    # it works as is. (added HASI/HUY if block after this comment)
     fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data)
-    if "HUY_DTWG_ENTRY_AERO" in data.filename:
-        fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
-        fmtdef.at[6, "NAME"] = "KNUDSEN NR. [=1.2533*SQRT(2)*Ma/Re]"
-        fmtdef.at[7, "NAME"] = "REYNOLD NR. [=RHO*VREL*D/Mu]"
+    if ("HASI" in filename) or ("HUY_DTWG_ENTRY_AERO" in filename):
+        if "HUY_DTWG_ENTRY_AERO" in filename:
+            fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
+            fmtdef.at[6, "NAME"] = "KNUDSEN NR. [=1.2533*SQRT(2)*Ma/Re]"
+            fmtdef.at[7, "NAME"] = "REYNOLD NR. [=RHO*VREL*D/Mu]"
         dt = None
-        return fmtdef, dt
-    fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
+    else:
+        fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
     return fmtdef, dt
 
 
@@ -78,11 +79,8 @@ def get_position(identifiers, block, target, name, filename):
         length = file_size - tab_size
         start = 0
         table_props['start'] = start
-    if name in ("TABLE", "HEADER"):
-        table_props['length'] = length
-        return True, table_props
-    else:
-        return False, None
+    table_props['length'] = length
+    return table_props
 
 
 def get_offset(filename, identifiers):
@@ -114,13 +112,6 @@ def xdr_redirect_to_image_block(data):
     object_name = "IMAGE"
     block = data.metablock_(object_name)
     return block
-
-
-def get_hasi_structure(block, name, filename, data):
-    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data)
-    dt = None
-    fmtdef_dt = (fmtdef, dt)
-    return fmtdef_dt
 
 
 def get_special_qube_band_storage():

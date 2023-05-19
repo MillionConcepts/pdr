@@ -48,19 +48,18 @@ def check_special_structure(block, name, filename, identifiers, data):
             and identifiers["INSTRUMENT_ID"] == "RPWS"
             and name == "TIME_SERIES") \
             or (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
-                and "HUY_DTWG_ENTRY_AERO" in filename):
+                and ("HUY_DTWG_ENTRY_AERO" in filename or
+                     ("HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
+                      identifiers["FILE_NAME"]))):
         return True, formats.cassini.get_structure(block, name, filename, data)
-    if (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
-            and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
-            identifiers["FILE_NAME"] and name == "TABLE"):
-        return True, formats.cassini.get_hasi_structure(block, name, filename, data)
     return False, None
 
 
 def check_special_position(identifiers, block, target, name, filename):
     if (identifiers["INSTRUMENT_ID"] == "MARSIS" and
             " TEC " in identifiers["DATA_SET_NAME"]):
-        return formats.mex_marsis.get_position(identifiers, block, target, name, filename)
+        return True, formats.mex_marsis.get_position(identifiers, block, target, name,
+                                                filename)
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
             and any(
@@ -71,8 +70,10 @@ def check_special_position(identifiers, block, target, name, filename):
             or (
                 identifiers["INSTRUMENT_NAME"] == "DESCENT IMAGER SPECTRAL RADIOMETER"
                 and identifiers["PRODUCT_TYPE"] == "RDR")
-            ):
-        return formats.cassini.get_position(identifiers, block, target, name, filename)
+            and (name in ("TABLE", "HEADER"))
+    ):
+        return True, formats.cassini.get_position(identifiers, block, target, name,
+                                                  filename)
     return False, None
 
 

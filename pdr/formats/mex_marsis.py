@@ -12,4 +12,4 @@ def get_position(identifiers, block, target, name, filename):
     n_records = identifiers["FILE_RECORDS"]
     record_bytes = 143
     table_props['length'] = n_records * record_bytes
-    return True, table_props
+    return table_props
