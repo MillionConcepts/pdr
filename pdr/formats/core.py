@@ -35,7 +35,7 @@ def check_special_offset(
     return False, None
 
 
-def check_special_structure(name, filename, identifiers, data):
+def check_special_structure(block, name, filename, identifiers, data):
     if (identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
             and name == "DATA_TABLE"):
         # sequence wrapped as string for object names
@@ -51,6 +51,10 @@ def check_special_structure(name, filename, identifiers, data):
     if (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
             and "HUY_DTWG_ENTRY_AERO" in filename):
         return formats.cassini.get_structure(name, data)
+    if (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
+            and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
+            identifiers["FILE_NAME"] and name == "TABLE"):
+        return True, formats.cassini.get_hasi_structure(block, name, filename, data)
     return False, None
 
 
@@ -194,10 +198,6 @@ def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Calla
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer, data)
-    if (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
-            and "HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
-            identifiers["FILE_NAME"] and pointer == "TABLE"):
-        return True, formats.cassini.hasi_loader(pointer, data)
     if (identifiers["SPACECRAFT_NAME"] == "MAGELLAN" and (data.filename.endswith(
             '.img') or data.filename.endswith('.ibg')) and pointer == "TABLE"):
         return True, formats.mgn.orbit_table_in_img_loader(data, pointer)

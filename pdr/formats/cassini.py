@@ -6,7 +6,7 @@ import os
 import pdr.loaders.queries
 from pdr.loaders.utility import tbd
 from pdr.pd_utils import insert_sample_types_into_df
-from pdr.loaders._helpers import _count_from_bottom_of_file
+from pdr.loaders._helpers import _count_from_bottom_of_file, check_explicit_delimiter
 from pdr.loaders.queries import table_position
 
 
@@ -116,13 +116,11 @@ def xdr_redirect_to_image_block(data):
     return block
 
 
-def hasi_loader(pointer, data):
-    def read_hasi_table(*_, **__):
-        fn = data.file_mapping[pointer]
-        fmtdef = pdr.loaders.queries.read_table_structure(pointer)
-        import pandas as pd
-        return pd.read_csv(fn, sep=";", header=None, names=fmtdef["NAME"])
-    return read_hasi_table
+def get_hasi_structure(block, name, filename, data):
+    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data)
+    dt = None
+    fmtdef_dt = (fmtdef, dt)
+    return fmtdef_dt
 
 
 def get_special_qube_band_storage():
