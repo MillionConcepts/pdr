@@ -125,7 +125,19 @@ class Tracker(TrivialTracker):
     def set_metadata(self, **metadata):
         self.metadata |= metadata
 
+    def _get_paused(self):
+        return self._paused
+
+    def _set_paused(self, state: bool):
+        self._paused = state
+
     def dump(self):
+        if self.paused is True:
+            return
         log = {'time': dt.datetime.now().isoformat(), 'history': self.history}
+        # TODO: do this more cleverly with incremental writes etc.
         with self.outpath.open("a") as stream:
             json.dump(log, stream)
+
+    _paused = False
+    paused = property(_get_paused, _set_paused)

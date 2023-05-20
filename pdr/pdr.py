@@ -194,8 +194,10 @@ class Data:
         if (self.debug is True) and (tracker is None):
             self.tracker = Tracker(Path(self.filename).name.replace(".", "_"))
             self.tracker.clear()
-        else:
+        elif tracker is None:
             self.tracker = TrivialTracker()
+        else:
+            self.tracker = tracker
         # mappings from data objects to local paths
         self.file_mapping = {}
         # known special constants per data object
