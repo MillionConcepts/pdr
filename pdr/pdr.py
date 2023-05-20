@@ -24,6 +24,7 @@ from pdr.formats import (
     special_image_constants,
 )
 from pdr.func import callwrap
+from pdr.loaders._helpers import TrivialTracker, Tracker
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
@@ -181,15 +182,20 @@ class Data:
         search_paths: Union[Collection[str], str] = (),
         skip_existence_check: bool = False,
         pvl_limit: int = DEFAULT_PVL_LIMIT,
+        tracker: Optional[TrivialTracker] = None
     ):
         # list of the product's associated data objects
         self.index = []
         # do we raise an exception rather than a warning if loading a data
         # object fails?
         self.debug = debug
-        self.debug_id = randint(1000000, 2000000) if debug is True else None
         self.filename = check_cases(Path(fn).absolute(), skip_existence_check)
         self.loaders = {}
+        if (self.debug is True) and (tracker is None):
+            self.tracker = Tracker(Path(self.filename).name.replace(".", "_"))
+            self.tracker.clear()
+        else:
+            self.tracker = TrivialTracker()
         # mappings from data objects to local paths
         self.file_mapping = {}
         # known special constants per data object
@@ -328,9 +334,7 @@ class Data:
                 return self._file_not_found(name)
             self.file_mapping[name] = target
         try:
-            obj = self.load_from_pointer(
-                name, debug_id=self.debug_id, **load_kwargs
-            )
+            obj = self.load_from_pointer(name, **load_kwargs)
             if obj is not None:  # None means trivially loaded
                 setattr(self, name, obj)
             return
@@ -418,7 +422,10 @@ class Data:
         if self.debug is True:
             loader = Dynamic.from_function(callwrap(loader), optional=True)
         self.loaders[pointer] = loader
-        return self.loaders[pointer](self, pointer, **load_kwargs)
+        self.tracker.set_metadata(filename=self.file_mapping[pointer])
+        return self.loaders[pointer](
+            self, pointer, tracker=self.tracker, **load_kwargs
+        )
 
     def get_scaled(
         self, object_name: str, inplace=False, float_dtype=None

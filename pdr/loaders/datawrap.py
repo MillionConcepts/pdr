@@ -22,14 +22,9 @@ class Loader:
         self.loader_function = loader_function
         self.argnames = get_argnames(loader_function)
 
-    def __call__(self, pdrlike: PDRLike, name: str, debug_id=None, **kwargs):
+    def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
         kwargdict = {'data': pdrlike, 'name': depointerize(name)} | kwargs
-        if debug_id is None:
-            kwargdict['tracker'] = TrivialTracker()
-        else:
-            kwargdict['tracker'] = Tracker(
-                f"{debug_id}_{self.__class__.__name__}"
-            )
+        kwargdict['tracker'].set_metadata(loader=self.__class__.__name__)
         info = softquery(self.loader_function, self.queries, kwargdict)
         kwargdict['tracker'].track(self.loader_function)
         kwargdict['tracker'].dump()

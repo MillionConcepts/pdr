@@ -81,19 +81,30 @@ class TrivialTracker:
     def track(self, *_, **__):
         pass
 
+    def clear(self):
+        pass
+
+    def set_metadata(self, **metadata):
+        pass
+
 
 class Tracker(TrivialTracker):
     """watches where it's been"""
 
-    def __init__(self, name=None, outdir=None):
-        self.history = []
-        self.counter = count(1)
-        self.id_ = randint(1000000, 2000000)
+    def __init__(self, name=None, identifier="", outdir=None):
+        self.history, self.metadata, self.counter = [], {}, count(1)
         self.name = name
         if outdir is None:
             outdir = Path(__file__).parent.parent / ".tracker_logs"
+        if identifier != "":
+            identifier = f"{identifier}_"
         outdir.mkdir(exist_ok=True)
-        self.outpath = Path(outdir, f"{self.id_}_{self.name}.json")
+        self.outpath = Path(outdir, f"{identifier}{self.name}.json")
+
+    def clear(self):
+        self.outpath.unlink(missing_ok=True)
+        self.history = []
+        self.counter = count(1)
 
     def track(self, func, **metadata):
         if "__name__" in dir(func):
@@ -107,12 +118,14 @@ class Tracker(TrivialTracker):
             'caller': info.function,
             'lineno': info.lineno,
             'trackcount': next(self.counter),
-            'trackid': self.id_,
             'trackname': self.name
-        } | metadata
+        } | self.metadata | metadata
         self.history.append(rec)
+
+    def set_metadata(self, **metadata):
+        self.metadata |= metadata
 
     def dump(self):
         log = {'time': dt.datetime.now().isoformat(), 'history': self.history}
-        with self.outpath.open("w") as stream:
+        with self.outpath.open("a") as stream:
             json.dump(log, stream)
