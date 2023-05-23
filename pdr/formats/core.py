@@ -35,7 +35,7 @@ def check_special_offset(
     return False, None
 
 
-def check_special_table_reader(identifiers, name, filename, fmtdef_dt):
+def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt):
     if (
         identifiers["DATA_SET_ID"] in (
             "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
@@ -47,12 +47,12 @@ def check_special_table_reader(identifiers, name, filename, fmtdef_dt):
     ):
         return True, formats.cassini.ppi_table_loader(filename, fmtdef_dt,
                                                       identifiers["DATA_SET_ID"])
-    # if (
-    #     identifiers["INSTRUMENT_ID"] == "CHEMIN"
-    #     and (("HEADER" in name) or ("SPREADSHEET" in name))
-    # ):
-    #     # mangled object names + positions
-    #     return True, formats.msl_cmn.table_loader(data, name)
+    if (
+        identifiers["INSTRUMENT_ID"] == "CHEMIN"
+        and ((name == "HEADER") or ("SPREADSHEET" in name))
+    ):
+        # mangled object names + positions
+        return formats.msl_cmn.table_loader(data, name)
     return False, None
 
 
