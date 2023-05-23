@@ -24,9 +24,15 @@ class Loader:
     def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
         kwargdict = {'data': pdrlike, 'name': depointerize(name)} | kwargs
         kwargdict['tracker'].set_metadata(loader=self.__class__.__name__)
-        info = softquery(self.loader_function, self.queries, kwargdict)
-        kwargdict['tracker'].track(self.loader_function)
-        kwargdict['tracker'].dump()
+        record_exc = {'status': 'query_ok'}
+        try:
+            info = softquery(self.loader_function, self.queries, kwargdict)
+        except Exception as exc:
+            record_exc = {'status': 'query_failed', 'exception': str(exc)}
+            raise exc
+        finally:
+            kwargdict['tracker'].track(self.loader_function, **record_exc)
+            kwargdict['tracker'].dump()
         return call_kwargfiltered(self.loader_function, **info)
 
     queries = DEFAULT_DATA_QUERIES
