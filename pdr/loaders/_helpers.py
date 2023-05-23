@@ -49,7 +49,7 @@ def _check_delimiter_stream(identifiers, name, target):
                 return False
     # TODO: not sure this is a good assumption -- it is a bad assumption
     #  for the CHEMIN RDRs, but those labels are just wrong
-    if identifiers["RECORD_BYTES"] is not None:
+    if identifiers["RECORD_BYTES"] not in (None, ""):
         return False
     # TODO: not sure this is a good assumption
     if not identifiers["RECORD_TYPE"] == "STREAM":

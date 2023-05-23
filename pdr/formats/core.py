@@ -35,6 +35,27 @@ def check_special_offset(
     return False, None
 
 
+def check_special_table_reader(identifiers, name, filename, fmtdef_dt):
+    if (
+        identifiers["DATA_SET_ID"] in (
+            "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
+            "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
+            "CO-S-MIMI-4-INCA-CALIB-V1.0",
+            "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0"
+        )
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.cassini.ppi_table_loader(filename, fmtdef_dt,
+                                                      identifiers["DATA_SET_ID"])
+    # if (
+    #     identifiers["INSTRUMENT_ID"] == "CHEMIN"
+    #     and (("HEADER" in name) or ("SPREADSHEET" in name))
+    # ):
+    #     # mangled object names + positions
+    #     return True, formats.msl_cmn.table_loader(data, name)
+    return False, None
+
+
 def check_special_structure(block, name, filename, identifiers, data):
     if (identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
             and name == "DATA_TABLE"):
@@ -127,6 +148,8 @@ def check_special_bit_start_case(
 def check_special_block(name, data):
     if name == "XDR_DOCUMENT":
         return True, formats.cassini.xdr_redirect_to_image_block(data)
+    if name == "CHMN_HSK_HEADER_TABLE":
+        return True, formats.msl_cmn.fix_mangled_name(data)
     return False, None
 
 
@@ -148,12 +171,6 @@ def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Calla
     if identifiers["INSTRUMENT_ID"] == "APXS" and "TABLE" in pointer:
         # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)
-    if (
-        identifiers["INSTRUMENT_ID"] == "CHEMIN"
-        and (("HEADER" in pointer) or ("SPREADSHEET" in pointer))
-    ):
-        # mangled object names + positions
-        return True, formats.msl_cmn.table_loader(data, pointer)
     # difficult table formats that are handled well by astropy.io.ascii
     if (
         identifiers["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
@@ -172,18 +189,6 @@ def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Calla
         and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
     ):
         return True, formats.juno.waves_burst_with_offset_loader(data)
-    if (
-        identifiers["DATA_SET_ID"] in (
-            "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
-            "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
-            "CO-S-MIMI-4-INCA-CALIB-V1.0",
-            "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0"
-        )
-        and pointer == "SPREADSHEET"
-    ):
-        return True, formats.cassini.ppi_table_loader(
-            data, pointer, identifiers["DATA_SET_ID"]
-        )
     if (
         identifiers["INSTRUMENT_ID"] == "DLRE"
         and identifiers["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")

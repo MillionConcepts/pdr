@@ -1,8 +1,7 @@
 from typing import Union
 from pdr.formats import check_special_sample_type, check_special_qube_band_storage, \
-    check_special_position, check_special_structure
+    check_special_position, check_special_structure, check_special_table_reader
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
-from pdr.loaders._helpers import TrivialTracker, Tracker
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
     base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
     generic_image_properties, get_return_default, check_debug, table_position, \
@@ -57,7 +56,7 @@ class ReadTable(Loader):
     def __init__(self):
         from pdr.loaders.table import read_table
 
-        super().__init__(read_table)
+        super().__init__(specialize(read_table, check_special_table_reader))
 
     queries = DEFAULT_DATA_QUERIES | {
         'debug': check_debug,

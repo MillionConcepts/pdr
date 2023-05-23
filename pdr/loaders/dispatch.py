@@ -62,7 +62,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
-    if ("IMAGE" in pointer) or ("QUB" in pointer):
+    if ("IMAGE" in pointer) or ("QUB" in pointer) or ("XDR_DOCUMENT" in pointer):
         # TODO: sloppy pt. 1. this may be problematic for
         #  products with a 'secondary' fits file, etc.
         if image_lib_dispatch(pointer, data) is not None:

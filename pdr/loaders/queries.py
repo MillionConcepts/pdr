@@ -232,7 +232,7 @@ def check_file_mapping(data: PDRLike, name: str):
 
 def get_target(data: PDRLike, name: str):
     target = data.metaget_(name)
-    if isinstance(target, Mapping):
+    if isinstance(target, Mapping) or target is None:
         target = data.metaget_(pointerize(name))
     return target
 

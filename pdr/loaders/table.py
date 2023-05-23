@@ -151,7 +151,7 @@ def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
                     #  correctly -- when there is no LABEL_RECORDS key.
                     #  but perhaps it is better to set a default of 0
                     #  and avoid use of read_fwf. Update: Now has the possibility of
-                    #  the key being "None". Unsure how this will affect the behavior.
+                    #  the key being "". Unsure how this will affect the behavior.
                     skiprows=identifiers["LABEL_RECORDS"],
                 )
                 .copy()

@@ -6,34 +6,31 @@ import os
 import pdr.loaders.queries
 from pdr.loaders.utility import tbd
 from pdr.pd_utils import insert_sample_types_into_df
-from pdr.loaders._helpers import _count_from_bottom_of_file, check_explicit_delimiter
+from pdr.loaders._helpers import _count_from_bottom_of_file
 from pdr.loaders.queries import table_position
 
 
-def ppi_table_loader(data, pointer, data_set_id):
+def ppi_table_loader(filename, fmtdef_dt, data_set_id):
+    import pandas as pd
 
-    def load_this_table(*_, **__):
-        import pandas as pd
-
-        if "UNCALIB" in data_set_id:
-            return pd.read_csv(data.file_mapping[pointer])
-        structure = pdr.loaders.queries.read_table_structure(pointer)
-        names = structure.NAME
-        header = None
-        if "FULL" in data.file_mapping[pointer]:
-            skiprows = 4
-            if data_set_id == "CO-S-MIMI-4-CHEMS-CALIB-V1.0":
-                header = 0
-                names = None
-                skiprows = range(1, 4)
-        else:
-            skiprows = 7
-        table = pd.read_csv(data.file_mapping[pointer],
-                            header=header,
-                            skiprows=skiprows,
-                            names=names)
-        return table
-    return load_this_table
+    if "UNCALIB" in data_set_id:
+        return pd.read_csv(filename)
+    fmtdef, dt = fmtdef_dt
+    names = fmtdef.NAME
+    header = None
+    if "FULL" in filename:
+        skiprows = 4
+        if data_set_id == "CO-S-MIMI-4-CHEMS-CALIB-V1.0":
+            header = 0
+            names = None
+            skiprows = range(1, 4)
+    else:
+        skiprows = 7
+    table = pd.read_csv(filename,
+                        header=header,
+                        skiprows=skiprows,
+                        names=names)
+    return table
 
 
 def get_structure(block, name, filename, data):
