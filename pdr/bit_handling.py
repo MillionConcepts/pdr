@@ -86,8 +86,8 @@ def split_bits(bit_string, start_bit_list, bit_size_list):
     ]
 
 
-def set_bit_string_data_type(obj, data):
-    is_special, special_dtype = check_special_bit_column_case(data)
+def set_bit_string_data_type(obj, identifiers):
+    is_special, special_dtype = check_special_bit_column_case(identifiers)
     if is_special is False:
         try:
             byteorder = sample_types(obj["BIT_COLUMN"]["BIT_DATA_TYPE"], 1, True)[0]
@@ -106,7 +106,7 @@ def set_bit_string_data_type(obj, data):
     return obj
 
 
-def get_bit_start_and_size(obj, definition, data):
+def get_bit_start_and_size(obj, definition, identifiers):
     start_bit_list = []
     bit_size_list = []
     list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")
@@ -125,7 +125,8 @@ def get_bit_start_and_size(obj, definition, data):
             start_bit_list.append(start_bit)
             bit_size_list.append(bit_size)
     is_also_special, special_start_bit_list = \
-        check_special_bit_start_case(data, list_of_pvl_objects_for_bit_columns, start_bit_list)
+        check_special_bit_start_case(identifiers,
+                                     list_of_pvl_objects_for_bit_columns, start_bit_list)
     if is_also_special:
         obj["start_bit_list"] = special_start_bit_list
     else:
@@ -134,9 +135,9 @@ def get_bit_start_and_size(obj, definition, data):
     return obj
 
 
-def add_bit_column_info(obj, definition, data):
+def add_bit_column_info(obj, definition, identifiers):
     if "BIT_COLUMN" in obj.keys():
         if "BIT_STRING" not in obj["DATA_TYPE"]:
-            obj = set_bit_string_data_type(obj, data)
-        obj = get_bit_start_and_size(obj, definition, data)
+            obj = set_bit_string_data_type(obj, identifiers)
+        obj = get_bit_start_and_size(obj, definition, identifiers)
     return obj

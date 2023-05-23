@@ -60,11 +60,11 @@ def check_special_structure(block, name, filename, identifiers, data):
     if (identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
             and name == "DATA_TABLE"):
         # sequence wrapped as string for object names
-        return formats.clementine.get_structure(block, name, filename, data)
+        return formats.clementine.get_structure(block, name, filename, data, identifiers)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "MARS GLOBAL SURVEYOR"
             and identifiers["INSTRUMENT_ID"] == "RSS"
             and identifiers["PRODUCT_TYPE"] == "ODF" and name == "ODF3B_TABLE"):
-        return True, formats.mgs.get_structure(block, name, filename, data)
+        return True, formats.mgs.get_structure(block, name, filename, data, identifiers)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "CASSINI ORBITER"
             and identifiers["INSTRUMENT_ID"] == "RPWS"
             and name == "TIME_SERIES") \
@@ -72,7 +72,8 @@ def check_special_structure(block, name, filename, identifiers, data):
                 and ("HUY_DTWG_ENTRY_AERO" in filename or
                      ("HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
                       identifiers["FILE_NAME"]))):
-        return True, formats.cassini.get_structure(block, name, filename, data)
+        return True, formats.cassini.get_structure(block, name, filename, data,
+                                                   identifiers)
     return False, None
 
 

@@ -15,8 +15,9 @@ def get_fn(data, object_name):
     return True, target
 
 
-def get_structure(block, name, filename, data):
-    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data)
+def get_structure(block, name, filename, data, identifiers):
+    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data,
+                                                      identifiers)
     fmtdef = pd.concat([fmtdef, fmtdef], ignore_index=True)
     fmtdef['NAME'] = fmtdef['NAME'].str.split('_', expand=True)[0]
     fmtdef['NAME'] = fmtdef['NAME'].str.cat(map(str, fmtdef.index), sep='_')

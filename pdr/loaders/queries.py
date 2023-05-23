@@ -333,7 +333,7 @@ def parse_table_structure(name, block, filename, data, identifiers):
     and -- if it's binary -- a numpy dtype object. These are later passed
     to np.fromfile or one of several ASCII table readers.
     """
-    fmtdef = read_table_structure(block, name, filename, data)
+    fmtdef = read_table_structure(block, name, filename, data, identifiers)
     if (
         fmtdef["DATA_TYPE"].str.contains("ASCII").any()
         or looks_like_ascii(block, name)
@@ -343,13 +343,13 @@ def parse_table_structure(name, block, filename, data, identifiers):
     if fmtdef is None:
         return fmtdef, np.dtype([])
     for end in ('_PREFIX', '_SUFFIX', ''):
-        length = data.metaget(name).get(f'ROW{end}_BYTES')
+        length = block.get(f'ROW{end}_BYTES')
         if length is not None:
             fmtdef[f'ROW{end}_BYTES'] = length
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
-def read_table_structure(block, name, filename, data):
+def read_table_structure(block, name, filename, data, identifiers):
     """
     Try to turn the TABLE definition into a column name / data type
     array. Requires renaming some columns to maintain uniqueness. Also
@@ -364,14 +364,14 @@ def read_table_structure(block, name, filename, data):
     and throw an error if it's not there.
     TODO, maybe: Grab external format files as needed.
     """
-    fields = read_format_block(block, name, filename, data)
+    fields = read_format_block(block, name, filename, data, identifiers)
     # give columns unique names so that none of our table handling explodes
     fmtdef = pd.DataFrame.from_records(fields)
     fmtdef = reindex_df_values(fmtdef)
     return fmtdef
 
 
-def read_format_block(block, object_name, filename, data):
+def read_format_block(block, object_name, filename, data, identifiers):
     # load external structure specifications
     format_block = list(block.items())
     block_name = block.get('NAME')
@@ -382,9 +382,9 @@ def read_format_block(block, object_name, filename, data):
         if item_type in ("COLUMN", "FIELD"):
             obj = dict(definition) | {'BLOCK_NAME': block_name}
             repeat_count = definition.get("ITEMS")
-            obj = bit_handling.add_bit_column_info(obj, definition, data)
+            obj = bit_handling.add_bit_column_info(obj, definition, identifiers)
         elif item_type == "CONTAINER":
-            obj = read_format_block(definition, object_name, filename, data)
+            obj = read_format_block(definition, object_name, filename, data, identifiers)
             repeat_count = definition.get("REPETITIONS")
         else:
             continue

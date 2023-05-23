@@ -33,11 +33,12 @@ def ppi_table_loader(filename, fmtdef_dt, data_set_id):
     return table
 
 
-def get_structure(block, name, filename, data):
+def get_structure(block, name, filename, data, identifiers):
     # the data type that goes here double defines the 32 byte prefix/offset.
     # By skipping the parse_table_structure we never add the prefix bytes so
     # it works as is. (added HASI/HUY if block after this comment)
-    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data)
+    fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data,
+                                                      identifiers)
     if ("HASI" in filename) or ("HUY_DTWG_ENTRY_AERO" in filename):
         if "HUY_DTWG_ENTRY_AERO" in filename:
             fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
