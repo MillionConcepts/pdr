@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
 
 
-def generic_qube_properties(block: MultiDict, band_storage_type) -> tuple:
+def generic_qube_properties(block: MultiDict, band_storage_type) -> dict:
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
     props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
@@ -67,7 +67,7 @@ def generic_qube_properties(block: MultiDict, band_storage_type) -> tuple:
     # noinspection PyTypeChecker
     props |= extract_linefix_metadata(block, props)
     # TODO: unclear whether lower-level linefixes ever appear on qubes
-    return props, use_block
+    return props
 
 
 def extract_axplane_metadata(block: MultiDict, props: dict) -> dict:
@@ -162,17 +162,18 @@ def get_image_properties(gen_props) -> dict:
 
 
 def im_sample_type(base_samp_info):
-    return sample_types(
-        base_samp_info["SAMPLE_TYPE"],
-        base_samp_info["BYTES_PER_PIXEL"],
-        for_numpy=True
-    )
+    if base_samp_info["SAMPLE_TYPE"] != "":
+        return sample_types(
+            base_samp_info["SAMPLE_TYPE"],
+            base_samp_info["BYTES_PER_PIXEL"],
+            for_numpy=True
+        )
 
 
 def base_sample_info(block):
     return {
-        'BYTES_PER_PIXEL': int(block['SAMPLE_BITS'] / 8),
-        'SAMPLE_TYPE': block["SAMPLE_TYPE"]
+        'BYTES_PER_PIXEL': int(block.get('SAMPLE_BITS', 0) / 8),
+        'SAMPLE_TYPE': block.get("SAMPLE_TYPE", "")
     }
 
 
