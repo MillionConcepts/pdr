@@ -1,4 +1,4 @@
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from pdr.loaders.utility import trivial
 
@@ -6,22 +6,15 @@ if TYPE_CHECKING:
     from pdr import Data
 
 
-def override_name(loader: Callable, name: str) -> Callable:
-    def load_what_i_say(_wrong_object_name):
-        return loader(name)
-    return load_what_i_say
-
-
 def table_loader(data, object_name):
-    # mangled name
-    if object_name == "CHMN_HSK_HEADER_TABLE":
-        data.file_mapping['CHMN_HSKN_HEADER_TABLE'] = data.file_mapping['CHMN_HSK_HEADER_TABLE']
-        return override_name(data.read_table, "CHMN_HSKN_HEADER_TABLE")
     if object_name == "HEADER":
-        return trivial
+        return True, trivial
     if object_name == "SPREADSHEET":
-        return chemin_spreadsheet_loader(data)
-    return data.read_table
+        import pandas as pd
+        return True, pd.read_csv(
+            data.get_absolute_paths(data.metaget_("^SPREADSHEET")[0])[0]
+        )
+    return False, None
 
 
 def fix_mangled_name(data):
