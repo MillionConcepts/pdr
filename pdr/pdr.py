@@ -1,3 +1,5 @@
+import inspect
+import os
 import warnings
 from functools import partial, cache
 from itertools import chain, product
@@ -191,8 +193,8 @@ class Data:
         self.filename = check_cases(Path(fn).absolute(), skip_existence_check)
         self.loaders = {}
         if (self.debug is True) and (tracker is None):
-            self.tracker = Tracker(Path(self.filename).name.replace(".", "_"))
-            self.tracker.outpath = Path(__file__.parent / ".tracker_logs")
+            self.tracker = Tracker(Path(self.filename).name.replace(".", "_"),
+                                   outdir=Path(__file__).parent/".tracker_logs")
             self.tracker.clear()
         elif tracker is None:
             self.tracker = TrivialTracker()
