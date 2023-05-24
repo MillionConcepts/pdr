@@ -5,8 +5,7 @@ from typing import Callable, Any, Mapping, Optional
 
 from cytoolz import keyfilter
 from cytoolz.curried import valfilter
-
-from pdr.loaders._helpers import TrivialTracker
+from dustgoggles.tracker import TrivialTracker
 
 
 def get_argnames(func: Callable) -> set[str]:
