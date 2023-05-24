@@ -14,15 +14,13 @@ from multidict import MultiDict
 
 from pdr import bit_handling
 from pdr.datatypes import sample_types
-from pdr.formats import check_special_offset, check_special_block, \
-    check_special_structure
+from pdr.formats import check_special_offset, check_special_block
 from pdr.func import specialize
 from pdr.loaders._helpers import quantity_start_byte, \
     _count_from_bottom_of_file, looks_like_ascii, _check_delimiter_stream
 from pdr.parselabel.pds3 import pointerize, read_pvl, literalize_pvl
 from pdr.pd_utils import insert_sample_types_into_df, reindex_df_values
-from pdr.utils import catch_return_default, append_repeated_object, find_repository_root, \
-    check_cases
+from pdr.utils import append_repeated_object, find_repository_root, check_cases
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
@@ -365,9 +363,14 @@ def read_table_structure(block, name, filename, data, identifiers):
     and throw an error if it's not there.
     TODO, maybe: Grab external format files as needed.
     """
-    fields = read_format_block(block, name, filename, data, identifiers)
+    if "HISTOGRAM" in name:
+        fields = get_histogram_fields(block)
+    else:
+        fields = read_format_block(block, name, filename, data, identifiers)
     # give columns unique names so that none of our table handling explodes
     fmtdef = pd.DataFrame.from_records(fields)
+    if "NAME" not in fmtdef.columns:
+        fmtdef["NAME"] = name
     fmtdef = reindex_df_values(fmtdef)
     return fmtdef
 
@@ -403,6 +406,20 @@ def read_format_block(block, object_name, filename, data, identifiers):
             fields = list(
                 chain.from_iterable([fields for _ in range(repeat_count)])
             )
+    return fields
+
+
+def get_histogram_fields(block):
+    # This error could maybe go somewhere else, but at least we catch it early here
+    if block.get("INTERCHANGE_FORMAT") == "ASCII":
+        raise NotImplementedError(
+            "ASCII histograms are not currently supported."
+        )
+    fields = []
+    if (repeats := block.get("ITEMS")) is not None:
+        fields = append_repeated_object(dict(block), fields, repeats)
+    else:
+        fields = [dict(block)]
     return fields
 
 

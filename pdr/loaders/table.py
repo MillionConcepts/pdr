@@ -9,9 +9,8 @@ from pdr.loaders.queries import get_array_num_items, check_array_for_subobject
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
-from pdr.pd_utils import reindex_df_values, insert_sample_types_into_df, \
-    booleanize_booleans
-from pdr.utils import decompress, append_repeated_object, head_file, catch_return_default
+from pdr.pd_utils import booleanize_booleans
+from pdr.utils import decompress, head_file, catch_return_default
 
 
 def read_array(filename, block, start_byte):
@@ -65,31 +64,6 @@ def read_table(identifiers, filename, fmtdef_dt, table_props, block, start_byte,
     except TypeError as ex:  # Failed to read the table
         return catch_return_default(debug, return_default, ex)
     return table
-
-
-def read_histogram(self, object_name):
-    # TODO: build this out for text examples
-    block = self.metablock_(object_name)
-    if block.get("INTERCHANGE_FORMAT") == "ASCII":
-        raise NotImplementedError(
-            "ASCII histograms are not currently supported."
-        )
-    # TODO: this is currently a special-case version of the read_table
-    #  flow. maybe: find a way to sideload definitions like this into
-    #  the read_table flow after further refactoring.
-    fields = []
-    if (repeats := block.get("ITEMS")) is not None:
-        fields = append_repeated_object(dict(block), fields, repeats)
-    else:
-        fields = [dict(block)]
-    fmtdef = pd.DataFrame.from_records(fields)
-    if "NAME" not in fmtdef.columns:
-        fmtdef["NAME"] = object_name
-    fmtdef = reindex_df_values(fmtdef)
-    fmtdef, dt = insert_sample_types_into_df(fmtdef, self)
-    return self._interpret_as_binary(
-        fmtdef, dt, self.file_mapping[object_name], object_name
-    )
 
 
 def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):

@@ -56,7 +56,7 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     ):
         return ReadTable()
     if "HISTOGRAM" in pointer:
-        return data.read_histogram
+        return ReadTable()
     if "HEADER" in pointer:
         return ReadHeader()
     # I have moved this below "table" due to the presence of a number of
