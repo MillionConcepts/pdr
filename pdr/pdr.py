@@ -16,6 +16,7 @@ from cytoolz import countby, identity
 from dustgoggles.dynamic import Dynamic
 from dustgoggles.func import gmap
 from dustgoggles.structures import dig_for_value, listify
+from dustgoggles.tracker import Tracker, TrivialTracker
 from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
@@ -24,7 +25,6 @@ from pdr.formats import (
     special_image_constants,
 )
 from pdr.func import callwrap
-from pdr.loaders._helpers import TrivialTracker, Tracker
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
@@ -193,6 +193,7 @@ class Data:
         self.loaders = {}
         if (self.debug is True) and (tracker is None):
             self.tracker = Tracker(Path(self.filename).name.replace(".", "_"))
+            self.tracker.outpath = Path(__file__.parent / ".tracker_logs")
             self.tracker.clear()
         elif tracker is None:
             self.tracker = TrivialTracker()
