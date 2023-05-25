@@ -162,36 +162,34 @@ def check_special_bit_start_case(
     return False, None
 
 
-def check_special_block(name, data):
+def check_special_block(name, data, identifiers):
     if name == "XDR_DOCUMENT":
         return True, formats.cassini.xdr_redirect_to_image_block(data)
     if name == "CHMN_HSK_HEADER_TABLE":
         return True, formats.msl_cmn.fix_mangled_name(data)
-    return False, None
-
-
-def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Callable]]:
-    if identifiers["INSTRUMENT_ID"] == "APXS" and "TABLE" in pointer:
-        # just an ambiguous name: best to specify it)
-        return True, formats.msl_apxs.table_loader(data, pointer)
-    # difficult table formats that are handled well by astropy.io.ascii
-    if (
-        identifiers["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
-        and pointer == "TABLE"
-    ):
-        return True, formats.galileo.galileo_table_loader(data)
-    if (
-        identifiers["INSTRUMENT_NAME"] == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
-        and pointer == "IMAGE_REPLY_TABLE"
-    ):
-        return True, formats.msl_ccam.image_reply_table_loader(data)
     if (
         identifiers["DATA_SET_ID"].startswith("JNO-E/J/SS")
         and "BSTFULL" in identifiers["DATA_SET_ID"]
         and "FREQ_OFFSET_TABLE" in data.keys()
-        and pointer in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
+        and name in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
     ):
         return True, formats.juno.waves_burst_with_offset_loader(data)
+    return False, None
+
+
+def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Callable]]:
+    if identifiers["INSTRUMENT_ID"] == "APXS" and "ERROR_CONTROL_TABLE" in pointer:
+        return True, formats.msl_apxs.table_loader(pointer)  # tbd
+    if (
+        identifiers["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
+        and pointer == "TABLE" and "-EDR-" in identifiers["DATA_SET_ID"]
+    ):
+        return True, formats.galileo.galileo_table_loader()  # trivial
+    if (
+        identifiers["INSTRUMENT_NAME"] == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
+        and pointer == "IMAGE_REPLY_TABLE"
+    ):
+        return True, formats.msl_ccam.image_reply_table_loader()  # trivial
     if (
         identifiers["INSTRUMENT_ID"] == "DLRE"
         and identifiers["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")

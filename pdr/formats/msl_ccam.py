@@ -1,11 +1,9 @@
-from typing import TYPE_CHECKING, Callable
 import warnings
 
-if TYPE_CHECKING:
-    from pdr import Data
+from pdr.loaders.utility import trivial
 
 
-def image_reply_table_loader(data: "Data") -> Callable:
+def image_reply_table_loader():
     warnings.warn("MSL ChemCam IMAGE_REPLY binary tables are not supported "
                   "due to a formatting error in label files.")
-    return data.trivial
+    return trivial
