@@ -35,7 +35,7 @@ def check_special_offset(
     return False, None
 
 
-def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt):
+def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt, block):
     if (
         identifiers["DATA_SET_ID"] in (
             "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
@@ -53,6 +53,22 @@ def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt):
     ):
         # mangled object names + positions
         return formats.msl_cmn.table_loader(data, name)
+    if (
+        identifiers["INSTRUMENT_NAME"] == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE "
+                                          "PROBE"
+        and "SPECTRUM_TABLE" in name
+    ):
+        return True, formats.rosetta.rosetta_table_loader(filename, fmtdef_dt)
+    if (
+        identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
+        and name == "TABLE"
+        and identifiers["NOTE"].startswith("Geometry")
+    ):
+        return True, formats.mgn.geom_table_loader(filename, fmtdef_dt)
+    if identifiers["DATA_SET_ID"].startswith("MGN-V-RSS-5-OCC-PROF") and name == \
+            "TABLE":
+        return True, formats.mgn.occultation_loader(identifiers, fmtdef_dt, block,
+                                                    filename)
     return False, None
 
 
@@ -155,20 +171,6 @@ def check_special_block(name, data):
 
 
 def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Callable]]:
-    if pointer == 'SHADR_HEADER_TABLE':
-        return True, formats.messenger.shadr_header_table_loader()
-    if (
-        identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
-        and pointer == "TABLE"
-        and data.metaget_("NOTE", "").startswith("Geometry")
-    ):
-        return True, formats.mgn.geom_table_loader(data, pointer)
-    if (
-        identifiers["INSTRUMENT_NAME"] == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE "
-                                          "PROBE"
-        and "SPECTRUM_TABLE" in pointer
-    ):
-        return True, formats.rosetta.rosetta_table_loader(data, pointer)
     if identifiers["INSTRUMENT_ID"] == "APXS" and "TABLE" in pointer:
         # just an ambiguous name: best to specify it)
         return True, formats.msl_apxs.table_loader(data, pointer)
@@ -206,10 +208,7 @@ def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Calla
             return True, formats.cassini.trivial_loader(pointer, data)
     if (identifiers["SPACECRAFT_NAME"] == "MAGELLAN" and (data.filename.endswith(
             '.img') or data.filename.endswith('.ibg')) and pointer == "TABLE"):
-        return True, formats.mgn.orbit_table_in_img_loader(data, pointer)
-    if identifiers["DATA_SET_ID"].startswith("MGN-V-RSS-5-OCC-PROF") and pointer == \
-            "TABLE":
-        return True, formats.mgn.occultation_loader(data, pointer)
+        return True, formats.mgn.orbit_table_in_img_loader()  # trivial
     return False, None
 
 

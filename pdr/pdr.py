@@ -1,5 +1,3 @@
-import inspect
-import os
 import warnings
 from functools import partial, cache
 from itertools import chain, product
@@ -61,6 +59,7 @@ ID_FIELDS = (
     "ROWS",
     "FILE_RECORDS",
     "LABEL_RECORDS",
+    "NOTE",
     )
 
 
