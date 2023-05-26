@@ -3,6 +3,7 @@ import re
 from typing import TYPE_CHECKING, Callable, Optional
 
 from pdr import formats
+from pdr.loaders.utility import trivial, is_trivial
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
@@ -52,7 +53,7 @@ def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt, blo
         and ((name == "HEADER") or ("SPREADSHEET" in name))
     ):
         # mangled object names + positions
-        return formats.msl_cmn.table_loader(data, name)
+        return formats.msl_cmn.table_loader(data, name)  # TODO: try and refactor out data
     if (
         identifiers["INSTRUMENT_NAME"] == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE "
                                           "PROBE"
@@ -69,6 +70,12 @@ def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt, blo
             "TABLE":
         return True, formats.mgn.occultation_loader(identifiers, fmtdef_dt, block,
                                                     filename)
+    if (
+        identifiers["INSTRUMENT_ID"] == "DLRE"
+        and identifiers["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")
+        and name == "TABLE"
+    ):
+        return True, formats.diviner.diviner_l4_table_loader(fmtdef_dt, filename)
     return False, None
 
 
@@ -173,40 +180,36 @@ def check_special_block(name, data, identifiers):
         and "FREQ_OFFSET_TABLE" in data.keys()
         and name in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
     ):
-        return True, formats.juno.waves_burst_with_offset_loader(data)
+        return True, formats.juno.waves_burst_fix_table_names(data, name)
     return False, None
 
 
-def check_special_case(pointer, identifiers, data) -> tuple[bool, Optional[Callable]]:
+def check_trivial_case(pointer, identifiers, filename) -> tuple[bool, Optional[Callable]]:
+    if is_trivial(pointer):
+        return True, trivial
     if identifiers["INSTRUMENT_ID"] == "APXS" and "ERROR_CONTROL_TABLE" in pointer:
-        return True, formats.msl_apxs.table_loader(pointer)  # tbd
+        return True, formats.msl_apxs.table_loader(pointer)
     if (
         identifiers["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
         and pointer == "TABLE" and "-EDR-" in identifiers["DATA_SET_ID"]
     ):
-        return True, formats.galileo.galileo_table_loader()  # trivial
+        return True, formats.galileo.galileo_table_loader()
     if (
         identifiers["INSTRUMENT_NAME"] == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
         and pointer == "IMAGE_REPLY_TABLE"
     ):
-        return True, formats.msl_ccam.image_reply_table_loader()  # trivial
-    if (
-        identifiers["INSTRUMENT_ID"] == "DLRE"
-        and identifiers["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")
-        and pointer == "TABLE"
-    ):
-        return True, formats.diviner.diviner_l4_table_loader(data, pointer)
+        return True, formats.msl_ccam.image_reply_table_loader()
     if (
         identifiers["DATA_SET_ID"].startswith("ODY-M-THM-5")
         and (pointer in ("HEADER", "HISTORY"))
     ):
-        return True, formats.themis.trivial_themis_geo_loader(data, pointer)
+        return True, formats.themis.trivial_themis_geo_loader(pointer)
     if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
-            return True, formats.cassini.trivial_loader(pointer, data)
-    if (identifiers["SPACECRAFT_NAME"] == "MAGELLAN" and (data.filename.endswith(
-            '.img') or data.filename.endswith('.ibg')) and pointer == "TABLE"):
-        return True, formats.mgn.orbit_table_in_img_loader()  # trivial
+            return True, formats.cassini.trivial_loader(pointer)
+    if (identifiers["SPACECRAFT_NAME"] == "MAGELLAN" and (filename.endswith(
+            '.img') or filename.endswith('.ibg')) and pointer == "TABLE"):
+        return True, formats.mgn.orbit_table_in_img_loader()
     return False, None
 
 

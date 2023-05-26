@@ -225,7 +225,7 @@ def get_block(data: PDRLike, name: str) -> MultiDict:
     return data.metablock_(name)
 
 
-def check_file_mapping(data: PDRLike, name: str):
+def get_file_mapping(data: PDRLike, name: str):
     return data.file_mapping[name]
 
 
@@ -322,7 +322,7 @@ def get_return_default(data: PDRLike, name: str):
     return data.metaget_(name)
 
 
-def check_debug(data: PDRLike):
+def get_debug(data: PDRLike):
     return data.debug
 
 
@@ -469,10 +469,10 @@ def get_identifiers(data):
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
     {
-        'block': specialize(get_block, check_special_block),
-        'filename': check_file_mapping,
-        'target': get_target,
         'identifiers': get_identifiers,
+        'block': specialize(get_block, check_special_block),
+        'filename': get_file_mapping,
+        'target': get_target,
         'start_byte': specialize(data_start_byte, check_special_offset),
     }
 )

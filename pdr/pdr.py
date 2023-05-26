@@ -258,7 +258,7 @@ class Data:
         raise FileNotFoundError
 
     def _find_objects(self):
-        from pdr.loaders.dispatch import is_trivial
+        from pdr.loaders.utility import is_trivial
 
         # TODO: make this not add objects again if called multiple times
         for pointer in self.pointers:

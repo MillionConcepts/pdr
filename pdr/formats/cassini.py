@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 
 import pdr.loaders.queries
-from pdr.loaders.utility import tbd
+from pdr.loaders.utility import tbd, trivial
 from pdr.pd_utils import insert_sample_types_into_df
 from pdr.loaders._helpers import _count_from_bottom_of_file
 from pdr.loaders.queries import table_position
@@ -91,12 +91,12 @@ def get_offset(filename, identifiers):
     return True, start_byte
 
 
-def trivial_loader(pointer, data):
+def trivial_loader(pointer):
     warnings.warn(
         f"The Cassini ISS EDR/calibration {pointer} tables are not currently "
         f"supported."
     )
-    return data.trivial
+    return trivial
 
 
 def cda_table_filename(data):

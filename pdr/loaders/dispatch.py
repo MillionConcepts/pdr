@@ -1,6 +1,6 @@
 import re
 from typing import Optional, Callable
-from pdr.formats import check_special_case
+from pdr.formats import check_trivial_case
 from pdr.loaders.utility import looks_like_this_kind_of_file, FITS_EXTENSIONS, \
     TIFF_EXTENSIONS, JP2_EXTENSIONS, IMAGE_EXTENSIONS, TABLE_EXTENSIONS, \
     TEXT_EXTENSIONS
@@ -31,11 +31,10 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     name. checks for special cases and then falls back to generic loading
     methods of pdr.Data.
     """
-    if is_trivial(pointer) is True:
-        return data.trivial
-    is_special, loader = check_special_case(pointer, data.identifiers, data)
-    if is_special is True:
-        return loader
+    is_trivial, trivial_loader = check_trivial_case(pointer, data.identifiers,
+                                                    data.filename)
+    if is_trivial is True:
+        return trivial_loader
     if pointer == "LABEL":
         return ReadLabel()
     if "TEXT" in pointer or "PDF" in pointer or "MAP_PROJECTION_CATALOG" in pointer:
@@ -105,19 +104,5 @@ objects_to_ignore = [
     "DESCRIPTION", "DATA_SET_MAP_PROJECT.*", ".*_DESC"
 ]
 OBJECTS_IGNORED_BY_DEFAULT = re.compile('|'.join(objects_to_ignore))
-
-
-def is_trivial(pointer) -> bool:
-    # TIFF tags / headers should always be parsed by the TIFF parser itself
-    if (
-        ("TIFF" in pointer)
-        and ("IMAGE" not in pointer)
-        and ("DOCUMENT" not in pointer)
-    ):
-        return True
-    # we don't present STRUCTURES separately from their tables
-    if "STRUCTURE" in pointer:
-        return True
-    return False
 
 

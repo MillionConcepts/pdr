@@ -4,7 +4,7 @@ from pdr.formats import check_special_sample_type, check_special_qube_band_stora
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
     base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
-    generic_image_properties, get_return_default, check_debug, table_position, \
+    generic_image_properties, get_return_default, get_debug, table_position, \
     parse_table_structure
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
@@ -65,7 +65,7 @@ class ReadTable(Loader):
         super().__init__(specialize(read_table, check_special_table_reader))
 
     queries = DEFAULT_DATA_QUERIES | {
-        'debug': check_debug,
+        'debug': get_debug,
         'return_default': get_return_default,
         'table_props': specialize(table_position, check_special_position),
         'fmtdef_dt': specialize(parse_table_structure, check_special_structure),

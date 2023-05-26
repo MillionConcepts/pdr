@@ -1,7 +1,12 @@
-from pdr.loaders.datawrap import TBD
+import warnings
+
+from pdr.loaders.utility import trivial
 
 
 def table_loader(pointer):
     # we don't support these right now, or maybe ever
-    if pointer == "ERROR_CONTROL_TABLE":
-        return TBD
+    warnings.warn(
+        f"The MSL APXS {pointer} tables are not currently "
+        f"supported."
+    )
+    return trivial
