@@ -23,5 +23,5 @@ def get_structure(block, name, filename, data, identifiers):
     fmtdef['NAME'] = fmtdef['NAME'].str.cat(map(str, fmtdef.index), sep='_')
     fmtdef.ITEM_OFFSET = 8
     fmtdef.ITEM_BYTES = 8
-    fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
+    fmtdef, dt = insert_sample_types_into_df(fmtdef, identifiers)
     return fmtdef, dt

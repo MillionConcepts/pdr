@@ -46,7 +46,7 @@ def get_structure(block, name, filename, data, identifiers):
             fmtdef.at[7, "NAME"] = "REYNOLD NR. [=RHO*VREL*D/Mu]"
         dt = None
     else:
-        fmtdef, dt = insert_sample_types_into_df(fmtdef, data)
+        fmtdef, dt = insert_sample_types_into_df(fmtdef, identifiers)
     return fmtdef, dt
 
 
