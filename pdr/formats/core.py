@@ -83,7 +83,8 @@ def check_special_structure(block, name, filename, identifiers, data):
     if (identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
             and name == "DATA_TABLE"):
         # sequence wrapped as string for object names
-        return formats.clementine.get_structure(block, name, filename, data, identifiers)
+        return True, formats.clementine.get_structure(block, name, filename, data,
+                                                      identifiers)
     if (identifiers["INSTRUMENT_HOST_NAME"] == "MARS GLOBAL SURVEYOR"
             and identifiers["INSTRUMENT_ID"] == "RSS"
             and identifiers["PRODUCT_TYPE"] == "ODF" and name == "ODF3B_TABLE"):
