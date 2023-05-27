@@ -23,7 +23,6 @@ from pdr.formats import (
     check_special_fn,
     special_image_constants,
 )
-from pdr.func import callwrap
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
@@ -349,7 +348,6 @@ class Data:
             warnings.warn(f"Unable to find files required by {name}.")
         except Exception as ex:
             warnings.warn(f"Unable to load {name}: {ex}")
-            return_default = self.metaget_(name)
             setattr(self, name, self.metaget_(name))
 
     def load_all(self):
@@ -423,7 +421,7 @@ class Data:
         from pdr.loaders.dispatch import pointer_to_loader
         loader = pointer_to_loader(pointer, self)
         if self.debug is True:
-            loader = Dynamic.from_function(callwrap(loader), optional=True)
+            loader = Dynamic.from_function(loader, optional=True)
         self.loaders[pointer] = loader
         self.tracker.set_metadata(filename=self.file_mapping[pointer])
         return self.loaders[pointer](

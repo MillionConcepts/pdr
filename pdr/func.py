@@ -136,12 +136,3 @@ def softquery(
         kwargdict['tracker'].track(querydict[qname])
         kwargdict[qname] = call_kwargfiltered(querydict[qname], **kwargdict)
     return kwargdict
-
-
-def callwrap(callable_):
-
-    @wraps(callable_.__call__)
-    def call_wrapped(*args, **kwargs):
-        return callable_(*args, **kwargs)
-
-    return call_wrapped
