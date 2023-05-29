@@ -474,5 +474,7 @@ DEFAULT_DATA_QUERIES = MappingProxyType(
         'filename': get_file_mapping,
         'target': get_target,
         'start_byte': specialize(data_start_byte, check_special_offset),
+        'debug': get_debug,
+        'return_default': get_return_default,
     }
 )

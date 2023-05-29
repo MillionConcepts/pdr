@@ -3,8 +3,10 @@ import numpy as np
 from multidict import MultiDict
 from typing import Optional
 
+from pdr.utils import catch_return_default
 
-def handle_fits_file(self, pointer=""):
+
+def handle_fits_file(data, filename, debug, return_default, name=""):
     """
     This function attempts to read all FITS files, compressed or
     uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
@@ -16,20 +18,22 @@ def handle_fits_file(self, pointer=""):
     from astropy.io import fits
 
     try:
-        hdulist = fits.open(self.file_mapping[pointer])
-        if "HEADER" in pointer:
-            return handle_fits_header(hdulist, pointer)
+        hdulist = fits.open(filename)
+        hdr_val = handle_fits_header(hdulist, name)
+        if "HEADER" in name:
+            return hdr_val
         else:
-            hdr_key = pointer+"_HEADER"
-            hdr_val = handle_fits_header(hdulist, pointer)
-            setattr(self, hdr_key, hdr_val)
-            self.index += [hdr_key]
-        return hdulist[pointer_to_fits_key(pointer, hdulist)].data
+            # TODO: add header key in queries so we don't need to pass a data object
+            #  here?
+            hdr_key = name+"_HEADER"
+            setattr(data, hdr_key, hdr_val)
+            data.index += [hdr_key]
+        return hdulist[pointer_to_fits_key(name, hdulist)].data
     except Exception as ex:
         # TODO: assuming this does not need to be specified as f-string
         #  (like in read_header/tbd) -- maybe! must determine and specify
         #  what cases this exception was needed to handle
-        self._catch_return_default(self.metaget_(pointer), ex)
+        catch_return_default(debug, return_default, ex)
 
 
 def handle_compressed_image(filename, userasterio: Optional[bool] = False):
@@ -53,8 +57,8 @@ def handle_compressed_image(filename, userasterio: Optional[bool] = False):
     return image
 
 
-def handle_fits_header(hdulist, pointer="", ):
-    astro_hdr = hdulist[pointer_to_fits_key(pointer, hdulist)].header
+def handle_fits_header(hdulist, name="", ):
+    astro_hdr = hdulist[pointer_to_fits_key(name, hdulist)].header
     output_hdr = MultiDict()
     for key, val, com in astro_hdr.cards:
         if len(key) > 0:

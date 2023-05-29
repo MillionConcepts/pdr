@@ -65,8 +65,6 @@ class ReadTable(Loader):
         super().__init__(specialize(read_table, check_special_table_reader))
 
     queries = DEFAULT_DATA_QUERIES | {
-        'debug': get_debug,
-        'return_default': get_return_default,
         'table_props': specialize(table_position, check_special_position),
         'fmtdef_dt': specialize(parse_table_structure, check_special_structure),
     }
