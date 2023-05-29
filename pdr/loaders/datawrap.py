@@ -4,8 +4,7 @@ from pdr.formats import check_special_sample_type, check_special_qube_band_stora
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
     base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
-    generic_image_properties, get_return_default, get_debug, table_position, \
-    parse_table_structure
+    generic_image_properties, table_position, parse_table_structure
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
 

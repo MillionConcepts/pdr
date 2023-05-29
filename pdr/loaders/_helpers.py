@@ -1,12 +1,7 @@
-import datetime as dt
-import json
 import os
 from functools import partial
-from inspect import currentframe, getframeinfo
-from itertools import count
 from operator import contains
 from pathlib import Path
-from random import randint
 
 
 def looks_like_ascii(block, name):

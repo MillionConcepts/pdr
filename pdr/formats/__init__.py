@@ -1,4 +1,4 @@
-from .core import *
+from .checkers import *
 import pdr.formats.cassini as cassini
 import pdr.formats.clementine as clementine
 import pdr.formats.diviner as diviner

@@ -1,8 +1,7 @@
 import warnings
 from typing import Optional
 
-from pdr.loaders.handlers import handle_fits_file
-from pdr.loaders.utility import looks_like_this_kind_of_file, FITS_EXTENSIONS
+from pdr.loaders.utility import looks_like_this_kind_of_file
 from pdr.parselabel.pds3 import pointerize
 from pdr.parselabel.utils import trim_label
 from pdr.utils import check_cases, decompress
