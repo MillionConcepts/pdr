@@ -124,16 +124,8 @@ def check_special_position(identifiers, block, target, name, filename, start_byt
 
 
 def check_special_sample_type(
-    base_samp_info,
     identifiers: dict,
 ) -> tuple[bool, Optional[str]]:
-    if (
-        identifiers["INSTRUMENT_ID"] == "MARSIS"
-        and identifiers.get("PRODUCT_TYPE", "") == "EDR"
-    ):
-        return formats.mex_marsis.get_sample_type(
-           base_samp_info["SAMPLE_TYPE"], base_samp_info["BYTES_PER_PIXEL"]
-        )
     if (
         identifiers["DATA_SET_ID"] == "JNO-J-JIRAM-3-RDR-V1.0"
         and identifiers.get("PRODUCT_TYPE", "") == "RDR"
