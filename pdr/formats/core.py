@@ -66,7 +66,7 @@ def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt, blo
         and identifiers["NOTE"].startswith("Geometry")
     ):
         return True, formats.mgn.geom_table_loader(filename, fmtdef_dt)
-    if identifiers["DATA_SET_ID"].startswith("MGN-V-RSS-5-OCC-PROF") and name == \
+    if str(identifiers["DATA_SET_ID"]).startswith("MGN-V-RSS-5-OCC-PROF") and name == \
             "TABLE":
         return True, formats.mgn.occultation_loader(identifiers, fmtdef_dt, block,
                                                     filename)
@@ -168,7 +168,7 @@ def check_special_block(name, data, identifiers):
     if name == "CHMN_HSK_HEADER_TABLE":
         return True, formats.msl_cmn.fix_mangled_name(data)
     if (
-        identifiers["DATA_SET_ID"].startswith("JNO-E/J/SS")
+        str(identifiers["DATA_SET_ID"]).startswith("JNO-E/J/SS")
         and "BSTFULL" in identifiers["DATA_SET_ID"]
         and "FREQ_OFFSET_TABLE" in data.keys()
         and name in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
@@ -193,11 +193,11 @@ def check_trivial_case(pointer, identifiers, filename) -> tuple[bool, Optional[C
     ):
         return True, formats.msl_ccam.image_reply_table_loader()
     if (
-        identifiers["DATA_SET_ID"].startswith("ODY-M-THM-5")
+        str(identifiers["DATA_SET_ID"]).startswith("ODY-M-THM-5")
         and (pointer in ("HEADER", "HISTORY"))
     ):
         return True, formats.themis.trivial_themis_geo_loader(pointer)
-    if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]):
+    if re.match(r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", str(identifiers["DATA_SET_ID"])):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return True, formats.cassini.trivial_loader(pointer)
     if (identifiers["SPACECRAFT_NAME"] == "MAGELLAN" and (filename.endswith(
