@@ -30,12 +30,8 @@ def read_text(self, object_name):
     return self._catch_return_default(object_name, exception)
 
 
-def read_header(filename, table_props, data, debug, return_default, name="HEADER"):
+def read_header(filename, table_props, name="HEADER"):
     """Attempt to read a file header."""
-    if looks_like_this_kind_of_file(
-        filename, FITS_EXTENSIONS
-    ):
-        return handle_fits_file(data, filename, debug, return_default, name)
     return skeptically_load_header(filename, table_props, name)
 
 
