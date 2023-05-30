@@ -51,7 +51,6 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
             else:
                 processed += bytes_
     string_buffer = StringIO(processed.decode())
-
     # adapted from _interpret_as_ascii()
     colspecs = []
     position_records = compute_offsets(fmtdef).to_dict('records')
@@ -64,3 +63,13 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
 
     table.columns = fmtdef.NAME.tolist()
     return table
+
+
+def gvanf_sample_type(base_samp_info):
+    from pdr.datatypes import sample_types
+    if 'N/A' in sample_type:
+        sample_type = 'MSB_UNSIGNED_INTEGER'
+        print(base_samp_info)
+        print(sample_types(sample_type, base_samp_info["BYTES_PER_PIXEL"], for_numpy=True))
+        return True, sample_types(sample_type, base_samp_info["BYTES_PER_PIXEL"], for_numpy=True)
+    return False, None

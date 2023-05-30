@@ -143,7 +143,8 @@ def insert_sample_types_into_df(fmtdef, identifiers):
         dt, item_bytes, total_bytes = data_type
         sample_bytes = total_bytes if np.isnan(item_bytes) else item_bytes
         try:
-            is_special, special_type = check_special_sample_type(identifiers)
+            samp_info = {"SAMPLE_TYPE": dt, "BYTES_PER_PIXEL": sample_bytes}
+            is_special, special_type = check_special_sample_type(identifiers, samp_info)
             if is_special:
                 fmtdef.loc[group.index, 'dt'] = special_type
             else:

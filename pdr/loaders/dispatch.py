@@ -54,12 +54,12 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         or ("SPECTRUM" in pointer)
     ):
         return ReadTable()
-    if "HISTOGRAM" in pointer:
-        return ReadTable()
     if "HEADER" in pointer:
         if looks_like_this_kind_of_file(data.file_mapping[pointer], FITS_EXTENSIONS):
             return ReadFits()
         return ReadHeader()
+    if "HISTOGRAM" in pointer:
+        return ReadTable()
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
