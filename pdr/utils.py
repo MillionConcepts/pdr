@@ -58,7 +58,7 @@ def stem_path(path: Path):
     # don't remove compression suffix if it's the only suffix
     if (len(exts) == 1) or (exts[-1] in SUPPORTED_COMPRESSION_EXTENSIONS):
         return f"{lowercase}{exts[0]}"
-    return f"{lowercase}{''.join(exts)}"
+    return f"{lowercase}{exts[-1]}"
 
 
 def check_cases(
