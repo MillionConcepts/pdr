@@ -467,14 +467,3 @@ def get_identifiers(data):
     return data.identifiers
 
 
-DEFAULT_DATA_QUERIES = MappingProxyType(
-    {
-        'identifiers': get_identifiers,
-        'block': specialize(get_block, check_special_block),
-        'filename': get_file_mapping,
-        'target': get_target,
-        'start_byte': specialize(data_start_byte, check_special_offset),
-        'debug': get_debug,
-        'return_default': get_return_default,
-    }
-)

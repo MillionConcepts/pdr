@@ -1,10 +1,10 @@
 from typing import Union
-from pdr.formats import check_special_sample_type, check_special_qube_band_storage, \
+
+from pdr.formats import check_special_sample_type, \
+    check_special_qube_band_storage, \
     check_special_position, check_special_structure, check_special_table_reader
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
-from pdr.loaders.queries import DEFAULT_DATA_QUERIES, \
-    base_sample_info, im_sample_type, check_if_qube, get_qube_band_storage_type, \
-    generic_image_properties, table_position, parse_table_structure
+from pdr.loaders._querystructures import default_data_queries
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
 
@@ -34,7 +34,7 @@ class Loader:
             kwargdict['tracker'].dump()
         return call_kwargfiltered(self.loader_function, **info)
 
-    queries = DEFAULT_DATA_QUERIES
+    queries = default_data_queries()
 
 
 class ReadImage(Loader):
@@ -42,11 +42,12 @@ class ReadImage(Loader):
 
     def __init__(self):
         from pdr.loaders.image import read_image
+        from pdr.loaders.queries import base_sample_info, im_sample_type, \
+            check_if_qube, get_qube_band_storage_type, \
+            generic_image_properties
 
         super().__init__(read_image)
-
-    queries = DEFAULT_DATA_QUERIES | {
-
+        self.queries = default_data_queries() | {
         'base_samp_info': base_sample_info,
         'sample_type': specialize(im_sample_type, check_special_sample_type),
         'band_storage_type': specialize(get_qube_band_storage_type,
@@ -59,14 +60,16 @@ class ReadTable(Loader):
     """wrapper for read_table"""
 
     def __init__(self):
+        from pdr.loaders.queries import table_position, parse_table_structure
         from pdr.loaders.table import read_table
 
         super().__init__(specialize(read_table, check_special_table_reader))
-
-    queries = DEFAULT_DATA_QUERIES | {
-        'table_props': specialize(table_position, check_special_position),
-        'fmtdef_dt': specialize(parse_table_structure, check_special_structure),
-    }
+        self.queries = default_data_queries() | {
+            'table_props': specialize(table_position, check_special_position),
+            'fmtdef_dt': specialize(
+                parse_table_structure, check_special_structure
+            ),
+        }
 
 
 class ReadHeader(Loader):
@@ -74,12 +77,12 @@ class ReadHeader(Loader):
 
     def __init__(self):
         from pdr.loaders.misc import read_header
+        from pdr.loaders.queries import table_position
 
         super().__init__(read_header)
-
-    queries = DEFAULT_DATA_QUERIES | {
-        'table_props': specialize(table_position, check_special_position)
-    }
+        queries = default_data_queries() | {
+            'table_props': specialize(table_position, check_special_position)
+        }
 
 
 class ReadText(Loader):
