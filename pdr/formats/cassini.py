@@ -10,7 +10,7 @@ from pdr.loaders._helpers import _count_from_bottom_of_file
 from pdr.loaders.queries import table_position
 
 
-def ppi_table_loader(filename, fmtdef_dt, data_set_id):
+def spreadsheet_loader(filename, fmtdef_dt, data_set_id):
     import pandas as pd
 
     if "UNCALIB" in data_set_id:
@@ -24,6 +24,8 @@ def ppi_table_loader(filename, fmtdef_dt, data_set_id):
             header = 0
             names = None
             skiprows = range(1, 4)
+    elif data_set_id == "CO-SSA-RADAR-3-ABDR-SUMMARY-V1.0":
+        skiprows = 0
     else:
         skiprows = 7
     table = pd.read_csv(filename,
@@ -39,8 +41,7 @@ def get_structure(block, name, filename, data, identifiers):
     # it works as is. (added HASI/HUY if block after this comment)
     fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data,
                                                       identifiers)
-    if ("HASI" in filename) or ("HUY_DTWG_ENTRY_AERO" in filename) \
-            or identifiers["DATA_SET_ID"] == "CO-SSA-RADAR-3-ABDR-SUMMARY-V1.0":
+    if ("HASI" in filename) or ("HUY_DTWG_ENTRY_AERO" in filename):
         if "HUY_DTWG_ENTRY_AERO" in filename:
             fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
             fmtdef.at[6, "NAME"] = "KNUDSEN NR. [=1.2533*SQRT(2)*Ma/Re]"

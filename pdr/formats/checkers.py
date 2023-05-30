@@ -42,12 +42,12 @@ def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt, blo
             "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
             "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
             "CO-S-MIMI-4-INCA-CALIB-V1.0",
-            "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0"
+            "CO-E/J/S/SW-MIMI-2-LEMMS-UNCALIB-V1.0",
+            "CO-SSA-RADAR-3-ABDR-SUMMARY-V1.0"
         )
-        and name == "SPREADSHEET"
     ):
-        return True, formats.cassini.ppi_table_loader(filename, fmtdef_dt,
-                                                      identifiers["DATA_SET_ID"])
+        return True, formats.cassini.spreadsheet_loader(filename, fmtdef_dt,
+                                                        identifiers["DATA_SET_ID"])
     if (
         identifiers["INSTRUMENT_ID"] == "CHEMIN"
         and ((name == "HEADER") or ("SPREADSHEET" in name))
@@ -69,7 +69,7 @@ def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt, blo
         and ("CAL_DATA.TAB" in identifiers["PRODUCT_ID"]
              or "G_DATA.TAB" in identifiers["PRODUCT_ID"]
              or "R_DATA.TAB" in identifiers["PRODUCT_ID"])
-        ):
+    ):
         return True, formats.mgn.geom_table_loader(filename, fmtdef_dt)
     if str(identifiers["DATA_SET_ID"]).startswith("MGN-V-RSS-5-OCC-PROF") and name == \
             "TABLE":
@@ -100,9 +100,7 @@ def check_special_structure(block, name, filename, identifiers, data):
             or (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
                 and ("HUY_DTWG_ENTRY_AERO" in filename or
                      ("HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
-                      identifiers["FILE_NAME"])))\
-            or (identifiers["DATA_SET_ID"] == "CO-SSA-RADAR-3-ABDR-SUMMARY-V1.0"
-                and name == "SPREADSHEET"):
+                      identifiers["FILE_NAME"]))):
         return True, formats.cassini.get_structure(block, name, filename, data,
                                                    identifiers)
     return False, None

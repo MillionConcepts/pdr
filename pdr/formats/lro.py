@@ -19,6 +19,7 @@ def lamp_rdr_histogram_image_loader(data):
 
 
 def crater_bit_col_sample_type(base_samp_info):
+    # not yet in test corpus
     from pdr.datatypes import sample_types
     sample_type = base_samp_info["SAMPLE_TYPE"]
     sample_bytes = base_samp_info["BYTES_PER_PIXEL"]
