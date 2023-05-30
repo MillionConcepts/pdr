@@ -39,7 +39,8 @@ def get_structure(block, name, filename, data, identifiers):
     # it works as is. (added HASI/HUY if block after this comment)
     fmtdef = pdr.loaders.queries.read_table_structure(block, name, filename, data,
                                                       identifiers)
-    if ("HASI" in filename) or ("HUY_DTWG_ENTRY_AERO" in filename):
+    if ("HASI" in filename) or ("HUY_DTWG_ENTRY_AERO" in filename) \
+            or identifiers["DATA_SET_ID"] == "CO-SSA-RADAR-3-ABDR-SUMMARY-V1.0":
         if "HUY_DTWG_ENTRY_AERO" in filename:
             fmtdef.at[5, "NAME"] = "KNUDSEN FREESTR. HARD SPHERE NR. [=2.8351E-8/RHO]"
             fmtdef.at[6, "NAME"] = "KNUDSEN NR. [=1.2533*SQRT(2)*Ma/Re]"

@@ -151,15 +151,16 @@ def check_special_sample_type(
     if (
         identifiers["DATA_SET_ID"] == "MGN-V-RDRS-5-GVDR-V1.0"
         and "GVANF" in identifiers["PRODUCT_ID"]
+        and 'N/A' in base_samp_info["SAMPLE_TYPE"]
     ):
-        return True, formats.mgn.gvanf_sample_type(base_samp_info)
+        return True, formats.mgn.gvanf_sample_type()
     if identifiers["DATA_SET_ID"] == "LRO-L-CRAT-2-EDR-RAWDATA-V1.0":
         return formats.lro.crater_bit_col_sample_type(base_samp_info)
     if (
             identifiers["SPACECRAFT_NAME"] == "GALILEO_ORBITER"
             and "-NIMS-2-EDR-V1.0" in identifiers["DATA_SET_ID"]
     ):
-        return formats.galileo.nims_edr_sample_type(base_samp_info)
+        return True, formats.galileo.nims_edr_sample_type(base_samp_info)
     return False, None
 
 
