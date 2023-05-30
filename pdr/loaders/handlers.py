@@ -1,7 +1,6 @@
 import Levenshtein as lev
 import numpy as np
 from multidict import MultiDict
-from typing import Optional
 
 from pdr.utils import catch_return_default
 
@@ -36,13 +35,7 @@ def handle_fits_file(data, filename, debug, return_default, name=""):
         catch_return_default(debug, return_default, ex)
 
 
-def handle_compressed_image(filename, userasterio: Optional[bool] = False):
-    # optional hook for rasterio usage for regression tests, etc.
-    if userasterio:
-        import rasterio
-
-        return rasterio.open(filename).read()
-    # otherwise read with pillow
+def handle_compressed_image(filename):
     from PIL import Image
     # deactivate pillow's DecompressionBombError: many planetary images
     # are legitimately very large
