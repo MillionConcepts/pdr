@@ -11,6 +11,7 @@ def table_loader(data, object_name):
         return True, trivial
     if object_name == "SPREADSHEET":
         import pandas as pd
+
         return True, pd.read_csv(
             data.get_absolute_paths(data.metaget_("^SPREADSHEET")[0])[0]
         )
@@ -35,7 +36,9 @@ def get_offset(object_name):
 def chemin_spreadsheet_loader(data: "Data"):
     def load_this_table(*_, **__):
         import pandas as pd
+
         return pd.read_csv(
             data.get_absolute_paths(data.metaget_("^SPREADSHEET")[0])[0]
         )
+
     return load_this_table

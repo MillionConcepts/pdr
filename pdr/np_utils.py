@@ -73,7 +73,7 @@ def np_from_buffered_io(
     buffered_io: BufferedIOBase,
     dtype: Union[np.dtype, str],
     offset: Optional[int] = None,
-    count: Optional[int] = None
+    count: Optional[int] = None,
 ):
     """
     return a numpy array from a buffered IO object, first decompressing it in
@@ -90,6 +90,6 @@ def np_from_buffered_io(
 
 
 def make_c_contiguous(arr: np.ndarray) -> np.ndarray:
-    if arr.flags['C_CONTIGUOUS'] is False:
+    if arr.flags["C_CONTIGUOUS"] is False:
         return np.ascontiguousarray(arr)
     return arr

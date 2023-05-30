@@ -46,7 +46,8 @@ def filterkwargs(
 
 def call_kwargfiltered(func: Callable, *args, **kwargs) -> Any:
     """can use this to call a function with keyword arguments it doesn't actually
-    accept (and it will throw out those keywords instead of creating an error)"""
+    accept (and it will throw out those keywords instead of creating an error)
+    """
     # TODO: Maybe rewrite as decorator
     return func(*args, **filterkwargs(func, kwargs))
 
@@ -91,10 +92,11 @@ def specialize(
     func: Callable,
     check: Callable[[Any], tuple[bool, Any]],
     error: Optional[Callable[[Exception], str]] = None,
-    tracker: TrivialTracker = TrivialTracker()
+    tracker: TrivialTracker = TrivialTracker(),
 ):
     """replaces the common pdr special checks by wrapping a special and non-special
     function together"""
+
     @wraps(func)
     def preempt_if_special(*args, **kwargs):
         try:
@@ -102,7 +104,9 @@ def specialize(
             #  level, we need to change the default signature of special case
             #  checks to return the name of the special case, or do more
             #  digging into deeper levels than I like
-            is_special, special_result = call_kwargfiltered(check, *args, **kwargs)
+            is_special, special_result = call_kwargfiltered(
+                check, *args, **kwargs
+            )
             tracker.track(check, is_special=is_special)
             if is_special is True:
                 return special_result
@@ -111,6 +115,7 @@ def specialize(
             if error is None:
                 raise
             return error(ex)
+
     preempt_if_special.__signature__ = sig_union(func, check)
     return preempt_if_special
 
@@ -125,7 +130,9 @@ def softquery(
     the argument names in the later functions"""
     # explanatory variables
     have_args = kwargdict.keys()
-    require_args = get_all_argnames(func, *querydict.values(), nonoptional=True)
+    require_args = get_all_argnames(
+        func, *querydict.values(), nonoptional=True
+    )
     args_to_get = require_args.difference(have_args)
     missing = args_to_get.difference(querydict)
     if len(missing) > 0:
@@ -133,6 +140,6 @@ def softquery(
     for qname in querydict:
         if qname not in args_to_get.intersection(querydict):
             continue
-        kwargdict['tracker'].track(querydict[qname])
+        kwargdict["tracker"].track(querydict[qname])
         kwargdict[qname] = call_kwargfiltered(querydict[qname], **kwargdict)
     return kwargdict

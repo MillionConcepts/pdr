@@ -8,7 +8,7 @@ def looks_like_ascii(block, name):
     return (
         ("SPREADSHEET" in name)
         or ("ASCII" in name)
-        or (block.get('INTERCHANGE_FORMAT') == 'ASCII')
+        or (block.get("INTERCHANGE_FORMAT") == "ASCII")
     )
 
 
@@ -49,9 +49,7 @@ def _check_delimiter_stream(identifiers, name, target):
     # TODO: not sure this is a good assumption
     if not identifiers["RECORD_TYPE"] == "STREAM":
         return False
-    textish = map(
-        partial(contains, name), ("ASCII", "SPREADSHEET", "HEADER")
-    )
+    textish = map(partial(contains, name), ("ASCII", "SPREADSHEET", "HEADER"))
     if any(textish):
         return True
     return False

@@ -16,8 +16,12 @@ from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_offset, check_special_block
 from pdr.func import specialize
-from pdr.loaders._helpers import quantity_start_byte, \
-    _count_from_bottom_of_file, looks_like_ascii, _check_delimiter_stream
+from pdr.loaders._helpers import (
+    quantity_start_byte,
+    _count_from_bottom_of_file,
+    looks_like_ascii,
+    _check_delimiter_stream,
+)
 from pdr.parselabel.pds3 import pointerize, read_pvl, literalize_pvl
 from pdr.pd_utils import insert_sample_types_into_df, reindex_df_values
 from pdr.utils import append_repeated_object, find_repository_root, check_cases
@@ -164,20 +168,24 @@ def im_sample_type(base_samp_info):
         return sample_types(
             base_samp_info["SAMPLE_TYPE"],
             base_samp_info["BYTES_PER_PIXEL"],
-            for_numpy=True
+            for_numpy=True,
         )
 
 
 def base_sample_info(block):
     return {
-        'BYTES_PER_PIXEL': int(block.get('SAMPLE_BITS', 0) / 8),
-        'SAMPLE_TYPE': block.get("SAMPLE_TYPE", "")
+        "BYTES_PER_PIXEL": int(block.get("SAMPLE_BITS", 0) / 8),
+        "SAMPLE_TYPE": block.get("SAMPLE_TYPE", ""),
     }
 
 
 def generic_image_properties(block, sample_type):
-    props = {"BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8), "sample_type": sample_type,
-             "nrows": block["LINES"], "ncols": block["LINE_SAMPLES"]}
+    props = {
+        "BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8),
+        "sample_type": sample_type,
+        "nrows": block["LINES"],
+        "ncols": block["LINE_SAMPLES"],
+    }
     if "BANDS" in block:
         props["nbands"] = block["BANDS"]
         props["band_storage_type"] = block.get("BAND_STORAGE_TYPE", None)
@@ -236,7 +244,9 @@ def get_target(data: PDRLike, name: str):
     return target
 
 
-def data_start_byte(identifiers: dict, block: Mapping, target, filename) -> int:
+def data_start_byte(
+    identifiers: dict, block: Mapping, target, filename
+) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
     """
@@ -265,10 +275,10 @@ def data_start_byte(identifiers: dict, block: Mapping, target, filename) -> int:
 
 def table_position(identifiers: dict, block, target, name, start_byte):
     try:
-        if 'RECORDS' in block.keys():
-            n_records = block['RECORDS']
-        elif 'ROWS' in block.keys():
-            n_records = block['ROWS']
+        if "RECORDS" in block.keys():
+            n_records = block["RECORDS"]
+        elif "ROWS" in block.keys():
+            n_records = block["ROWS"]
         else:
             n_records = None
     except AttributeError:
@@ -276,7 +286,7 @@ def table_position(identifiers: dict, block, target, name, start_byte):
     length = None
     if (as_rows := _check_delimiter_stream(identifiers, name, target)) is True:
         if isinstance(target[1], dict):
-            start = target[1]['value'] - 1
+            start = target[1]["value"] - 1
         else:
             try:
                 start = target[1] - 1
@@ -292,9 +302,9 @@ def table_position(identifiers: dict, block, target, name, start_byte):
                 length = block["BYTES"]
             elif n_records is not None:
                 if "RECORD_BYTES" in block.keys():
-                    record_length = block['RECORD_BYTES']
+                    record_length = block["RECORD_BYTES"]
                 elif "ROW_BYTES" in block.keys():
-                    record_length = block['ROW_BYTES']
+                    record_length = block["ROW_BYTES"]
                     record_length += block.get("ROW_SUFFIX_BYTES", 0)
                 elif identifiers["RECORD_BYTES"] is not None:
                     record_length = identifiers["RECORD_BYTES"]
@@ -304,7 +314,7 @@ def table_position(identifiers: dict, block, target, name, start_byte):
                     length = record_length * n_records
         except AttributeError:
             length = None
-    table_props = {'start': start, 'length': length, 'as_rows': as_rows}
+    table_props = {"start": start, "length": length, "as_rows": as_rows}
     return table_props
 
 
@@ -333,18 +343,17 @@ def parse_table_structure(name, block, filename, data, identifiers):
     to np.fromfile or one of several ASCII table readers.
     """
     fmtdef = read_table_structure(block, name, filename, data, identifiers)
-    if (
-        fmtdef["DATA_TYPE"].str.contains("ASCII").any()
-        or looks_like_ascii(block, name)
+    if fmtdef["DATA_TYPE"].str.contains("ASCII").any() or looks_like_ascii(
+        block, name
     ):
         # don't try to load it as a binary file
         return fmtdef, None
     if fmtdef is None:
         return fmtdef, np.dtype([])
-    for end in ('_PREFIX', '_SUFFIX', ''):
-        length = block.get(f'ROW{end}_BYTES')
+    for end in ("_PREFIX", "_SUFFIX", ""):
+        length = block.get(f"ROW{end}_BYTES")
         if length is not None:
-            fmtdef[f'ROW{end}_BYTES'] = length
+            fmtdef[f"ROW{end}_BYTES"] = length
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
@@ -378,17 +387,23 @@ def read_table_structure(block, name, filename, data, identifiers):
 def read_format_block(block, object_name, filename, data, identifiers):
     # load external structure specifications
     format_block = list(block.items())
-    block_name = block.get('NAME')
+    block_name = block.get("NAME")
     while "^STRUCTURE" in [obj[0] for obj in format_block]:
-        format_block = inject_format_files(format_block, object_name, filename, data)
+        format_block = inject_format_files(
+            format_block, object_name, filename, data
+        )
     fields = []
     for item_type, definition in format_block:
         if item_type in ("COLUMN", "FIELD"):
-            obj = dict(definition) | {'BLOCK_NAME': block_name}
+            obj = dict(definition) | {"BLOCK_NAME": block_name}
             repeat_count = definition.get("ITEMS")
-            obj = bit_handling.add_bit_column_info(obj, definition, identifiers)
+            obj = bit_handling.add_bit_column_info(
+                obj, definition, identifiers
+            )
         elif item_type == "CONTAINER":
-            obj = read_format_block(definition, object_name, filename, data, identifiers)
+            obj = read_format_block(
+                definition, object_name, filename, data, identifiers
+            )
             repeat_count = definition.get("REPETITIONS")
         else:
             continue
@@ -432,7 +447,9 @@ def inject_format_files(block, name, filename, data):
     assembled_structure = []
     last_ix = 0
     for ix, format_filename in format_filenames.items():
-        fmt = list(load_format_file(data, format_filename, name, filename).items())
+        fmt = list(
+            load_format_file(data, format_filename, name, filename).items()
+        )
         assembled_structure += block[last_ix:ix] + fmt
         last_ix = ix + 1
     assembled_structure += block[last_ix:]
@@ -465,5 +482,3 @@ def load_format_file(data, format_file, name, filename):
 
 def get_identifiers(data):
     return data.identifiers
-
-

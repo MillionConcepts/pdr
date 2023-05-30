@@ -39,6 +39,7 @@ def read_label(filename, fmt: Optional[str] = "text"):
         return trim_label(decompress(filename)).decode("utf-8")
     elif fmt == "pvl":
         import pvl
+
         return pvl.load(filename)
     raise NotImplementedError(f"The {fmt} format is not yet implemented.")
 
@@ -64,13 +65,17 @@ def skeptically_load_header(
                 if table_props["start"] > 0:
                     file.readlines(table_props["start"])
                 text = "\r\n".join(
-                    map(lambda l: l.decode('utf-8'),
-                        file.readlines(table_props["length"]))
+                    map(
+                        lambda l: l.decode("utf-8"),
+                        file.readlines(table_props["length"]),
+                    )
                 )
         else:
             with decompress(check_cases(filename)) as file:
                 file.seek(table_props["start"])
-                text = file.read(min(table_props["length"], 80000)).decode('ISO-8859-1')
+                text = file.read(min(table_props["length"], 80000)).decode(
+                    "ISO-8859-1"
+                )
         return text
     except (ValueError, OSError) as ex:
         warnings.warn(f"unable to parse {name}: {ex}")
@@ -78,9 +83,7 @@ def skeptically_load_header(
 
 def ignore_if_pdf(data, object_name, path):
     if looks_like_this_kind_of_file(path, [".pdf"]):
-        warnings.warn(
-            f"Cannot open {path}; PDF files are not supported."
-        )
+        warnings.warn(f"Cannot open {path}; PDF files are not supported.")
         block = data.metaget_(object_name)
         if block is None:
             return data.metaget_(pointerize(object_name))

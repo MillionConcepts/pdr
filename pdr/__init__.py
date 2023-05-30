@@ -8,10 +8,11 @@ pkg_dir = _osp.abspath(_osp.dirname(__file__))
 def read(fp, **kwargs):
     from pdr.pdr import Data, Metadata
     from pdr.utils import check_cases
+
     try:
         return Data(fp, **kwargs)
     except FileNotFoundError:
-        if any(val in str(fp) for val in ['http', 'www.', 'ftp:']):
+        if any(val in str(fp) for val in ["http", "www.", "ftp:"]):
             raise ValueError(
                 "Support for read from url is not currently implemented."
             )

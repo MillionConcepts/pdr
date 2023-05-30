@@ -20,8 +20,13 @@ def waves_burst_fix_table_names(data, name):
     return block
 
 
-def bit_start_find_and_fix(list_of_pvl_objects_for_bit_columns, start_bit_list):
-    if list_of_pvl_objects_for_bit_columns[-1].get("NAME") == "NADIR_OFFSET_SIGN":
+def bit_start_find_and_fix(
+    list_of_pvl_objects_for_bit_columns, start_bit_list
+):
+    if (
+        list_of_pvl_objects_for_bit_columns[-1].get("NAME")
+        == "NADIR_OFFSET_SIGN"
+    ):
         special_start_bit_list = start_bit_list
         special_start_bit_list[-1] = 16
         return True, special_start_bit_list

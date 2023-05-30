@@ -42,16 +42,16 @@ def make_format_specifications(props):
 
 
 def extract_single_band_linefix(image, props):
-    if props['linepad'] == 0:
+    if props["linepad"] == 0:
         return image, None, None
     prefix, suffix = None, None
-    image = image.reshape(props['nrows'], props['ncols'] + props['linepad'])
-    if props.get('line_suffix_pix', 0) > 0:
-        suffix = image[:, -props['line_suffix_pix']:]
-        image = image[:, :-props['line_suffix_pix']]
-    if props.get('line_prefix_pix', 0) > 0:
-        prefix = image[:, :props['line_prefix_pix']]
-        image = image[:, props['line_prefix_pix']:]
+    image = image.reshape(props["nrows"], props["ncols"] + props["linepad"])
+    if props.get("line_suffix_pix", 0) > 0:
+        suffix = image[:, -props["line_suffix_pix"] :]
+        image = image[:, : -props["line_suffix_pix"]]
+    if props.get("line_prefix_pix", 0) > 0:
+        prefix = image[:, : props["line_prefix_pix"]]
+        image = image[:, props["line_prefix_pix"] :]
     return image, prefix, suffix
 
 
@@ -60,7 +60,7 @@ def process_single_band_image(f, props):
     # TODO: added this 'count' parameter to handle a case in which the image
     #  was not the last object in the file. We might want to add it to
     #  the multiband loaders too.
-    image = np_from_buffered_io(f, dtype=numpy_dtype, count=props['pixels'])
+    image = np_from_buffered_io(f, dtype=numpy_dtype, count=props["pixels"])
     image, prefix, suffix = extract_single_band_linefix(image, props)
     image = image.reshape(
         (props["nrows"] + props["rowpad"], props["ncols"] + props["colpad"])
@@ -70,21 +70,21 @@ def process_single_band_image(f, props):
 
 
 def extract_bil_linefix(image, props):
-    if props['linepad'] == 0:
+    if props["linepad"] == 0:
         return image, None, None
     prefix, suffix = None, None
-    image = image.reshape(props['nrows'], int(image.size / props['nrows']))
-    if props.get('line_suffix_pix') is not None:
-        suffix = image[:, -props['line_suffix_pix']:]
-        image = image[:, :-props['line_suffix_pix']]
-    if props.get('line_prefix_pix') is not None:
-        prefix = image[:, :props['line_prefix_pix']]
-        image = image[:, props['line_prefix_pix']:]
+    image = image.reshape(props["nrows"], int(image.size / props["nrows"]))
+    if props.get("line_suffix_pix") is not None:
+        suffix = image[:, -props["line_suffix_pix"] :]
+        image = image[:, : -props["line_suffix_pix"]]
+    if props.get("line_prefix_pix") is not None:
+        prefix = image[:, : props["line_prefix_pix"]]
+        image = image[:, props["line_prefix_pix"] :]
     return image, prefix, suffix
 
 
 def process_multiband_image(f, props):
-    bst = props['band_storage_type']
+    bst = props["band_storage_type"]
     if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED"):
         warnings.warn(
             f"Unsupported BAND_STORAGE_TYPE={bst}. Guessing BAND_SEQUENTIAL."
@@ -95,7 +95,7 @@ def process_multiband_image(f, props):
     bands, lines, samples = (
         props["nbands"] + props["bandpad"],
         props["nrows"] + props["rowpad"],
-        props["ncols"] + props["colpad"]
+        props["ncols"] + props["colpad"],
     )
     prefix, suffix = None, None
     if bst == "BAND_SEQUENTIAL":
@@ -115,7 +115,9 @@ def extract_axplanes(image, props):
         if (count := props.get(f"{side}_{ax}s")) is None:
             continue
         axn, axname = {
-            "band": (0, "BAND"), "row": (1, "LINE"), "col": (2, "SAMPLE")
+            "band": (0, "BAND"),
+            "row": (1, "LINE"),
+            "col": (2, "SAMPLE"),
         }[ax]
         axn = axn - 1 if len(image.shape) == 2 else axn
         aslice, pslice = [], []
@@ -135,8 +137,6 @@ def extract_axplanes(image, props):
 
 
 def make_c_contiguous(image: np.ndarray) -> np.ndarray:
-    if image.flags['C_CONTIGUOUS'] is False:
+    if image.flags["C_CONTIGUOUS"] is False:
         return np.ascontiguousarray(image)
     return image
-
-

@@ -55,10 +55,10 @@ def sample_types(
     return {
         "IEEE_REAL": f">{_float}",
         "PC_REAL": f"<{_float}",
-        "FLOAT":  f">{_float}",
-        "REAL":  f">{_float}",
-        "MAC_REAL":  f">{_float}",
-        "SUN_REAL":  f">{_float}",
+        "FLOAT": f">{_float}",
+        "REAL": f">{_float}",
+        "MAC_REAL": f">{_float}",
+        "SUN_REAL": f">{_float}",
         "MSB_BIT_STRING": f"{void}{sample_bytes}",
         "LSB_BIT_STRING": f"{void}{sample_bytes}",
         # "Character string representing a real number"
@@ -72,7 +72,7 @@ def sample_types(
         "TIME": f"S{sample_bytes}",
         "VOID": f"{void}{sample_bytes}",
         "BCD": f"{void}{sample_bytes}",
-        "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}"
+        "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}",
     }[sample_type]
 
 

@@ -1,8 +1,12 @@
 from typing import Union
 
-from pdr.formats import check_special_sample_type, \
-    check_special_qube_band_storage, \
-    check_special_position, check_special_structure, check_special_table_reader
+from pdr.formats import (
+    check_special_sample_type,
+    check_special_qube_band_storage,
+    check_special_position,
+    check_special_structure,
+    check_special_table_reader,
+)
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.loaders._querystructures import default_data_queries
 from pdr.parselabel.pds3 import depointerize
@@ -21,17 +25,17 @@ class Loader:
         self.argnames = get_argnames(loader_function)
 
     def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
-        kwargdict = {'data': pdrlike, 'name': depointerize(name)} | kwargs
-        kwargdict['tracker'].set_metadata(loader=self.__class__.__name__)
-        record_exc = {'status': 'query_ok'}
+        kwargdict = {"data": pdrlike, "name": depointerize(name)} | kwargs
+        kwargdict["tracker"].set_metadata(loader=self.__class__.__name__)
+        record_exc = {"status": "query_ok"}
         try:
             info = softquery(self.loader_function, self.queries, kwargdict)
         except Exception as exc:
-            record_exc = {'status': 'query_failed', 'exception': str(exc)}
+            record_exc = {"status": "query_failed", "exception": str(exc)}
             raise exc
         finally:
-            kwargdict['tracker'].track(self.loader_function, **record_exc)
-            kwargdict['tracker'].dump()
+            kwargdict["tracker"].track(self.loader_function, **record_exc)
+            kwargdict["tracker"].dump()
         return call_kwargfiltered(self.loader_function, **info)
 
     queries = default_data_queries()
@@ -42,18 +46,25 @@ class ReadImage(Loader):
 
     def __init__(self):
         from pdr.loaders.image import read_image
-        from pdr.loaders.queries import base_sample_info, im_sample_type, \
-            check_if_qube, get_qube_band_storage_type, \
-            generic_image_properties
+        from pdr.loaders.queries import (
+            base_sample_info,
+            im_sample_type,
+            check_if_qube,
+            get_qube_band_storage_type,
+            generic_image_properties,
+        )
 
         super().__init__(read_image)
         self.queries = default_data_queries() | {
-        'base_samp_info': base_sample_info,
-        'sample_type': specialize(im_sample_type, check_special_sample_type),
-        'band_storage_type': specialize(get_qube_band_storage_type,
-                                        check_special_qube_band_storage),
-        'gen_props': specialize(generic_image_properties, check_if_qube),
-    }
+            "base_samp_info": base_sample_info,
+            "sample_type": specialize(
+                im_sample_type, check_special_sample_type
+            ),
+            "band_storage_type": specialize(
+                get_qube_band_storage_type, check_special_qube_band_storage
+            ),
+            "gen_props": specialize(generic_image_properties, check_if_qube),
+        }
 
 
 class ReadTable(Loader):
@@ -65,8 +76,8 @@ class ReadTable(Loader):
 
         super().__init__(specialize(read_table, check_special_table_reader))
         self.queries = default_data_queries() | {
-            'table_props': specialize(table_position, check_special_position),
-            'fmtdef_dt': specialize(
+            "table_props": specialize(table_position, check_special_position),
+            "fmtdef_dt": specialize(
                 parse_table_structure, check_special_structure
             ),
         }
@@ -81,7 +92,7 @@ class ReadHeader(Loader):
 
         super().__init__(read_header)
         queries = default_data_queries() | {
-            'table_props': specialize(table_position, check_special_position)
+            "table_props": specialize(table_position, check_special_position)
         }
 
 

@@ -1,11 +1,26 @@
 import re
 from typing import Optional, Callable
 from pdr.formats import check_trivial_case
-from pdr.loaders.utility import looks_like_this_kind_of_file, FITS_EXTENSIONS, \
-    TIFF_EXTENSIONS, JP2_EXTENSIONS, IMAGE_EXTENSIONS, TABLE_EXTENSIONS, \
-    TEXT_EXTENSIONS
-from pdr.loaders.datawrap import ReadLabel, ReadArray, ReadFits, ReadText, ReadImage, \
-    ReadHeader, ReadCompressedImage, ReadTable, TBD
+from pdr.loaders.utility import (
+    looks_like_this_kind_of_file,
+    FITS_EXTENSIONS,
+    TIFF_EXTENSIONS,
+    JP2_EXTENSIONS,
+    IMAGE_EXTENSIONS,
+    TABLE_EXTENSIONS,
+    TEXT_EXTENSIONS,
+)
+from pdr.loaders.datawrap import (
+    ReadLabel,
+    ReadArray,
+    ReadFits,
+    ReadText,
+    ReadImage,
+    ReadHeader,
+    ReadCompressedImage,
+    ReadTable,
+    TBD,
+)
 
 
 def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
@@ -31,13 +46,18 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     name. checks for special cases and then falls back to generic loading
     methods of pdr.Data.
     """
-    is_trivial, trivial_loader = check_trivial_case(pointer, data.identifiers,
-                                                    data.filename)
+    is_trivial, trivial_loader = check_trivial_case(
+        pointer, data.identifiers, data.filename
+    )
     if is_trivial is True:
         return trivial_loader
     if pointer == "LABEL":
         return ReadLabel()
-    if "TEXT" in pointer or "PDF" in pointer or "MAP_PROJECTION_CATALOG" in pointer:
+    if (
+        "TEXT" in pointer
+        or "PDF" in pointer
+        or "MAP_PROJECTION_CATALOG" in pointer
+    ):
         return ReadText()
     if "DESC" in pointer:  # probably points to a reference file
         return ReadText()
@@ -55,7 +75,9 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     ):
         return ReadTable()
     if "HEADER" in pointer:
-        if looks_like_this_kind_of_file(data.file_mapping[pointer], FITS_EXTENSIONS):
+        if looks_like_this_kind_of_file(
+            data.file_mapping[pointer], FITS_EXTENSIONS
+        ):
             return ReadFits()
         return ReadHeader()
     if "HISTOGRAM" in pointer:
@@ -63,7 +85,11 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
-    if ("IMAGE" in pointer) or ("QUB" in pointer) or ("XDR_DOCUMENT" in pointer):
+    if (
+        ("IMAGE" in pointer)
+        or ("QUB" in pointer)
+        or ("XDR_DOCUMENT" in pointer)
+    ):
         # TODO: sloppy pt. 1. this may be problematic for
         #  products with a 'secondary' fits file, etc.
         if image_lib_dispatch(pointer, data) is not None:
@@ -102,9 +128,5 @@ def file_extension_to_loader(filename: str) -> Callable:
 # archived in the same place as the data products and add little, if any,
 # context to individual products
 
-objects_to_ignore = [
-    "DESCRIPTION", "DATA_SET_MAP_PROJECT.*", ".*_DESC"
-]
-OBJECTS_IGNORED_BY_DEFAULT = re.compile('|'.join(objects_to_ignore))
-
-
+objects_to_ignore = ["DESCRIPTION", "DATA_SET_MAP_PROJECT.*", ".*_DESC"]
+OBJECTS_IGNORED_BY_DEFAULT = re.compile("|".join(objects_to_ignore))

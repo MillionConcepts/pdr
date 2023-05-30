@@ -38,7 +38,7 @@ def reformat_pds4_tools_label(label):
         label.to_dict(),
         constant(True),
         lambda _, v: unpack_if_mapping(v, (OrderedDict, MultiDict)),
-        mtypes=(OrderedDict, MultiDict)
+        mtypes=(OrderedDict, MultiDict),
     )
     params = []
     # collect all keys to populate pdr.Metadata's fieldcounts attribute
@@ -46,6 +46,6 @@ def reformat_pds4_tools_label(label):
         result,
         constant(True),
         lambda k, v: log_and_pass(params, k, v),
-        mtypes=(MultiDict,)
+        mtypes=(MultiDict,),
     )
     return result, params

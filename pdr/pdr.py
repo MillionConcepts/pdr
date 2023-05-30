@@ -35,7 +35,8 @@ from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
 from pdr.utils import (
     check_cases,
     prettify_multidict,
-    associate_label_file, catch_return_default,
+    associate_label_file,
+    catch_return_default,
 )
 
 
@@ -60,7 +61,7 @@ ID_FIELDS = (
     "FILE_RECORDS",
     "LABEL_RECORDS",
     "NOTE",
-    )
+)
 
 
 class Metadata(MultiDict):
@@ -69,6 +70,7 @@ class Metadata(MultiDict):
     includes various convenience methods for handling metadata syntaxes,
     common access and display interfaces, etc.
     """
+
     def __init__(self, mapping_params, standard="PDS3", **kwargs):
         mapping, params = mapping_params
         super().__init__(mapping, **kwargs)
@@ -182,7 +184,7 @@ class Data:
         search_paths: Union[Collection[str], str] = (),
         skip_existence_check: bool = False,
         pvl_limit: int = DEFAULT_PVL_LIMIT,
-        tracker: Optional[TrivialTracker] = None
+        tracker: Optional[TrivialTracker] = None,
     ):
         # list of the product's associated data objects
         self.index = []
@@ -192,8 +194,10 @@ class Data:
         self.filename = check_cases(Path(fn).absolute(), skip_existence_check)
         self.loaders = {}
         if (self.debug is True) and (tracker is None):
-            self.tracker = Tracker(Path(self.filename).name.replace(".", "_"),
-                                   outdir=Path(__file__).parent/".tracker_logs")
+            self.tracker = Tracker(
+                Path(self.filename).name.replace(".", "_"),
+                outdir=Path(__file__).parent / ".tracker_logs",
+            )
             self.tracker.clear()
         elif tracker is None:
             self.tracker = TrivialTracker()
@@ -236,7 +240,9 @@ class Data:
         # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
-        self.identifiers = {field: self.metaget_(field, "") for field in ID_FIELDS}
+        self.identifiers = {
+            field: self.metaget_(field, "") for field in ID_FIELDS
+        }
 
     def _init_pds4(self):
         # Just use pds4_tools if this is a PDS4 file
@@ -268,8 +274,9 @@ class Data:
             self.index.append(object_name)
 
     def _object_to_filename(self, object_name):
-        is_special, special_target = check_special_fn(self, object_name,
-                                                      self.identifiers)
+        is_special, special_target = check_special_fn(
+            self, object_name, self.identifiers
+        )
         if is_special is True:
             return self.get_absolute_paths(special_target)
         is_comp, comp_paths = self._check_compressed_file_pointer(object_name)
@@ -368,7 +375,9 @@ class Data:
             f"not found in path."
         )
         return_default = self.metaget_(object_name)
-        maybe = catch_return_default(self.debug, return_default, FileNotFoundError())
+        maybe = catch_return_default(
+            self.debug, return_default, FileNotFoundError()
+        )
         setattr(self, object_name, maybe)
 
     def _load_pds4(self, object_name):
@@ -420,6 +429,7 @@ class Data:
 
     def load_from_pointer(self, pointer, **load_kwargs):
         from pdr.loaders.dispatch import pointer_to_loader
+
         loader = pointer_to_loader(pointer, self)
         if self.debug is True:
             loader = Dynamic.from_function(loader, optional=True)
@@ -518,7 +528,7 @@ class Data:
                 f"please specify the name of an image object. "
                 f"keys include {self.index}"
             )
-        if not self[object_name].__class__.__name__ == 'ndarray':
+        if not self[object_name].__class__.__name__ == "ndarray":
             raise TypeError("Data.show only works on array data.")
         if scaled is True:
             obj = self.get_scaled(object_name)
@@ -557,7 +567,7 @@ class Data:
 
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
             fdt = browse_kwargs.get("float_dtype")
-            if self[obj].__class__.__name__ == 'ndarray':
+            if self[obj].__class__.__name__ == "ndarray":
                 if scaled == "both":
                     dump_it(
                         self.get_scaled(obj, float_dtype=fdt),

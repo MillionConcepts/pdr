@@ -20,23 +20,23 @@ def read_array(filename, block, start_byte):
     # TODO: Maybe add block[AXES] as names? Might have to switch to pandas
     #  or a flattened structured array or something weirder
     obj = check_array_for_subobject(block)
-    if block.get('INTERCHANGE_FORMAT') == "BINARY":
+    if block.get("INTERCHANGE_FORMAT") == "BINARY":
         with decompress(filename) as f:
             binary = np_from_buffered_io(
                 f,
                 dtype=sample_types(obj["DATA_TYPE"], obj["BYTES"], True),
                 count=get_array_num_items(block),
-                offset=start_byte
+                offset=start_byte,
             )
-        return binary.reshape(block['AXIS_ITEMS'])
+        return binary.reshape(block["AXIS_ITEMS"])
     # assume objects without the optional interchange_format key are ascii
     with open(filename) as stream:
         text = stream.read()
     try:
-        text = tuple(map(float, re.findall(r'[+-]?\d+\.?\d*', text)))
+        text = tuple(map(float, re.findall(r"[+-]?\d+\.?\d*", text)))
     except (TypeError, IndexError, ValueError):
-        text = re.split(r'\s+', text)
-    array = np.asarray(text).reshape(block['AXIS_ITEMS'])
+        text = re.split(r"\s+", text)
+    array = np.asarray(text).reshape(block["AXIS_ITEMS"])
     if "DATA_TYPE" in obj.keys():
         array = array.astype(
             sample_types(obj["DATA_TYPE"], obj["BYTES"], True)
@@ -44,15 +44,25 @@ def read_array(filename, block, start_byte):
     return array
 
 
-def read_table(identifiers, filename, fmtdef_dt, table_props, block, start_byte, debug,
-               return_default):
+def read_table(
+    identifiers,
+    filename,
+    fmtdef_dt,
+    table_props,
+    block,
+    start_byte,
+    debug,
+    return_default,
+):
     """
     Read a table. Parse the label format definition and then decide
     whether to parse it as text or binary.
     """
     fmtdef, dt = fmtdef_dt
     if dt is None:  # we believe object is an ascii file
-        table = _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props)
+        table = _interpret_as_ascii(
+            identifiers, filename, fmtdef, block, table_props
+        )
         table.columns = fmtdef.NAME.tolist()
     else:
         table = _interpret_as_binary(filename, fmtdef, dt, block, start_byte)
@@ -94,8 +104,9 @@ def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
     sep = check_explicit_delimiter(block)
     with decompress(filename) as f:
         if table_props["as_rows"] is False:
-            bytes_buffer = head_file(f, nbytes=table_props["length"],
-                                     offset=table_props["start"])
+            bytes_buffer = head_file(
+                f, nbytes=table_props["length"], offset=table_props["start"]
+            )
             string_buffer = StringIO(bytes_buffer.read().decode())
             bytes_buffer.close()
         else:
@@ -147,18 +158,16 @@ def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
             from pdr.pd_utils import compute_offsets
 
             colspecs = []
-            position_records = compute_offsets(fmtdef).to_dict('records')
+            position_records = compute_offsets(fmtdef).to_dict("records")
             for record in position_records:
-                if np.isnan(record.get('ITEM_BYTES', np.nan)):
-                    col_length = record['BYTES']
+                if np.isnan(record.get("ITEM_BYTES", np.nan)):
+                    col_length = record["BYTES"]
                 else:
-                    col_length = int(record['ITEM_BYTES'])
+                    col_length = int(record["ITEM_BYTES"])
                 colspecs.append(
-                    (record['OFFSET'], record['OFFSET'] + col_length)
+                    (record["OFFSET"], record["OFFSET"] + col_length)
                 )
-            table = pd.read_fwf(
-                string_buffer, header=None, colspecs=colspecs
-            )
+            table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
             string_buffer.close()
             return table
         except (pd.errors.EmptyDataError, pd.errors.ParserError):
@@ -166,5 +175,3 @@ def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
     table = pd.read_fwf(string_buffer, header=None)
     string_buffer.close()
     return table
-
-

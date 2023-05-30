@@ -6,8 +6,15 @@ from numbers import Number
 from pathlib import Path
 import struct
 import textwrap
-from typing import Union, Sequence, Mapping, MutableSequence, IO, Collection, \
-    Optional
+from typing import (
+    Union,
+    Sequence,
+    Mapping,
+    MutableSequence,
+    IO,
+    Collection,
+    Optional,
+)
 import warnings
 from zipfile import ZipFile
 
@@ -63,7 +70,7 @@ def stem_path(path: Path):
 
 def check_cases(
     filenames: Union[Collection[Union[Path, str]], Union[Path, str]],
-    skip: bool = False
+    skip: bool = False,
 ) -> str:
     """
     check for oddly-cased versions of a specified filename in local path --
@@ -149,9 +156,9 @@ def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
 def find_repository_root(absolute_path):
     parts = Path(absolute_path).parts
     data_indices = [
-        ix for ix, part in enumerate(parts) if part.lower() == 'data'
+        ix for ix, part in enumerate(parts) if part.lower() == "data"
     ]
-    return Path(*parts[:data_indices[-1]])
+    return Path(*parts[: data_indices[-1]])
 
 
 def prettify_multidict(multi, sep=" ", indent=0):

@@ -37,7 +37,7 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
     import pandas as pd
 
     fmtdef, dt = fmtdef_dt
-    record_length = block['ROW_BYTES']
+    record_length = block["ROW_BYTES"]
 
     # Checks end of each row for newline character. If missing, removes extraneous
     # newline from middle of the row and adjusts for the extra byte.
@@ -45,18 +45,18 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
         processed = bytearray()
         for row in range(0, identifiers["FILE_RECORDS"]):
             bytes_ = f.read(record_length)
-            if not bytes_.endswith(b'\n'):
-                new_bytes_ = bytes_.replace(b'\n', b'') + f.read(1)
+            if not bytes_.endswith(b"\n"):
+                new_bytes_ = bytes_.replace(b"\n", b"") + f.read(1)
                 processed += new_bytes_
             else:
                 processed += bytes_
     string_buffer = StringIO(processed.decode())
     # adapted from _interpret_as_ascii()
     colspecs = []
-    position_records = compute_offsets(fmtdef).to_dict('records')
+    position_records = compute_offsets(fmtdef).to_dict("records")
     for record in position_records:
-        col_length = record['BYTES']
-        colspecs.append((record['OFFSET'], record['OFFSET'] + col_length))
+        col_length = record["BYTES"]
+        colspecs.append((record["OFFSET"], record["OFFSET"] + col_length))
     string_buffer.seek(0)
     table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
     string_buffer.close()

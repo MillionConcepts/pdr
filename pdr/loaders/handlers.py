@@ -24,7 +24,7 @@ def handle_fits_file(data, filename, debug, return_default, name=""):
         else:
             # TODO: add header key in queries so we don't need to pass a data object
             #  here?
-            hdr_key = name+"_HEADER"
+            hdr_key = name + "_HEADER"
             setattr(data, hdr_key, hdr_val)
             data.index += [hdr_key]
         return hdulist[pointer_to_fits_key(name, hdulist)].data
@@ -37,20 +37,22 @@ def handle_fits_file(data, filename, debug, return_default, name=""):
 
 def handle_compressed_image(filename):
     from PIL import Image
+
     # deactivate pillow's DecompressionBombError: many planetary images
     # are legitimately very large
     Image.MAX_IMAGE_PIXELS = None
     # noinspection PyTypeChecker
-    image = np.ascontiguousarray(
-        Image.open(filename)
-    ).copy()
+    image = np.ascontiguousarray(Image.open(filename)).copy()
     # pillow reads images as [x, y, channel] rather than [channel, x, y]
     if len(image.shape) == 3:
         return np.ascontiguousarray(np.rollaxis(image, 2))
     return image
 
 
-def handle_fits_header(hdulist, name="", ):
+def handle_fits_header(
+    hdulist,
+    name="",
+):
     astro_hdr = hdulist[pointer_to_fits_key(name, hdulist)].header
     output_hdr = MultiDict()
     for key, val, com in astro_hdr.cards:
@@ -60,7 +62,7 @@ def handle_fits_header(hdulist, name="", ):
             else:
                 output_hdr.add(key, str(val))
             if len(com) > 0:
-                comment_key = key + '_comment'
+                comment_key = key + "_comment"
                 output_hdr.add(comment_key, com)
     return output_hdr
 

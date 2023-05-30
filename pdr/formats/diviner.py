@@ -11,6 +11,6 @@ def diviner_l4_table_loader(fmtdef_dt, filename):
     fmtdef, dt = fmtdef_dt
     table = pd.DataFrame(
         np.loadtxt(filename, delimiter=",", skiprows=1),
-        columns=fmtdef['NAME'].tolist()
+        columns=fmtdef["NAME"].tolist(),
     )
     return table
