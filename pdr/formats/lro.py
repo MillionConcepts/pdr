@@ -1,4 +1,4 @@
-from pdr.pdr.loaders.queries import table_position
+from pdr.loaders.queries import table_position
 
 
 # def lamp_rdr_histogram_header_loader(data):
