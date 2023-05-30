@@ -91,7 +91,7 @@ class ReadHeader(Loader):
         from pdr.loaders.queries import table_position
 
         super().__init__(read_header)
-        queries = default_data_queries() | {
+        self.queries = default_data_queries() | {
             "table_props": specialize(table_position, check_special_position)
         }
 

@@ -22,16 +22,13 @@ def handle_fits_file(data, filename, debug, return_default, name=""):
         if "HEADER" in name:
             return hdr_val
         else:
-            # TODO: add header key in queries so we don't need to pass a data object
-            #  here?
+            # TODO: add header key in queries so we don't need to pass a data
+            #  object here?
             hdr_key = name + "_HEADER"
             setattr(data, hdr_key, hdr_val)
             data.index += [hdr_key]
         return hdulist[pointer_to_fits_key(name, hdulist)].data
     except Exception as ex:
-        # TODO: assuming this does not need to be specified as f-string
-        #  (like in read_header/tbd) -- maybe! must determine and specify
-        #  what cases this exception was needed to handle
         catch_return_default(debug, return_default, ex)
 
 
@@ -88,3 +85,14 @@ def pointer_to_fits_key(pointer, hdulist):
         for i in hdulist.info(output=False)
     ]
     return levratio.index(max(levratio))
+
+
+def add_bit_column_info(obj, definition, identifiers):
+    if "BIT_COLUMN" not in obj.keys():
+        return obj
+    from pdr.bit_handling import (
+        set_bit_string_data_type, get_bit_start_and_size
+    )
+    if "BIT_STRING" not in obj["DATA_TYPE"]:
+        obj = set_bit_string_data_type(obj, identifiers)
+    return get_bit_start_and_size(obj, definition, identifiers)

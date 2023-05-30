@@ -5,7 +5,6 @@ import os
 
 import pdr.loaders.queries
 from pdr.loaders.utility import tbd, trivial
-from pdr.pd_utils import insert_sample_types_into_df
 from pdr.loaders._helpers import _count_from_bottom_of_file
 from pdr.loaders.queries import table_position
 
@@ -50,6 +49,8 @@ def get_structure(block, name, filename, data, identifiers):
             fmtdef.at[7, "NAME"] = "REYNOLD NR. [=RHO*VREL*D/Mu]"
         dt = None
     else:
+        from pdr.pd_utils import insert_sample_types_into_df
+
         fmtdef, dt = insert_sample_types_into_df(fmtdef, identifiers)
     return fmtdef, dt
 

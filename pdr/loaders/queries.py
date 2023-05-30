@@ -1,29 +1,25 @@
 from __future__ import annotations
+
 import re
 import warnings
 from _operator import mul
 from functools import reduce
 from itertools import product, chain
 from pathlib import Path
-from types import MappingProxyType
 from typing import Sequence, Mapping, TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 from multidict import MultiDict
 
-from pdr import bit_handling
 from pdr.datatypes import sample_types
-from pdr.formats import check_special_offset, check_special_block
-from pdr.func import specialize
 from pdr.loaders._helpers import (
     quantity_start_byte,
     _count_from_bottom_of_file,
     looks_like_ascii,
     _check_delimiter_stream,
 )
+from pdr.loaders.handlers import add_bit_column_info
 from pdr.parselabel.pds3 import pointerize, read_pvl, literalize_pvl
-from pdr.pd_utils import insert_sample_types_into_df, reindex_df_values
 from pdr.utils import append_repeated_object, find_repository_root, check_cases
 
 if TYPE_CHECKING:
@@ -273,47 +269,64 @@ def data_start_byte(
     raise ValueError(f"Unknown data pointer format: {target}")
 
 
+def _extract_table_records(block):
+    if "RECORDS" in block.keys():
+        n_records = block["RECORDS"]
+    elif "ROWS" in block.keys():
+        n_records = block["ROWS"]
+    else:
+        n_records = None
+    return n_records
+
+
+def _table_row_position(length, n_records, target):
+    if isinstance(target[1], dict):
+        start = target[1]["value"] - 1
+    else:
+        try:
+            start = target[1] - 1
+        except TypeError:  # string types cannot have integers subtracted
+            # (string implies there is one object)
+            start = 0
+    if n_records is not None:
+        length = n_records
+    return length, start
+
+
+def _table_byte_position(block, identifiers, length, n_records, start_byte):
+    start = start_byte
+    try:
+        if "BYTES" in block.keys():
+            length = block["BYTES"]
+        elif n_records is not None:
+            if "RECORD_BYTES" in block.keys():
+                record_length = block["RECORD_BYTES"]
+            elif "ROW_BYTES" in block.keys():
+                record_length = block["ROW_BYTES"]
+                record_length += block.get("ROW_SUFFIX_BYTES", 0)
+            elif identifiers["RECORD_BYTES"] is not None:
+                record_length = identifiers["RECORD_BYTES"]
+            else:
+                record_length = None
+            if record_length is not None:
+                length = record_length * n_records
+    except AttributeError:
+        length = None
+    return length, start
+
+
 def table_position(identifiers: dict, block, target, name, start_byte):
     try:
-        if "RECORDS" in block.keys():
-            n_records = block["RECORDS"]
-        elif "ROWS" in block.keys():
-            n_records = block["ROWS"]
-        else:
-            n_records = None
+        n_records = _extract_table_records(block)
     except AttributeError:
         n_records = None
     length = None
     if (as_rows := _check_delimiter_stream(identifiers, name, target)) is True:
-        if isinstance(target[1], dict):
-            start = target[1]["value"] - 1
-        else:
-            try:
-                start = target[1] - 1
-            except TypeError:  # string types cannot have integers subtracted
-                # (string implies there is one object)
-                start = 0
-        if n_records is not None:
-            length = n_records
+        length, start = _table_row_position(length, n_records, target)
     else:
-        start = start_byte
-        try:
-            if "BYTES" in block.keys():
-                length = block["BYTES"]
-            elif n_records is not None:
-                if "RECORD_BYTES" in block.keys():
-                    record_length = block["RECORD_BYTES"]
-                elif "ROW_BYTES" in block.keys():
-                    record_length = block["ROW_BYTES"]
-                    record_length += block.get("ROW_SUFFIX_BYTES", 0)
-                elif identifiers["RECORD_BYTES"] is not None:
-                    record_length = identifiers["RECORD_BYTES"]
-                else:
-                    record_length = None
-                if record_length is not None:
-                    length = record_length * n_records
-        except AttributeError:
-            length = None
+        length, start = _table_byte_position(
+            block, identifiers, length, n_records, start_byte
+        )
     table_props = {"start": start, "length": length, "as_rows": as_rows}
     return table_props
 
@@ -354,6 +367,8 @@ def parse_table_structure(name, block, filename, data, identifiers):
         length = block.get(f"ROW{end}_BYTES")
         if length is not None:
             fmtdef[f"ROW{end}_BYTES"] = length
+    from pdr.pd_utils import insert_sample_types_into_df
+
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
@@ -377,32 +392,32 @@ def read_table_structure(block, name, filename, data, identifiers):
     else:
         fields = read_format_block(block, name, filename, data, identifiers)
     # give columns unique names so that none of our table handling explodes
+    import pandas as pd
+
     fmtdef = pd.DataFrame.from_records(fields)
     if "NAME" not in fmtdef.columns:
         fmtdef["NAME"] = name
-    fmtdef = reindex_df_values(fmtdef)
-    return fmtdef
+
+    from pdr.pd_utils import reindex_df_values
+
+    return reindex_df_values(fmtdef)
 
 
-def read_format_block(block, object_name, filename, data, identifiers):
+def read_format_block(block, object_name, fn, data, identifiers):
     # load external structure specifications
     format_block = list(block.items())
     block_name = block.get("NAME")
     while "^STRUCTURE" in [obj[0] for obj in format_block]:
-        format_block = inject_format_files(
-            format_block, object_name, filename, data
-        )
+        format_block = inject_format_files(format_block, object_name, fn, data)
     fields = []
     for item_type, definition in format_block:
         if item_type in ("COLUMN", "FIELD"):
             obj = dict(definition) | {"BLOCK_NAME": block_name}
             repeat_count = definition.get("ITEMS")
-            obj = bit_handling.add_bit_column_info(
-                obj, definition, identifiers
-            )
+            obj = add_bit_column_info(obj, definition, identifiers)
         elif item_type == "CONTAINER":
             obj = read_format_block(
-                definition, object_name, filename, data, identifiers
+                definition, object_name, fn, data, identifiers
             )
             repeat_count = definition.get("REPETITIONS")
         else:
@@ -416,16 +431,13 @@ def read_format_block(block, object_name, filename, data, identifiers):
             fields.append(obj)
     # semi-legal top-level containers not wrapped in other objects
     if object_name == "CONTAINER":
-        repeat_count = block.get("REPETITIONS")
-        if repeat_count is not None:
-            fields = list(
-                chain.from_iterable([fields for _ in range(repeat_count)])
-            )
+        if (repeat_count := block.get("REPETITIONS")) is not None:
+            fields = list(chain(*[fields for _ in range(repeat_count)]))
     return fields
 
 
 def get_histogram_fields(block):
-    # This error could maybe go somewhere else, but at least we catch it early here
+    # This error could go somewhere else, but at least we catch it early here
     if block.get("INTERCHANGE_FORMAT") == "ASCII":
         raise NotImplementedError(
             "ASCII histograms are not currently supported."
@@ -446,10 +458,8 @@ def inject_format_files(block, name, filename, data):
     # and remember that keys are not unique, so we have to use the index
     assembled_structure = []
     last_ix = 0
-    for ix, format_filename in format_filenames.items():
-        fmt = list(
-            load_format_file(data, format_filename, name, filename).items()
-        )
+    for ix, format_fn in format_filenames.items():
+        fmt = list(load_format_file(data, format_fn, name, filename).items())
         assembled_structure += block[last_ix:ix] + fmt
         last_ix = ix + 1
     assembled_structure += block[last_ix:]
@@ -472,10 +482,9 @@ def load_format_file(data, format_file, name, filename):
         return literalize_pvl(aggregations)
     except FileNotFoundError:
         warnings.warn(
-            f"Unable to locate external table format file:\n\t"
-            f"{format_file}. Try retrieving this file and "
-            f"placing it in the same path as the {name} "
-            f"file."
+            f"Unable to locate external table format file:\n\t {format_file}. "
+            f"Try retrieving this file and placing it in the same path as the "
+            f"{name} file."
         )
         raise FileNotFoundError
 

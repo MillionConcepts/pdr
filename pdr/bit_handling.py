@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 from pdr.datatypes import determine_byte_order, sample_types
 from pdr.formats import (
-    check_special_bit_column_case,
-    check_special_bit_start_case,
+    check_special_bit_column_case, check_special_bit_start_case
 )
 import warnings
 
@@ -148,10 +147,3 @@ def get_bit_start_and_size(obj, definition, identifiers):
     obj["bit_size_list"] = bit_size_list
     return obj
 
-
-def add_bit_column_info(obj, definition, identifiers):
-    if "BIT_COLUMN" in obj.keys():
-        if "BIT_STRING" not in obj["DATA_TYPE"]:
-            obj = set_bit_string_data_type(obj, identifiers)
-        obj = get_bit_start_and_size(obj, definition, identifiers)
-    return obj

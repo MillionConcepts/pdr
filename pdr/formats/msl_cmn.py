@@ -1,9 +1,4 @@
-from typing import TYPE_CHECKING
-
 from pdr.loaders.utility import trivial
-
-if TYPE_CHECKING:
-    from pdr import Data
 
 
 def table_loader(data, object_name):

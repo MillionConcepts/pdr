@@ -1,7 +1,7 @@
 def orpa_low_res_loader(data, name):
-    # ORPA low resolution: labels for earlier orbits have the correct ROW_BYTES,
-    # but there is a typo introduced later that says 'ROW_BYTES = 241' instead
-    # of 243
+    # ORPA low resolution: labels for earlier orbits have the correct
+    # ROW_BYTES, but there is a typo introduced later that says 'ROW_BYTES =
+    # 241' instead of 243
     block = data.metablock_(name)
     block["ROW_BYTES"] = 243
     return block

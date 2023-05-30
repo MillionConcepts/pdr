@@ -2,7 +2,6 @@ from io import StringIO
 
 from pdr.loaders.utility import trivial
 from pdr.utils import head_file
-from pdr.pd_utils import compute_offsets
 
 
 def geom_table_loader(filename, fmtdef_dt):
@@ -53,6 +52,8 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
     string_buffer = StringIO(processed.decode())
     # adapted from _interpret_as_ascii()
     colspecs = []
+    from pdr.pd_utils import compute_offsets
+
     position_records = compute_offsets(fmtdef).to_dict("records")
     for record in position_records:
         col_length = record["BYTES"]
