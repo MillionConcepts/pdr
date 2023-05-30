@@ -60,11 +60,16 @@ def check_special_table_reader(identifiers, data, name, filename, fmtdef_dt, blo
         and "SPECTRUM_TABLE" in name
     ):
         return True, formats.rosetta.rosetta_table_loader(filename, fmtdef_dt)
-    if (
-        identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
+    if (identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
         and name == "TABLE"
-        and identifiers["NOTE"].startswith("Geometry")
-    ):
+        and identifiers["NOTE"].startswith("Geometry")) \
+            or (
+        identifiers["DATA_SET_ID"] == "GO-J-NIMS-4-ADR-SL9IMPACT-V1.0"
+        and name == "TABLE"
+        and ("CAL_DATA.TAB" in identifiers["PRODUCT_ID"]
+             or "G_DATA.TAB" in identifiers["PRODUCT_ID"]
+             or "R_DATA.TAB" in identifiers["PRODUCT_ID"])
+        ):
         return True, formats.mgn.geom_table_loader(filename, fmtdef_dt)
     if str(identifiers["DATA_SET_ID"]).startswith("MGN-V-RSS-5-OCC-PROF") and name == \
             "TABLE":
@@ -95,7 +100,9 @@ def check_special_structure(block, name, filename, identifiers, data):
             or (identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
                 and ("HUY_DTWG_ENTRY_AERO" in filename or
                      ("HASI" in data.metaget_("FILE_NAME", "") and "PWA" not in
-                      identifiers["FILE_NAME"]))):
+                      identifiers["FILE_NAME"])))\
+            or (identifiers["DATA_SET_ID"] == "CO-SSA-RADAR-3-ABDR-SUMMARY-V1.0"
+                and name == "SPREADSHEET"):
         return True, formats.cassini.get_structure(block, name, filename, data,
                                                    identifiers)
     return False, None
@@ -120,11 +127,15 @@ def check_special_position(identifiers, block, target, name, filename, start_byt
     ):
         return True, formats.cassini.get_position(identifiers, block, target, name,
                                                   filename, start_byte)
+    if (identifiers["DATA_SET_ID"] == "LRO-L-RSS-1-TRACKING-V1.0" and
+            name == "WEAREC_TABLE"):
+        return formats.lro.rss_get_position(identifiers, block, target, name, start_byte)
     return False, None
 
 
 def check_special_sample_type(
     identifiers: dict,
+    base_samp_info: dict,
 ) -> tuple[bool, Optional[str]]:
     if (
         identifiers["DATA_SET_ID"] == "JNO-J-JIRAM-3-RDR-V1.0"
@@ -137,6 +148,19 @@ def check_special_sample_type(
     ):
         # unsigned integers not specified as such
         return True, formats.lroc.lroc_edr_sample_type()
+    if (
+        identifiers["DATA_SET_ID"] == "MGN-V-RDRS-5-GVDR-V1.0"
+        and "GVANF" in identifiers["PRODUCT_ID"]
+        and 'N/A' in base_samp_info["SAMPLE_TYPE"]
+    ):
+        return True, formats.mgn.gvanf_sample_type()
+    if identifiers["DATA_SET_ID"] == "LRO-L-CRAT-2-EDR-RAWDATA-V1.0":
+        return formats.lro.crater_bit_col_sample_type(base_samp_info)
+    if (
+            identifiers["SPACECRAFT_NAME"] == "GALILEO_ORBITER"
+            and "-NIMS-2-EDR-V1.0" in identifiers["DATA_SET_ID"]
+    ):
+        return True, formats.galileo.nims_edr_sample_type(base_samp_info)
     return False, None
 
 
@@ -174,6 +198,30 @@ def check_special_block(name, data, identifiers):
         and name in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
     ):
         return True, formats.juno.waves_burst_fix_table_names(data, name)
+    if (
+        identifiers["INSTRUMENT_ID"] == "LAMP"
+        and identifiers["PRODUCT_TYPE"] == "RDR"
+        and "IMAGE" in name and "HISTOGRAM" in name
+    ):
+        # multiple image objects are defined by one non-unique image object
+        return True, formats.lro.lamp_rdr_histogram_image_loader(data)
+    if (
+            identifiers["DATA_SET_ID"] == "LRO-L-MRFLRO-5-GLOBAL-MOSAIC-V1.0"
+            and "GLOBAL_S4_32PPD" in data.metaget_("PRODUCT_ID")
+            and name == "IMAGE"
+    ):
+        # typo in one of the labels
+        return True, formats.lro.mini_rf_image_loader(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "PVO-V-ORPA-5-ELE/ION/PHOTO/UADS-V1.0"
+        and "ORPA_LOW_RES" in identifiers["PRODUCT_ID"] and name == "TABLE"
+    ):
+        return True, formats.pvo.orpa_low_res_loader(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "PVO-V-OIMS-4-IONDENSITY-12S-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.pvo.oims_12s_loader(data, name)
     return False, None
 
 
@@ -203,6 +251,13 @@ def check_trivial_case(pointer, identifiers, filename) -> tuple[bool, Optional[C
     if (identifiers["SPACECRAFT_NAME"] == "MAGELLAN" and (filename.endswith(
             '.img') or filename.endswith('.ibg')) and pointer == "TABLE"):
         return True, formats.mgn.orbit_table_in_img_loader()
+    if (
+        "GO-A-SSI-3-" in identifiers["DATA_SET_ID"]
+        and "-CALIMAGES-V1.0" in identifiers["DATA_SET_ID"]
+        and "QUB" in identifiers["PRODUCT_ID"]
+        and pointer == "HEADER"
+    ):
+        return True, formats.galileo.ssi_cubes_header_loader()
     return False, None
 
 

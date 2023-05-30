@@ -51,7 +51,6 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
             else:
                 processed += bytes_
     string_buffer = StringIO(processed.decode())
-
     # adapted from _interpret_as_ascii()
     colspecs = []
     position_records = compute_offsets(fmtdef).to_dict('records')
@@ -64,3 +63,7 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
 
     table.columns = fmtdef.NAME.tolist()
     return table
+
+
+def gvanf_sample_type():
+    return ">B"

@@ -51,6 +51,7 @@ ID_FIELDS = (
     "FILE_NAME",
     "INSTRUMENT_HOST_NAME",
     "PRODUCT_TYPE",
+    "PRODUCT_ID",
     # TODO: not "identifiers" but pulled in the same way...split/rename?
     "RECORD_BYTES",
     "RECORD_TYPE",
