@@ -7,6 +7,7 @@ from pdr.parselabel.utils import trim_label
 from pdr.utils import check_cases, decompress
 
 
+# TODO: reintegrate
 def read_text(self, object_name):
     target = self.metaget_(pointerize(object_name))
     local_path = self.file_mapping[object_name]

@@ -2,10 +2,8 @@ import Levenshtein as lev
 import numpy as np
 from multidict import MultiDict
 
-from pdr.utils import catch_return_default
 
-
-def handle_fits_file(data, filename, debug, return_default, name=""):
+def handle_fits_file(data, filename, name=""):
     """
     This function attempts to read all FITS files, compressed or
     uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
@@ -16,20 +14,17 @@ def handle_fits_file(data, filename, debug, return_default, name=""):
     """
     from astropy.io import fits
 
-    try:
-        hdulist = fits.open(filename)
-        hdr_val = handle_fits_header(hdulist, name)
-        if "HEADER" in name:
-            return hdr_val
-        else:
-            # TODO: add header key in queries so we don't need to pass a data
-            #  object here?
-            hdr_key = name + "_HEADER"
-            setattr(data, hdr_key, hdr_val)
-            data.index += [hdr_key]
-        return hdulist[pointer_to_fits_key(name, hdulist)].data
-    except Exception as ex:
-        catch_return_default(debug, return_default, ex)
+    hdulist = fits.open(filename)
+    hdr_val = handle_fits_header(hdulist, name)
+    if "HEADER" in name:
+        return hdr_val
+    else:
+        # TODO: add header key in queries so we don't need to pass a data
+        #  object here?
+        hdr_key = name + "_HEADER"
+        setattr(data, hdr_key, hdr_val)
+        data.index += [hdr_key]
+    return hdulist[pointer_to_fits_key(name, hdulist)].data
 
 
 def handle_compressed_image(filename):

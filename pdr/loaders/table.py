@@ -10,7 +10,7 @@ from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
 from pdr.pd_utils import booleanize_booleans
-from pdr.utils import decompress, head_file, catch_return_default
+from pdr.utils import decompress, head_file
 
 
 def read_array(filename, block, start_byte):
@@ -52,7 +52,6 @@ def read_table(
     block,
     start_byte,
     debug,
-    return_default,
 ):
     """
     Read a table. Parse the label format definition and then decide
@@ -66,13 +65,10 @@ def read_table(
         table.columns = fmtdef.NAME.tolist()
     else:
         table = _interpret_as_binary(filename, fmtdef, dt, block, start_byte)
-    try:
-        # If there were any cruft "placeholder" columns, discard them
-        table = table.drop(
-            [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
-        )
-    except TypeError as ex:  # Failed to read the table
-        return catch_return_default(debug, return_default, ex)
+    # If there were any cruft "placeholder" columns, discard them
+    table = table.drop(
+        [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
+    )
     return table
 
 

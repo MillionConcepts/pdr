@@ -6,12 +6,15 @@ from _operator import mul
 from functools import reduce
 from itertools import product, chain
 from pathlib import Path
+from types import MappingProxyType
 from typing import Sequence, Mapping, TYPE_CHECKING
 
 import numpy as np
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types
+from pdr.formats import check_special_block, check_special_offset
+from pdr.func import specialize
 from pdr.loaders._helpers import (
     quantity_start_byte,
     _count_from_bottom_of_file,
@@ -21,6 +24,7 @@ from pdr.loaders._helpers import (
 from pdr.loaders.handlers import add_bit_column_info
 from pdr.parselabel.pds3 import pointerize, read_pvl, literalize_pvl
 from pdr.utils import append_repeated_object, find_repository_root, check_cases
+
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
@@ -491,3 +495,16 @@ def load_format_file(data, format_file, name, filename):
 
 def get_identifiers(data):
     return data.identifiers
+
+
+DEFAULT_DATA_QUERIES = MappingProxyType(
+        {
+            "identifiers": get_identifiers,
+            "block": specialize(get_block, check_special_block),
+            "filename": get_file_mapping,
+            "target": get_target,
+            "start_byte": specialize(data_start_byte, check_special_offset),
+            "debug": get_debug,
+            "return_default": get_return_default,
+        }
+    )

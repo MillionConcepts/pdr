@@ -8,9 +8,9 @@ from pdr.formats import (
     check_special_table_reader,
 )
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
-from pdr.loaders._querystructures import default_data_queries
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
+from pdr.loaders.queries import DEFAULT_DATA_QUERIES
 
 
 class Loader:
@@ -38,7 +38,7 @@ class Loader:
             kwargdict["tracker"].dump()
         return call_kwargfiltered(self.loader_function, **info)
 
-    queries = default_data_queries()
+    queries = DEFAULT_DATA_QUERIES
 
 
 class ReadImage(Loader):
@@ -55,7 +55,7 @@ class ReadImage(Loader):
         )
 
         super().__init__(read_image)
-        self.queries = default_data_queries() | {
+        self.queries = DEFAULT_DATA_QUERIES | {
             "base_samp_info": base_sample_info,
             "sample_type": specialize(
                 im_sample_type, check_special_sample_type
@@ -75,7 +75,7 @@ class ReadTable(Loader):
         from pdr.loaders.table import read_table
 
         super().__init__(specialize(read_table, check_special_table_reader))
-        self.queries = default_data_queries() | {
+        self.queries = DEFAULT_DATA_QUERIES | {
             "table_props": specialize(table_position, check_special_position),
             "fmtdef_dt": specialize(
                 parse_table_structure, check_special_structure
@@ -91,7 +91,7 @@ class ReadHeader(Loader):
         from pdr.loaders.queries import table_position
 
         super().__init__(read_header)
-        self.queries = default_data_queries() | {
+        self.queries = DEFAULT_DATA_QUERIES | {
             "table_props": specialize(table_position, check_special_position)
         }
 
