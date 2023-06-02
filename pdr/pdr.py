@@ -356,7 +356,7 @@ class Data:
             warnings.warn(f"Unable to find files required by {name}.")
         except Exception as ex:
             warnings.warn(f"Unable to load {name}: {ex}")
-            setattr(self, name, self.metaget_(name))
+        setattr(self, name, self.metaget_(name))
 
     def load_all(self):
         from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
