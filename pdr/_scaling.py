@@ -2,7 +2,7 @@ import numpy as np
 
 from pdr.datatypes import PDS3_CONSTANT_NAMES, IMPLICIT_PDS3_CONSTANTS
 from pdr.np_utils import casting_to_float
-from pdr.typing import PDRLike
+from pdr.pdrtypes import PDRLike
 
 
 def find_special_constants(meta, obj, object_name):
