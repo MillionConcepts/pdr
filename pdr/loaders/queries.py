@@ -203,8 +203,7 @@ def generic_image_properties(block, sample_type):
 
 
 def get_qube_band_storage_type(block):
-    band_storage_type = block.get("BAND_STORAGE_TYPE")
-    return band_storage_type
+    return block.get("BAND_STORAGE_TYPE")
 
 
 def check_array_for_subobject(block):
@@ -275,12 +274,10 @@ def data_start_byte(
 
 def _extract_table_records(block):
     if "RECORDS" in block.keys():
-        n_records = block["RECORDS"]
+        return block["RECORDS"]
     elif "ROWS" in block.keys():
-        n_records = block["ROWS"]
-    else:
-        n_records = None
-    return n_records
+        return block["ROWS"]
+    return None
 
 
 def _table_row_position(length, n_records, target):
@@ -297,8 +294,7 @@ def _table_row_position(length, n_records, target):
     return length, start
 
 
-def _table_byte_position(block, identifiers, length, n_records, start_byte):
-    start = start_byte
+def _table_length(block, identifiers, length, n_records):
     try:
         if "BYTES" in block.keys():
             length = block["BYTES"]
@@ -316,7 +312,7 @@ def _table_byte_position(block, identifiers, length, n_records, start_byte):
                 length = record_length * n_records
     except AttributeError:
         length = None
-    return length, start
+    return length
 
 
 def table_position(identifiers: dict, block, target, name, start_byte):
@@ -328,21 +324,9 @@ def table_position(identifiers: dict, block, target, name, start_byte):
     if (as_rows := _check_delimiter_stream(identifiers, name, target)) is True:
         length, start = _table_row_position(length, n_records, target)
     else:
-        length, start = _table_byte_position(
-            block, identifiers, length, n_records, start_byte
-        )
-    table_props = {"start": start, "length": length, "as_rows": as_rows}
-    return table_props
-
-
-# TODO: How to add error handling inside of softquery for specific functions?
-# def get_table_structure(name: str, debug: bool, return_default):
-#     try:
-#         fmtdef_dt = specialize(parse_table_structure, check_special_structure)
-#     except KeyError as ex:
-#         warnings.warn(f"Unable to find or parse {name}")
-#         return catch_return_default(debug, return_default, ex)
-#     return fmtdef_dt
+        start = start_byte
+        length = _table_length(block, identifiers, length, n_records)
+    return {"start": start, "length": length, "as_rows": as_rows}
 
 
 def get_return_default(data: PDRLike, name: str):
