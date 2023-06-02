@@ -471,7 +471,7 @@ class Data:
         )
 
         if object_name not in self.specials:
-            consts = special_image_constants(self)
+            consts = special_image_constants(self.identifiers)
             self.specials[object_name] = consts
             if not consts:
                 self.specials[object_name] = find_special_constants(
