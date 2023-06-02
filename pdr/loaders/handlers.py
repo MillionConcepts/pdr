@@ -3,7 +3,7 @@ import numpy as np
 from multidict import MultiDict
 
 
-def handle_fits_file(data, filename, name=""):
+def handle_fits_file(filename, name=""):
     """
     This function attempts to read all FITS files, compressed or
     uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
@@ -16,15 +16,11 @@ def handle_fits_file(data, filename, name=""):
 
     hdulist = fits.open(filename)
     hdr_val = handle_fits_header(hdulist, name)
-    if "HEADER" in name:
-        return hdr_val
+    if "HEADER" not in name:
+        output = {f"{name}_HEADER": hdr_val}
     else:
-        # TODO: add header key in queries so we don't need to pass a data
-        #  object here?
-        hdr_key = name + "_HEADER"
-        setattr(data, hdr_key, hdr_val)
-        data.index += [hdr_key]
-    return hdulist[pointer_to_fits_key(name, hdulist)].data
+        return {name: hdr_val}
+    return output | {name: hdulist[pointer_to_fits_key(name, hdulist)].data}
 
 
 def handle_compressed_image(filename):
@@ -68,12 +64,6 @@ def pointer_to_fits_key(pointer, hdulist):
     the future.
     """
     if pointer in ("IMAGE", "TABLE", None, ""):
-        # TODO: sometimes the primary HDU contains _just_ a header.
-        #  (e.g., GALEX raw6, which is not in scope, but I'm sure something in
-        #  the PDS does this awful thing too.) it might be a good idea to have
-        #  a heuristic for, when we are implicitly looking for data, walking
-        #  forward until we find a HDU that actually has something in it...
-        #  or maybe just populating multiple keys from the HDU names.
         return 0
     levratio = [
         lev.ratio(i[1].lower(), pointer.lower())

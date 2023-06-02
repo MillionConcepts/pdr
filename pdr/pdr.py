@@ -53,7 +53,6 @@ ID_FIELDS = (
     "INSTRUMENT_HOST_NAME",
     "PRODUCT_TYPE",
     "PRODUCT_ID",
-    # TODO: not "identifiers" but pulled in the same way...split/rename?
     "RECORD_BYTES",
     "RECORD_TYPE",
     "ROW_BYTES",
@@ -345,8 +344,11 @@ class Data:
             self.file_mapping[name] = target
         try:
             obj = self.load_from_pointer(name, **load_kwargs)
-            if obj is not None:  # None means trivially loaded
-                setattr(self, name, obj)
+            for k, v in obj.items():
+                if v is not None:
+                    setattr(self, k, v)
+                    if k not in self.index:
+                        self.index.append(k)
             return
         except KeyboardInterrupt:
             raise

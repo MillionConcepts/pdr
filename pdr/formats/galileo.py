@@ -13,9 +13,6 @@ def ssi_cubes_header_loader():
     return trivial
 
 
-# TODO: Is there a better sample_type to replace "N/A" with?
-# LSB_UNSIGNED_INTEGER also appears to work correctly and other columns in
-# these tables use it.
 def nims_edr_sample_type(base_samp_info):
     from pdr.datatypes import sample_types
 

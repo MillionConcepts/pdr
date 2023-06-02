@@ -36,8 +36,7 @@ class Loader:
         finally:
             kwargdict["tracker"].track(self.loader_function, **record_exc)
             kwargdict["tracker"].dump()
-        return call_kwargfiltered(self.loader_function, **info)
-
+        return {name: call_kwargfiltered(self.loader_function, **info)}
     queries = DEFAULT_DATA_QUERIES
 
 
@@ -121,6 +120,9 @@ class ReadFits(Loader):
         from pdr.loaders.handlers import handle_fits_file
 
         super().__init__(handle_fits_file)
+
+    def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
+        return super().__call__(pdrlike, name, **kwargs)[name]
 
 
 class ReadCompressedImage(Loader):
