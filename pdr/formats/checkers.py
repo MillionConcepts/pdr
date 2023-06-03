@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pdr import formats
 from pdr.loaders.utility import trivial, is_trivial
@@ -213,7 +213,7 @@ def check_special_sample_type(
         identifiers["SPACECRAFT_NAME"] == "GALILEO_ORBITER"
         and "-NIMS-2-EDR-V1.0" in identifiers["DATA_SET_ID"]
     ):
-        return True, formats.galileo.nims_edr_sample_type(base_samp_info)
+        return formats.galileo.nims_edr_sample_type(base_samp_info)
     return False, None
 
 
