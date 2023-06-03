@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 
 import pdr.loaders.queries
-from pdr.loaders.utility import tbd, trivial
+from pdr.loaders.utility import tbd
 from pdr.loaders._helpers import _count_from_bottom_of_file
 from pdr.loaders.queries import table_position
 
@@ -103,7 +103,7 @@ def trivial_loader(pointer):
         f"The Cassini ISS EDR/calibration {pointer} tables are not currently "
         f"supported."
     )
-    return trivial
+    return True
 
 
 def cda_table_filename(data):

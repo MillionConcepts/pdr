@@ -58,7 +58,7 @@ def check_special_table_reader(
             filename, fmtdef_dt, identifiers["DATA_SET_ID"]
         )
     if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (
-        (name == "HEADER") or ("SPREADSHEET" in name)
+        "SPREADSHEET" in name
     ):
         # mangled object names + positions
         return formats.msl_cmn.table_loader(
@@ -280,51 +280,53 @@ def check_special_block(name, data, identifiers):
     return False, None
 
 
-def check_trivial_case(
-    pointer, identifiers, filename
-) -> tuple[bool, Optional[Callable]]:
+def check_trivial_case(pointer, identifiers, filename) -> bool:
     if is_trivial(pointer):
-        return True, trivial
+        return True
     if (
         identifiers["INSTRUMENT_ID"] == "APXS"
         and "ERROR_CONTROL_TABLE" in pointer
     ):
-        return True, formats.msl_apxs.table_loader(pointer)
+        return formats.msl_apxs.table_loader(pointer)
     if (
         identifiers["INSTRUMENT_NAME"] == "TRIAXIAL FLUXGATE MAGNETOMETER"
         and pointer == "TABLE"
         and "-EDR-" in identifiers["DATA_SET_ID"]
     ):
-        return True, formats.galileo.galileo_table_loader()
+        return formats.galileo.galileo_table_loader()
     if (
         identifiers["INSTRUMENT_NAME"]
         == "CHEMISTRY CAMERA REMOTE MICRO-IMAGER"
         and pointer == "IMAGE_REPLY_TABLE"
     ):
-        return True, formats.msl_ccam.image_reply_table_loader()
+        return formats.msl_ccam.image_reply_table_loader()
     if str(identifiers["DATA_SET_ID"]).startswith("ODY-M-THM-5") and (
         pointer in ("HEADER", "HISTORY")
     ):
-        return True, formats.themis.trivial_themis_geo_loader(pointer)
+        return formats.themis.trivial_themis_geo_loader(pointer)
     if re.match(
         r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", str(identifiers["DATA_SET_ID"])
     ):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
-            return True, formats.cassini.trivial_loader(pointer)
+            return formats.cassini.trivial_loader(pointer)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
         and (filename.endswith(".img") or filename.endswith(".ibg"))
         and pointer == "TABLE"
     ):
-        return True, formats.mgn.orbit_table_in_img_loader()
+        return formats.mgn.orbit_table_in_img_loader()
     if (
         "GO-A-SSI-3-" in identifiers["DATA_SET_ID"]
         and "-CALIMAGES-V1.0" in identifiers["DATA_SET_ID"]
         and "QUB" in identifiers["PRODUCT_ID"]
         and pointer == "HEADER"
     ):
-        return True, formats.galileo.ssi_cubes_header_loader()
-    return False, None
+        return formats.galileo.ssi_cubes_header_loader()
+    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (
+        pointer == "HEADER"
+    ):
+        return formats.msl_cmn.trivial_header_loader()
+    return False
 
 
 def special_image_constants(identifiers):

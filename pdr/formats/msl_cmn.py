@@ -1,9 +1,4 @@
-from pdr.loaders.utility import trivial
-
-
 def table_loader(data, object_name):
-    if object_name == "HEADER":
-        return True, trivial
     if object_name == "SPREADSHEET":
         import pandas as pd
 
@@ -11,6 +6,10 @@ def table_loader(data, object_name):
             data.get_absolute_paths(data.metaget_("^SPREADSHEET")[0])[0]
         )
     return False, None
+
+
+def trivial_header_loader():
+    return True
 
 
 def fix_mangled_name(data):
@@ -26,14 +25,3 @@ def get_offset(object_name):
     if object_name == "CHMN_HSK_HEADER_TABLE":
         return True, 0
     return False, None
-
-
-def chemin_spreadsheet_loader(data: "Data"):
-    def load_this_table(*_, **__):
-        import pandas as pd
-
-        return pd.read_csv(
-            data.get_absolute_paths(data.metaget_("^SPREADSHEET")[0])[0]
-        )
-
-    return load_this_table

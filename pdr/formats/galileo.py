@@ -10,7 +10,7 @@ def galileo_table_loader():
 
 def ssi_cubes_header_loader():
     # The Ida and Gaspra cubes have HEADER pointers but no defined HEADER objects
-    return trivial
+    return True
 
 
 def nims_edr_sample_type(base_samp_info):

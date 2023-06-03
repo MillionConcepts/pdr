@@ -1,6 +1,5 @@
 from io import StringIO
 
-from pdr.loaders.utility import trivial
 from pdr.utils import head_file
 
 
@@ -24,7 +23,7 @@ def geom_table_loader(filename, fmtdef_dt):
 
 
 def orbit_table_in_img_loader():
-    return trivial
+    return True
 
 
 def get_fn(data):

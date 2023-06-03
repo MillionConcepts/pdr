@@ -13,7 +13,7 @@ def get_visgeo_qube_offset(data):
 
 def trivial_themis_geo_loader(pointer):
     warnings.warn(f"THEMIS {pointer} objects are not currently supported.")
-    return trivial
+    return True
 
 
 def check_gzip_fn(data, object_name):

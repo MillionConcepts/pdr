@@ -344,6 +344,10 @@ class Data:
             self.file_mapping[name] = target
         try:
             obj = self.load_from_pointer(name, **load_kwargs)
+            if obj is None:
+                return
+            if not isinstance(obj, dict):
+                raise TypeError(f"loader returned non-dict object of type ({type(obj)}")
             for k, v in obj.items():
                 if v is not None:
                     setattr(self, k, v)

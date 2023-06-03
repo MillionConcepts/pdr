@@ -20,6 +20,7 @@ from pdr.loaders.datawrap import (
     ReadCompressedImage,
     ReadTable,
     TBD,
+    Trivial
 )
 
 
@@ -46,11 +47,11 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     name. checks for special cases and then falls back to generic loading
     methods of pdr.Data.
     """
-    is_trivial, trivial_loader = check_trivial_case(
+    is_trivial = check_trivial_case(
         pointer, data.identifiers, data.filename
     )
     if is_trivial is True:
-        return trivial_loader
+        return Trivial()
     if pointer == "LABEL":
         return ReadLabel()
     if (

@@ -150,3 +150,12 @@ class TBD(Loader):
         from pdr.loaders.utility import tbd
 
         super().__init__(tbd)
+
+
+class Trivial(Loader):
+    """wrapper for trivial"""
+
+    def __init__(self):
+        from pdr.loaders.utility import trivial
+
+        super().__init__(trivial)
