@@ -1,15 +1,28 @@
-## [X.X.X] - 20XX-XX-XX
+## [1.0.0] - 2023-06-03
+This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 
+**The fundamental way end users interact with the main `pdr.read()` interface has not changed.**
 ###  Added
+- error/workflow tracking for all loaders. Errors can be accessed using `data.loaders["OBJECT_NAME"].errors`.  
+  Tracking files will now generate in a `.tracker_logs` folder in the `pdr` repo. They show which functions 
+  have been hit by a particular call of `pdr` and if those functions were successful.
 - handling for a wider array of ISIS-style "qube" data and metadata, 
   including side/back/bottom/topplanes (as long as they are along only one
   image axis)
 - support for (most) THEMIS qube products
 - TODO for cassini XDR image scaling functionality
 - support for additional LRO datasets: CRaTER, LAMP, LEND, LOLA, Mini-RF, and Radio Science
-- support for several Venusian datasets including: Magellan GVDR, Pioneer Venus, "Pre-Magellan" products at the GEO node, and Earth-based radar observations.
-- support for several Lunar datasets including: GRAIL, Lunar Prospector, MSX, Kaguya/Selene, and Earth-based radar and spectroscopy data.
+- support for several Venusian datasets including: Magellan GVDR, Pioneer Venus, 
+  "Pre-Magellan" products at the GEO node, and Earth-based radar observations.
+- support for several Lunar datasets including: GRAIL, Lunar Prospector, MSX, 
+  Kaguya/Selene, and Earth-based radar and spectroscopy data.
 
 ### Changed
+- reworked fundamental data loading workflow. `Data` class no longer contains 
+  all the loader functions, they've been refactored in the `loaders` module.
+- `formats.core.py` now only contains special case checking functions and is renamed to `formats.checkers.py`.
+  Other functions that were previously in it (like `pointer_to_loader` and `generic_image_properties`) have 
+  moved to the `loaders` module
+- changes to various special cases based on the data loading workflow refactor
 - reworked image-loading flow for better handling of various band storage
   types and pre/suffixes
 - BIL images now retain original byteorder
@@ -21,6 +34,11 @@
 
 ### Removed
 - m3 special case module (deprecated by new image-loading flow)
+- messenger special case module (deprecated by new data loading workflow)
+- rasterio loading options for image data
+- `check_special_case` has been removed and the special cases have been moved to functions
+  that more specifically targeted to the issues of the particular dataset rather
+  than overriding the entire workflow.
 
 ## [0.7.5] - 2023-03-16
 ### Added
