@@ -20,3 +20,4 @@ dist/**
 git
 meta.yaml
 *.DS_store
+*/.tracker_logs

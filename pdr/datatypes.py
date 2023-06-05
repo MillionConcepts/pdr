@@ -55,10 +55,10 @@ def sample_types(
     return {
         "IEEE_REAL": f">{_float}",
         "PC_REAL": f"<{_float}",
-        "FLOAT":  f">{_float}",
-        "REAL":  f">{_float}",
-        "MAC_REAL":  f">{_float}",
-        "SUN_REAL":  f">{_float}",
+        "FLOAT": f">{_float}",
+        "REAL": f">{_float}",
+        "MAC_REAL": f">{_float}",
+        "SUN_REAL": f">{_float}",
         "MSB_BIT_STRING": f"{void}{sample_bytes}",
         "LSB_BIT_STRING": f"{void}{sample_bytes}",
         # "Character string representing a real number"
@@ -72,7 +72,7 @@ def sample_types(
         "TIME": f"S{sample_bytes}",
         "VOID": f"{void}{sample_bytes}",
         "BCD": f"{void}{sample_bytes}",
-        "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}"
+        "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}",
     }[sample_type]
 
 
@@ -91,9 +91,9 @@ PDS3_ISIS_CONSTANT_NAMES = tuple(
     [
         f"{category}{direction}{entity}{prop}"
         for category, direction, entity, prop in product(
-            ("CORE_", "BAND_SUFFIX_", "SAMPLE_SUFFIX", "LINE_SUFFIX", ""),
-            ("HIGH_", "LOW_"),
-            ("INST_", "REPR_"),
+            ("CORE_", "BAND_SUFFIX_", "SAMPLE_SUFFIX_", "LINE_SUFFIX_", ""),
+            ("HIGH_", "LOW_", ""),
+            ("INST_", "REPR_", ""),
             ("NULL", "SATURATION", "SAT"),
         )
     ]

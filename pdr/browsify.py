@@ -83,14 +83,14 @@ def normalize_range(
     if inplace is True:
         # perform the operation in-place
         image -= minimum
-        image *= (range_max - range_min)
-        if image.dtype.char in np.typecodes['AllInteger']:
+        image *= range_max - range_min
+        if image.dtype.char in np.typecodes["AllInteger"]:
             # this loss of precision is probably better than
             # automatically typecasting it.
             # TODO: detect rollover cases, etc.
-            image //= (maximum - minimum)
+            image //= maximum - minimum
         else:
-            image /= (maximum - minimum)
+            image /= maximum - minimum
         image += range_min
         return image
     return (image - minimum) * (range_max - range_min) / (
@@ -195,7 +195,7 @@ def _browsify_array(
     save: bool = True,
     override_rgba: bool = False,
     image_format: str = "jpg",
-    **_
+    **_,
 ):
     """
     attempt to save array as one or more images
@@ -215,7 +215,7 @@ def _browsify_array(
             image_clip,
             mask_color,
             save,
-            image_format
+            image_format,
         )
         results.append(result)
     return results
@@ -225,7 +225,7 @@ def _render_and_save(
     obj, outbase, purge, image_clip, mask_color, save, image_format
 ):
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
-    if (obj.dtype.char in np.typecodes['AllInteger']) and (obj.itemsize <= 2):
+    if (obj.dtype.char in np.typecodes["AllInteger"]) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
     # convert to unsigned eight-bit integer to make it easy to write
     obj = eightbit(obj, image_clip, purge)
@@ -305,17 +305,19 @@ def _format_as_single_band(band_ix, obj):
 def save_sparklines(
     df: pd.DataFrame,
     outbase,
-    sparkline_column_key = lambda c: 'spectrum' in c.lower(),
-    orientation = 'rows'
+    sparkline_column_key=lambda c: "spectrum" in c.lower(),
+    orientation="rows",
 ):
     from matplotlib import pyplot as plt
 
-    sparkframe = df[
-        [c for c in df.columns if sparkline_column_key(c)]
-    ].copy().reset_index(drop=True)
+    sparkframe = (
+        df[[c for c in df.columns if sparkline_column_key(c)]]
+        .copy()
+        .reset_index(drop=True)
+    )
 
     fig, ax = plt.subplots()
-    if orientation == 'rows':
+    if orientation == "rows":
         height = (sparkframe.max(axis=1) - sparkframe.min(axis=1)).iloc[0]
         for ix, row in sparkframe.iterrows():
             ax.plot(row.values + height * ix)
@@ -324,4 +326,4 @@ def save_sparklines(
         for ix, colvals in enumerate(sparkframe.iteritems()):
             ax.plot(colvals[1].values + height * ix)
     fig.savefig(outbase + "_sparklines.jpg")
-    plt.close('all')
+    plt.close("all")

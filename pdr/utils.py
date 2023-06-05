@@ -6,17 +6,20 @@ from numbers import Number
 from pathlib import Path
 import struct
 import textwrap
-from typing import Union, Sequence, Mapping, MutableSequence, IO, Collection
+from typing import (
+    Union,
+    Sequence,
+    Mapping,
+    MutableSequence,
+    IO,
+    Collection,
+    Optional,
+)
 import warnings
 from zipfile import ZipFile
 
 from dustgoggles.structures import listify
 from multidict import MultiDict
-
-try:
-    from isal import igzip as gzip_lib
-except ImportError:
-    import gzip as gzip_lib
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -62,12 +65,12 @@ def stem_path(path: Path):
     # don't remove compression suffix if it's the only suffix
     if (len(exts) == 1) or (exts[-1] in SUPPORTED_COMPRESSION_EXTENSIONS):
         return f"{lowercase}{exts[0]}"
-    return f"{lowercase}{''.join(exts)}"
+    return f"{lowercase}{exts[-1]}"
 
 
 def check_cases(
     filenames: Union[Collection[Union[Path, str]], Union[Path, str]],
-    skip: bool = False
+    skip: bool = False,
 ) -> str:
     """
     check for oddly-cased versions of a specified filename in local path --
@@ -124,9 +127,17 @@ def append_repeated_object(
     return fields
 
 
+def import_best_gzip():
+    try:
+        from isal import igzip as gzip_lib
+    except ImportError:
+        import gzip as gzip_lib
+    return gzip_lib
+
+
 def decompress(filename):
     if filename.lower().endswith(".gz"):
-        f = gzip_lib.open(filename, "rb")
+        f = import_best_gzip().open(filename, "rb")
     elif filename.lower().endswith(".bz2"):
         f = bz2.BZ2File(filename, "rb")
     elif filename.lower().endswith(".zip"):
@@ -145,9 +156,9 @@ def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
 def find_repository_root(absolute_path):
     parts = Path(absolute_path).parts
     data_indices = [
-        ix for ix, part in enumerate(parts) if part.lower() == 'data'
+        ix for ix, part in enumerate(parts) if part.lower() == "data"
     ]
-    return Path(*parts[:data_indices[-1]])
+    return Path(*parts[: data_indices[-1]])
 
 
 def prettify_multidict(multi, sep=" ", indent=0):
@@ -178,3 +189,32 @@ def prettify_multidict(multi, sep=" ", indent=0):
     if len(indentation) > 0:
         indentation = indentation[:-1]
     return output + indentation + "}"
+
+
+def associate_label_file(
+    data_filename: str,
+    label_filename: Optional[str] = None,
+    skip_check: bool = False,
+) -> Optional[str]:
+    from pdr.loaders.utility import LABEL_EXTENSIONS
+
+    if label_filename is not None:
+        return check_cases(Path(label_filename).absolute(), skip_check)
+    elif data_filename.lower().endswith(LABEL_EXTENSIONS):
+        return check_cases(data_filename)
+    for lext in LABEL_EXTENSIONS:
+        try:
+            return check_cases(with_extension(data_filename, lext))
+        except FileNotFoundError:
+            continue
+    return None
+
+
+def catch_return_default(debug: bool, return_default, exception: Exception):
+    """
+    if we are in debug mode, reraise an exception. otherwise, return
+    the default only.
+    """
+    if debug is True:
+        raise exception
+    return return_default

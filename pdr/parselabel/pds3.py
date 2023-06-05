@@ -107,8 +107,8 @@ def looks_pvl(filename):
 
 def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
     with decompress(filename) as stream:
-        errors = 'replace' if looks_pvl(filename) else 'strict'
-        label = trim_label(stream, max_size).decode('utf-8', errors=errors)
+        errors = "replace" if looks_pvl(filename) else "strict"
+        label = trim_label(stream, max_size).decode("utf-8", errors=errors)
     uncommented_label = re.sub(r"/\*.*?(\r|\n|/\*)", "", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
@@ -226,6 +226,8 @@ def literalize_pvl(obj):
         if ("<" in obj) and (">" in obj):
             return parse_pvl_quantity_statement(obj)
         return obj
+        # TODO, maybe: handle sequences/sets containing unquoted character
+        #  strings
 
 
 def literalize_pvl_block(block):

@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9
+  - python=3.11
   - cytoolz
   - numpy
   - pandas
@@ -20,4 +20,5 @@ dependencies:
   - jupyter
   - pillow
   - matplotlib
-  
+  - pip:
+      - ipyflow

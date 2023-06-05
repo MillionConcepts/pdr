@@ -1,45 +1,28 @@
-import os
-import re
 import warnings
 from functools import partial, cache
-from io import StringIO
-from itertools import chain
-from operator import contains
+from itertools import chain, product
 from pathlib import Path
-from typing import Mapping, Optional, Union, Sequence, Collection
+from typing import (
+    Mapping,
+    Optional,
+    Union,
+    Sequence,
+    Collection,
+)
 
 import Levenshtein as lev
-import numpy as np
-import pandas as pd
 from cytoolz import countby, identity
+from dustgoggles.dynamic import Dynamic
+from dustgoggles.func import gmap
 from dustgoggles.structures import dig_for_value, listify
+from dustgoggles.tracker import Tracker, TrivialTracker
 from multidict import MultiDict
-from pandas.errors import ParserError
 
-from pdr import bit_handling
-from pdr.datatypes import (
-    PDS3_CONSTANT_NAMES,
-    IMPLICIT_PDS3_CONSTANTS,
-    sample_types,
-)
+from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
 from pdr.formats import (
-    LABEL_EXTENSIONS,
-    pointer_to_loader,
-    is_trivial,
-    generic_image_properties,
-    looks_like_this_kind_of_file,
-    FITS_EXTENSIONS,
-    check_special_offset,
     check_special_fn,
-    OBJECTS_IGNORED_BY_DEFAULT,
     special_image_constants,
-    ignore_if_pdf,
-    check_special_structure,
-    check_array_for_subobject,
-    get_array_num_items, check_special_position,
 )
-from pdr.np_utils import enforce_order_and_object, casting_to_float, \
-    np_from_buffered_io
 from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
@@ -48,145 +31,36 @@ from pdr.parselabel.pds3 import (
     literalize_pvl,
 )
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
-from pdr.parselabel.utils import trim_label, DEFAULT_PVL_LIMIT
-from pdr.pd_utils import (
-    insert_sample_types_into_df,
-    reindex_df_values,
-    booleanize_booleans,
-)
+from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
 from pdr.utils import (
     check_cases,
-    append_repeated_object,
-    head_file,
-    decompress,
-    with_extension, find_repository_root, prettify_multidict,
+    prettify_multidict,
+    associate_label_file,
+    catch_return_default,
 )
 
 
-def make_format_specifications(props):
-    endian, ctype = props["sample_type"][0], props["sample_type"][-1]
-    struct_fmt = f"{endian}{props['pixels']}{ctype}"
-    np_type = props["sample_type"][1:]
-    dtype = np.dtype(f"{endian}{np_type}")
-    return struct_fmt, dtype
-
-
-def process_single_band_image(f, props):
-    _, numpy_dtype = make_format_specifications(props)
-    # TODO: added this 'count' parameter to handle a case in which the image
-    #  was not the last object in the file. We might want to add it to
-    #  the multiband loaders too.
-    image = np_from_buffered_io(f, dtype=numpy_dtype, count=props['pixels'])
-    image = image.reshape(
-        (props["nrows"], props["ncols"] + props["prefix_cols"])
-    )
-    if props["prefix_cols"] > 0:
-        prefix = image[:, : props["prefix_cols"]]
-        image = image[:, props["prefix_cols"] :]
-    else:
-        prefix = None
-    if image.flags['C_CONTIGUOUS'] is False:
-        image = np.ascontiguousarray(image)
-    return image, prefix
-
-
-def process_band_sequential_image(f, props):
-    _, numpy_dtype = make_format_specifications(props)
-    image = np_from_buffered_io(f, numpy_dtype, count=props["pixels"])
-    image = image.reshape(
-        (props["BANDS"], props["nrows"], props["ncols"] + props["prefix_cols"])
-    )
-    if props["prefix_cols"] > 0:
-        prefix = image[:, : props["prefix_cols"]]
-        image = image[:, props["prefix_cols"] :]
-    else:
-        prefix = None
-    return image, prefix
-
-
-def process_line_interleaved_image(f, props):
-    # pixels per frame
-    props["pixels"] = props["BANDS"] * props["ncols"]
-    _, numpy_dtype = make_format_specifications(props)
-    image, prefix = [], []
-    for _ in np.arange(props["nrows"]):
-        prefix.append(f.read(props["prefix_bytes"]))
-        frame = np_from_buffered_io(
-            f, numpy_dtype, count=props["pixels"]).reshape(
-                props["BANDS"], props["ncols"]
-            )
-        image.append(frame)
-        del frame
-    image = np.ascontiguousarray(np.array(image).swapaxes(0, 1))
-    return image, prefix
-
-
-def skeptically_load_header(
-    path,
-    object_name="header",
-    start=0,
-    length=None,
-    as_rows=False,
-    as_pvl=False,
-):
-    # TODO: all these check_cases calls are probably unnecessary w/new file
-    #  mapping workflow
-    try:
-        if as_pvl is True:
-            try:
-                from pdr.pvl_utils import cached_pvl_load
-
-                return cached_pvl_load(decompress(check_cases(path)))
-            except ValueError:
-                pass
-        if as_rows is True:
-            with decompress(check_cases(path)) as file:
-                if start > 0:
-                    file.readlines(start)
-                text = "\r\n".join(
-                    map(lambda l: l.decode('utf-8'), file.readlines(length))
-                )
-        else:
-            with decompress(check_cases(path)) as file:
-                file.seek(start)
-                text = file.read(min(length, 80000)).decode('ISO-8859-1')
-        return text
-    except (ValueError, OSError) as ex:
-        warnings.warn(f"unable to parse {object_name}: {ex}")
-
-
-def pointer_to_fits_key(pointer, hdulist):
-    """
-    In some datasets with FITS, the PDS3 object names and FITS object
-    names are not identical. This function attempts to use Levenshtein
-    "fuzzy matching" to identify the correlation between the two. It is not
-    guaranteed to be correct! And special case handling might be required in
-    the future.
-    """
-    if pointer in ("IMAGE", "TABLE", None, ""):
-        # TODO: sometimes the primary HDU contains _just_ a header.
-        #  (e.g., GALEX raw6, which is not in scope, but I'm sure something in
-        #  the PDS does this awful thing too.) it might be a good idea to have
-        #  a heuristic for, when we are implicitly looking for data, walking
-        #  forward until we find a HDU that actually has something in it...
-        #  or maybe just populating multiple keys from the HDU names.
-        return 0
-    levratio = [
-        lev.ratio(i[1].lower(), pointer.lower())
-        for i in hdulist.info(output=False)
-    ]
-    return levratio.index(max(levratio))
-
-
-def check_explicit_delimiter(block):
-    if "FIELD_DELIMITER" in block.keys():
-        return {
-            "COMMA": ",",
-            "VERTICAL_BAR": "|",
-            "SEMICOLON": ";",
-            "TAB": "\t",
-        }[block["FIELD_DELIMITER"]]
-    return ","
+ID_FIELDS = (
+    # used during special case checks
+    "INSTRUMENT_ID",
+    "INSTRUMENT_NAME",
+    "SPACECRAFT_NAME",
+    "PRODUCT_TYPE",
+    "DATA_SET_NAME",
+    "DATA_SET_ID",
+    "STANDARD_DATA_PRODUCT_ID",
+    "FILE_NAME",
+    "INSTRUMENT_HOST_NAME",
+    "PRODUCT_TYPE",
+    "PRODUCT_ID",
+    "RECORD_BYTES",
+    "RECORD_TYPE",
+    "ROW_BYTES",
+    "ROWS",
+    "FILE_RECORDS",
+    "LABEL_RECORDS",
+    "NOTE",
+)
 
 
 class Metadata(MultiDict):
@@ -194,7 +68,6 @@ class Metadata(MultiDict):
     MultiDict subclass intended primarily as a helper class for Data.
     includes various convenience methods for handling metadata syntaxes,
     common access and display interfaces, etc.
-    # TODO: implement PDS4-style XML (or XML alias object) formatting.
     """
 
     def __init__(self, mapping_params, standard="PDS3", **kwargs):
@@ -245,7 +118,7 @@ class Metadata(MultiDict):
             warnings.warn(
                 f"More than one value for {text} exists in the metadata. "
                 f"Returning only the first.",
-                DuplicateKeyWarning
+                DuplicateKeyWarning,
             )
         return self._metaget_interior(text, default, evaluate)
 
@@ -285,7 +158,7 @@ class Metadata(MultiDict):
             warnings.warn(
                 f"More than one block named {text} exists in the metadata. "
                 f"Returning only the first.",
-                DuplicateKeyWarning
+                DuplicateKeyWarning,
             )
         return self._metablock_interior(text, evaluate)
 
@@ -294,50 +167,10 @@ class Metadata(MultiDict):
         return self.metablock(text, evaluate, False)
 
     def __str__(self):
-        return f'Metadata({prettify_multidict(self)})'
+        return f"Metadata({prettify_multidict(self)})"
 
     def __repr__(self):
-        return f'Metadata({prettify_multidict(self)})'
-
-
-def associate_label_file(
-    data_filename: str,
-    label_filename: Optional[str] = None,
-    skip_check: bool = False
-) -> Optional[str]:
-    if label_filename is not None:
-        return check_cases(Path(label_filename).absolute(), skip_check)
-    elif data_filename.lower().endswith(LABEL_EXTENSIONS):
-        return check_cases(data_filename)
-    for lext in LABEL_EXTENSIONS:
-        try:
-            return check_cases(with_extension(data_filename, lext))
-        except FileNotFoundError:
-            continue
-    return None
-
-
-def handle_fits_header(hdulist, pointer="", ):
-    astro_hdr = hdulist[pointer_to_fits_key(pointer, hdulist)].header
-    output_hdr = MultiDict()
-    for key, val, com in astro_hdr.cards:
-        if len(key) > 0:
-            if isinstance(val, (str, float, int)):
-                output_hdr.add(key, val)
-            else:
-                output_hdr.add(key, str(val))
-            if len(com) > 0:
-                comment_key = key + '_comment'
-                output_hdr.add(comment_key, com)
-    return output_hdr
-
-
-def _assume_data_start_given_in_bytes(target):
-    # TODO: Nothing in our test database uses this. It also seems like it's calling the
-    #  wrong index (should be -1?)
-    if isinstance(target[0], int):
-        return target[0]
-    raise ValueError(f"unknown data pointer format: {target}")
+        return f"Metadata({prettify_multidict(self)})"
 
 
 class Data:
@@ -349,7 +182,8 @@ class Data:
         label_fn: Optional[Union[Path, str]] = None,
         search_paths: Union[Collection[str], str] = (),
         skip_existence_check: bool = False,
-        pvl_limit: int = DEFAULT_PVL_LIMIT
+        pvl_limit: int = DEFAULT_PVL_LIMIT,
+        tracker: Optional[TrivialTracker] = None,
     ):
         # list of the product's associated data objects
         self.index = []
@@ -357,11 +191,22 @@ class Data:
         # object fails?
         self.debug = debug
         self.filename = check_cases(Path(fn).absolute(), skip_existence_check)
+        self.loaders = {}
+        if (self.debug is True) and (tracker is None):
+            self.tracker = Tracker(
+                Path(self.filename).name.replace(".", "_"),
+                outdir=Path(__file__).parent / ".tracker_logs",
+            )
+            self.tracker.clear()
+        elif tracker is None:
+            self.tracker = TrivialTracker()
+        else:
+            self.tracker = tracker
         # mappings from data objects to local paths
         self.file_mapping = {}
         # known special constants per data object
         self.specials = {}
-        # where can we look for files contaning data objects?
+        # where can we look for files containing data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + listify(search_paths)
         self.standard = None
@@ -394,6 +239,9 @@ class Data:
         # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
+        self.identifiers = {
+            field: self.metaget_(field, "") for field in ID_FIELDS
+        }
 
     def _init_pds4(self):
         # Just use pds4_tools if this is a PDS4 file
@@ -415,6 +263,9 @@ class Data:
         raise FileNotFoundError
 
     def _find_objects(self):
+        from pdr.loaders.utility import is_trivial
+
+        # TODO: make this not add objects again if called multiple times
         for pointer in self.pointers:
             object_name = depointerize(pointer)
             if is_trivial(object_name):
@@ -422,21 +273,15 @@ class Data:
             self.index.append(object_name)
 
     def _object_to_filename(self, object_name):
-        is_special, special_target = check_special_fn(self, object_name)
+        is_special, special_target = check_special_fn(
+            self, object_name, self.identifiers
+        )
         if is_special is True:
             return self.get_absolute_paths(special_target)
-        compkeys = {"COMPRESSED_FILE", "UNCOMPRESSED_FILE"}
-        if (
-            len(compkeys.intersection(self.metadata.keys())) == 2
-            and object_name in self.metablock_("UNCOMPRESSED_FILE").keys()
-        ):
-            blocks = filter(None, [self.metaget_(k) for k in compkeys])
-            filenames = filter(None, [b.get("FILE_NAME") for b in blocks])
-            return tuple(
-                chain.from_iterable(map(self.get_absolute_paths, filenames))
-            )
-        else:
-            target = self.metaget_(pointerize(object_name))
+        is_comp, comp_paths = self._check_compressed_file_pointer(object_name)
+        if is_comp is True:
+            return comp_paths
+        target = self.metaget_(pointerize(object_name))
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
@@ -445,6 +290,19 @@ class Data:
             return self.get_absolute_paths(target)
         else:
             return self.filename
+
+    def _check_compressed_file_pointer(self, object_name):
+        compkeys = {"COMPRESSED_FILE", "UNCOMPRESSED_FILE"}
+        if (
+            len(compkeys.intersection(self.metadata.keys())) == 2
+            and object_name in self.metablock_("UNCOMPRESSED_FILE").keys()
+        ):
+            blocks = filter(None, [self.metaget_(k) for k in compkeys])
+            filenames = filter(None, [b.get("FILE_NAME") for b in blocks])
+            return True, tuple(
+                chain.from_iterable(map(self.get_absolute_paths, filenames))
+            )
+        return False, None
 
     def _target_path(self, object_name, raise_missing=False):
         """
@@ -467,82 +325,66 @@ class Data:
     def unloaded(self):
         return tuple(filter(lambda k: k not in dir(self), self.index))
 
-    def _fallback_image_load(self):
-        """
-        sometimes images do not have explicit pointers, so we may want to
-        try to read an image out of the file anyway.
-        """
-        if looks_like_this_kind_of_file(self.filename, FITS_EXTENSIONS):
-            image = self.handle_fits_file(self.filename)
-        else:
-            # TODO: this will presently break if passed an unlabeled
-            #  image file. read_image() should probably be made more
-            #  permissive in some way to handle this, or we should at
-            #  least give a useful error message.
-            image = self.read_image()
-        if image is not None:
-            setattr(self, "IMAGE", image)
-            self.index += ["IMAGE"]
-
-    def load(self, object_name, reload=False, **load_kwargs):
-        if (object_name != "all") and (object_name not in self.index):
-            raise KeyError(f"{object_name} not found in index: {self.index}.")
-        if object_name == "all":
-            for name in self.keys():
-                if not OBJECTS_IGNORED_BY_DEFAULT.match(name):
-                    try:
-                        self.load(name)
-                    except ValueError as value_error:
-                        if "already loaded" in str(value_error):
-                            continue
-                        raise value_error
-            return
-        if (object_name in dir(self)) and (reload is False):
-            raise ValueError(
-                f"{object_name} is already loaded; pass reload=True to "
+    def load(self, name, reload=False, **load_kwargs):
+        if (name != "all") and (name not in self.index):
+            raise KeyError(f"{name} not found in index: {self.index}.")
+        if name == "all":
+            return self.load_all()
+        if (name in dir(self)) and (reload is False):
+            raise AlreadyLoadedError(
+                f"{name} is already loaded; pass reload=True to "
                 f"force reload."
             )
         if self.standard == "PDS4":
-            return self._load_pds4(object_name)
-        if self.file_mapping.get(object_name) is None:
-            target = self._target_path(object_name)
+            return self._load_pds4(name)
+        if self.file_mapping.get(name) is None:
+            target = self._target_path(name)
             if target is None:
-                warnings.warn(
-                    f"{object_name} file "
-                    f"{self._object_to_filename(object_name)} "
-                    f"not found in path."
-                )
-                setattr(
-                    self,
-                    object_name,
-                    self._catch_return_default(
-                        object_name, FileNotFoundError()
-                    ),
-                )
-                return
-            self.file_mapping[object_name] = target
+                return self._file_not_found(name)
+            self.file_mapping[name] = target
         try:
-            obj = self.load_from_pointer(object_name, **load_kwargs)
-            if obj is None:  # trivially loaded
+            obj = self.load_from_pointer(name, **load_kwargs)
+            if obj is None:
                 return
-            setattr(self, object_name, obj)
+            if not isinstance(obj, dict):
+                raise TypeError(f"loader returned non-dict object of type ({type(obj)}")
+            for k, v in obj.items():
+                if v is not None:
+                    setattr(self, k, v)
+                    if k not in self.index:
+                        self.index.append(k)
             return
         except KeyboardInterrupt:
             raise
+        except NotImplementedError as ex:
+            warnings.warn(f"This product's {name} is not yet supported: {ex}.")
+        except FileNotFoundError as _ex:
+            warnings.warn(f"Unable to find files required by {name}.")
         except Exception as ex:
-            if isinstance(ex, NotImplementedError):
-                warnings.warn(
-                    f"This product's {object_name} is not yet supported: {ex}."
-                )
-            elif isinstance(ex, FileNotFoundError):
-                warnings.warn(
-                    f"Unable to find files required by {object_name}."
-                )
-            else:
-                warnings.warn(f"Unable to load {object_name}: {ex}")
-            setattr(
-                self, object_name, self._catch_return_default(object_name, ex)
-            )
+            warnings.warn(f"Unable to load {name}: {ex}")
+        setattr(self, name, self.metaget_(name))
+
+    def load_all(self):
+        from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
+
+        for name in self.keys():
+            if OBJECTS_IGNORED_BY_DEFAULT.match(name):
+                continue
+            try:
+                self.load(name)
+            except AlreadyLoadedError:
+                continue
+
+    def _file_not_found(self, object_name):
+        warnings.warn(
+            f"{object_name} file {self._object_to_filename(object_name)} "
+            f"not found in path."
+        )
+        return_default = self.metaget_(object_name)
+        maybe = catch_return_default(
+            self.debug, return_default, FileNotFoundError()
+        )
+        setattr(self, object_name, maybe)
 
     def _load_pds4(self, object_name):
         """
@@ -552,12 +394,14 @@ class Data:
         """
         structure = self._pds4_structures[object_name]
         from pds4_tools.reader.label_objects import Label
+
         if isinstance(structure, Label):
             setattr(self, "label", structure)
         elif structure.is_array():
             setattr(self, object_name, structure.data)
         elif structure.is_table():
             from pdr.pd_utils import structured_array_to_df
+
             df = structured_array_to_df(structure.data)
             df.columns = df.columns.str.replace(r"GROUP_?\d+", "", regex=True)
             df.columns = df.columns.str.strip(", ")
@@ -590,543 +434,20 @@ class Data:
         return metadata
 
     def load_from_pointer(self, pointer, **load_kwargs):
-        return pointer_to_loader(pointer, self)(pointer, **load_kwargs)
+        from pdr.loaders.dispatch import pointer_to_loader
 
-    def read_label(self, _pointer, fmt="text"):
-        if fmt == "text":
-            return trim_label(decompress(self.labelname)).decode("utf-8")
-        elif fmt == "pvl":
-            import pvl
-
-            return pvl.load(self.labelname)
-        raise NotImplementedError(f"The {fmt} format is not yet implemented.")
-
-    def read_array(self, object_name="ARRAY"):
-        """
-        Read an array object from this product and return it as a numpy array.
-        """
-        # TODO: Maybe add block[AXES] as names? Might have to switch to pandas
-        #  or a flattened structured array or something weirder
-        fn = self.file_mapping[object_name]
-        block = self.metablock_(object_name)
-        # 'obj' will be equal to 'block' if no subobject is found
-        obj = check_array_for_subobject(block)
-        if block.get('INTERCHANGE_FORMAT') == "BINARY":
-            with decompress(fn) as f:
-                binary = np_from_buffered_io(
-                    f,
-                    dtype=sample_types(obj["DATA_TYPE"], obj["BYTES"], True),
-                    count=get_array_num_items(block),
-                    offset=self.data_start_byte(pointerize(object_name))
-                )
-            return binary.reshape(block['AXIS_ITEMS'])
-        # assume objects without the optional interchange_format key are ascii
-        with open(fn) as stream:
-            text = stream.read()
-        try:
-            text = tuple(map(float, re.findall(r'[+-]?\d+\.?\d*', text)))
-        except (TypeError, IndexError, ValueError):
-            text = re.split(r'\s+', text)
-        array = np.asarray(text).reshape(block['AXIS_ITEMS'])
-        if "DATA_TYPE" in obj.keys():
-            array = array.astype(
-                sample_types(obj["DATA_TYPE"], obj["BYTES"], True)
-            )
-        return array
-
-    def read_image(
-        self, object_name="IMAGE", userasterio=False, special_properties=None
-    ):
-        """
-        Read an image object from this product and return it as a numpy array.
-        """
-        # TODO: Check for and apply BIT_MASK.
-        object_name = depointerize(object_name)
-        # optional hook for rasterio, for regression/comparison testing, etc.
-        if userasterio is True:
-            from pdr.rasterio_utils import open_with_rasterio
-            try:
-                return open_with_rasterio(
-                    self.file_mapping, self.filename, object_name
-                )
-            except IOError:
-                pass
-        if special_properties is not None:
-            props = special_properties
-        else:
-            block = self.metablock_(object_name)
-            if block is None:
-                return None  # not much we can do with this!
-            props = generic_image_properties(object_name, block, self)
-        # a little decision tree to seamlessly deal with compression
-        fn = self.file_mapping[object_name]
-        f = decompress(fn)
-        f.seek(props["start_byte"])
-        try:
-            # Make sure that single-band images are 2-dim arrays.
-            if props["BANDS"] == 1:
-                image, prefix = process_single_band_image(f, props)
-            elif props["band_storage_type"] == "BAND_SEQUENTIAL":
-                image, prefix = process_band_sequential_image(f, props)
-            elif props["band_storage_type"] == "LINE_INTERLEAVED":
-                image, prefix = process_line_interleaved_image(f, props)
-            else:
-                warnings.warn(
-                    f"Unknown BAND_STORAGE_TYPE={props['band_storage_type']}. "
-                    f"Guessing BAND_SEQUENTIAL."
-                )
-                image, prefix = process_band_sequential_image(f, props)
-        except Exception as ex:
-            raise ex
-        finally:
-            f.close()
-        if "PREFIX" in object_name:
-            return prefix
-        return image
-
-    def read_table_structure(self, pointer):
-        """
-        Try to turn the TABLE definition into a column name / data type
-        array. Requires renaming some columns to maintain uniqueness. Also
-        requires unpacking columns that contain multiple entries. Also
-        requires adding "placeholder" entries for undefined data (e.g.
-        commas in cases where the allocated bytes is larger than given by
-        BYTES, so we need to read in the "placeholder" space and then
-        discard it later).
-
-        If the table format is defined in an external FMT file, then this
-        will attempt to locate it in the same directory as the data / label,
-        and throw an error if it's not there.
-        TODO, maybe: Grab external format files as needed.
-        """
-        block = self.metablock_(depointerize(pointer))
-        fields = self.read_format_block(block, pointer)
-        # give columns unique names so that none of our table handling explodes
-        fmtdef = pd.DataFrame.from_records(fields)
-        fmtdef = reindex_df_values(fmtdef)
-        return fmtdef
-
-    def load_format_file(self, format_file, object_name):
-        label_fns = self.get_absolute_paths(format_file)
-        try:
-            repo_paths = [
-                Path(find_repository_root(Path(self.filename)), label_path)
-                for label_path in ("label", "LABEL")
-            ]
-            label_fns += [Path(path, format_file) for path in repo_paths]
-        except (ValueError, IndexError):
-            pass
-        try:
-            fmtpath = check_cases(label_fns)
-            aggregations, _ = read_pvl(fmtpath)
-            return literalize_pvl(aggregations)
-        except FileNotFoundError:
-            warnings.warn(
-                f"Unable to locate external table format file:\n\t"
-                f"{format_file}. Try retrieving this file and "
-                f"placing it in the same path as the {object_name} "
-                f"file."
-            )
-            raise FileNotFoundError
-
-    def read_format_block(self, block, object_name):
-        # load external structure specifications
-        format_block = list(block.items())
-        block_name = block.get('NAME')
-        while "^STRUCTURE" in [obj[0] for obj in format_block]:
-            format_block = self.inject_format_files(format_block, object_name)
-        fields = []
-        for item_type, definition in format_block:
-            if item_type in ("COLUMN", "FIELD"):
-                obj = dict(definition) | {'BLOCK_NAME': block_name}
-                repeat_count = definition.get("ITEMS")
-                obj = bit_handling.add_bit_column_info(obj, definition, self)
-            elif item_type == "CONTAINER":
-                obj = self.read_format_block(definition, object_name)
-                repeat_count = definition.get("REPETITIONS")
-            else:
-                continue
-            # containers can have REPETITIONS,
-            # and some "columns" contain a lot of columns (ITEMS)
-            # repeat the definition, renaming duplicates, for these cases
-            if repeat_count is not None:
-                fields = append_repeated_object(obj, fields, repeat_count)
-            else:
-                fields.append(obj)
-        # semi-legal top-level containers not wrapped in other objects
-        if object_name == "CONTAINER":
-            repeat_count = block.get("REPETITIONS")
-            if repeat_count is not None:
-                fields = list(
-                    chain.from_iterable([fields for _ in range(repeat_count)])
-                )
-        return fields
-
-    def inject_format_files(self, block, object_name):
-        format_filenames = {
-            ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
-        }
-        # make sure to insert the structure blocks in the correct order --
-        # and remember that keys are not unique, so we have to use the index
-        assembled_structure = []
-        last_ix = 0
-        for ix, filename in format_filenames.items():
-            fmt = list(self.load_format_file(filename, object_name).items())
-            assembled_structure += block[last_ix:ix] + fmt
-            last_ix = ix + 1
-        assembled_structure += block[last_ix:]
-        return assembled_structure
-
-    def parse_table_structure(self, pointer):
-        """
-        Read a table's format specification and generate a DataFrame
-        and -- if it's binary -- a numpy dtype object. These are later passed
-        to np.fromfile or one of several ASCII table readers.
-        """
-        fmtdef = self.read_table_structure(pointer)
-        if (
-            fmtdef["DATA_TYPE"].str.contains("ASCII").any()
-            or looks_like_ascii(self, pointer)
-        ):
-            # don't try to load it as a binary file
-            return fmtdef, None
-        if fmtdef is None:
-            return fmtdef, np.dtype([])
-        for end in ('_PREFIX', '_SUFFIX', ''):
-            length = self.metaget(pointer).get(f'ROW{end}_BYTES')
-            if length is not None:
-                fmtdef[f'ROW{end}_BYTES'] = length
-        return insert_sample_types_into_df(fmtdef, self)
-
-    # noinspection PyTypeChecker
-    def _interpret_as_ascii(self, fn, fmtdef, object_name):
-        """
-        read an ASCII table. first assume it's delimiter-separated; attempt to
-        parse it as a fixed-width table if that fails.
-        """
-        # TODO, maybe: add better delimiter detection & dispatch
-        start, length, as_rows = self.table_position(object_name)
-        sep = check_explicit_delimiter(self.metablock_(object_name))
-        with decompress(fn) as f:
-            if as_rows is False:
-                bytes_buffer = head_file(f, nbytes=length, offset=start)
-                string_buffer = StringIO(bytes_buffer.read().decode())
-                bytes_buffer.close()
-            else:
-                if start > 0:
-                    [next(f) for _ in range(start)]
-                if length is None:
-                    lines = f.readlines()
-                else:
-                    lines = [next(f) for _ in range(length)]
-                string_buffer = StringIO("\r\n".join(map(bytes.decode, lines)))
-            string_buffer.seek(0)
-        try:
-            table = pd.read_csv(string_buffer, sep=sep, header=None)
-        # TODO: I'm not sure this is a good idea
-        # TODO: hacky, untangle this tree
-        # TODO: this won't work for compressed files, but I'm not even
-        #  sure what we're using it for right now
-        except (UnicodeError, AttributeError, ParserError):
-            table = None
-        if table is None:
-            try:
-                table = pd.DataFrame(
-                    np.loadtxt(
-                        fn,
-                        delimiter=",",
-                        # TODO, maybe: this currently fails -- perhaps
-                        #  correctly -- when there is no LABEL_RECORDS key.
-                        #  but perhaps it is better to set a default of 0
-                        #  and avoid use of read_fwf
-                        skiprows=self.metaget_("LABEL_RECORDS"),
-                    )
-                    .copy()
-                    .newbyteorder("=")
-                )
-            except (TypeError, KeyError, ValueError):
-                pass
-        if table is not None:
-            try:
-                assert len(table.columns) == len(fmtdef.NAME.tolist())
-                string_buffer.close()
-                return table
-            except AssertionError:
-                pass
-        # TODO: handle this better
-        string_buffer.seek(0)
-        if "BYTES" in fmtdef.columns:
-            try:
-                from pdr.pd_utils import compute_offsets
-
-                colspecs = []
-                position_records = compute_offsets(fmtdef).to_dict('records')
-                for record in position_records:
-                    if np.isnan(record.get('ITEM_BYTES', np.nan)):
-                        col_length = record['BYTES']
-                    else:
-                        col_length = int(record['ITEM_BYTES'])
-                    colspecs.append(
-                        (record['OFFSET'], record['OFFSET'] + col_length)
-                    )
-                table = pd.read_fwf(
-                    string_buffer, header=None, colspecs=colspecs
-                )
-                string_buffer.close()
-                return table
-            except (pd.errors.EmptyDataError, pd.errors.ParserError):
-                string_buffer.seek(0)
-        table = pd.read_fwf(string_buffer, header=None)
-        string_buffer.close()
-        return table
-
-    def read_table(self, pointer="TABLE"):
-        """
-        Read a table. Parse the label format definition and then decide
-        whether to parse it as text or binary.
-        """
-        fn = self.file_mapping[pointer]
-        try:
-            is_special, special_format, special_dt = check_special_structure(pointer, self)
-            if is_special:
-                fmtdef, dt = special_format, special_dt
-            else:
-                fmtdef, dt = self.parse_table_structure(pointer)
-        except KeyError as ex:
-            warnings.warn(f"Unable to find or parse {pointer}")
-            return self._catch_return_default(pointer, ex)
-        if dt is None:  # we believe object is an ascii file
-            table = self._interpret_as_ascii(fn, fmtdef, pointer)
-            table.columns = fmtdef.NAME.tolist()
-        else:
-            # TODO: this works poorly (from a usability and performance
-            #  perspective; it's perfectly stable) for tables defined as
-            #  a single row with tens or hundreds of thousands of columns
-            table = self._interpret_as_binary(fmtdef, dt, fn, pointer)
-        try:
-            # If there were any cruft "placeholder" columns, discard them
-            table = table.drop(
-                [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
-            )
-        except TypeError as ex:  # Failed to read the table
-            return self._catch_return_default(pointer, ex)
-        return table
-
-    def read_histogram(self, object_name):
-        # TODO: build this out for text examples
-        block = self.metablock_(object_name)
-        if block.get("INTERCHANGE_FORMAT") == "ASCII":
-            raise NotImplementedError(
-                "ASCII histograms are not currently supported."
-            )
-        # TODO: this is currently a special-case version of the read_table
-        #  flow. maybe: find a way to sideload definitions like this into
-        #  the read_table flow after further refactoring.
-        fields = []
-        if (repeats := block.get("ITEMS")) is not None:
-            fields = append_repeated_object(dict(block), fields, repeats)
-        else:
-            fields = [dict(block)]
-        fmtdef = pd.DataFrame.from_records(fields)
-        if "NAME" not in fmtdef.columns:
-            fmtdef["NAME"] = object_name
-        fmtdef = reindex_df_values(fmtdef)
-        fmtdef, dt = insert_sample_types_into_df(fmtdef, self)
-        return self._interpret_as_binary(
-            fmtdef, dt, self.file_mapping[object_name], object_name
-        )
-
-    def _interpret_as_binary(self, fmtdef, dt, fn, pointer):
-        count = self.metablock_(pointer).get("ROWS")
-        count = count if count is not None else 1
-        with decompress(fn) as f:
-            array = np_from_buffered_io(
-                f, dtype=dt, offset=self.data_start_byte(pointer), count=count
-            )
-        swapped = enforce_order_and_object(array, inplace=False)
-        # TODO: I believe the following commented-out block is deprecated
-        #  but I am leaving it in as a dead breadcrumb for now just in case
-        #  something bizarre happens -michael
-        # # note that pandas treats complex and simple dtypes differently when
-        # # initializing single-valued dataframes
-        # if (swapped.size == 1) and (len(swapped.dtype) == 0):
-        #     swapped = swapped[0]
-        table = pd.DataFrame(swapped)
-        table.columns = fmtdef.NAME.tolist()
-        table = booleanize_booleans(table, fmtdef)
-        table = bit_handling.expand_bit_strings(table, fmtdef)
-        return table
-
-    def read_text(self, object_name):
-        target = self.metaget_(pointerize(object_name))
-        local_path = self.file_mapping[object_name]
-        try:
-            if isinstance(local_path, str):
-                return ignore_if_pdf(
-                    self, object_name, check_cases(local_path)
-                )
-            elif isinstance(local_path, list):
-                return [
-                    ignore_if_pdf(
-                        self, object_name, check_cases(each_local_path)
-                    )
-                    for each_local_path in local_path
-                ]
-        except FileNotFoundError as ex:
-            exception = ex
-            warnings.warn(f"couldn't find {target}")
-        except UnicodeDecodeError as ex:
-            exception = ex
-            warnings.warn(f"couldn't parse {target}")
-        except Exception:
-            raise
-        return self._catch_return_default(object_name, exception)
-
-    def read_header(self, object_name="HEADER"):
-        """Attempt to read a file header."""
-        if looks_like_this_kind_of_file(self.file_mapping[object_name], FITS_EXTENSIONS):
-            return self.handle_fits_file(object_name)
-        start, length, as_rows = self.table_position(object_name)
-        return skeptically_load_header(
-            self.file_mapping[object_name], object_name, start, length, as_rows
-        )
-
-    def table_position(self, object_name):
-        target = self._get_target(object_name)
-        block = self.metablock_(object_name)
-        try:
-            if 'RECORDS' in block.keys():
-                n_records = block['RECORDS']
-            elif 'ROWS' in block.keys():
-                n_records = block['ROWS']
-            else:
-                n_records = None
-        except AttributeError:
-            n_records = None
-        length = None
-        if (as_rows := self._check_delimiter_stream(object_name)) is True:
-            if isinstance(target[1], dict):
-                start = target[1]['value'] - 1
-            else:
-                try:
-                    start = target[1] - 1
-                except TypeError:  # string types cannot have integers subtracted (string implies there is one object)
-                    start = 0
-            if n_records is not None:
-                length = n_records
-        else:
-            start = self.data_start_byte(object_name)
-            try:
-                if "BYTES" in block.keys():
-                    length = block["BYTES"]
-                elif n_records is not None:
-                    if "RECORD_BYTES" in block.keys():
-                        record_length = block['RECORD_BYTES']
-                    elif "ROW_BYTES" in block.keys():
-                        record_length = block['ROW_BYTES']
-                        record_length += block.get("ROW_SUFFIX_BYTES", 0)
-                    elif self.metaget_("RECORD_BYTES") is not None:
-                        record_length = self.metaget_("RECORD_BYTES")
-                    else:
-                        record_length = None
-                    if record_length is not None:
-                        length = record_length * n_records
-            except AttributeError:
-                length = None
-        is_special, spec_start, spec_length, spec_as_rows = check_special_position(
-            start, length, as_rows, self, object_name)
-        if is_special:
-            return spec_start, spec_length, spec_as_rows
-        return start, length, as_rows
-
-    def handle_fits_file(self, pointer=""):
-        """
-        This function attempts to read all FITS files, compressed or
-        uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
-        return the header, all others return data.
-        TODO, maybe: dispatch to decompress() for weirdo compression
-          formats, but possibly not right here? hopefully we shouldn't need
-          to handle compressed FITS files too often anyway.
-        """
-        from astropy.io import fits
-
-        try:
-            hdulist = fits.open(self.file_mapping[pointer])
-            if "HEADER" in pointer:
-                return handle_fits_header(hdulist, pointer)
-            else:
-                hdr_key = pointer+"_HEADER"
-                hdr_val = handle_fits_header(hdulist, pointer)
-                setattr(self, hdr_key, hdr_val)
-                self.index += [hdr_key]
-            return hdulist[pointer_to_fits_key(pointer, hdulist)].data
-        except Exception as ex:
-            # TODO: assuming this does not need to be specified as f-string
-            #  (like in read_header/tbd) -- maybe! must determine and specify
-            #  what cases this exception was needed to handle
-            self._catch_return_default(self.metaget_(pointer), ex)
-
-    def handle_compressed_image(self, pointer: str, userasterio=False):
-        # optional hook for rasterio usage for regression tests, etc.
-        if userasterio:
-            import rasterio
-
-            return rasterio.open(self.file_mapping[pointer]).read()
-        # otherwise read with pillow
-        from PIL import Image
-        # deactivate pillow's DecompressionBombError: many planetary images
-        # are legitimately very large
-        Image.MAX_IMAGE_PIXELS = None
-        # noinspection PyTypeChecker
-        image = np.ascontiguousarray(
-            Image.open(self.file_mapping[pointer])
-        ).copy()
-        # pillow reads images as [x, y, channel] rather than [channel, x, y]
-        if len(image.shape) == 3:
-            return np.ascontiguousarray(np.rollaxis(image, 2))
-        return image
-
-    def _catch_return_default(self, pointer: str, exception: Exception):
-        """
-        if we are in debug mode, reraise an exception. otherwise, return
-        the label block only.
-        """
+        loader = pointer_to_loader(pointer, self)
         if self.debug is True:
-            raise exception
-        return self.metaget_(pointer)
-
-    def find_special_constants(self, key):
-        """
-        attempts to find special constants in the associated object
-        by referencing the label and "standard" implicit special constant
-        values, then populates self.special_constants as appropriate.
-        TODO: doesn't do anything for PDS4 products at present. Also, we
-         need an attribute for distinguishing PDS3 from PDS4 products.
-        """
-        obj, block = self._init_array_method(key)
-        # check for explicitly-defined special constants
-        specials = {
-            name: block[name]
-            for name in PDS3_CONSTANT_NAMES
-            if (name in block.keys()) and not (block[name] == "N/A")
-        }
-        # ignore uint8 implicit constants (0, 255) for now -- too problematic
-        # TODO: maybe add an override
-        if obj.dtype.name == "uint8":
-            self.specials[key] = specials
-            return
-        # check for implicit constants appropriate to the sample type
-        implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[obj.dtype.name]
-        specials |= {
-            possibility: constant
-            for possibility, constant in implicit_possibilities.items()
-            if constant in obj
-        }
-        self.specials[key] = specials
+            loader = Dynamic.from_function(loader, optional=True)
+        self.loaders[pointer] = loader
+        self.tracker.set_metadata(filename=self.file_mapping[pointer])
+        return self.loaders[pointer](
+            self, pointer, tracker=self.tracker, **load_kwargs
+        )
 
     def get_scaled(
-        self, key: str, inplace=False, float_dtype=None
-    ) -> np.ndarray:
+        self, object_name: str, inplace=False, float_dtype=None
+    ) -> "np.ndarray":
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.
@@ -1135,91 +456,36 @@ class Data:
         if inplace is True, does calculations in-place on original array,
         with attendant memory savings and destructiveness.
         """
-        # Do whatever pds4_tools would most likely do with these data.
-        # TODO: shake this out much more vigorously. perhaps make
-        #  the inplace and float_dtype arguments do something.
-        #  check and see if implicit special constants ever still exist
-        #  stealthily in PDS4 data. etc.
-        if self.standard == "PDS4":
-            return _scale_pds4_tools_struct(self._pds4_structures[key])
-        obj, block = self._init_array_method(key)
-        if key not in self.specials:
-            consts = special_image_constants(self)
-            self.specials[key] = consts
-            if not consts:
-                self.find_special_constants(key)
-        if self.specials[key] != {}:
-            obj = np.ma.MaskedArray(obj)
-            obj.mask = np.isin(obj.data, list(self.specials[key].values()))
-        scale = 1
-        offset = 0
-        if "SCALING_FACTOR" in block.keys():
-            scale = block["SCALING_FACTOR"]
-            if isinstance(scale, dict):
-                scale = scale['value']
-        if "OFFSET" in block.keys():
-            offset = block["OFFSET"]
-            if isinstance(offset, dict):
-                offset = offset['value']
-        # meaningfully better for enormous unscaled arrays
-        if (scale == 1) and (offset == 0):
-            return obj
-        # try to perform the operation in-place if requested, although if
-        # we're casting to float, we can't
-        # TODO: detect rollover cases, etc.
-        if inplace is True and not casting_to_float(obj, scale, offset):
-            if len(obj) == len(scale) == len(offset) > 1:
-                for ix, _ in enumerate(scale):
-                    obj[ix] = obj[ix] * scale[ix] + offset[ix]
-            else:
-                obj *= scale
-                obj += offset
-            return obj
-        # if we're casting to float, permit specification of dtype
-        # prior to operation (float64 is numpy's default and often excessive)
-        if casting_to_float(obj, scale, offset):
-            if float_dtype is not None:
-                obj = obj.astype(float_dtype)
-        try:
-            if len(obj) == len(scale) == len(offset) > 1:
-                planes = [
-                    obj[ix] * scale[ix] + offset[ix]
-                    for ix in range(len(scale))
-                ]
-                stacked = np.rollaxis(np.ma.dstack(planes), 2)
-                return stacked
-        except TypeError:
-            pass  # len() is not usable on a float object
-        return obj * scale + offset
-
-    def _init_array_method(
-        self, object_name: str
-    ) -> tuple[np.ndarray, Mapping]:
-        """
-        helper function -- grab an array-type object and its label "block".
-        specifying a generic return type because eventually we would like this
-        to work with XML trees as well as PVL
-        """
         obj = self[object_name]
-        if not isinstance(obj, np.ndarray):
-            raise TypeError("this method is only applicable to arrays.")
-        return obj, self.metablock_(object_name)
+        # avoid numpy import just for type check
+        if obj.__class__.__name__ != "ndarray":
+            raise TypeError("get_scaled is only applicable to arrays.")
+        if self.standard == "PDS4":
+            from pdr._scaling import scale_pds4_tools_struct
 
-    def tbd(self, pointer=""):
-        """
-        This is a placeholder function for pointers that are
-        not explicitly supported elsewhere. It throws a warning and
-        passes just the value of the pointer.
-        """
-        warnings.warn(f"The {pointer} pointer is not yet fully supported.")
-        return self.metaget_(pointer)
+            # Do whatever pds4_tools would most likely do with these data.
+            # TODO: shake this out much more vigorously. perhaps make
+            #  the inplace and float_dtype arguments do something.
+            #  check and see if implicit special constants ever still exist
+            #  stealthily in PDS4 data. etc.
+            return scale_pds4_tools_struct(self._pds4_structures[object_name])
 
-    def trivial(self, pointer=""):
-        """
-        This is a trivial loader. It does not load. The purpose is to use
-        for any pointers we don't want to load and instead simply want ignored.
-        """
-        pass
+        from pdr._scaling import (
+            find_special_constants,
+            mask_specials,
+            scale_array,
+        )
+
+        if object_name not in self.specials:
+            consts = special_image_constants(self.identifiers)
+            self.specials[object_name] = consts
+            if not consts:
+                self.specials[object_name] = find_special_constants(
+                    self.metadata, obj, object_name
+                )
+        if self.specials[object_name] != {}:
+            obj = mask_specials(obj, list(self.specials[object_name].values()))
+        return scale_array(self, obj, object_name, inplace, float_dtype)
 
     def metaget(self, text, default=None, evaluate=True, warn=True):
         """
@@ -1253,96 +519,12 @@ class Data:
         """quiet-by-default version of metablock"""
         return self.metadata.metablock(text, evaluate, False)
 
-    def _check_delimiter_stream(self, object_name):
-        """
-        do I appear to point to a delimiter-separated file without
-        explicit record byte length
-        """
-        # TODO: this may be deprecated. assess against notionally-supported
-        #  products.
-        if isinstance(target := self._get_target(object_name), dict):
-            if target.get("units") == "BYTES":
-                return False
-        # TODO: untangle this, everywhere
-        if isinstance(target := self._get_target(object_name), (list, tuple)):
-            if isinstance(target[-1], dict):
-                if target[-1].get("units") == "BYTES":
-                    return False
-        # TODO: not sure this is a good assumption -- it is a bad assumption
-        #  for the CHEMIN RDRs, but those labels are just wrong
-        if self.metaget_("RECORD_BYTES") is not None:
-            return False
-        # TODO: not sure this is a good assumption
-        if not self.metaget_("RECORD_TYPE") == "STREAM":
-            return False
-        textish = map(
-            partial(contains, object_name), ("ASCII", "SPREADSHEET", "HEADER")
-        )
-        if any(textish):
-            return True
-        return False
-
-    def _count_from_bottom_of_file(self, object_name, row_bytes=None):
-        rows = self.metaget_("ROWS")
-        if not row_bytes:
-            row_bytes = self.metaget_("ROW_BYTES")
-        tab_size = rows * row_bytes
-        filename = self._object_to_filename(object_name)
-        if isinstance(filename, list):
-            filename = filename[0]
-        file = Path(filename)
-        file_size = os.path.getsize(file)
-        return file_size - tab_size
-
-    def data_start_byte(self, object_name):
-        """
-        Determine the first byte of the data in a file from its pointer.
-        """
-        # TODO: like similar functions, this will currently break with PDS4
-
-        # hook for defining internally-consistent-but-nonstandard special cases
-        is_special, special_byte = check_special_offset(object_name, self)
-        if is_special:
-            return special_byte
-        target = self._get_target(object_name)
-        block = self.metablock_(object_name)
-        if "RECORD_BYTES" in block.keys():
-            record_bytes = block["RECORD_BYTES"]
-        else:
-            record_bytes = self.metaget_("RECORD_BYTES")
-        start_byte = None
-        if isinstance(target, int) and (record_bytes is not None):
-            start_byte = record_bytes * max(target - 1, 0)
-        if isinstance(target, (list, tuple)):
-            if isinstance(target[-1], int) and (record_bytes is not None):
-                start_byte = record_bytes * max(target[-1] - 1, 0)
-            if isinstance(target[-1], dict):
-                start_byte = quantity_start_byte(target[-1], record_bytes)
-        elif isinstance(target, dict):
-            start_byte = quantity_start_byte(target, record_bytes)
-        if isinstance(target, str):
-            start_byte = 0
-        if start_byte is not None:
-            return start_byte
-        if record_bytes is None:
-            if isinstance(target, int):
-                return self._count_from_bottom_of_file(object_name)
-            if isinstance(target, (list, tuple)):
-                return _assume_data_start_given_in_bytes(target)
-        raise ValueError(f"Unknown data pointer format: {target}")
-
-    def _get_target(self, object_name):
-        target = self.metaget_(object_name)
-        if isinstance(target, Mapping):
-            target = self.metaget_(pointerize(object_name))
-        return target
-
-    # TODO: have this iterate through scopes
     def get_absolute_paths(self, filename: Union[str, Path]) -> list[str]:
-        return [
-            str(Path(search_path, filename).absolute())
-            for search_path in self.search_paths
-        ]
+        return gmap(
+            lambda sf: Path(*sf).absolute(),
+            product(self.search_paths, listify(filename)),
+            evaluator=list,
+        )
 
     # TODO: reorganize this -- common dispatch funnel with dump_browse,
     #  split up the image-gen part of _browsify_array, something like that
@@ -1352,7 +534,7 @@ class Data:
                 f"please specify the name of an image object. "
                 f"keys include {self.index}"
             )
-        if not isinstance(self[object_name], np.ndarray):
+        if not self[object_name].__class__.__name__ == "ndarray":
             raise TypeError("Data.show only works on array data.")
         if scaled is True:
             obj = self.get_scaled(object_name)
@@ -1391,18 +573,18 @@ class Data:
 
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
             fdt = browse_kwargs.get("float_dtype")
-            if isinstance(self[obj], np.ndarray):
+            if self[obj].__class__.__name__ == "ndarray":
                 if scaled == "both":
                     dump_it(
                         self.get_scaled(obj, float_dtype=fdt),
                         outfile + "_scaled",
-                        purge=False
+                        purge=False,
                     )
                     dump_it(self[obj], outfile + "_unscaled")
                 elif scaled is True:
                     dump_it(
                         self.get_scaled(obj, inplace=purge, float_dtype=fdt),
-                        outfile
+                        outfile,
                     )
                 elif scaled is False:
                     dump_it(self[obj], outfile)
@@ -1468,16 +650,7 @@ class Data:
             yield self[key]
 
 
-def quantity_start_byte(quantity_dict, record_bytes):
-    # TODO: are there cases in which _these_ aren't 1-indexed?
-    if quantity_dict["units"] == "BYTES":
-        return quantity_dict["value"] - 1
-    if record_bytes is not None:
-        return record_bytes * max(quantity_dict["value"] - 1, 0)
-
-
 def _metaget_factory(metadata, cached=True):
-
     def metaget_interior(text, default, evaluate):
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
         if value is not None:
@@ -1490,7 +663,6 @@ def _metaget_factory(metadata, cached=True):
 
 
 def _metablock_factory(metadata, cached=True):
-
     def metablock_interior(text, evaluate):
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
         if not isinstance(value, Mapping):
@@ -1500,37 +672,3 @@ def _metablock_factory(metadata, cached=True):
     if cached is True:
         return cache(metablock_interior)
     return metablock_interior
-
-
-class DuplicateKeyWarning(UserWarning):
-    pass
-
-
-# TODO: shake this out much more vigorously
-def _scale_pds4_tools_struct(struct):
-    """see pds4_tools.reader.read_arrays.new_array"""
-    # TODO: apply bit_mask
-    from pds4_tools.reader.data_types import (
-        apply_scaling_and_value_offset
-    )
-    array = struct.data
-    element_array = struct.meta_data['Element_Array']
-    scale_kwargs = {
-        'scaling_factor': element_array.get('scaling_factor'),
-        'value_offset': element_array.get('value_offset')
-    }
-    # TODO: is this important?
-    #     dtype = pds_to_numpy_type(struct.meta_data.data_type(),
-    #     data=array, **scale_kwargs)
-    special_constants = struct.meta_data.get('Special_Constants')
-    array = apply_scaling_and_value_offset(
-        array, special_constants=special_constants, **scale_kwargs)
-    return array
-
-
-def looks_like_ascii(data, pointer):
-    return (
-        ("SPREADSHEET" in pointer)
-        or ("ASCII" in pointer)
-        or (data.metablock(pointer).get('INTERCHANGE_FORMAT') == 'ASCII')
-    )
