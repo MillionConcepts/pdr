@@ -86,7 +86,7 @@ class ReadHeader(Loader):
     """wrapper for read_header"""
 
     def __init__(self):
-        from pdr.loaders.misc import read_header
+        from pdr.loaders.text import read_header
         from pdr.loaders.queries import table_position
 
         super().__init__(read_header)
@@ -99,7 +99,7 @@ class ReadText(Loader):
     """wrapper for read_text"""
 
     def __init__(self):
-        from pdr.loaders.misc import read_text
+        from pdr.loaders.text import read_text
 
         super().__init__(read_text)
 
@@ -108,7 +108,7 @@ class ReadLabel(Loader):
     """wrapper for read_label"""
 
     def __init__(self):
-        from pdr.loaders.misc import read_label
+        from pdr.loaders.text import read_label
 
         super().__init__(read_label)
 

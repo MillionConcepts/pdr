@@ -13,7 +13,7 @@ from pdr.pd_utils import booleanize_booleans
 from pdr.utils import decompress, head_file
 
 
-def read_array(filename, block, start_byte):
+def read_array(fn, block, start_byte):
     """
     Read an array object from this product and return it as a numpy array.
     """
@@ -21,7 +21,7 @@ def read_array(filename, block, start_byte):
     #  or a flattened structured array or something weirder
     obj = check_array_for_subobject(block)
     if block.get("INTERCHANGE_FORMAT") == "BINARY":
-        with decompress(filename) as f:
+        with decompress(fn) as f:
             binary = np_from_buffered_io(
                 f,
                 dtype=sample_types(obj["DATA_TYPE"], obj["BYTES"], True),
@@ -30,7 +30,7 @@ def read_array(filename, block, start_byte):
             )
         return binary.reshape(block["AXIS_ITEMS"])
     # assume objects without the optional interchange_format key are ascii
-    with open(filename) as stream:
+    with open(fn) as stream:
         text = stream.read()
     try:
         text = tuple(map(float, re.findall(r"[+-]?\d+\.?\d*", text)))
@@ -46,12 +46,11 @@ def read_array(filename, block, start_byte):
 
 def read_table(
     identifiers,
-    filename,
+    fn,
     fmtdef_dt,
     table_props,
     block,
     start_byte,
-    debug,
 ):
     """
     Read a table. Parse the label format definition and then decide
@@ -60,11 +59,11 @@ def read_table(
     fmtdef, dt = fmtdef_dt
     if dt is None:  # we believe object is an ascii file
         table = _interpret_as_ascii(
-            identifiers, filename, fmtdef, block, table_props
+            identifiers, fn, fmtdef, block, table_props
         )
         table.columns = fmtdef.NAME.tolist()
     else:
-        table = _interpret_as_binary(filename, fmtdef, dt, block, start_byte)
+        table = _interpret_as_binary(fn, fmtdef, dt, block, start_byte)
     # If there were any cruft "placeholder" columns, discard them
     table = table.drop(
         [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
@@ -91,14 +90,14 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
 
 
 # noinspection PyTypeChecker
-def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
+def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
     """
     read an ASCII table. first assume it's delimiter-separated; attempt to
     parse it as a fixed-width table if that fails.
     """
     # TODO, maybe: add better delimiter detection & dispatch
     sep = check_explicit_delimiter(block)
-    with decompress(filename) as f:
+    with decompress(fn) as f:
         if table_props["as_rows"] is False:
             bytes_buffer = head_file(
                 f, nbytes=table_props["length"], offset=table_props["start"]
@@ -126,7 +125,7 @@ def _interpret_as_ascii(identifiers, filename, fmtdef, block, table_props):
         try:
             table = pd.DataFrame(
                 np.loadtxt(
-                    filename,
+                    fn,
                     delimiter=",",
                     # TODO, maybe: this currently fails -- perhaps
                     #  correctly -- when there is no LABEL_RECORDS key.

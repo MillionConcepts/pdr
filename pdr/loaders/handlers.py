@@ -3,7 +3,7 @@ import numpy as np
 from multidict import MultiDict
 
 
-def handle_fits_file(filename, name=""):
+def handle_fits_file(fn, name=""):
     """
     This function attempts to read all FITS files, compressed or
     uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
@@ -14,7 +14,7 @@ def handle_fits_file(filename, name=""):
     """
     from astropy.io import fits
 
-    hdulist = fits.open(filename)
+    hdulist = fits.open(fn)
     hdr_val = handle_fits_header(hdulist, name)
     if "HEADER" not in name:
         output = {f"{name}_HEADER": hdr_val}
@@ -23,14 +23,14 @@ def handle_fits_file(filename, name=""):
     return output | {name: hdulist[pointer_to_fits_key(name, hdulist)].data}
 
 
-def handle_compressed_image(filename):
+def handle_compressed_image(fn):
     from PIL import Image
 
     # deactivate pillow's DecompressionBombError: many planetary images
     # are legitimately very large
     Image.MAX_IMAGE_PIXELS = None
     # noinspection PyTypeChecker
-    image = np.ascontiguousarray(Image.open(filename)).copy()
+    image = np.ascontiguousarray(Image.open(fn)).copy()
     # pillow reads images as [x, y, channel] rather than [channel, x, y]
     if len(image.shape) == 3:
         return np.ascontiguousarray(np.rollaxis(image, 2))

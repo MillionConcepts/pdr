@@ -1,11 +1,6 @@
-def table_loader(data, object_name):
-    if object_name == "SPREADSHEET":
-        import pandas as pd
-
-        return True, pd.read_csv(
-            data.get_absolute_paths(data.metaget_("^SPREADSHEET")[0])[0]
-        )
-    return False, None
+def spreadsheet_loader(filename):
+    import pandas as pd
+    return pd.read_csv(filename)
 
 
 def trivial_header_loader():

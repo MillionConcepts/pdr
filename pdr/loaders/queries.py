@@ -244,7 +244,7 @@ def get_target(data: PDRLike, name: str):
 
 
 def data_start_byte(
-    identifiers: dict, block: Mapping, target, filename
+    identifiers: dict, block: Mapping, target, fn
 ) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
@@ -262,7 +262,7 @@ def data_start_byte(
         else:
             rows = identifiers["ROWS"]
             row_bytes = identifiers["ROW_BYTES"]
-            return _count_from_bottom_of_file(filename, rows, row_bytes)
+            return _count_from_bottom_of_file(fn, rows, row_bytes)
     elif isinstance(target, dict):
         start_byte = quantity_start_byte(target, record_bytes)
     elif isinstance(target, str):
@@ -337,13 +337,13 @@ def get_debug(data: PDRLike):
     return data.debug
 
 
-def parse_table_structure(name, block, filename, data, identifiers):
+def parse_table_structure(name, block, fn, data, identifiers):
     """
     Read a table's format specification and generate a DataFrame
     and -- if it's binary -- a numpy dtype object. These are later passed
     to np.fromfile or one of several ASCII table readers.
     """
-    fmtdef = read_table_structure(block, name, filename, data, identifiers)
+    fmtdef = read_table_structure(block, name, fn, data, identifiers)
     if fmtdef["DATA_TYPE"].str.contains("ASCII").any() or looks_like_ascii(
         block, name
     ):
@@ -360,7 +360,7 @@ def parse_table_structure(name, block, filename, data, identifiers):
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
-def read_table_structure(block, name, filename, data, identifiers):
+def read_table_structure(block, name, fn, data, identifiers):
     """
     Try to turn the TABLE definition into a column name / data type
     array. Requires renaming some columns to maintain uniqueness. Also
@@ -378,7 +378,7 @@ def read_table_structure(block, name, filename, data, identifiers):
     if "HISTOGRAM" in name:
         fields = get_histogram_fields(block)
     else:
-        fields = read_format_block(block, name, filename, data, identifiers)
+        fields = read_format_block(block, name, fn, data, identifiers)
     # give columns unique names so that none of our table handling explodes
     import pandas as pd
 
@@ -438,27 +438,27 @@ def get_histogram_fields(block):
     return fields
 
 
-def inject_format_files(block, name, filename, data):
-    format_filenames = {
+def inject_format_files(block, name, fn, data):
+    format_fns = {
         ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
     }
     # make sure to insert the structure blocks in the correct order --
     # and remember that keys are not unique, so we have to use the index
     assembled_structure = []
     last_ix = 0
-    for ix, format_fn in format_filenames.items():
-        fmt = list(load_format_file(data, format_fn, name, filename).items())
+    for ix, format_fn in format_fns.items():
+        fmt = list(load_format_file(data, format_fn, name, fn).items())
         assembled_structure += block[last_ix:ix] + fmt
         last_ix = ix + 1
     assembled_structure += block[last_ix:]
     return assembled_structure
 
 
-def load_format_file(data, format_file, name, filename):
+def load_format_file(data, format_file, name, fn):
     label_fns = data.get_absolute_paths(format_file)
     try:
         repo_paths = [
-            Path(find_repository_root(Path(filename)), label_path)
+            Path(find_repository_root(Path(fn)), label_path)
             for label_path in ("label", "LABEL")
         ]
         label_fns += [Path(path, format_file) for path in repo_paths]
@@ -485,7 +485,7 @@ DEFAULT_DATA_QUERIES = MappingProxyType(
         {
             "identifiers": get_identifiers,
             "block": specialize(get_block, check_special_block),
-            "filename": get_file_mapping,
+            "fn": get_file_mapping,
             "target": get_target,
             "start_byte": specialize(data_start_byte, check_special_offset),
             "debug": get_debug,

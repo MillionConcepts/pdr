@@ -47,10 +47,9 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     name. checks for special cases and then falls back to generic loading
     methods of pdr.Data.
     """
-    is_trivial = check_trivial_case(
+    if check_trivial_case(
         pointer, data.identifiers, data.filename
-    )
-    if is_trivial is True:
+    ):
         return Trivial()
     if pointer == "LABEL":
         return ReadLabel()
@@ -104,22 +103,22 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
     return TBD()
 
 
-def file_extension_to_loader(filename: str) -> Callable:
+def file_extension_to_loader(fn: str) -> Callable:
     """
     attempt to select the correct method of pdr.Data for objects only
     specified by a PDS3 FILE_NAME pointer (or by filename otherwise).
     """
-    if looks_like_this_kind_of_file(filename, FITS_EXTENSIONS):
+    if looks_like_this_kind_of_file(fn, FITS_EXTENSIONS):
         return ReadFits()
-    if looks_like_this_kind_of_file(filename, TIFF_EXTENSIONS):
+    if looks_like_this_kind_of_file(fn, TIFF_EXTENSIONS):
         return ReadCompressedImage()
-    if looks_like_this_kind_of_file(filename, IMAGE_EXTENSIONS):
+    if looks_like_this_kind_of_file(fn, IMAGE_EXTENSIONS):
         return ReadImage()
-    if looks_like_this_kind_of_file(filename, TEXT_EXTENSIONS):
+    if looks_like_this_kind_of_file(fn, TEXT_EXTENSIONS):
         return ReadText()
-    if looks_like_this_kind_of_file(filename, TABLE_EXTENSIONS):
+    if looks_like_this_kind_of_file(fn, TABLE_EXTENSIONS):
         return ReadTable()
-    if looks_like_this_kind_of_file(filename, JP2_EXTENSIONS):
+    if looks_like_this_kind_of_file(fn, JP2_EXTENSIONS):
         return ReadCompressedImage()
     return TBD()
 

@@ -8,13 +8,13 @@ from pdr.np_utils import np_from_buffered_io
 from pdr.utils import decompress
 
 
-def read_image(name, gen_props, filename, start_byte):
+def read_image(name, gen_props, fn, start_byte):
     """
     Read an image object from this product and return it as a numpy array.
     """
     # TODO: Check for and apply BIT_MASK.
     props = get_image_properties(gen_props)
-    f = decompress(filename)  # seamlessly deal with compression
+    f = decompress(fn)  # seamlessly deal with compression
     f.seek(start_byte)
     try:
         # Make sure that single-band images are 2-dim arrays.

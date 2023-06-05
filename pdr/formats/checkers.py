@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 def check_special_offset(
-    name: str, data: PDRLike, identifiers: dict, filename
+    name: str, data: PDRLike, identifiers: dict, fn
 ) -> tuple[bool, Optional[int]]:
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
@@ -40,12 +40,12 @@ def check_special_offset(
             ]
         )
     ):
-        return formats.cassini.get_offset(filename, identifiers)
+        return formats.cassini.get_offset(fn, identifiers)
     return False, None
 
 
 def check_special_table_reader(
-    identifiers, data, name, filename, fmtdef_dt, block
+    identifiers, name, fn, fmtdef_dt, block
 ):
     if identifiers["DATA_SET_ID"] in (
         "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
@@ -55,22 +55,20 @@ def check_special_table_reader(
         "CO-SSA-RADAR-3-ABDR-SUMMARY-V1.0",
     ):
         return True, formats.cassini.spreadsheet_loader(
-            filename, fmtdef_dt, identifiers["DATA_SET_ID"]
+            fn, fmtdef_dt, identifiers["DATA_SET_ID"]
         )
     if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (
         "SPREADSHEET" in name
     ):
         # mangled object names + positions
-        return formats.msl_cmn.table_loader(
-            data, name
-        )  # TODO: try and refactor out data
+        return True, formats.msl_cmn.spreadsheet_loader(fn)
     if (
         identifiers["INSTRUMENT_NAME"]
         == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE "
         "PROBE"
         and "SPECTRUM_TABLE" in name
     ):
-        return True, formats.rosetta.rosetta_table_loader(filename, fmtdef_dt)
+        return True, formats.rosetta.rosetta_table_loader(fn, fmtdef_dt)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
         and name == "TABLE"
@@ -84,13 +82,13 @@ def check_special_table_reader(
             or "R_DATA.TAB" in identifiers["PRODUCT_ID"]
         )
     ):
-        return True, formats.mgn.geom_table_loader(filename, fmtdef_dt)
+        return True, formats.mgn.geom_table_loader(fn, fmtdef_dt)
     if (
         str(identifiers["DATA_SET_ID"]).startswith("MGN-V-RSS-5-OCC-PROF")
         and name == "TABLE"
     ):
         return True, formats.mgn.occultation_loader(
-            identifiers, fmtdef_dt, block, filename
+            identifiers, fmtdef_dt, block, fn
         )
     if (
         identifiers["INSTRUMENT_ID"] == "DLRE"
@@ -98,19 +96,19 @@ def check_special_table_reader(
         and name == "TABLE"
     ):
         return True, formats.diviner.diviner_l4_table_loader(
-            fmtdef_dt, filename
+            fmtdef_dt, fn
         )
     return False, None
 
 
-def check_special_structure(block, name, filename, identifiers, data):
+def check_special_structure(block, name, fn, identifiers, data):
     if (
         identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
         and name == "DATA_TABLE"
     ):
         # sequence wrapped as string for object names
         return True, formats.clementine.get_structure(
-            block, name, filename, data, identifiers
+            block, name, fn, data, identifiers
         )
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS GLOBAL SURVEYOR"
@@ -119,7 +117,7 @@ def check_special_structure(block, name, filename, identifiers, data):
         and name == "ODF3B_TABLE"
     ):
         return True, formats.mgs.get_structure(
-            block, name, filename, data, identifiers
+            block, name, fn, data, identifiers
         )
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "CASSINI ORBITER"
@@ -128,7 +126,7 @@ def check_special_structure(block, name, filename, identifiers, data):
     ) or (
         identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
         and (
-            "HUY_DTWG_ENTRY_AERO" in filename
+            "HUY_DTWG_ENTRY_AERO" in fn
             or (
                 "HASI" in data.metaget_("FILE_NAME", "")
                 and "PWA" not in identifiers["FILE_NAME"]
@@ -136,13 +134,13 @@ def check_special_structure(block, name, filename, identifiers, data):
         )
     ):
         return True, formats.cassini.get_structure(
-            block, name, filename, data, identifiers
+            block, name, fn, data, identifiers
         )
     return False, None
 
 
 def check_special_position(
-    identifiers, block, target, name, filename, start_byte
+    identifiers, block, target, name, fn, start_byte
 ):
     if (
         identifiers["INSTRUMENT_ID"] == "MARSIS"
@@ -174,7 +172,7 @@ def check_special_position(
         and (name in ("TABLE", "HEADER"))
     ):
         return True, formats.cassini.get_position(
-            identifiers, block, target, name, filename, start_byte
+            identifiers, block, target, name, fn, start_byte
         )
     if (
         identifiers["DATA_SET_ID"] == "LRO-L-RSS-1-TRACKING-V1.0"
@@ -280,7 +278,7 @@ def check_special_block(name, data, identifiers):
     return False, None
 
 
-def check_trivial_case(pointer, identifiers, filename) -> bool:
+def check_trivial_case(pointer, identifiers, fn) -> bool:
     if is_trivial(pointer):
         return True
     if (
@@ -311,7 +309,7 @@ def check_trivial_case(pointer, identifiers, filename) -> bool:
             return formats.cassini.trivial_loader(pointer)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
-        and (filename.endswith(".img") or filename.endswith(".ibg"))
+        and (fn.endswith(".img") or fn.endswith(".ibg"))
         and pointer == "TABLE"
     ):
         return formats.mgn.orbit_table_in_img_loader()

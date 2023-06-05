@@ -20,11 +20,11 @@ def quantity_start_byte(quantity_dict, record_bytes):
         return record_bytes * max(quantity_dict["value"] - 1, 0)
 
 
-def _count_from_bottom_of_file(filename, rows, row_bytes):
+def _count_from_bottom_of_file(fn, rows, row_bytes):
     tab_size = rows * row_bytes
-    if isinstance(filename, list):
-        filename = filename[0]
-    return os.path.getsize(Path(filename)) - tab_size
+    if isinstance(fn, list):
+        fn = fn[0]
+    return os.path.getsize(Path(fn)) - tab_size
 
 
 def _check_delimiter_stream(identifiers, name, target):
