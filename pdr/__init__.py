@@ -1,6 +1,6 @@
 import os.path as _osp
 
-__version__ = "0.7.5"
+__version__ = "1.0.0"
 
 pkg_dir = _osp.abspath(_osp.dirname(__file__))
 
