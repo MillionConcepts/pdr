@@ -31,7 +31,7 @@ def is_an_assignment_line(line):
     looking for a block of capital letters is usually good enough
     """
     if "=" not in line:
-        if line.startswith("END_OBJECT"):
+        if line.startswith(PVL_BLOCK_TERMINALS):
             return True
         return False
     start = line[:8]
@@ -45,8 +45,10 @@ def chunk_statements(trimmed_lines: Iterable[str]):
     statements = []
     for statement in split_before(trimmed_lines, is_an_assignment_line):
         assignment = statement[0]
-        if assignment.startswith("END_OBJECT"):
-            statements.append(("END_OBJECT", ""))
+        if assignment.startswith(PVL_BLOCK_TERMINALS):
+            statements.append(
+                (re.match(r"(END(_OBJECT)?)", assignment).group(1), "")
+            )
             continue
         try:
             parameter, value_head = map(str.strip, assignment.split("="))
