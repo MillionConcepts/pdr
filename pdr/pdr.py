@@ -440,7 +440,9 @@ class Data:
         if self.debug is True:
             loader = Dynamic.from_function(loader, optional=True)
         self.loaders[pointer] = loader
-        self.tracker.set_metadata(filename=self.file_mapping[pointer])
+        self.tracker.set_metadata(
+            filename=self.file_mapping[pointer], obj=pointer
+        )
         return self.loaders[pointer](
             self, pointer, tracker=self.tracker, **load_kwargs
         )
