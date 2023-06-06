@@ -17,7 +17,16 @@ from pdr.utils import decompress
 
 
 PVL_BLOCK_INITIALS = ("OBJECT", "GROUP", "BEGIN_OBJECT", "BEGIN_GROUP")
-PVL_BLOCK_TERMINALS = ("END",)
+PVL_BLOCK_TERMINAL = re.compile(r"END(_OBJECT|$)")
+PVL_QUANTITY_VALUE = re.compile(r"((\d|\.|-)+|NULL|UNK|N/A)")
+PVL_QUANTITY_UNITS = re.compile(r"<(.*)>")
+
+
+def extract_pvl_block_terminal(line):
+    try:
+        return re.match(PVL_BLOCK_TERMINAL, line).group()
+    except AttributeError:
+        return None
 
 
 def is_an_assignment_line(line):
@@ -31,7 +40,7 @@ def is_an_assignment_line(line):
     looking for a block of capital letters is usually good enough
     """
     if "=" not in line:
-        if line.startswith(PVL_BLOCK_TERMINALS):
+        if extract_pvl_block_terminal(line) is not None:
             return True
         return False
     start = line[:8]
@@ -45,10 +54,8 @@ def chunk_statements(trimmed_lines: Iterable[str]):
     statements = []
     for statement in split_before(trimmed_lines, is_an_assignment_line):
         assignment = statement[0]
-        if assignment.startswith(PVL_BLOCK_TERMINALS):
-            statements.append(
-                (re.match(r"(END(_OBJECT)?)", assignment).group(1), "")
-            )
+        if (terminal := extract_pvl_block_terminal(assignment)) is not None:
+            statements.append((terminal, ""))
             continue
         try:
             parameter, value_head = map(str.strip, assignment.split("="))
@@ -84,8 +91,7 @@ class BlockParser:
                 self._step_in(value)
             elif (
                 # ignore invalid end block statements at top level
-                parameter.startswith(PVL_BLOCK_TERMINALS)
-                and len(self.names) > 0
+                parameter.startswith("END") and len(self.names) > 0
             ):
                 # not bothering with aggregation name verification
                 self._step_out()
@@ -126,9 +132,9 @@ def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
 def parse_pvl_quantity_object(obj):
     return {
         "value": literalize_pvl(
-            re.search(r"((\d|\.|-)+|NULL|UNK|N/A)", obj).group()
+            re.search(PVL_QUANTITY_VALUE, obj).group()
         ),
-        "units": literalize_pvl(re.search(r"<(.*)>", obj).group(1)),
+        "units": literalize_pvl(re.search(PVL_QUANTITY_UNITS, obj).group(1)),
     }
 
 
