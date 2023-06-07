@@ -81,6 +81,10 @@ of their metadata appear to match other sources.
   - LWIR RDRs
   - RSS bistatic radar RDRs
   - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, but it can be opened with `pdr`*
+- Dawn
+  - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
+  - VIR: mosaics
+  - RSS: gravity models
 - Galileo 
   - magnetometer tables (except summary tables)
 - GRAIL
@@ -277,6 +281,9 @@ of their metadata appear to match other sources.
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
   - LWIR EDRs (support not planned)
   - RSS EDRs (support not planned)
+- Dawn
+  - Framing camera: a handful of calibration images
+  - VIR: EDR and RDR cube products (support planned)
 - Galileo
   - magnetometer summary tables (other tables supported)
 - GRAIL
