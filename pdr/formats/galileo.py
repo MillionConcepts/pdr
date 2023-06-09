@@ -1,7 +1,7 @@
 import warnings
 
 from pdr.loaders.utility import trivial
-
+import pdr.loaders.queries
 
 def galileo_table_loader():
     warnings.warn("Galileo EDR binary tables are not yet supported.")
@@ -33,8 +33,6 @@ def nims_edr_sample_type(base_samp_info):
     return False, None
 
 def probe_structure(block, name, filename, data, identifiers):
-    import pdr.loaders.queries
-    
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -48,3 +46,18 @@ def probe_structure(block, name, filename, data, identifiers):
         fmtdef.at[5,"BYTES"] = 2
     return fmtdef, None
 
+def epd_special_block(data, name):
+    # All 'E1' EPD SUMM products incorrectly say ROW_BYTES = 90; changing them
+    # to the RECORD_BYTES values.
+    block = data.metablock_(name)
+    block["ROW_BYTES"] = data.metaget_("RECORD_BYTES")
+    return block
+
+def epd_structure(block, name, filename, data, identifiers):
+    # E1PAD_7.TAB has an extra/unaccounted for byte at the start of each row
+    fmtdef = pdr.loaders.queries.read_table_structure(
+        block, name, filename, data, identifiers
+    )
+    for row in range(0,9):
+        fmtdef.at[row,"START_BYTE"] += 1
+    return fmtdef, None

@@ -144,6 +144,14 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.galileo.probe_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        identifiers["DATA_SET_ID"] == "GO-E-EPD-2-SAMP-PAD-V1.0"
+        and identifiers["PRODUCT_ID"] == "E1PAD_7.TAB"
+        and name == "TIME_SERIES"
+    ):
+        return True, formats.galileo.epd_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
@@ -283,6 +291,12 @@ def check_special_block(name, data, identifiers):
         and name == "TABLE"
     ):
         return True, formats.pvo.oims_12s_loader(data, name)
+    if (
+        "GO-E-EPD-4-SUMM-" in identifiers["DATA_SET_ID"]
+        and "E1_" in identifiers["PRODUCT_ID"]
+        and name == "TIME_SERIES"
+    ):
+        return True, formats.galileo.epd_special_block(data, name)
     return False, None
 
 
