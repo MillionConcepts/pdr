@@ -136,6 +136,14 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.cassini.get_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        (identifiers["DATA_SET_ID"] == "GP-J-NMS-3-ENTRY-V1.0"
+        or identifiers["DATA_SET_ID"] == "GP-J-ASI-3-ENTRY-V1.0")
+        and name == "TABLE"
+    ):
+        return True, formats.galileo.probe_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 

@@ -31,3 +31,20 @@ def nims_edr_sample_type(base_samp_info):
             sample_type, int(sample_bytes), for_numpy=True
         )
     return False, None
+
+def probe_structure(block, name, filename, data, identifiers):
+    import pdr.loaders.queries
+    
+    fmtdef = pdr.loaders.queries.read_table_structure(
+        block, name, filename, data, identifiers
+    )
+    # Several NMS products have an incorrect BYTES value in one column
+    if fmtdef.at[1,"NAME"] == "COUNTS":
+        fmtdef.at[1,"BYTES"] = 8
+    # One ASI product has incorrect BYTES values in multiple columns 
+    elif identifiers["PRODUCT_ID"] == "HK01AD.TAB":
+        fmtdef.at[1,"BYTES"] = 4
+        fmtdef.at[3,"BYTES"] = 2
+        fmtdef.at[5,"BYTES"] = 2
+    return fmtdef, None
+
