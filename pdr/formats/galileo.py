@@ -1,11 +1,10 @@
 import warnings
 
-from pdr.loaders.utility import trivial
 import pdr.loaders.queries
 
 def galileo_table_loader():
     warnings.warn("Galileo EDR binary tables are not yet supported.")
-    return trivial
+    return True
 
 
 def ssi_cubes_header_loader():

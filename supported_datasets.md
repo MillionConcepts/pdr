@@ -258,7 +258,9 @@ of their metadata appear to match other sources.
   - WAC derived tif files without labels (under EXTRAS folder at LROC
   mission node)
 - MRO
-  - HiRISE RDRs 
+  - HiRISE RDRs
+- MSL
+  - CheMin Film EDRs (have efm in filename)
 - MSX
   - QUBE images
 - Pioneer Venus Orbiter
@@ -274,7 +276,7 @@ of their metadata appear to match other sources.
   - MAG error count housekeeping data
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
-  - VIMS EDR cubes (PDS3 labels; support planned)
+  - VIMS EDR cubes (PDS3 labels; support not planned--open with PDS4 labels)
   - UVIS EUV/FUV products (support planned)
   - Huygens Probe DISR IR tables (support planned; low priority )
 - Clementine
