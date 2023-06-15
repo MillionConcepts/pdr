@@ -19,6 +19,7 @@ def read_array(fn, block, start_byte):
     """
     # TODO: Maybe add block[AXES] as names? Might have to switch to pandas
     #  or a flattened structured array or something weirder
+    # TODO: Include offset calculations once an example with them is found
     obj = check_array_for_subobject(block)
     if block.get("INTERCHANGE_FORMAT") == "BINARY":
         with decompress(fn) as f:
@@ -68,6 +69,17 @@ def read_table(
     table = table.drop(
         [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
     )
+    # If there is an offset and/or scaling factor, apply them:
+    if fmtdef.get("OFFSET") is not None or fmtdef.get("SCALING_FACTOR") is not None:
+        for col in table.columns:
+            record = fmtdef.loc[fmtdef['NAME'] == col].to_dict("records")[0]
+            if record.get("SCALING_FACTOR") and not pd.isnull(record.get("SCALING_FACTOR")):
+                table[col] = table[col].mul(record["SCALING_FACTOR"])
+            else:
+                scaling_factor = 1
+            if record.get("OFFSET") and not pd.isnull(record.get("OFFSET")):
+                offset = record["OFFSET"]
+                table[col] = table[col]+offset
     return table
 
 
@@ -160,7 +172,7 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
                 else:
                     col_length = int(record["ITEM_BYTES"])
                 colspecs.append(
-                    (record["OFFSET"], record["OFFSET"] + col_length)
+                    (record["SB_OFFSET"], record["SB_OFFSET"] + col_length)
                 )
             table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
             string_buffer.close()

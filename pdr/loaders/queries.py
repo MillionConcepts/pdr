@@ -356,7 +356,6 @@ def parse_table_structure(name, block, fn, data, identifiers):
         if length is not None:
             fmtdef[f"ROW{end}_BYTES"] = length
     from pdr.pd_utils import insert_sample_types_into_df
-
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
@@ -387,7 +386,6 @@ def read_table_structure(block, name, fn, data, identifiers):
         fmtdef["NAME"] = name
 
     from pdr.pd_utils import reindex_df_values
-
     return reindex_df_values(fmtdef)
 
 

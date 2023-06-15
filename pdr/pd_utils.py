@@ -58,32 +58,32 @@ def _apply_item_offsets(fmtdef):
 def compute_offsets(fmtdef):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
-    including a START_BYTE column, add an OFFSET column, unpacking objects
+    including a START_BYTE column, add an SB_OFFSET column, unpacking objects
     if necessary
     """
     # START_BYTE is 1-indexed, but we're preparing these offsets for
     # numpy, which 0-indexes
-    fmtdef["OFFSET"] = fmtdef["START_BYTE"] - 1
+    fmtdef["SB_OFFSET"] = fmtdef["START_BYTE"] - 1
     if "ROW_PREFIX_BYTES" in fmtdef.columns:
-        fmtdef["OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
+        fmtdef["SB_OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
     block_names = fmtdef["BLOCK_NAME"].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
-        fmtdef.loc[fmt_block.index, "OFFSET"] += (
-            prior["OFFSET"] + prior["BYTES"]
+        fmtdef.loc[fmt_block.index, "SB_OFFSET"] += (
+            prior["SB_OFFSET"] + prior["BYTES"]
         )
     # correctly compute offsets within columns w/multiple items
     if "ITEM_BYTES" in fmtdef:
         fmtdef["ITEM_SIZE"] = _apply_item_offsets(fmtdef)
         column_groups = fmtdef.loc[fmtdef["ITEM_SIZE"].notna()]
-        for _, group in column_groups.groupby("OFFSET"):
-            fmtdef.loc[group.index, "OFFSET"] = group["OFFSET"] + int(
+        for _, group in column_groups.groupby("SB_OFFSET"):
+            fmtdef.loc[group.index, "SB_OFFSET"] = group["SB_OFFSET"] + int(
                 group["ITEM_SIZE"].iloc[0]
             ) * np.arange(len(group))
     pad_length = 0
-    end_byte = fmtdef["OFFSET"].iloc[-1] + fmtdef["BYTES"].iloc[-1]
+    end_byte = fmtdef["SB_OFFSET"].iloc[-1] + fmtdef["BYTES"].iloc[-1]
     if "ROW_BYTES" in fmtdef.columns:
         pad_length += fmtdef["ROW_BYTES"].iloc[0] - end_byte
     if "ROW_SUFFIX_BYTES" in fmtdef.columns:
@@ -94,7 +94,7 @@ def compute_offsets(fmtdef):
             "DATA_TYPE": "VOID",
             "BYTES": pad_length,
             "START_BYTE": end_byte,
-            "OFFSET": end_byte,
+            "SB_OFFSET": end_byte,
         }
         fmtdef = pd.concat(
             [fmtdef, pd.DataFrame([placeholder_rec])]
@@ -157,7 +157,7 @@ def insert_sample_types_into_df(fmtdef, identifiers):
                 f"{data_type} is not a currently-supported data type."
             )
     dtype_spec = fmtdef[
-        [c for c in ("NAME", "dt", "OFFSET") if c in fmtdef.columns]
+        [c for c in ("NAME", "dt", "SB_OFFSET") if c in fmtdef.columns]
     ].to_dict("list")
     spec_keys = ("names", "formats", "offsets")[: len(dtype_spec)]
     return (
