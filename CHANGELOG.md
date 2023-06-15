@@ -1,3 +1,13 @@
+## [X.X.X] - 202X-XX-XX
+### Added
+- Support for Rosetta ALICE EDR, RDR, and REFDR data
+### Changed
+- Tables/Series objects will now apply label provided offset and scaling factors. 
+  This has not yet been implemented for ARRAY objects or BIT COLUMNS
+### Fixed
+
+### Removed
+
 ## [1.0.0] - 2023-06-03
 This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 
 **The fundamental way end users interact with the main `pdr.read()` interface has not changed.**

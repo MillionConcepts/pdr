@@ -212,6 +212,7 @@ of their metadata appear to match other sources.
   - Viking orbiter gravity data
 - Rosetta
   - Orbiter:
+    - ALICE EDRs, RDRs, and REFDRs
     - COSIMA images and feature tables
     - GIADA EDRs, RDRs, and DDRs
     - MIDAS RDRs and DDRs (excluding those with a .dat file extension)
@@ -344,7 +345,6 @@ of their metadata appear to match other sources.
   - Pioneer-Venus orbiter radar images (support planned)
 - Rosetta
   - Orbiter:
-    - ALICE EDRs, RDRs, and REFDRs (support planned)
     - MIDAS RDRs with .dat file extension (support planned)
     - VIRTIS EDRs and RDRs (support planned)
     - VIRTIS geometry data
