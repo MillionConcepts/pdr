@@ -1,6 +1,6 @@
 ## [1.0.1] - 2023-06-20
 ### Fixed
-- re-enabled the ability to import pdr.Data by adding it back to __init__.py
+- re-enabled the ability to import `pdr.Data` by adding it back to `__init__.py`
 
 ## [1.0.0] - 2023-06-03
 This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 
