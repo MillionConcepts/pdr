@@ -86,7 +86,23 @@ of their metadata appear to match other sources.
   - VIR: mosaics
   - RSS: gravity models
 - Galileo 
-  - magnetometer tables (except summary tables)
+  - EPD: calibrated Jupiter data (PDS4) and pre-Jupiter products (PDS3)
+  - GDDS tables 
+  - HIC tables *note: Only the PDS4 versions have been tested here*
+  - MAG tables (except summary tables)
+  - NIMS: Pre-Jupiter EDRs, SL-9 fragment impact tables, and Ida/Gaspra specific data products at SBN
+  - PLS: calibrated/derived Jupiter data (PDS4) and pre-Jupiter products (PDS3)
+  - PPR: EDRs and RDRs
+  - PWS: REDRs (ASCII versions), DDRs, and SUMM products
+  - RSS: Jupiter and Io ionosphere electron density profiles
+  - SSD: derived electron flux data
+  - SSI: 
+    - Some calibration images (blemish and dark current)
+    - REDRs (images only)
+    - Ida/Gaspra specific data products at SBN
+  - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the PDS3 labels are currently unsupported.*
+  - Probe datasets: ASI, EPI, HAD, LRD, NEP, NFR, and most DWE and NMS products
+  - Trajectory data
 - GRAIL
   - LGRS RDR: SHADR, SHBDR, and RSDMAP
   - RSS: BOF, ODF, OLF, and RSR
@@ -288,7 +304,12 @@ of their metadata appear to match other sources.
   - Framing camera: a handful of calibration images
   - VIR: EDR and RDR cube products (support planned)
 - Galileo
-  - magnetometer summary tables (other tables supported)
+  - MAG summary tables (other tables supported)
+  - NIMS Jupiter EDRs and cubes (support planned)
+  - SSI shutter and slope calibration images (support planned)
+  - SSI REDR telemetry and line-prefix tables (support planned)
+  - PLS EDRs (support not planned)
+  - PWS EDRs, binary REDRs, and REFDRs (support planned)
 - GRAIL
   - LGRS: EDR and CDR (support not planned)
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)

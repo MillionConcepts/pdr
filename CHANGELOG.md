@@ -1,6 +1,7 @@
 ## [X.X.X] - 202X-XX-XX
 ### Added
 - Support for Rosetta ALICE EDR, RDR, and REFDR data
+- Support for several Galileo datasets
 ### Changed
 - Tables/Series objects will now apply label provided offset and scaling factors. 
   This has not yet been implemented for ARRAY objects or BIT COLUMNS
