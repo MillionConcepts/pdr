@@ -98,6 +98,11 @@ def check_special_table_reader(
         return True, formats.diviner.diviner_l4_table_loader(
             fmtdef_dt, fn
         )
+    if (
+        identifiers["DATA_SET_ID"] == "GO-J-PWS-5-DDR-PLASMA-DENSITY-FULL-V1.0"
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.galileo.pws_table_loader(fn, fmtdef_dt)
     return False, None
 
 
@@ -297,6 +302,12 @@ def check_special_block(name, data, identifiers):
         and name == "TIME_SERIES"
     ):
         return True, formats.galileo.epd_special_block(data, name)
+    if (
+        identifiers["INSTRUMENT_NAME"] == "PLASMA WAVE RECEIVER"
+        and "SUMM" in identifiers["DATA_SET_ID"]
+        and (name == "TIME_SERIES" or name =="TABLE")
+    ):
+        return True, formats.galileo.pws_special_block(data, name)
     return False, None
 
 

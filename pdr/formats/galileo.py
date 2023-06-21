@@ -60,3 +60,21 @@ def epd_structure(block, name, filename, data, identifiers):
     for row in range(0,9):
         fmtdef.at[row,"START_BYTE"] += 1
     return fmtdef, None
+
+def pws_special_block(data, name):
+    # The PWS SUMM products sometimes undercount ROW_BYTES by 2
+    block = data.metablock_(name)
+    product_id = data.metaget_("PRODUCT_ID")
+    if "B.TAB" in product_id:
+        block["ROW_BYTES"] = 366
+    if "E.TAB" in product_id:
+        block["ROW_BYTES"] = 516
+    return block
+
+def pws_table_loader(filename, fmtdef_dt):
+    import pandas as pd
+    fmtdef, dt = fmtdef_dt
+    table = pd.read_csv(filename, header=1, sep=';')
+    assert len(table.columns) == len(fmtdef.NAME.tolist())
+    table.columns = fmtdef.NAME.tolist()
+    return table
