@@ -85,7 +85,7 @@ def extract_bil_linefix(image, props):
 
 def process_multiband_image(f, props):
     bst = props["band_storage_type"]
-    if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED"):
+    if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED", "SAMPLE_INTERLEAVED"):
         warnings.warn(
             f"Unsupported BAND_STORAGE_TYPE={bst}. Guessing BAND_SEQUENTIAL."
         )
@@ -100,6 +100,9 @@ def process_multiband_image(f, props):
     prefix, suffix = None, None
     if bst == "BAND_SEQUENTIAL":
         image = image.reshape(bands, lines, samples)
+    elif bst == "SAMPLE_INTERLEAVED":
+        image = image.reshape(lines, samples, bands)
+        image = np.moveaxis(image, 2, 0)
     elif bst == "LINE_INTERLEAVED":
         image, prefix, suffix = extract_bil_linefix(image, props)
         image = image.reshape(lines, bands, samples)
