@@ -83,7 +83,7 @@ of their metadata appear to match other sources.
   - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, but it can be opened with `pdr`*
 - Dawn
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
-  - VIR: mosaics
+  - VIR: mosaics, EDR and RDR cube products
   - RSS: gravity models
 - Galileo 
   - EPD: calibrated Jupiter data (PDS4) and pre-Jupiter products (PDS3)
@@ -283,6 +283,8 @@ of their metadata appear to match other sources.
 - Pioneer Venus Orbiter
   - OMAG spacecraft coordinates: HIRES data and 24 second averages (ASCII versions)
 - Rosetta
+  - Orbiter:
+    - VIRTIS EDRs
   - Lander:
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
 
@@ -302,7 +304,6 @@ of their metadata appear to match other sources.
   - RSS EDRs (support not planned)
 - Dawn
   - Framing camera: a handful of calibration images
-  - VIR: EDR and RDR cube products (support planned)
 - Galileo
   - MAG summary tables (other tables supported)
   - NIMS Jupiter EDRs and cubes (support planned)
@@ -367,7 +368,7 @@ of their metadata appear to match other sources.
 - Rosetta
   - Orbiter:
     - MIDAS RDRs with .dat file extension (support planned)
-    - VIRTIS EDRs and RDRs (support planned)
+    - VIRTIS RDRs (support planned)
     - VIRTIS geometry data
   - Lander:
     - CONSERT EDRs, RDRs, and REFDRs (support planned)
