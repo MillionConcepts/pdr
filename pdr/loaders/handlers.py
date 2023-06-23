@@ -15,7 +15,11 @@ def handle_fits_file(fn, name=""):
     from astropy.io import fits
 
     hdulist = fits.open(fn)
-    hdr_val = handle_fits_header(hdulist, name)
+    try:
+        hdr_val = handle_fits_header(hdulist, name)
+    except fits.VerifyError:
+        hdulist.verify('silentfix')
+        hdr_val = handle_fits_header(hdulist, name)
     if "HEADER" not in name:
         output = {f"{name}_HEADER": hdr_val}
     else:
