@@ -17,6 +17,13 @@ def handle_fits_file(fn, name=""):
     hdulist = fits.open(fn)
     try:
         hdr_val = handle_fits_header(hdulist, name)
+    # astropy.io.fits does not call any verification on read. on 'output'
+    # tasks -- which iterating over header cards (sometimes) counts as, and
+    # which we have to do in order to place the header content into our
+    # preferred data structure -- it does call verification, at the strictest
+    # settings. we do not want to prospectively fix every case because it is
+    # quite slow. so, when astropy.io.fits decides something is too invalid to
+    # show us, tell it to fix it first.
     except fits.VerifyError:
         hdulist.verify('silentfix')
         hdr_val = handle_fits_header(hdulist, name)
