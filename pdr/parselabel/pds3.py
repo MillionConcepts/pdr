@@ -113,11 +113,8 @@ def looks_pvl(filename):
     return Path(filename).suffix.lower() in (".lbl", ".fmt")
 
 
-def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
-    with decompress(filename) as stream:
-        errors = "replace" if looks_pvl(filename) else "strict"
-        label = trim_label(stream, max_size).decode("utf-8", errors=errors)
-    uncommented_label = re.sub(r"/\*.*?(\r|\n|/\*)", "", label)
+def parse_pvl(label, deduplicate_pointers=True):
+    uncommented_label = re.sub(r"/\*.*?(\r|\n|/\*)", "\n", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
     )
@@ -127,6 +124,13 @@ def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
         pointers = get_pds3_pointers(mapping)
         mapping, params = index_duplicate_pointers(pointers, mapping, params)
     return mapping, params
+
+
+def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
+    with decompress(filename) as stream:
+        errors = "replace" if looks_pvl(filename) else "strict"
+        label = trim_label(stream, max_size).decode("utf-8", errors=errors)
+    return parse_pvl(label, deduplicate_pointers)
 
 
 def parse_pvl_quantity_object(obj):
