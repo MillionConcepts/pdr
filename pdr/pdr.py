@@ -206,6 +206,9 @@ class Data:
         self.file_mapping = {}
         # known special constants per data object
         self.specials = {}
+        # list of objects that have been scaled inplace, to avoid performing
+        # scaling operations multiple times
+        self.prescaled = set()
         # where can we look for files containing data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + listify(search_paths)
@@ -459,6 +462,9 @@ class Data:
         with attendant memory savings and destructiveness.
         """
         obj = self[object_name]
+        # don't rescale already-scaled objects
+        if object_name in self.prescaled:
+            return obj
         # avoid numpy import just for type check
         if obj.__class__.__name__ != "ndarray":
             raise TypeError("get_scaled is only applicable to arrays.")
@@ -487,7 +493,36 @@ class Data:
                 )
         if self.specials[object_name] != {}:
             obj = mask_specials(obj, list(self.specials[object_name].values()))
-        return scale_array(self, obj, object_name, inplace, float_dtype)
+        scaled = scale_array(self, obj, object_name, inplace, float_dtype)
+        self.prescaled.add(object_name)  # i.e., don't add if unsuccessful
+        return scaled
+
+    def debayer(
+        self,
+        object_name,
+        pixels=("red", ("green_1", "green_2"), "blue"),
+        **debayer_kwargs
+    ):
+        """
+        scale/mask and debayer obj. impure; mutates obj inplace. Currently
+        only supports RGGB out-of-the-box, although a user may pass handrolled
+        specifications for other patterns.
+        """
+        import numpy as np
+
+        from pdr.debayer import debayer_upsample
+
+        obj = self.get_scaled(object_name, inplace=True)
+        channels = []
+        pixels = listify(pixels)
+        for pixel in pixels:
+            channels.append(
+                debayer_upsample(obj, pixel=pixel, **debayer_kwargs)
+            )
+        if len(channels) == 1:
+            setattr(self, object_name, channels[0])
+        else:
+            setattr(self, object_name, np.rollaxis(np.dstack(channels), 2))
 
     def metaget(self, text, default=None, evaluate=True, warn=True):
         """
