@@ -76,7 +76,7 @@ def read_table(
             if record.get("SCALING_FACTOR") and not pd.isnull(record.get("SCALING_FACTOR")):
                 table[col] = table[col].mul(record["SCALING_FACTOR"])
             else:
-                scaling_factor = 1
+                scaling_factor = 1  # TODO: appears superfluous
             if record.get("OFFSET") and not pd.isnull(record.get("OFFSET")):
                 offset = record["OFFSET"]
                 table[col] = table[col]+offset

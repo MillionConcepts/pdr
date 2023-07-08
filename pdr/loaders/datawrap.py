@@ -63,6 +63,7 @@ class ReadImage(Loader):
                 get_qube_band_storage_type, check_special_qube_band_storage
             ),
             "gen_props": specialize(generic_image_properties, check_if_qube),
+            # just modifies gen_props in place, triggers transform in load step
         }
 
 

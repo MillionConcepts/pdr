@@ -181,7 +181,10 @@ def base_sample_info(block):
 
 def generic_image_properties(block, sample_type):
     props = {
+        # TODO: BYTES_PER_PIXEL check appears repeated with slight variation
+        #  from base_sample_info()
         "BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8),
+        "is_vax_real": block.get("SAMPLE_TYPE") == "VAX_REAL",
         "sample_type": sample_type,
         "nrows": block["LINES"],
         "ncols": block["LINE_SAMPLES"],
@@ -344,6 +347,10 @@ def parse_table_structure(name, block, fn, data, identifiers):
     to np.fromfile or one of several ASCII table readers.
     """
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
+    if fmtdef['DATA_TYPE'].str.contains('VAX_REAL').any():
+        raise NotImplementedError(
+            "VAX reals are not currently supported in tables."
+        )
     if fmtdef["DATA_TYPE"].str.contains("ASCII").any() or looks_like_ascii(
         block, name
     ):

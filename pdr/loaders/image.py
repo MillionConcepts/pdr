@@ -6,6 +6,7 @@ import numpy as np
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import np_from_buffered_io
 from pdr.utils import decompress
+from pdr import vax
 
 
 def read_image(name, gen_props, fn, start_byte):
@@ -55,6 +56,12 @@ def extract_single_band_linefix(image, props):
     return image, prefix, suffix
 
 
+def convert_if_vax(image, props):
+    if props.get('is_vax_real') is True:
+        return vax.from_vax32(image)
+    return image
+
+
 def process_single_band_image(f, props):
     _, numpy_dtype = make_format_specifications(props)
     # TODO: added this 'count' parameter to handle a case in which the image
@@ -62,6 +69,7 @@ def process_single_band_image(f, props):
     #  the multiband loaders too.
     image = np_from_buffered_io(f, dtype=numpy_dtype, count=props["pixels"])
     image, prefix, suffix = extract_single_band_linefix(image, props)
+    image = convert_if_vax(image, props)
     image = image.reshape(
         (props["nrows"] + props["rowpad"], props["ncols"] + props["colpad"])
     )
@@ -92,6 +100,7 @@ def process_multiband_image(f, props):
         bst = "BAND_SEQUENTIAL"
     _, numpy_dtype = make_format_specifications(props)
     image = np_from_buffered_io(f, numpy_dtype, count=props["pixels"])
+    image = convert_if_vax(image, props)
     bands, lines, samples = (
         props["nbands"] + props["bandpad"],
         props["nrows"] + props["rowpad"],
