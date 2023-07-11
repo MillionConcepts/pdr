@@ -1,4 +1,4 @@
-BSD 3-Clause License
+###  BSD 3-Clause License
 
 Copyright (c) 2021, Million Concepts
 All rights reserved.
@@ -28,8 +28,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pdr/vax.py is derived from code in the SETI [pds-tools module](https://github.com/SETI/pds-tools/)
-and carries this additional license:
+### pdr/vax.py is derived from code in the SETI [pds-tools module](https://github.com/SETI/pds-tools/) and carries this additional license:
 
 Apache License, Version 2.0
 
