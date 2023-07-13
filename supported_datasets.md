@@ -85,6 +85,9 @@ of their metadata appear to match other sources.
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
   - VIR: mosaics, EDR and RDR cube products
   - RSS: gravity models
+- Deep Space 1
+  - IDS RDRs
+  - MICAS DEM, images, and matrices
 - Galileo 
   - EPD: calibrated Jupiter data (PDS4) and pre-Jupiter products (PDS3)
   - GDDS tables 
@@ -97,7 +100,7 @@ of their metadata appear to match other sources.
   - RSS: Jupiter and Io ionosphere electron density profiles
   - SSD: derived electron flux data
   - SSI: 
-    - Some calibration images (blemish and dark current)
+    - Calibration images
     - REDRs (images only)
     - Ida/Gaspra specific data products at SBN
   - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the PDS3 labels are currently unsupported.*
@@ -212,6 +215,14 @@ of their metadata appear to match other sources.
   - Infrared Minor Planet Survey
   - Small Bodies Images
   - Zodiacal Dust Data
+- NEAR
+  - GRS EDRs, L2 and L3 products
+  - MAG EDRs and RDRs
+  - MSI raw data, IOFs, RADs, DIMs, and shape models
+  - NIS EDRs and L2 products
+  - NLR EDRs, CDRs, and shape models
+  - RSS spherical harmonic models, gravity acceleration maps, Eros landmarks table, and ODFs
+  - XRS EDRs, L2 and L3 products
 - Pioneer Venus Orbiter
   - OEFD HIRES data and 24 second averages
   - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and solar EUV data
@@ -221,10 +232,12 @@ of their metadata appear to match other sources.
     - Spacecraft coordinates HIRES data and 24 second averages (*note: only the binary versions have been extensively tested*)
   - ONMS HIRES data and 12 second averages
   - ORPA processed data
+  - OUVS IMIDR images
   - POS VSO coordinates
 - Pre-Magellan collection at the GEO node
+  - AIRSAR images
   - Earth-based Mars, Mercury, Lunar, and Venus observations
-  - Pioneer-Venus orbiter radar and gravity tables
+  - Pioneer-Venus orbiter radar and gravity tables, and most radar images
   - Viking orbiter gravity data
 - Rosetta
   - Orbiter:
@@ -255,6 +268,17 @@ of their metadata appear to match other sources.
     - ROMAP EDRs, RDRs, and DDRs
     - SD2 RDRs
     - SESAME EDRs and RDRs
+- Stardust
+  - CIDA EDF and housekeeping data
+  - DFMI products
+  - DSE products
+  - NAVCAM EDRs, RDRs, derived shape models, and pre-flight calibration images
+  - SRC temperature and geometry data
+- Stardust-NExT
+  - CIDA
+  - DFMI
+  - NAVCAM EDRs and RDRs
+  - Derived shape models
 - Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
@@ -307,7 +331,6 @@ of their metadata appear to match other sources.
 - Galileo
   - MAG summary tables (other tables supported)
   - NIMS Jupiter EDRs and cubes (support planned)
-  - SSI shutter and slope calibration images (support planned)
   - SSI REDR telemetry and line-prefix tables (support planned)
   - PLS EDRs (support not planned)
   - PWS EDRs, binary REDRs, and REFDRs (support planned)
@@ -360,11 +383,7 @@ of their metadata appear to match other sources.
 - Pioneer Venus Orbiter
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
-  - OUVS IMIDR images (support planned)
   - POS SEDR (support planned)
-- Pre-Magellan collection at the GEO node
-  - AIRSAR (support planned)
-  - Pioneer-Venus orbiter radar images (support planned)
 - Rosetta
   - Orbiter:
     - MIDAS RDRs with .dat file extension (support planned)
