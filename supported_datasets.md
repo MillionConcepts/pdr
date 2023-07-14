@@ -106,6 +106,15 @@ of their metadata appear to match other sources.
   - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the PDS3 labels are currently unsupported.*
   - Probe datasets: ASI, EPI, HAD, LRD, NEP, NFR, and most DWE and NMS products
   - Trajectory data
+- Giotto
+  - DID RDRs
+  - GRE RDRs
+  - HMC RDRs
+  - IMS HIS and HERS RDRs
+  - JPA DDRs
+  - MAG RDRs
+  - NMS ion and neutral gas RDRs
+  - OPE RDRs
 - GRAIL
   - LGRS RDR: SHADR, SHBDR, and RSDMAP
   - RSS: BOF, ODF, OLF, and RSR
@@ -334,6 +343,9 @@ of their metadata appear to match other sources.
   - SSI REDR telemetry and line-prefix tables (support planned)
   - PLS EDRs (support not planned)
   - PWS EDRs, binary REDRs, and REFDRs (support planned)
+- Giotto
+  - GRE EDRs (support not planned)
+  - PIA (support planned)
 - GRAIL
   - LGRS: EDR and CDR (support not planned)
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
