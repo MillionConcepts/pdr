@@ -89,6 +89,7 @@ def add_bit_column_info(obj, definition, identifiers):
     from pdr.bit_handling import (
         set_bit_string_data_type, get_bit_start_and_size
     )
+    obj["DATA_TYPE"] = obj["DATA_TYPE"].replace(" ", "_")
     if "BIT_STRING" not in obj["DATA_TYPE"]:
         obj = set_bit_string_data_type(obj, identifiers)
     return get_bit_start_and_size(obj, definition, identifiers)
