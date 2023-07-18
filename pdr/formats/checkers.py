@@ -103,6 +103,11 @@ def check_special_table_reader(
         and name == "SPREADSHEET"
     ):
         return True, formats.galileo.pws_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "ODY-M-GRS-5-ELEMENTS-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.odyssey.map_table_loader(fn, fmtdef_dt)
     return False, None
 
 
