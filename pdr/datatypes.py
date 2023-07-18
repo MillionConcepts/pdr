@@ -52,13 +52,9 @@ def sample_types(
         return integer_bytes(endian, signed, sample_bytes, for_numpy)
     void = "V" if for_numpy is True else "s"
     _float = "d" if sample_bytes == 8 else "f"
-    if sample_type == "VAX_REAL" and sample_bytes != 4:
+    if sample_type in ("VAX_REAL", "IBM_REAL") and sample_bytes != 4:
         raise NotImplementedError(
-            "VAX reals that are not 4 bytes wide are not supported."
-        )
-    if sample_type == "IBM_REAL" and sample_bytes != 4:
-        raise NotImplementedError(
-            "IBM reals that are not 4 bytes wide are not yet supported."
+            "VAX and IBM reals that are not 4 bytes wide are not supported."
         )
     return {
         "IEEE_REAL": f">{_float}",
