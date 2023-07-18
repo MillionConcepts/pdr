@@ -52,9 +52,9 @@ def sample_types(
         return integer_bytes(endian, signed, sample_bytes, for_numpy)
     void = "V" if for_numpy is True else "s"
     _float = "d" if sample_bytes == 8 else "f"
-    if sample_type in ("VAX_REAL", "IBM_REAL") and sample_bytes != 4:
+    if sample_type == "VAX_REAL" and sample_bytes != 4:
         raise NotImplementedError(
-            "VAX and IBM reals that are not 4 bytes wide are not supported."
+            "VAX reals that are not 4 bytes wide are not supported."
         )
     return {
         "IEEE_REAL": f">{_float}",
@@ -81,9 +81,7 @@ def sample_types(
         # doesn't have built-in support for it, so we just get the byte width
         # correct here and add an additional check to transform it after load.
         # the data type used here is totally arbitrary apart from byte size.
-        "VAX_REAL": f"<{_float}",
-        # like VAX_REAL, this must be converted later
-        "IBM_REAL": f">u4"
+        "VAX_REAL": f"<{_float}"
     }[sample_type]
 
 
