@@ -2,6 +2,7 @@ import warnings
 
 import pdr.loaders.queries
 
+
 def galileo_table_loader():
     warnings.warn("Galileo EDR binary tables are not yet supported.")
     return True
@@ -30,6 +31,7 @@ def nims_edr_sample_type(base_samp_info):
             sample_type, int(sample_bytes), for_numpy=True
         )
     return False, None
+
 
 def probe_structure(block, name, filename, data, identifiers):
     fmtdef = pdr.loaders.queries.read_table_structure(
