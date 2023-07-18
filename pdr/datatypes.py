@@ -56,6 +56,10 @@ def sample_types(
         raise NotImplementedError(
             "VAX reals that are not 4 bytes wide are not supported."
         )
+    if sample_type == "IBM_REAL" and sample_bytes != 4:
+        raise NotImplementedError(
+            "IBM reals that are not 4 bytes wide are not yet supported."
+        )
     return {
         "IEEE_REAL": f">{_float}",
         "PC_REAL": f"<{_float}",
@@ -81,7 +85,10 @@ def sample_types(
         # doesn't have built-in support for it, so we just get the byte width
         # correct here and add an additional check to transform it after load.
         # the data type used here is totally arbitrary apart from byte size.
-        "VAX_REAL": f"<{_float}"
+        "VAX_REAL": f"<{_float}",
+        "IBM_REAL": f">u{sample_bytes}",
+        "EBCDIC": f"{void}{sample_bytes}",
+        "EBCDIC_CHARACTER": f"{void}{sample_bytes}",
     }[sample_type]
 
 
