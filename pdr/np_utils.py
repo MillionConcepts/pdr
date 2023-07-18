@@ -42,11 +42,9 @@ def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
         if dtype.isnative:
             return array
         return array.byteswap().newbyteorder("=")
-    swap_targets = []
     swapped_dtype = []
     for name, field in array.dtype.fields.items():
         if field[0].isnative is False:
-            swap_targets.append(name)
             swapped_dtype.append((name, field[0].newbyteorder("=")))
         elif "V" not in str(field[0]):
             swapped_dtype.append((name, field[0]))
@@ -93,3 +91,32 @@ def make_c_contiguous(arr: np.ndarray) -> np.ndarray:
     if arr.flags["C_CONTIGUOUS"] is False:
         return np.ascontiguousarray(arr)
     return arr
+
+
+def ibm32_to_np_f32(ibm):
+    # dtype conversion: this field must be signed
+    ibm_sign = (ibm >> 31 & 0x01).astype('int8')
+    # dtype_conversion: largest values possible will overfloat int64 or float32
+    ibm_exponent = (ibm >> 24 & 0x7f).astype('float64')
+    ibm_mantissa = ibm & 0x00ffffff
+    mantissa = ibm_mantissa / (2 ** 24)
+    exponent = 16 ** (ibm_exponent - 64)
+    sign = 1 - (2 * ibm_sign).astype('int8')
+    return sign * mantissa * exponent
+
+
+def convert_ibm_reals(array, fmtdef):
+    """TODO: currently only works for 32-bit reals"""
+    if not fmtdef['DATA_TYPE'].str.contains('IBM').any():
+        return array
+    new_dtype = dict(array.dtype.fields)
+    reals = {}
+    for field in fmtdef.loc[
+        fmtdef['DATA_TYPE'].str.match('IBM.*REAL'), 'NAME'
+    ]:
+        new_dtype[field] = (np.float32, new_dtype[field][1])
+        reals[field] = ibm32_to_np_f32(array[field])
+    array = array.astype(new_dtype)
+    for k, v in reals.items():
+        array[k] = v
+    return array
