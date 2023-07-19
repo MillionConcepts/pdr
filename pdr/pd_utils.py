@@ -174,6 +174,17 @@ def booleanize_booleans(
     return table
 
 
+def convert_ebcdic(
+    table: pd.DataFrame, fmtdef: pd.DataFrame
+) -> pd.DataFrame:
+    ebcdic_columns = fmtdef.loc[fmtdef["DATA_TYPE"].str.contains("EBCDIC"), "NAME"]
+    for col in ebcdic_columns:
+        series = pd.Series(table[col])
+        table[col] = series.str.decode('cp500')
+    print(table)
+    return table
+
+
 def rectified_rec_df(array: np.ndarray) -> pd.DataFrame:
     return pd.DataFrame.from_records(enforce_order_and_object(array))
 

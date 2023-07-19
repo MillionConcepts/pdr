@@ -83,8 +83,8 @@ def sample_types(
         # the data type used here is totally arbitrary apart from byte size.
         "VAX_REAL": f"<{_float}",
         "IBM_REAL": f">u{sample_bytes}",
-        "EBCDIC": f"{void}{sample_bytes}",
-        "EBCDIC_CHARACTER": f"{void}{sample_bytes}",
+        "EBCDIC": f"V{sample_bytes}",
+        "EBCDIC_CHARACTER": f"V{sample_bytes}",
     }[sample_type]
 
 

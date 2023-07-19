@@ -10,7 +10,7 @@ from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object, \
     convert_ibm_reals
-from pdr.pd_utils import booleanize_booleans
+from pdr.pd_utils import booleanize_booleans, convert_ebcdic
 from pdr.utils import decompress, head_file
 
 
@@ -98,6 +98,7 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     table = enforce_order_and_object(table)
     table = pd.DataFrame(table)
     table.columns = fmtdef.NAME.tolist()
+    table = convert_ebcdic(table, fmtdef)
     table = booleanize_booleans(table, fmtdef)
     table = bit_handling.expand_bit_strings(table, fmtdef)
     return table
