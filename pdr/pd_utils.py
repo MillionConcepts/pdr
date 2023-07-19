@@ -181,7 +181,6 @@ def convert_ebcdic(
     for col in ebcdic_columns:
         series = pd.Series(table[col])
         table[col] = series.str.decode('cp500')
-    print(table)
     return table
 
 
