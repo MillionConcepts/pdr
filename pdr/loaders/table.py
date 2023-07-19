@@ -99,7 +99,6 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     table = pd.DataFrame(table)
     table.columns = fmtdef.NAME.tolist()
     table = convert_ebcdic(table, fmtdef)
-    table = convert_ebcdic(table, fmtdef)
     table = booleanize_booleans(table, fmtdef)
     table = bit_handling.expand_bit_strings(table, fmtdef)
     return table
