@@ -4,12 +4,16 @@
 - Support for several Galileo datasets
 - Support for Deep Space 1, NEAR, Stardust, and Stardust-NExT datasets
 - Support for VAX_REAL image products, including Pioneer Venus radar and IMIDR images
+- Support for IBM_REAL and EBCIDC data types, including Pioneer Venus SEDR
 ### Changed
 - Tables/Series objects will now apply label provided offset and scaling factors. 
   This has not yet been implemented for ARRAY objects or BIT COLUMNS
+- The license has been updated to reflect the additional license from the vendoring of 
+  vax.py
 ### Fixed
 
 ### Removed
+- No longer get UserWarnings when a data type has spaces in bit column data type
 
 ## [1.0.0] - 2023-06-03
 This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 

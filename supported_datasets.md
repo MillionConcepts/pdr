@@ -243,6 +243,7 @@ of their metadata appear to match other sources.
   - ORPA processed data
   - OUVS IMIDR images
   - POS VSO coordinates
+  - POS SEDR (support planned)
 - Pre-Magellan collection at the GEO node
   - AIRSAR images
   - Earth-based Mars, Mercury, Lunar, and Venus observations
@@ -395,7 +396,6 @@ of their metadata appear to match other sources.
 - Pioneer Venus Orbiter
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
-  - POS SEDR (support planned)
 - Rosetta
   - Orbiter:
     - MIDAS RDRs with .dat file extension (support planned)

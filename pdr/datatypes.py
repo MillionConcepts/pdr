@@ -81,7 +81,10 @@ def sample_types(
         # doesn't have built-in support for it, so we just get the byte width
         # correct here and add an additional check to transform it after load.
         # the data type used here is totally arbitrary apart from byte size.
-        "VAX_REAL": f"<{_float}"
+        "VAX_REAL": f"<{_float}",
+        "IBM_REAL": f">u{sample_bytes}",
+        "EBCDIC": f"V{sample_bytes}",
+        "EBCDIC_CHARACTER": f"V{sample_bytes}",
     }[sample_type]
 
 
