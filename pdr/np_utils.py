@@ -93,29 +93,41 @@ def make_c_contiguous(arr: np.ndarray) -> np.ndarray:
     return arr
 
 
-def ibm32_to_np_f32(ibm):
+# TODO: really all arguments but ibm/sreg are redundant for basic S/360 formats
+def ibm_to_np(ibm, sreg, ereg, mmask):
     # dtype conversion: this field must be signed
-    ibm_sign = (ibm >> 31 & 0x01).astype('int8')
+    ibm_sign = (ibm >> sreg & 0x01).astype('int8')
     # dtype_conversion: largest values possible will overfloat int64 or float32
-    ibm_exponent = (ibm >> 24 & 0x7f).astype('float64')
-    ibm_mantissa = ibm & 0x00ffffff
-    mantissa = ibm_mantissa / (2 ** 24)
+    ibm_exponent = (ibm >> ereg & 0x7f).astype('float64')
+    ibm_mantissa = ibm & mmask
+    mantissa = ibm_mantissa / (2 ** ereg)
     exponent = 16 ** (ibm_exponent - 64)
     sign = 1 - (2 * ibm_sign).astype('int8')
     return sign * mantissa * exponent
 
 
+def ibm32_to_np_f32(ibm):
+    return ibm_to_np(ibm, 31, 24, 0x00ffffff)
+
+
+def ibm64_to_np_f64(ibm):
+    return ibm_to_np(ibm, 63, 56, 0x00ffffffffffffff)
+
+
 def convert_ibm_reals(array, fmtdef):
-    """TODO: currently only works for 32-bit reals"""
     if not fmtdef['DATA_TYPE'].str.contains('IBM').any():
         return array
     new_dtype = dict(array.dtype.fields)
     reals = {}
-    for field in fmtdef.loc[
-        fmtdef['DATA_TYPE'].str.match('IBM.*REAL'), 'NAME'
-    ]:
-        new_dtype[field] = (np.float32, new_dtype[field][1])
-        reals[field] = ibm32_to_np_f32(array[field])
+    for _, field in fmtdef.loc[
+        fmtdef['DATA_TYPE'].str.match('IBM.*REAL')
+    ].iterrows():
+        if field['BYTES'] == 4:
+            func, dtype = ibm32_to_np_f32, np.float32
+        else:
+            func, dtype = ibm64_to_np_f64, np.float64
+        new_dtype[field['NAME']] = (dtype, new_dtype[field['NAME']][1])
+        reals[field['NAME']] = func(array[field['NAME']])
     array = array.astype(new_dtype)
     for k, v in reals.items():
         array[k] = v
