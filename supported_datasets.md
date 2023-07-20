@@ -363,7 +363,7 @@ of their metadata appear to match other sources.
   - F-BIDR (support not planned)
   - ALT-EDR (support not planned)
   - ARCDR (support planned)
-  - SCVDR (support planned)
+  - SCVDR (support not planned)
   - BSR calibrated time samples (support planned)
   - Radio Tracking ODF3B tables (support planned)
   - RSS solar wind experiment ('safed' dataset)

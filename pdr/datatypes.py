@@ -77,7 +77,7 @@ def sample_types(
         "VOID": f"{void}{sample_bytes}",
         "BCD": f"{void}{sample_bytes}",
         "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}",
-        # this one unfortunately doesn't work perfectly cleanly -- numpy
+        # this one (VAX_REAL) unfortunately doesn't work perfectly cleanly -- numpy
         # doesn't have built-in support for it, so we just get the byte width
         # correct here and add an additional check to transform it after load.
         # the data type used here is totally arbitrary apart from byte size.
