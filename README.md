@@ -184,6 +184,10 @@ objects loaded from files that are actually present in your filesystem.
 when attempting to read very large files. We intend to implement memory
 management in the future.
 
+#### WSL
+`.jp2` support is not guaranteed for WSL (Windows Subsystem for Linux). It is supported 
+on Windows itself and Linux. 
+
 ### tests
 
 Our testing methodology for *pdr* currently focuses on end-to-end integration
