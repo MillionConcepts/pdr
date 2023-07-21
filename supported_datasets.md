@@ -140,7 +140,7 @@ of their metadata appear to match other sources.
     - ER: RDR, SUMM, and level 2 products
     - MAG: SUMM, and level 2, 3, and 4 products
 - LRO
-  - CRaTER CDR and DDR
+  - CRaTER EDR secondary science and housekeeping tables, CDR, and DDR
   - DIVINER
     - EDR and RDR tables
     - L2 and L3 GDR images/backplanes
@@ -356,7 +356,7 @@ of their metadata appear to match other sources.
   - Waves EDR (support not planned) and RDR 'Survey' tables (support planned)
     - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
 - LRO
-    - CRaTER EDR (support planned)
+    - CRaTER EDR primary science data (support not planned)
     - LAMP EDR/RDR acquisition list tables and spectral image 'door open' headers (support planned)
 - Magellan
   - C-BIDR ancillary tables (support not planned)

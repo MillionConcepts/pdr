@@ -5,6 +5,7 @@
 - Support for Deep Space 1, NEAR, Stardust, and Stardust-NExT datasets
 - Support for VAX_REAL image products, including Pioneer Venus radar and IMIDR images
 - Support for IBM_REAL and EBCIDC data types, including Pioneer Venus SEDR
+- Support for LRO CRaTER EDR secondary science and housekeeping tables
 ### Changed
 - Tables/Series objects will now apply label provided offset and scaling factors. 
   This has not yet been implemented for ARRAY objects or BIT COLUMNS
