@@ -405,6 +405,12 @@ def read_format_block(block, object_name, fn, data, identifiers):
     fields = []
     for item_type, definition in format_block:
         if item_type in ("COLUMN", "FIELD"):
+            if "^STRUCTURE" in definition:
+                definition_l = list(definition.items())
+                definition_l = inject_format_files(definition_l, object_name, fn, data)
+                definition = MultiDict()
+                for key, val in definition_l:
+                    definition.add(key, val)
             obj = dict(definition) | {"BLOCK_NAME": block_name}
             repeat_count = definition.get("ITEMS")
             obj = add_bit_column_info(obj, definition, identifiers)
