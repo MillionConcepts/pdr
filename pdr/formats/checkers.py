@@ -41,6 +41,9 @@ def check_special_offset(
         )
     ):
         return formats.cassini.get_offset(fn, identifiers)
+    if identifiers["INSTRUMENT_ID"] == "CRAT" and identifiers["PRODUCT_TYPE"] == "EDR" \
+            and name == "TABLE_1":
+        return formats.lro.get_crater_offset()
     return False, None
 
 

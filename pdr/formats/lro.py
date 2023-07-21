@@ -18,8 +18,14 @@ def lamp_rdr_histogram_image_loader(data):
     return block
 
 
+def get_crater_offset():
+    # lro crater edr products have a header table with 64 bytes per row, the second
+    # table start byte is given in rows (also the wrong row) but had a different number
+    # of row bytes
+    return True, 64
+
+
 def crater_bit_col_sample_type(base_samp_info):
-    # not yet in test corpus
     from pdr.datatypes import sample_types
 
     sample_type = base_samp_info["SAMPLE_TYPE"]
