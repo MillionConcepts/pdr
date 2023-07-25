@@ -187,6 +187,15 @@ of their metadata appear to match other sources.
         products have sideplanes giving destripe metadata; these sideplanes 
         are discarded rather than returned to the user.* 
     - derived products: BTR, ABR, PBT, and ALB
+  - MARIE/MAR REDRs and RDRs
+  - GRS suite
+    - GRS EDRs, corrected spectra, and summed spectra
+    - NS EDRs, averaged spectra, and derived data
+    - HEND EDRs, averaged spectra, and derived data
+    - Element concentration maps
+    - special data products
+    - improved derived neutron data (PDS4)
+  - RSS ODF, RSR, and TDF products
 - MESSENGER
   - GRNS
     - NS EDR, CDR, DDR
@@ -374,6 +383,7 @@ of their metadata appear to match other sources.
     - v1 VIS/IR geoprojected products (support not planned. v2 are supported. 
       v1 is, per data providers, unsuitable for science due to cosmetic 
       processing)
+  - RSS products not listed above as supported (support not planned)
 - MESSENGER
   - Ground calibration data for MASCS and NS (support not planned)
 - MGS
