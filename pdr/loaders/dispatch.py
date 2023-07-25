@@ -53,6 +53,8 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return Trivial()
     if pointer == "LABEL":
         return ReadLabel()
+    if image_lib_dispatch(pointer, data) is not None:
+        return image_lib_dispatch(pointer, data)
     if (
         "TEXT" in pointer
         or "PDF" in pointer
@@ -90,16 +92,10 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         or ("QUB" in pointer)
         or ("XDR_DOCUMENT" in pointer)
     ):
-        # TODO: sloppy pt. 1. this may be problematic for
-        #  products with a 'secondary' fits file, etc.
-        if image_lib_dispatch(pointer, data) is not None:
-            return image_lib_dispatch(pointer, data)
         return ReadImage()
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer)
     # TODO: sloppy pt. 2
-    if image_lib_dispatch(pointer, data) is not None:
-        return image_lib_dispatch(pointer, data)
     return TBD()
 
 

@@ -492,6 +492,15 @@ def get_identifiers(data):
     return data.identifiers
 
 
+def get_fits_name(name):
+    """
+    just a target for specialize(check_special_fits_name) to maintain
+    signatures
+    TODO: consider moving the HDU extension identifying stuff in here
+    """
+    return name
+
+
 DEFAULT_DATA_QUERIES = MappingProxyType(
         {
             "identifiers": get_identifiers,

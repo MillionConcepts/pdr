@@ -41,15 +41,16 @@ def check_special_offset(
         )
     ):
         return formats.cassini.get_offset(fn, identifiers)
-    if identifiers["INSTRUMENT_ID"] == "CRAT" and identifiers["PRODUCT_TYPE"] == "EDR" \
-            and name == "TABLE_1":
+    if (
+        identifiers["INSTRUMENT_ID"] == "CRAT"
+        and identifiers["PRODUCT_TYPE"] == "EDR"
+        and name == "TABLE_1"
+    ):
         return formats.lro.get_crater_offset()
     return False, None
 
 
-def check_special_table_reader(
-    identifiers, name, fn, fmtdef_dt, block
-):
+def check_special_table_reader(identifiers, name, fn, fmtdef_dt, block):
     if identifiers["DATA_SET_ID"] in (
         "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
         "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
@@ -60,9 +61,7 @@ def check_special_table_reader(
         return True, formats.cassini.spreadsheet_loader(
             fn, fmtdef_dt, identifiers["DATA_SET_ID"]
         )
-    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (
-        "SPREADSHEET" in name
-    ):
+    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and ("SPREADSHEET" in name):
         # mangled object names + positions
         return True, formats.msl_cmn.spreadsheet_loader(fn)
     if (
@@ -98,9 +97,7 @@ def check_special_table_reader(
         and identifiers["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")
         and name == "TABLE"
     ):
-        return True, formats.diviner.diviner_l4_table_loader(
-            fmtdef_dt, fn
-        )
+        return True, formats.diviner.diviner_l4_table_loader(fmtdef_dt, fn)
     if (
         identifiers["DATA_SET_ID"] == "GO-J-PWS-5-DDR-PLASMA-DENSITY-FULL-V1.0"
         and name == "SPREADSHEET"
@@ -150,10 +147,9 @@ def check_special_structure(block, name, fn, identifiers, data):
             block, name, fn, data, identifiers
         )
     if (
-        (identifiers["DATA_SET_ID"] == "GP-J-NMS-3-ENTRY-V1.0"
-        or identifiers["DATA_SET_ID"] == "GP-J-ASI-3-ENTRY-V1.0")
-        and name == "TABLE"
-    ):
+        identifiers["DATA_SET_ID"] == "GP-J-NMS-3-ENTRY-V1.0"
+        or identifiers["DATA_SET_ID"] == "GP-J-ASI-3-ENTRY-V1.0"
+    ) and name == "TABLE":
         return True, formats.galileo.probe_structure(
             block, name, fn, data, identifiers
         )
@@ -168,9 +164,7 @@ def check_special_structure(block, name, fn, identifiers, data):
     return False, None
 
 
-def check_special_position(
-    identifiers, block, target, name, fn, start_byte
-):
+def check_special_position(identifiers, block, target, name, fn, start_byte):
     if (
         identifiers["INSTRUMENT_ID"] == "MARSIS"
         and " TEC " in identifiers["DATA_SET_NAME"]
@@ -313,7 +307,7 @@ def check_special_block(name, data, identifiers):
     if (
         identifiers["INSTRUMENT_NAME"] == "PLASMA WAVE RECEIVER"
         and "SUMM" in identifiers["DATA_SET_ID"]
-        and (name == "TIME_SERIES" or name =="TABLE")
+        and (name == "TIME_SERIES" or name == "TABLE")
     ):
         return True, formats.galileo.pws_special_block(data, name)
     return False, None
@@ -361,9 +355,7 @@ def check_trivial_case(pointer, identifiers, fn) -> bool:
         and pointer == "HEADER"
     ):
         return formats.galileo.ssi_cubes_header_loader()
-    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (
-        pointer == "HEADER"
-    ):
+    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (pointer == "HEADER"):
         return formats.msl_cmn.trivial_header_loader()
     return False
 
@@ -411,4 +403,12 @@ def check_special_qube_band_storage(identifiers):
         # inside a QUBE reading function.
     ):
         return formats.cassini.get_special_qube_band_storage()
+    return False, None
+
+
+def check_special_hdu_name(identifiers, name):
+    if (identifiers["INSTRUMENT_ID"] == "LORRI") and (
+        identifiers["PRODUCT_TYPE"] == "EDR"
+    ):
+        return formats.nh.lorri_edr_hdu_name(name)
     return False, None
