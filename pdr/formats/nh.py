@@ -34,7 +34,7 @@ def leisa_cal_hdu_name(name):
         return True, 5
     if name.startswith("QUALITY"):
         return True, 6
-    if name.startswith("ET") or name.startswith("QUARTERNIONS"):
+    if name.startswith("ET") or name.startswith("QUATERNIONS"):
         return True, 7
     if name.startswith("RALPH") or name.startswith("HK"):
         return True, 8
