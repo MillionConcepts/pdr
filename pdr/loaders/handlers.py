@@ -3,7 +3,7 @@ import numpy as np
 from multidict import MultiDict
 
 
-def handle_fits_file(fn, name="", hdu_name=""):
+def handle_fits_file(fn, name="", hdu_name="", hdulist=None):
     """
     This function attempts to read all FITS files, compressed or
     uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
@@ -19,19 +19,9 @@ def handle_fits_file(fn, name="", hdu_name=""):
     """
     from astropy.io import fits
 
-    hdulist = fits.open(fn)
-    try:
-        hdr_val = handle_fits_header(hdulist, hdu_name)
-    # astropy.io.fits does not call any verification on read. on 'output'
-    # tasks -- which iterating over header cards (sometimes) counts as, and
-    # which we have to do in order to place the header content into our
-    # preferred data structure -- it does call verification, at the strictest
-    # settings. we do not want to prospectively fix every case because it is
-    # quite slow. so, when astropy.io.fits decides something is too invalid to
-    # show us, tell it to fix it first.
-    except fits.VerifyError:
-        hdulist.verify('silentfix')
-        hdr_val = handle_fits_header(hdulist, hdu_name)
+    if hdulist is None:
+        hdulist = fits.open(fn)
+    hdr_val = handle_fits_header(hdulist, hdu_name)
     if (
         "HEADER" not in name
         # cases where HDUs are named things like "IMAGE HEADER"
@@ -82,22 +72,37 @@ def handle_compressed_image(fn):
 
 def handle_fits_header(
     hdulist,
-    name="",
+    name: str | int = "",
 ):
+    from astropy.io import fits
+
     if isinstance(name, int):
         astro_hdr = hdulist[name].header
     else:
         astro_hdr = hdulist[pointer_to_fits_key(name, hdulist)].header
     output_hdr = MultiDict()
-    for key, val, com in astro_hdr.cards:
-        if len(key) > 0:
-            if isinstance(val, (str, float, int)):
-                output_hdr.add(key, val)
-            else:
-                output_hdr.add(key, str(val))
-            if len(com) > 0:
-                comment_key = key + "_comment"
-                output_hdr.add(comment_key, com)
+    try:
+        for key, val, com in astro_hdr.cards:
+            if len(key) > 0:
+                if isinstance(val, (str, float, int)):
+                    output_hdr.add(key, val)
+                else:
+                    output_hdr.add(key, str(val))
+                if len(com) > 0:
+                    comment_key = key + "_comment"
+                    output_hdr.add(comment_key, com)
+    except fits.VerifyError:
+        # astropy.io.fits does not call any verification on read. on
+        # 'output' tasks -- which iterating over header cards (sometimes)
+        # counts as, and which we have to do in order to place the header
+        # content into our preferred data structure -- it does call
+        # verification, at the strictest settings. we do not want to
+        # prospectively fix every case because it is quite slow. so,
+        # when astropy.io.fits decides something is too invalid to show us,
+        # tell it to fix it first.
+        hdulist.verify('silentfix')
+        return handle_fits_header(hdulist[name].header)
+
     return output_hdr
 
 
@@ -132,3 +137,21 @@ def add_bit_column_info(obj, definition, identifiers):
     if "BIT_STRING" not in obj["DATA_TYPE"]:
         obj = set_bit_string_data_type(obj, identifiers)
     return get_bit_start_and_size(obj, definition, identifiers)
+
+
+def unpack_fits_headers(filename, hdulist=None) -> tuple[MultiDict, list[str]]:
+    from astropy.io import fits
+
+    headerdict = MultiDict()
+    if hdulist is None:
+        hdulist = fits.open(filename)
+    for i, hdu_info in enumerate(hdulist.info(False)):
+        name = hdu_info[1].replace(" ", "_") if hdu_info[1] != "" else str(i)
+        headerdict[name] = handle_fits_header(hdulist, i)
+    params = []
+    for hdu_name in headerdict.keys():
+        # note that FITS headers can't be deeply nested
+        params.append(hdu_name)
+        for field in headerdict[hdu_name].keys():
+            params.append(field)
+    return headerdict, params
