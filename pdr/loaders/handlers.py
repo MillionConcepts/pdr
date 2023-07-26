@@ -78,6 +78,8 @@ def handle_fits_header(
 
     if isinstance(name, int):
         astro_hdr = hdulist[name].header
+    elif name.isnumeric():
+        astro_hdr = hdulist[int(name)].header
     else:
         astro_hdr = hdulist[pointer_to_fits_key(name, hdulist)].header
     output_hdr = MultiDict()
@@ -116,6 +118,8 @@ def pointer_to_fits_key(pointer, hdulist):
     """
     if isinstance(pointer, int):  # permit explicit specification of HDU number
         return pointer
+    elif pointer.isnumeric():
+        return int(pointer)
     hdu_names = [h[1].lower() for h in hdulist.info(False)]
     try:
         return hdu_names.index(pointer.lower())
