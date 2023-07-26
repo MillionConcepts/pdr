@@ -185,6 +185,18 @@ def convert_ebcdic(
 
 
 def rectified_rec_df(array: np.ndarray) -> pd.DataFrame:
+    if len(array.shape) == 3:
+        # it's possible to pack 2D arrays into individual records. this
+        # obviously does not work for pandas. if we encounter > 2D elements,
+        # we can generalize this.
+        array = array.reshape(array.shape[0], array.shape[1] * array.shape[2])
+    elif len(array.shape) > 3:
+        raise NotImplementedError("dtypes with >2D elements are not supported")
+    if len(array.dtype) == 0:
+        # if it doesn't have a structured dtype, don't call from_records --
+        # it's slow and acts weird
+        return pd.DataFrame(enforce_order_and_object(array))
+    # but if it does, do
     return pd.DataFrame.from_records(enforce_order_and_object(array))
 
 
@@ -205,7 +217,16 @@ def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
             sub_dfs.append(sub_df)
     if len(name_buffer) > 0:
         sub_dfs.append(rectified_rec_df(array[name_buffer]))
-    if len(sub_dfs) == 0:
+    if len(sub_dfs) == 1:
         return sub_dfs[0]
-    df = pd.concat(sub_dfs, axis=1)
-    return df
+    return pd.concat(sub_dfs, axis=1)
+#
+#
+# def df_from_nd_records(recarray):
+#     """
+#     wrapper for pd.DataFrame.from_records that 'flattens' any recarray passed
+#     to it, appending ascending integers to repeated fields, allowing creation
+#     of DataFrames from recarrays with > 1D fields
+#     """
+#     if not any(len(name) == 3 for name)
+#

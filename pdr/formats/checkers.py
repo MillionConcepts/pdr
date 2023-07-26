@@ -411,4 +411,6 @@ def check_special_hdu_name(identifiers, name):
         identifiers["PRODUCT_TYPE"] == "EDR"
     ):
         return formats.nh.lorri_edr_hdu_name(name)
+    if re.match(r'NEAR-.*-EDR-', identifiers['DATA_SET_ID']):
+        return formats.near.near_edr_hdu_name(name, identifiers['DATA_SET_ID'])
     return False, None

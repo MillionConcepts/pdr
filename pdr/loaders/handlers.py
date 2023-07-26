@@ -40,13 +40,21 @@ def handle_fits_file(fn, name="", hdu_name=""):
         output = {f"{name}_HEADER": hdr_val}
     else:
         return {name: hdr_val}
-    body = hdulist[pointer_to_fits_key(hdu_name, hdulist)].data
-    # i.e., it's a FITS table
+    hdu = hdulist[pointer_to_fits_key(hdu_name, hdulist)]
+    # binary table HDUs with repeated column names break astropy
+    if isinstance(hdu, fits.BinTableHDU):
+        names = [c.name for c in hdu.columns]
+        repeats = {n for n in names if names.count(n) > 1}
+        for r in repeats:
+            indices = [ix for ix, n in enumerate(names) if n == r]
+            for i, ix in enumerate(indices):
+                hdu.columns[ix].name += f"_{i}"
+    body = hdu.data
+    # i.e., it's a FITS table, binary or ascii
     if isinstance(body, fits.fitsrec.FITS_rec):
-        import pandas as pd
-        from pdr.np_utils import enforce_order_and_object
+        from pdr.pd_utils import structured_array_to_df
 
-        body = pd.DataFrame.from_records(enforce_order_and_object(body))
+        body = structured_array_to_df(np.asarray(body))
     return output | {name: body}
 
 
@@ -90,12 +98,14 @@ def pointer_to_fits_key(pointer, hdulist):
     guaranteed to be correct! And special case handling might be required in
     the future.
     """
+    hdu_names = [h[1].lower() for h in hdulist.info(False)]
+    try:
+        return hdu_names.index(pointer.lower())
+    except ValueError:
+        pass
     if pointer in ("IMAGE", "TABLE", None, ""):
         return 0
-    levratio = [
-        lev.ratio(i[1].lower(), pointer.lower())
-        for i in hdulist.info(output=False)
-    ]
+    levratio = [lev.ratio(name, pointer.lower()) for name in hdu_names]
     return levratio.index(max(levratio))
 
 
