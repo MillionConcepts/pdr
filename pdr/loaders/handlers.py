@@ -33,7 +33,7 @@ def handle_fits_file(fn, name="", hdu_name=""):
         hdulist.verify('silentfix')
         hdr_val = handle_fits_header(hdulist, hdu_name)
     if (
-        "HEADER" not in hdu_name
+        "HEADER" not in name
         # cases where HDUs are named things like "IMAGE HEADER"
         or hdu_name in [h[1] for h in hdulist.info(False)]
     ):
@@ -43,12 +43,7 @@ def handle_fits_file(fn, name="", hdu_name=""):
     hdu = hdulist[pointer_to_fits_key(hdu_name, hdulist)]
     # binary table HDUs with repeated column names break astropy
     if isinstance(hdu, fits.BinTableHDU):
-        names = [c.name for c in hdu.columns]
-        repeats = {n for n in names if names.count(n) > 1}
-        for r in repeats:
-            indices = [ix for ix, n in enumerate(names) if n == r]
-            for i, ix in enumerate(indices):
-                hdu.columns[ix].name += f"_{i}"
+        reindex_dupe_names(hdu)
     body = hdu.data
     # i.e., it's a FITS table, binary or ascii
     if isinstance(body, fits.fitsrec.FITS_rec):
@@ -56,6 +51,19 @@ def handle_fits_file(fn, name="", hdu_name=""):
 
         body = structured_array_to_df(np.asarray(body))
     return output | {name: body}
+
+
+def reindex_dupe_names(hdu: "astropy.io.fits.BinTableHDU"):
+    """
+    rename duplicate column names in a fits binary table -- astropy will not
+    be able to construct the .data attribute otherwise
+    """
+    names = [c.name for c in hdu.columns]
+    repeats = {n for n in names if names.count(n) > 1}
+    for r in repeats:
+        indices = [ix for ix, n in enumerate(names) if n == r]
+        for i, ix in enumerate(indices):
+            hdu.columns[ix].name += f"_{i}"
 
 
 def handle_compressed_image(fn):
@@ -76,7 +84,10 @@ def handle_fits_header(
     hdulist,
     name="",
 ):
-    astro_hdr = hdulist[pointer_to_fits_key(name, hdulist)].header
+    if isinstance(name, int):
+        astro_hdr = hdulist[name].header
+    else:
+        astro_hdr = hdulist[pointer_to_fits_key(name, hdulist)].header
     output_hdr = MultiDict()
     for key, val, com in astro_hdr.cards:
         if len(key) > 0:
@@ -98,6 +109,8 @@ def pointer_to_fits_key(pointer, hdulist):
     guaranteed to be correct! And special case handling might be required in
     the future.
     """
+    if isinstance(pointer, int):  # permit explicit specification of HDU number
+        return pointer
     hdu_names = [h[1].lower() for h in hdulist.info(False)]
     try:
         return hdu_names.index(pointer.lower())
