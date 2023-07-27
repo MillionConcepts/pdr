@@ -165,6 +165,14 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.galileo.epd_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        "VEGA" in identifiers["DATA_SET_ID"]
+        and "-C-DUCMA-3-RDR-HALLEY-V1.0" in identifiers["DATA_SET_ID"]
+        and name == "TABLE"
+    ):
+        return True, formats.vega.get_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
