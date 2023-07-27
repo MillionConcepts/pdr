@@ -7,6 +7,7 @@
 - Support for IBM_REAL and EBCIDC data types, including Pioneer Venus SEDR
 - Support for LRO CRaTER EDR secondary science and housekeeping tables
 - Support for several Mars Odyssey datasets
+- Support for several Vega datasets
 ### Changed
 - Tables/Series objects will now apply label provided offset and scaling factors. 
   This has not yet been implemented for ARRAY objects or BIT COLUMNS

@@ -298,6 +298,16 @@ of their metadata appear to match other sources.
   - DFMI
   - NAVCAM EDRs and RDRs
   - Derived shape models
+- Vega 1 and 2
+  - TVS raw, processed, and transform images
+  - IKS raw and processed data
+  - DUCMA data
+  - SP-1 and SP-2 data
+  - PM1 data
+  - TN-M data
+  - MISCHA data
+  - Stooke Shape Models
+  - Balloon and lander EDRs and RDRs
 - Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
@@ -414,3 +424,6 @@ of their metadata appear to match other sources.
   - Lander:
     - CONSERT EDRs, RDRs, and REFDRs (support planned)
     - SD2 EDRs (support not planned)
+- Vega 1 and 2
+  - PUMA raw and processed data (support not planned)
+  - PUMA mode data (support planned)
