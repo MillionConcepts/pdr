@@ -12,6 +12,8 @@ import pdr.formats.mgs as mgs
 import pdr.formats.msl_apxs as msl_apxs
 import pdr.formats.msl_cmn as msl_cmn
 import pdr.formats.msl_ccam as msl_ccam
+import pdr.formats.near as near
+import pdr.formats.nh as nh
 import pdr.formats.odyssey as odyssey
 import pdr.formats.pvo as pvo
 import pdr.formats.rosetta as rosetta
