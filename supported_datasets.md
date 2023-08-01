@@ -252,7 +252,7 @@ of their metadata appear to match other sources.
   - ORPA processed data
   - OUVS IMIDR images
   - POS VSO coordinates
-  - POS SEDR (support planned)
+  - POS SEDR
 - Pre-Magellan collection at the GEO node
   - AIRSAR images
   - Earth-based Mars, Mercury, Lunar, and Venus observations

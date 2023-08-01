@@ -1,22 +1,28 @@
-## [X.X.X] - 202X-XX-XX
+## [1.0.2] - 2023-08-01
 ### Added
 - Support for Rosetta ALICE EDR, RDR, and REFDR data
 - Support for several Galileo datasets
+- Support for sample interleaved (BIP) images, including:
+  - Support for DAWN VIR EDR and RDR cube products
+  - Support for Rosetta VIRTIS EDRs
 - Support for Deep Space 1, NEAR, Stardust, and Stardust-NExT datasets
 - Support for VAX_REAL image products, including Pioneer Venus radar and IMIDR images
 - Support for IBM_REAL and EBCIDC data types, including Pioneer Venus SEDR
 - Support for LRO CRaTER EDR secondary science and housekeeping tables
 - Support for several Mars Odyssey datasets
 - Support for several Vega datasets
+- Support for FITS tables
+- Documentation on behavior of FITS files (in README)
 ### Changed
 - Tables/Series objects will now apply label provided offset and scaling factors. 
   This has not yet been implemented for ARRAY objects or BIT COLUMNS
 - The license has been updated to reflect the additional license from the vendoring of 
   vax.py
 ### Fixed
-
+- Tables with nested containers now read correctly; closes [issue 50](https://github.com/MillionConcepts/pdr/issues/50))
+- ^STRUCTURE pointers inside a COLUMN/FIELD will now load in the relevant format file 
 ### Removed
-- No longer get UserWarnings when a data type has spaces in bit column data type
+- No longer get a UserWarning when a data type has spaces in bit column data type
 
 ## [1.0.0] - 2023-06-03
 This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 
