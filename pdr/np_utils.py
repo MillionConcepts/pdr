@@ -129,8 +129,10 @@ def convert_ibm_reals(array, fmtdef):
         dtype = np.float64
         if field['BYTES'] == 4:
             # IBM shorts are wider-range than IEEE shorts
-            big = abs(reals[field['NAME']]).max() > np.finfo(np.float32).max
-            small = abs(reals[field['NAME']]).min() < 1e-44
+            absolute = abs(reals[field['NAME']])
+            big = absolute.max() > np.finfo(np.float32).max
+            nonzero = absolute > 0
+            small = absolute[nonzero].min() < 1e-44
             if not (big or small):
                 dtype = np.float32
         # IBM longs just get more precise, not wider-ranged, so we don't need
