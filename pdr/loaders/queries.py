@@ -384,7 +384,7 @@ def read_table_structure(block, name, fn, data, identifiers):
     if "HISTOGRAM" in name:
         fields = get_histogram_fields(block)
     else:
-        fields = read_format_block(block, name, fn, data, identifiers)
+        fields, _ = read_format_block(block, name, fn, data, identifiers)
     # give columns unique names so that none of our table handling explodes
     import pandas as pd
 
@@ -396,13 +396,15 @@ def read_table_structure(block, name, fn, data, identifiers):
     return reindex_df_values(fmtdef)
 
 
-def read_format_block(block, object_name, fn, data, identifiers):
+def read_format_block(
+    block, object_name, fn, data, identifiers, within_container=False
+):
     # load external structure specifications
     format_block = list(block.items())
     block_name = block.get("NAME")
     while "^STRUCTURE" in [obj[0] for obj in format_block]:
         format_block = inject_format_files(format_block, object_name, fn, data)
-    fields = []
+    fields, needs_placeholder, add_placeholder = [], False, False
     for item_type, definition in format_block:
         if item_type in ("COLUMN", "FIELD"):
             if "^STRUCTURE" in definition:
@@ -414,13 +416,27 @@ def read_format_block(block, object_name, fn, data, identifiers):
             obj = dict(definition) | {"BLOCK_NAME": block_name}
             repeat_count = definition.get("ITEMS")
             obj = add_bit_column_info(obj, definition, identifiers)
+            add_placeholder = False
         elif item_type == "CONTAINER":
-            obj = read_format_block(
-                definition, object_name, fn, data, identifiers
+            if within_container is True and len(fields) == 0:
+                needs_placeholder = True
+            obj, add_placeholder = read_format_block(
+                definition, object_name, fn, data, identifiers, True
             )
             repeat_count = definition.get("REPETITIONS")
         else:
             continue
+        if add_placeholder is True:
+            dummy_column = {
+                'NAME': f'PLACEHOLDER_{definition["NAME"]}',
+                'DATA_TYPE': 'VOID',
+                'START_BYTE': definition['START_BYTE'],
+                'BYTES': 0,
+                'BLOCK_NAME': block_name
+            }
+            # dblock_name = None if len(fields) == 0 else fields[-1]['BLOCK_NAME']
+            # dummy_column['BLOCK_NAME'] = dblock_name
+            fields.append(dummy_column)
         # containers can have REPETITIONS,
         # and some "columns" contain a lot of columns (ITEMS)
         # repeat the definition, renaming duplicates, for these cases
@@ -432,7 +448,8 @@ def read_format_block(block, object_name, fn, data, identifiers):
     if object_name == "CONTAINER":
         if (repeat_count := block.get("REPETITIONS")) is not None:
             fields = list(chain(*[fields for _ in range(repeat_count)]))
-    return fields
+
+    return fields, needs_placeholder
 
 
 def get_histogram_fields(block):
