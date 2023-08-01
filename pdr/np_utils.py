@@ -114,34 +114,3 @@ def ibm32_to_np_f32(ibm):
 
 def ibm64_to_np_f64(ibm):
     return ibm_to_np(ibm, 63, 56, 0x00ffffffffffffff)
-
-
-def convert_ibm_reals(array, fmtdef):
-    if not fmtdef['DATA_TYPE'].str.contains('IBM').any():
-        return array
-    new_dtype = dict(array.dtype.fields)
-    reals = {}
-    for _, field in fmtdef.loc[
-        fmtdef['DATA_TYPE'].str.match('IBM.*REAL')
-    ].iterrows():
-        func = ibm32_to_np_f32 if field['BYTES'] == 4 else ibm64_to_np_f64
-        reals[field['NAME']] = func(array[field['NAME']])
-        dtype = np.float64
-        if field['BYTES'] == 4:
-            # IBM shorts are wider-range than IEEE shorts
-            absolute = abs(reals[field['NAME']])
-            big = absolute.max() > np.finfo(np.float32).max
-            nonzero = absolute[absolute > 0]
-            if len(nonzero) > 0:
-                small = nonzero.min() < 1e-44
-            else:
-                small = False
-            if not (big or small):
-                dtype = np.float32
-        # IBM longs just get more precise, not wider-ranged, so we don't need
-        # to check for longlong or anything like that
-        new_dtype[field['NAME']] = (dtype, new_dtype[field['NAME']][1])
-    array = array.astype(new_dtype)
-    for k, v in reals.items():
-        array[k] = v
-    return array

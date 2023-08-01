@@ -3,6 +3,7 @@ methods for working with pandas objects, primarily intended as components of
 pdr.Data's processing pipelines. some may require a Data object as an
 argument.
 """
+import re
 import warnings
 from typing import Hashable
 
@@ -12,7 +13,8 @@ import pandas as pd
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_sample_type
-from pdr.np_utils import enforce_order_and_object
+from pdr.np_utils import enforce_order_and_object, ibm32_to_np_f32, \
+    ibm64_to_np_f64
 
 
 def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
@@ -220,13 +222,35 @@ def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
     if len(sub_dfs) == 1:
         return sub_dfs[0]
     return pd.concat(sub_dfs, axis=1)
-#
-#
-# def df_from_nd_records(recarray):
-#     """
-#     wrapper for pd.DataFrame.from_records that 'flattens' any recarray passed
-#     to it, appending ascending integers to repeated fields, allowing creation
-#     of DataFrames from recarrays with > 1D fields
-#     """
-#     if not any(len(name) == 3 for name)
-#
+
+
+def convert_ibm_reals(df: pd.DataFrame, fmtdef: pd.DataFrame) -> pd.DataFrame:
+    """
+    converts all IBM reals in a dataframe from packed 16- or 32-bit integer
+    form to floating-point
+    """
+    if not fmtdef['DATA_TYPE'].str.contains('IBM').any():
+        return df
+    reals = {}
+    for _, field in fmtdef.iterrows():
+        if not re.match(r'IBM.*REAL', field['DATA_TYPE']):
+            continue
+        func = ibm32_to_np_f32 if field['BYTES'] == 4 else ibm64_to_np_f64
+        converted = func(df[field['NAME']].values)
+        if field['BYTES'] == 4:
+            # IBM shorts are wider-range than IEEE shorts
+            absolute = abs(converted)
+            big = absolute.max() > np.finfo(np.float32).max
+            nonzero = absolute[absolute > 0]
+            if len(nonzero) > 0:
+                small = nonzero.min() < 1e-44
+            else:
+                small = False
+            if not (big or small):
+                converted = converted.astype(np.float32)
+        reals[field['NAME']] = converted
+        # IBM longs just get more precise, not wider-ranged, so we don't need
+        # to check for longlong or anything like that
+    for k, v in reals.items():
+        df[k] = v
+    return df
