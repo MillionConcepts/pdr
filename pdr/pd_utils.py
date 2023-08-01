@@ -3,6 +3,7 @@ methods for working with pandas objects, primarily intended as components of
 pdr.Data's processing pipelines. some may require a Data object as an
 argument.
 """
+import re
 import warnings
 from typing import Hashable
 
@@ -12,7 +13,8 @@ import pandas as pd
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_sample_type
-from pdr.np_utils import enforce_order_and_object
+from pdr.np_utils import enforce_order_and_object, ibm32_to_np_f32, \
+    ibm64_to_np_f64
 
 
 def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
@@ -58,32 +60,32 @@ def _apply_item_offsets(fmtdef):
 def compute_offsets(fmtdef):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
-    including a START_BYTE column, add an OFFSET column, unpacking objects
+    including a START_BYTE column, add an SB_OFFSET column, unpacking objects
     if necessary
     """
     # START_BYTE is 1-indexed, but we're preparing these offsets for
     # numpy, which 0-indexes
-    fmtdef["OFFSET"] = fmtdef["START_BYTE"] - 1
+    fmtdef["SB_OFFSET"] = fmtdef["START_BYTE"] - 1
     if "ROW_PREFIX_BYTES" in fmtdef.columns:
-        fmtdef["OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
+        fmtdef["SB_OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
     block_names = fmtdef["BLOCK_NAME"].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
-        fmtdef.loc[fmt_block.index, "OFFSET"] += (
-            prior["OFFSET"] + prior["BYTES"]
+        fmtdef.loc[fmt_block.index, "SB_OFFSET"] += (
+            prior["SB_OFFSET"] + prior["BYTES"]
         )
     # correctly compute offsets within columns w/multiple items
     if "ITEM_BYTES" in fmtdef:
         fmtdef["ITEM_SIZE"] = _apply_item_offsets(fmtdef)
         column_groups = fmtdef.loc[fmtdef["ITEM_SIZE"].notna()]
-        for _, group in column_groups.groupby("OFFSET"):
-            fmtdef.loc[group.index, "OFFSET"] = group["OFFSET"] + int(
+        for _, group in column_groups.groupby("SB_OFFSET"):
+            fmtdef.loc[group.index, "SB_OFFSET"] = group["SB_OFFSET"] + int(
                 group["ITEM_SIZE"].iloc[0]
             ) * np.arange(len(group))
     pad_length = 0
-    end_byte = fmtdef["OFFSET"].iloc[-1] + fmtdef["BYTES"].iloc[-1]
+    end_byte = fmtdef["SB_OFFSET"].iloc[-1] + fmtdef["BYTES"].iloc[-1]
     if "ROW_BYTES" in fmtdef.columns:
         pad_length += fmtdef["ROW_BYTES"].iloc[0] - end_byte
     if "ROW_SUFFIX_BYTES" in fmtdef.columns:
@@ -94,7 +96,7 @@ def compute_offsets(fmtdef):
             "DATA_TYPE": "VOID",
             "BYTES": pad_length,
             "START_BYTE": end_byte,
-            "OFFSET": end_byte,
+            "SB_OFFSET": end_byte,
         }
         fmtdef = pd.concat(
             [fmtdef, pd.DataFrame([placeholder_rec])]
@@ -157,7 +159,7 @@ def insert_sample_types_into_df(fmtdef, identifiers):
                 f"{data_type} is not a currently-supported data type."
             )
     dtype_spec = fmtdef[
-        [c for c in ("NAME", "dt", "OFFSET") if c in fmtdef.columns]
+        [c for c in ("NAME", "dt", "SB_OFFSET") if c in fmtdef.columns]
     ].to_dict("list")
     spec_keys = ("names", "formats", "offsets")[: len(dtype_spec)]
     return (
@@ -174,7 +176,29 @@ def booleanize_booleans(
     return table
 
 
+def convert_ebcdic(
+    table: pd.DataFrame, fmtdef: pd.DataFrame
+) -> pd.DataFrame:
+    ebcdic_columns = fmtdef.loc[fmtdef["DATA_TYPE"].str.contains("EBCDIC"), "NAME"]
+    for col in ebcdic_columns:
+        series = pd.Series(table[col])
+        table[col] = series.str.decode('cp500')
+    return table
+
+
 def rectified_rec_df(array: np.ndarray) -> pd.DataFrame:
+    if len(array.shape) == 3:
+        # it's possible to pack 2D arrays into individual records. this
+        # obviously does not work for pandas. if we encounter > 2D elements,
+        # we can generalize this.
+        array = array.reshape(array.shape[0], array.shape[1] * array.shape[2])
+    elif len(array.shape) > 3:
+        raise NotImplementedError("dtypes with >2D elements are not supported")
+    if len(array.dtype) == 0:
+        # if it doesn't have a structured dtype, don't call from_records --
+        # it's slow and acts weird
+        return pd.DataFrame(enforce_order_and_object(array))
+    # but if it does, do
     return pd.DataFrame.from_records(enforce_order_and_object(array))
 
 
@@ -195,7 +219,38 @@ def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
             sub_dfs.append(sub_df)
     if len(name_buffer) > 0:
         sub_dfs.append(rectified_rec_df(array[name_buffer]))
-    if len(sub_dfs) == 0:
+    if len(sub_dfs) == 1:
         return sub_dfs[0]
-    df = pd.concat(sub_dfs, axis=1)
+    return pd.concat(sub_dfs, axis=1)
+
+
+def convert_ibm_reals(df: pd.DataFrame, fmtdef: pd.DataFrame) -> pd.DataFrame:
+    """
+    converts all IBM reals in a dataframe from packed 16- or 32-bit integer
+    form to floating-point
+    """
+    if not fmtdef['DATA_TYPE'].str.contains('IBM').any():
+        return df
+    reals = {}
+    for _, field in fmtdef.iterrows():
+        if not re.match(r'IBM.*REAL', field['DATA_TYPE']):
+            continue
+        func = ibm32_to_np_f32 if field['BYTES'] == 4 else ibm64_to_np_f64
+        converted = func(df[field['NAME']].values)
+        if field['BYTES'] == 4:
+            # IBM shorts are wider-range than IEEE shorts
+            absolute = abs(converted)
+            big = absolute.max() > np.finfo(np.float32).max
+            nonzero = absolute[absolute > 0]
+            if len(nonzero) > 0:
+                small = nonzero.min() < 1e-44
+            else:
+                small = False
+            if not (big or small):
+                converted = converted.astype(np.float32)
+        reals[field['NAME']] = converted
+        # IBM longs just get more precise, not wider-ranged, so we don't need
+        # to check for longlong or anything like that
+    for k, v in reals.items():
+        df[k] = v
     return df

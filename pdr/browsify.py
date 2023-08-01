@@ -93,9 +93,11 @@ def normalize_range(
             image /= maximum - minimum
         image += range_min
         return image
-    return (image - minimum) * (range_max - range_min) / (
-        maximum - minimum
-    ) + range_min
+    return (
+        (image - minimum) *
+        ((range_max - range_min) / (maximum - minimum))
+        + range_min
+    )
 
 
 def eightbit(

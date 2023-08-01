@@ -9,7 +9,7 @@ from pdr.loaders.queries import get_array_num_items, check_array_for_subobject
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
-from pdr.pd_utils import booleanize_booleans
+from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals
 from pdr.utils import decompress, head_file
 
 
@@ -19,6 +19,7 @@ def read_array(fn, block, start_byte):
     """
     # TODO: Maybe add block[AXES] as names? Might have to switch to pandas
     #  or a flattened structured array or something weirder
+    # TODO: Include offset calculations once an example with them is found
     obj = check_array_for_subobject(block)
     if block.get("INTERCHANGE_FORMAT") == "BINARY":
         with decompress(fn) as f:
@@ -68,6 +69,17 @@ def read_table(
     table = table.drop(
         [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
     )
+    # If there is an offset and/or scaling factor, apply them:
+    if fmtdef.get("OFFSET") is not None or fmtdef.get("SCALING_FACTOR") is not None:
+        for col in table.columns:
+            record = fmtdef.loc[fmtdef['NAME'] == col].to_dict("records")[0]
+            if record.get("SCALING_FACTOR") and not pd.isnull(record.get("SCALING_FACTOR")):
+                table[col] = table[col].mul(record["SCALING_FACTOR"])
+            else:
+                scaling_factor = 1  # TODO: appears superfluous
+            if record.get("OFFSET") and not pd.isnull(record.get("OFFSET")):
+                offset = record["OFFSET"]
+                table[col] = table[col]+offset
     return table
 
 
@@ -78,12 +90,14 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     count = block.get("ROWS")
     count = count if count is not None else 1
     with decompress(fn) as f:
-        array = np_from_buffered_io(
+        table = np_from_buffered_io(
             f, dtype=dt, offset=start_byte, count=count
         )
-    swapped = enforce_order_and_object(array, inplace=False)
-    table = pd.DataFrame(swapped)
+    table = enforce_order_and_object(table)
+    table = pd.DataFrame(table)
+    table = convert_ibm_reals(table, fmtdef)
     table.columns = fmtdef.NAME.tolist()
+    table = convert_ebcdic(table, fmtdef)
     table = booleanize_booleans(table, fmtdef)
     table = bit_handling.expand_bit_strings(table, fmtdef)
     return table
@@ -160,7 +174,7 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
                 else:
                     col_length = int(record["ITEM_BYTES"])
                 colspecs.append(
-                    (record["OFFSET"], record["OFFSET"] + col_length)
+                    (record["SB_OFFSET"], record["SB_OFFSET"] + col_length)
                 )
             table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
             string_buffer.close()

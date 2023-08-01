@@ -6,6 +6,7 @@ import numpy as np
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import np_from_buffered_io
 from pdr.utils import decompress
+from pdr import vax
 
 
 def read_image(name, gen_props, fn, start_byte):
@@ -55,6 +56,12 @@ def extract_single_band_linefix(image, props):
     return image, prefix, suffix
 
 
+def convert_if_vax(image, props):
+    if props.get('is_vax_real') is True:
+        return vax.from_vax32(image)
+    return image
+
+
 def process_single_band_image(f, props):
     _, numpy_dtype = make_format_specifications(props)
     # TODO: added this 'count' parameter to handle a case in which the image
@@ -62,6 +69,7 @@ def process_single_band_image(f, props):
     #  the multiband loaders too.
     image = np_from_buffered_io(f, dtype=numpy_dtype, count=props["pixels"])
     image, prefix, suffix = extract_single_band_linefix(image, props)
+    image = convert_if_vax(image, props)
     image = image.reshape(
         (props["nrows"] + props["rowpad"], props["ncols"] + props["colpad"])
     )
@@ -85,13 +93,14 @@ def extract_bil_linefix(image, props):
 
 def process_multiband_image(f, props):
     bst = props["band_storage_type"]
-    if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED"):
+    if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED", "SAMPLE_INTERLEAVED"):
         warnings.warn(
             f"Unsupported BAND_STORAGE_TYPE={bst}. Guessing BAND_SEQUENTIAL."
         )
         bst = "BAND_SEQUENTIAL"
     _, numpy_dtype = make_format_specifications(props)
     image = np_from_buffered_io(f, numpy_dtype, count=props["pixels"])
+    image = convert_if_vax(image, props)
     bands, lines, samples = (
         props["nbands"] + props["bandpad"],
         props["nrows"] + props["rowpad"],
@@ -100,6 +109,9 @@ def process_multiband_image(f, props):
     prefix, suffix = None, None
     if bst == "BAND_SEQUENTIAL":
         image = image.reshape(bands, lines, samples)
+    elif bst == "SAMPLE_INTERLEAVED":
+        image = image.reshape(lines, samples, bands)
+        image = np.moveaxis(image, 2, 0)
     elif bst == "LINE_INTERLEAVED":
         image, prefix, suffix = extract_bil_linefix(image, props)
         image = image.reshape(lines, bands, samples)

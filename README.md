@@ -150,7 +150,7 @@ compatibility, we force these to be unique by suffixing 0-indexed increasing
 integers. So a table definition with two separate columns named "COLUMN" will 
 return a pandas DataFrame with columns named "COLUMN_0" and "COLUMN_1."
 2. PDS3 data object names sometimes contain spaces. _pdr_ replaces the spaces
-with underscores in order to make them usable as attributes.
+with underscores in order to make them easily usable as Python attributes.
 
 #### PDS4 products
 `pdr.Data` wraps [`pds4_tools`](https://github.com/Small-Bodies-Node/pds4_tools/) 
@@ -161,10 +161,34 @@ the same way you do with PDS3 products.
 
 Some PDS data products have both PDS3 and PDS4 labels. Data object names, 
 metadata, and even data field names and format specifications often differ 
-slightly between these labels, so `pdr` may produce slightly different outputs
+slightly between these labels, so `pdr.Data` may produce different outputs
 depending on which label you use to initialize it. This is not a bug. 
 However, in general, if a PDS3 label is available, we recommend initializing 
 the object from the PDS3 label rather than the PDS4 label.
+
+#### FITS files
+`pdr.Data` wraps [ `astropy.io.fits` ](https://github.com/astropy/astropy/tree/main/astropy/io/fits)
+to read data from FITS files associated with PDS3 products, and prefers the 
+data specification given in FITS headers to the data specification in the PDS3 
+label. In our experience, because FITS is more rigorously standardized than 
+PDS3, using the FITS header is more reliable; also, the FITS header often 
+contains useful metadata that the PDS3 label does not. `pdr` converts objects 
+produced by`astropy` to `np.ndarrays` (FITS arrays and compressed arrays), 
+`pd.DataFrames` (FITS ASCII and binary tables), or `MultiDicts` (FITS 
+headers), so you do not need to change your code simply because a file is in
+FITS format. 
+
+Whenever you load a data object from a FITS file, `pdr` also 
+places the associated FITS header in a key of your `Data` object named 
+"$objectname_HEADER" -- for instance, if you load an object named "HK_TABLE", 
+its FITS header will appear in `Data.HK_TABLE_HEADER`. You can also use the same 
+name to directly load the header *without* loading the entire data object.
+
+Note that in some cases, the specification in the FITS header may differ 
+from the specification in the PDS3 label, even when the specification in the 
+PDS3 label is technically valid. For instance, column names might be given 
+differently in the FITS header, or a PDS3 TABLE might be stored as a FITS 
+array HDU. 
 
 #### Lazy loading
 Because many planetary data objects are very large, `pdr` helps conserve 
@@ -186,6 +210,10 @@ objects loaded from files that are actually present in your filesystem.
 `pdr` currently performs no special memory management, so use caution 
 when attempting to read very large files. We intend to implement memory
 management in the future.
+
+#### WSL
+`.jp2` support is not guaranteed for WSL (Windows Subsystem for Linux). It is supported 
+on Windows itself and Linux. 
 
 ### tests
 
