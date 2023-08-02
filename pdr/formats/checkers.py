@@ -432,4 +432,21 @@ def check_special_hdu_name(identifiers, name):
         return formats.nh.leisa_raw_hdu_name(name)
     if re.match(r"NEAR-.*-EDR-", identifiers["DATA_SET_ID"]):
         return formats.near.near_edr_hdu_name(name, identifiers["DATA_SET_ID"])
+    if (
+        identifiers["INSTRUMENT_ID"] == "MVIC"
+        and identifiers["PRODUCT_TYPE"] == "EDR"
+        and "-2-" in identifiers["DATA_SET_ID"]
+    ):
+        return formats.nh.mvic_eng_edr_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_ID"] == "MVIC"
+        and identifiers["PRODUCT_TYPE"] == "EDR"
+        and "-3-" in identifiers["DATA_SET_ID"]
+    ):
+        return formats.nh.mvic_sci_edr_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_ID"] == "MVIC"
+        and identifiers["PRODUCT_TYPE"] == "RDR"
+    ):
+        return formats.nh.mvic_rdr_hdu_name(name)
     return False, None
