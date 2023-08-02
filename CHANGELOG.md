@@ -1,3 +1,13 @@
+## [X.X.X] - 20XX-XX-XX
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+
 ## [1.0.2] - 2023-08-01
 ### Added
 - Support for Rosetta ALICE EDR, RDR, and REFDR data
