@@ -400,6 +400,11 @@ def check_special_fn(
     # THEMIS labels don't always mention when a file is stored gzipped
     if identifiers["INSTRUMENT_ID"] == "THEMIS":
         return formats.themis.check_gzip_fn(data, object_name)
+    if (
+        identifiers["DATA_SET_ID"] == "NH-P-PEPSSI-4-PLASMA-V1.0"
+        and object_name == "SPREADSHEET"
+    ):
+        return formats.nh.get_fn(data)
     return False, None
 
 
@@ -449,4 +454,8 @@ def check_special_hdu_name(identifiers, name):
         and identifiers["PRODUCT_TYPE"] == "RDR"
     ):
         return formats.nh.mvic_rdr_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_ID"] == "PEPSSI"
+    ):
+        return formats.nh.pepssi_hdu_name(name)
     return False, None

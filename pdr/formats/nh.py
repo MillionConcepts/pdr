@@ -76,3 +76,26 @@ def mvic_rdr_hdu_name(name):
     if name.startswith("QUALITY"):
         return True, 2
     raise NotImplementedError("don't recognize this MVIC pointer name")
+
+
+def pepssi_hdu_name(name):
+    """
+    some PEPSSI HDU names are subsets of other HDU names, which causes them
+    to open wrong in the normal FITS workflow
+    """
+    if name.startswith("HEADER") or name.startswith("IMAGE"):
+        return True, name
+    name = name.replace("EXTENSION_", "")
+    name = name.replace("_TABLE", "")
+    return True, name
+
+def get_fn(data):
+    """
+    The PEPSSI DDRs have an extra space at the start of the SPREADSHEET
+    pointer's filename that causes 'file not found' errors.
+    """
+    from pathlib import Path
+    
+    label = Path(data.labelname)
+    return True, Path(label.parent, f"{label.stem}.csv")
+
