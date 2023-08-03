@@ -1,6 +1,14 @@
 import re
 
 
+def generic_header_hdu_name(name):
+    """
+    When the "HEADER" pointer is also a subset of another pointer name
+    (e.g. EXTENSION_HK_HEADER), the object returned by data["HEADER"] is
+    actually from the pointer with the longer name.
+    """
+    return True, 0
+
 def lorri_edr_hdu_name(name):
     """
     pointer names do not correspond to HDU names in some LORRI EDR FITS files.

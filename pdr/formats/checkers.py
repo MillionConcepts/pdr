@@ -421,6 +421,11 @@ def check_special_qube_band_storage(identifiers):
 
 def check_special_hdu_name(identifiers, name):
     if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "NEW HORIZONS"
+        and name == "HEADER"
+    ):
+        return formats.nh.generic_header_hdu_name(name)
+    if (
         identifiers["INSTRUMENT_ID"] == "LORRI"
         and identifiers["PRODUCT_TYPE"] == "EDR"
     ):
