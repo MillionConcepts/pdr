@@ -1,6 +1,7 @@
 import Levenshtein as lev
 import numpy as np
 from multidict import MultiDict
+import warnings
 
 
 def handle_fits_file(fn, name="", hdu_name=""):
@@ -19,7 +20,9 @@ def handle_fits_file(fn, name="", hdu_name=""):
     """
     from astropy.io import fits
 
-    hdulist = fits.open(fn)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", module="astropy.io.fits.card")
+        hdulist = fits.open(fn)
     try:
         hdr_val = handle_fits_header(hdulist, hdu_name)
     # astropy.io.fits does not call any verification on read. on 'output'
