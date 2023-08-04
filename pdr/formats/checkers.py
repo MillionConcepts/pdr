@@ -474,4 +474,10 @@ def check_special_hdu_name(identifiers, name):
         and name == "EXTENSION_IQVALS_HEADER"
     ):
         return formats.nh.rex_IQval_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "NEW HORIZONS"
+        and identifiers["INSTRUMENT_ID"] == "SDC"
+        and identifiers["PRODUCT_TYPE"] == "EDR"
+    ):
+        return formats.nh.sdc_edr_hdu_name(name)
     return False, None

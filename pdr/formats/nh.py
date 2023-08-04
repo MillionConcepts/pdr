@@ -121,4 +121,13 @@ def rex_IQval_hdu_name(name):
     """
     return True, "I AND Q VALUES HEADER"
 
-
+def sdc_edr_hdu_name(name):
+    """
+    The SDC "DATA" and "HK_0X00A" pointers were opening from the wrong HDU
+    headers.
+    """
+    if name == "EXTENSION_DATA_HEADER":
+        return True, "DATA_HEADER"
+    if name == "EXTENSION_HK_0X00A_HEADER":
+        return True, 5
+    return False, None
