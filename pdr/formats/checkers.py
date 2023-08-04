@@ -463,4 +463,15 @@ def check_special_hdu_name(identifiers, name):
         identifiers["INSTRUMENT_ID"] == "PEPSSI"
     ):
         return formats.nh.pepssi_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_ID"] == "REX"
+        and identifiers["PRODUCT_TYPE"] == "EDR"
+        and name == "EXTENSION_SSR_SH_HEADER_0"
+    ):
+        return formats.nh.rex_SSR_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_ID"] == "REX"
+        and name == "EXTENSION_IQVALS_HEADER"
+    ):
+        return formats.nh.rex_IQval_hdu_name(name)
     return False, None

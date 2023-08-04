@@ -91,8 +91,6 @@ def pepssi_hdu_name(name):
     some PEPSSI HDU names are subsets of other HDU names, which causes them
     to open wrong in the normal FITS workflow
     """
-    if name.startswith("HEADER") or name.startswith("IMAGE"):
-        return True, name
     name = name.replace("EXTENSION_", "")
     name = name.replace("_TABLE", "")
     return True, name
@@ -106,4 +104,21 @@ def get_fn(data):
     
     label = Path(data.labelname)
     return True, Path(label.parent, f"{label.stem}.csv")
+
+
+def rex_SSR_hdu_name(name):
+    """
+    Some of the REX EDRs have a duplicate EXTENSION_SSR_SH_HEADER pointer. The
+    first of the duplicate pointers should be EXTENSION_HK_0X096_HEADER. The
+    corresponding FITS EDU name is HOUSEKEEPING_0X096.
+    """
+    return True, "HOUSEKEEPING_0X096 HEADER"
+
+def rex_IQval_hdu_name(name):
+    """
+    The REX EXTENSION_IQVALS_HEADER pointers were opening as copies of the
+    EXTENSION_SSR_SH_HEADER.
+    """
+    return True, "I AND Q VALUES HEADER"
+
 
