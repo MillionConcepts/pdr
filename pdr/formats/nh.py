@@ -97,8 +97,8 @@ def pepssi_hdu_name(name):
 
 def get_fn(data):
     """
-    The PEPSSI DDRs have an extra space at the start of the SPREADSHEET
-    pointer's filename that causes 'file not found' errors.
+    The several DDR products have an extra space at the start of the
+    SPREADSHEET pointer's filename that causes 'file not found' errors.
     """
     from pathlib import Path
     
@@ -131,3 +131,56 @@ def sdc_edr_hdu_name(name):
     if name == "EXTENSION_HK_0X00A_HEADER":
         return True, 5
     return False, None
+
+def leisa_ddr_hdu_name(name):
+    """
+    LEISA derived FITS files do not have named HDUs.
+    """
+    if name == "QUBE": # skip pointers that are opening correctly
+        return False, None
+    name = name.replace("EXTENSION_", "")
+    if name.startswith("WAVELENGTH"):
+        return True, 1
+    if name.startswith("ERROR_ESIMATE"):
+        return True, 2
+    if name.startswith("GAIN"):
+        return True, 3
+    if name.startswith("FLATFIELD"):
+        return True, 4
+    raise NotImplementedError("don't recognize this LEISA pointer name")
+
+def alice_ddr_hdu_name(name):
+    """
+    The ALICE derived FITS products' repeated "SPECTRA" in their HDU names was
+    causing issues where pdr was opening the wrong HDU.
+    """
+    name = name.replace("EXTENSION_", "")
+    if name.startswith("SPECTRA"):
+        return True, 1
+    if name.startswith("UNC_SPECTRA"):
+        return True, 2
+    if name.startswith("REF_SPECTRA"):
+        return True, 3
+    if name.startswith("REF_UNCERTAINTY"):
+        return True, 4
+    if name.startswith("WAVELENGTH"):
+        return True, 5
+    if name.startswith("MET"):
+        return True, 6
+    if name.startswith("TAN_RADIUS"):
+        return True, 7
+    raise NotImplementedError("don't recognize this ALICE pointer name")
+
+def mvic_ddr_hdu_name(name):
+    """ Only the BLUE and CH4 pointers were opening previously. """
+    if name.startswith("PRIMARY"):
+        return True, 0
+    if name.startswith("BLUE"):
+        return True, 1
+    if name.startswith("RED"):
+        return True, 2
+    if name.startswith("NIR"):
+        return True, 3
+    if name.startswith("CH4"):
+        return True, 4
+    raise NotImplementedError("don't recognize this MVIC pointer name")

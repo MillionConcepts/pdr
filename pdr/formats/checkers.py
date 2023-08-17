@@ -401,7 +401,9 @@ def check_special_fn(
     if identifiers["INSTRUMENT_ID"] == "THEMIS":
         return formats.themis.check_gzip_fn(data, object_name)
     if (
-        identifiers["DATA_SET_ID"] == "NH-P-PEPSSI-4-PLASMA-V1.0"
+        identifiers["DATA_SET_ID"] in ["NH-P-PEPSSI-4-PLASMA-V1.0",
+                                       "NH-X-SWAP-5-DERIVED-SOLARWIND-V1.0",
+                                       "NH-P/PSA-LORRI/ALICE/REX-5-ATMOS-V1.0"]
         and object_name == "SPREADSHEET"
     ):
         return formats.nh.get_fn(data)
@@ -480,4 +482,19 @@ def check_special_hdu_name(identifiers, name):
         and identifiers["PRODUCT_TYPE"] == "EDR"
     ):
         return formats.nh.sdc_edr_hdu_name(name)
+    if (
+        identifiers["DATA_SET_ID"] == "NH-P/PSA-LEISA/MVIC-5-COMP-V1.0"
+        and identifiers["INSTRUMENT_ID"] == "LEISA"
+    ):
+        return formats.nh.leisa_ddr_hdu_name(name)
+    if (
+        identifiers["DATA_SET_ID"] == "NH-P/PSA-LORRI/ALICE/REX-5-ATMOS-V1.0"
+        and identifiers["INSTRUMENT_ID"] == "ALICE"
+    ):
+        return formats.nh.alice_ddr_hdu_name(name)
+    if (
+        identifiers["DATA_SET_ID"] == "NH-P/PSA-LEISA/MVIC-5-COMP-V1.0"
+        and identifiers["INSTRUMENT_ID"] == "MVIC"
+    ):
+        return formats.nh.mvic_ddr_hdu_name(name)
     return False, None
