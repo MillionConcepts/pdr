@@ -134,10 +134,12 @@ def sdc_edr_hdu_name(name):
 
 def leisa_ddr_hdu_name(name):
     """
-    LEISA derived FITS files do not have named HDUs.
+    Some LEISA derived FITS files repeat their HDU names.
     """
     if name == "QUBE": # skip pointers that are opening correctly
         return False, None
+    if name == "IMAGE":
+        return True, 0
     name = name.replace("EXTENSION_", "")
     if name.startswith("WAVELENGTH"):
         return True, 1
