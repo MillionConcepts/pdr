@@ -241,6 +241,16 @@ of their metadata appear to match other sources.
   - NLR EDRs, CDRs, and shape models
   - RSS spherical harmonic models, gravity acceleration maps, Eros landmarks table, and ODFs
   - XRS EDRs, L2 and L3 products
+- New Horizons
+  - ALICE EDRs
+  - LEISA EDRs and RDRs
+  - LORRI EDRs and RDRs
+  - MVIC EDRs and RDRs
+  - PEPSSI EDRs, RDRs, and resampled plasma fluxes
+  - REX EDRs and RDRs
+  - SDC EDRs and RDRs
+  - SWAP derived solar wind characteristics
+  - Pluto encounter derived products: surface composition maps, most atmosphere data, and geology/geophysical maps
 - Pioneer Venus Orbiter
   - OEFD HIRES data and 24 second averages
   - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and solar EUV data
@@ -308,6 +318,8 @@ of their metadata appear to match other sources.
   - MISCHA data
   - Stooke Shape Models
   - Balloon and lander EDRs and RDRs
+- Venera 15 and 16
+  - ROE derived electron density profiles
 - Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
@@ -413,6 +425,10 @@ of their metadata appear to match other sources.
     Python. Help is welcomed with either of these efforts! The MSL
     "calibrated" (RDR) files for these cameras are not compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
+- New Horizons
+  - ALICE RDRs (support planned)
+  - SWAP EDRs and RDRs (support planned)
+  - Pluto encounter derived data: ALICE stellar occultation data
 - Pioneer Venus Orbiter
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)

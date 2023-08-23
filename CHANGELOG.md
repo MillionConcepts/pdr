@@ -1,6 +1,7 @@
 ## [X.X.X] - 20XX-XX-XX
 ### Added
-
+- Support for most New Horizons datasets
+- Support for Venera 15 and 16 derived data
 ### Changed
 
 ### Fixed
