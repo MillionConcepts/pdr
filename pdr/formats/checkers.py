@@ -433,6 +433,11 @@ def check_special_hdu_name(identifiers, name):
     ):
         return formats.nh.lorri_edr_hdu_name(name)
     if (
+        identifiers["INSTRUMENT_ID"] == "ALICE"
+        and identifiers["PRODUCT_TYPE"] == "EDR"
+    ):
+        return formats.nh.alice_edr_hdu_name(name)
+    if (
         identifiers["INSTRUMENT_ID"] == "LEISA"
         and "-3-" in identifiers["DATA_SET_ID"]
     ):

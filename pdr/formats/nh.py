@@ -17,6 +17,17 @@ def lorri_edr_hdu_name(name):
         r"EXTENSION_ENCODED_FIRST34(_IMAGE)?", "IMAGE HEADER", name
     )
 
+def alice_edr_hdu_name(name):
+    """
+    Some pointers do not match their HDU names, and pointers ending in '_ARRAY'
+    were opening as a copy of their primary "IMAGE" pointer.
+    """
+    if "HK" in name:
+        return True, re.sub(r"EXTENSION_HK(_TABLE)?", "HOUSEKEEPING", name)
+    name = name.replace("EXTENSION_", "")
+    name = name.replace("_ARRAY", "")
+    name = name.replace("_IMAGE", "")
+    return True, name
 
 def leisa_raw_hdu_name(name):
     """
