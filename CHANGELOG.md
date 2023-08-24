@@ -24,16 +24,23 @@
 - Support for several Vega datasets
 - Support for FITS tables
 - Documentation on behavior of FITS files (in README)
+
 ### Changed
 - Tables/Series objects will now apply label provided offset and scaling factors. 
   This has not yet been implemented for ARRAY objects or BIT COLUMNS
 - The license has been updated to reflect the additional license from the vendoring of 
   vax.py
+
 ### Fixed
 - Tables with nested containers now read correctly; closes [issue 50](https://github.com/MillionConcepts/pdr/issues/50))
 - ^STRUCTURE pointers inside a COLUMN/FIELD will now load in the relevant format file 
+
 ### Removed
 - No longer get a UserWarning when a data type has spaces in bit column data type
+
+## [1.0.1] - 2023-06-20
+### Fixed
+- re-enabled the ability to import `pdr.Data` by adding it back to `__init__.py`
 
 ## [1.0.0] - 2023-06-03
 This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 

@@ -8,6 +8,9 @@ of "primary observational data" product currently archived in the PDS
 
 If the software fails while attempting to read from datasets that we have listed as supported, please submit an issue with a link to the file and information about the error (if applicable). There might also be datasets that work but are not listed. We would like to hear about those too. If a dataset is not yet supported that you would like us to consider prioritizing, [please fill out this request form](https://docs.google.com/forms/d/1JHyMDzC9LlXY4MOMcHqV5fbseSB096_PsLshAMqMWBw/viewform).
 
+### Attribution
+If you use _pdr_ in your work, please cite us using our Zenodo DOI: [![DOI](https://zenodo.org/badge/266449940.svg)](https://zenodo.org/badge/latestdoi/266449940)
+
 ### Installation
 _pdr_ is now on `conda` and `pip`. We recommend (and only officially support) installation into a `conda` environment.
 You can do this like so: 
@@ -36,7 +39,7 @@ and the added functionality they support are listed below:
 
 (You can check out our example Notebook on Binder for a 
 quick interactive demo of functionality: 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/master))
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/main))
 
 Just open and python shell and run `import pdr` and then `pdr.read(filename)`, 
 where _filename_ is the full path to a data file _or_ a metadata / label file 
