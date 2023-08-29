@@ -124,5 +124,5 @@ def file_extension_to_loader(fn: str) -> Callable:
 # archived in the same place as the data products and add little, if any,
 # context to individual products
 
-objects_to_ignore = ["DESCRIPTION", "DATA_SET_MAP_PROJECT.*", ".*_DESC"]
+objects_to_ignore = ["DATA_SET_MAP_PROJECT.*", ".*_DESC$", ".*DESCRIPTION$"]
 OBJECTS_IGNORED_BY_DEFAULT = re.compile("|".join(objects_to_ignore))
