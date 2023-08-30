@@ -575,7 +575,7 @@ class Data:
 
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
             fdt = browse_kwargs.get("float_dtype")
-            if self[obj].__class__.__name__ == "ndarray":
+            if self[obj].__class__.__name__ == "ndarray" and len(self[obj].shape) != 1:
                 if scaled == "both":
                     dump_it(
                         self.get_scaled(obj, float_dtype=fdt),
