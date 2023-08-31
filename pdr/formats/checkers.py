@@ -422,6 +422,11 @@ def check_special_qube_band_storage(identifiers):
 
 
 def check_special_hdu_name(identifiers, name):
+    if (
+        identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
+        and 'FC2' in identifiers['DATA_SET_ID']
+    ):
+        return formats.dawn.dawn_hdu_name(name)
     # if (
     #     identifiers["INSTRUMENT_HOST_NAME"] == "NEW HORIZONS"
     #     and name == "HEADER"

@@ -1,6 +1,7 @@
 from .checkers import *
 import pdr.formats.cassini as cassini
 import pdr.formats.clementine as clementine
+import pdr.formats.dawn as dawn
 import pdr.formats.diviner as diviner
 import pdr.formats.galileo as galileo
 import pdr.formats.juno as juno
