@@ -248,9 +248,7 @@ def get_target(data: PDRLike, name: str):
     return target
 
 
-def data_start_byte(
-    identifiers: dict, block: Mapping, target, fn
-) -> int:
+def data_start_byte(identifiers: dict, block: Mapping, target, fn) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
     """
@@ -515,7 +513,11 @@ def get_fits_id(data, identifiers, fn, name):
     # annoying to have to match all files in the label here
     # but there is not really another reliable way to do it
     name = name.lower()
-    matches = [k for k in data.keys() if (data._target_path(k) == fn)]
+    matches = [
+        k for k in data.keys()
+        # 'in data.pointers' to avoid checking our own generated header keys
+        if (data._target_path(k) == fn) and (pointerize(k) in data.pointers)
+    ]
     start_bytes = {
         m: data_start_byte(
             identifiers, get_block(data, m), get_target(data, m), fn
