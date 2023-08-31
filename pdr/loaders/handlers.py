@@ -30,16 +30,11 @@ def handle_fits_file(fn, name="", hdu_id=""):
     if isinstance(hdu_id, tuple):
         hdu_id, inferred_hdu_count = hdu_id
         if len(hdulist) != inferred_hdu_count:
-            # 'stub' primary headers may not be mentioned in the label
-            if not (
-                (len(hdulist) == inferred_hdu_count + 1)
-                and hdulist[0].shape == ()
-            ):
-                warnings.warn(
-                    "The number of HDUs inferred from the PDS label differs "
-                    "from the number of HDUs in the FITS file. Indexing may "
-                    "be off."
-                )
+            warnings.warn(
+                "The number of HDUs inferred from the PDS label differs "
+                "from the number of HDUs in the FITS file. Indexing may "
+                "be off."
+            )
     try:
         hdr_val = handle_fits_header(hdulist, hdu_id)
     # astropy.io.fits does not call any verification on read. on 'output'
