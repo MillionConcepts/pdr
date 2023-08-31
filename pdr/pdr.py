@@ -304,19 +304,21 @@ class Data:
             )
         return False, None
 
-    def _target_path(self, object_name, raise_missing=False):
+    def _target_path(self, object_name, cached=True, raise_missing=False):
         """
         find the path on the local filesystem to the file containing a named
-        data object.
+        data object. autopopulate the file_mapping
         """
-        if isinstance(object_name, set):
-            file_list = []
-            for obj in object_name:
-                file = self._target_path(obj)
-                file_list = file_list + [file]
-            return file_list
+        if cached is True and (self.file_mapping.get(object_name) is not None):
+            return self.file_mapping[object_name]
         try:
-            return check_cases(self._object_to_filename(object_name))
+            if isinstance(object_name, set):
+                file_list = [self._target_path(obj) for obj in object_name]
+                self.file_mapping[object_name] = file_list
+                return file_list
+            path = check_cases(self._object_to_filename(object_name))
+            self.file_mapping[object_name] = path
+            return path
         except FileNotFoundError:
             if raise_missing is True:
                 raise
@@ -326,6 +328,8 @@ class Data:
         return tuple(filter(lambda k: k not in dir(self), self.index))
 
     def load(self, name, reload=False, **load_kwargs):
+        # prelude: don't try to load nonexistent keys; facilitate
+        # load-everything behavior; don't reload by default
         if (name != "all") and (name not in self.index):
             raise KeyError(f"{name} not found in index: {self.index}.")
         if name == "all":
@@ -337,17 +341,17 @@ class Data:
             )
         if self.standard == "PDS4":
             return self._load_pds4(name)
-        if self.file_mapping.get(name) is None:
-            target = self._target_path(name)
-            if target is None:
-                return self._file_not_found(name)
-            self.file_mapping[name] = target
+        target = self._target_path(name)
+        if target is None:
+            return self._file_not_found(name)
         try:
             obj = self.load_from_pointer(name, **load_kwargs)
             if obj is None:
                 return
             if not isinstance(obj, dict):
-                raise TypeError(f"loader returned non-dict object of type ({type(obj)}")
+                raise TypeError(
+                    f"loader returned non-dict object of type ({type(obj)}"
+                )
             for k, v in obj.items():
                 if v is not None:
                     setattr(self, k, v)

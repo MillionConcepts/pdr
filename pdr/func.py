@@ -9,11 +9,15 @@ from dustgoggles.tracker import TrivialTracker
 
 
 def get_argnames(func: Callable) -> set[str]:
-    """reads the names of the arguments the function will accept"""
+    """return names of all parameters of a function"""
     return set(signature(func).parameters.keys())
 
 
 def not_optional(param: Parameter):
+    """
+    is this Parameter flagged as not required according to the conventions of
+    this module?
+    """
     if "Optional" in str(param):
         return False
     if param.name in ("_", "__"):
@@ -22,15 +26,24 @@ def not_optional(param: Parameter):
 
 
 def get_non_optional_argnames(func: Callable) -> set[str]:
-    """reads the names of the arguments the function will accept, filters out any
-    arguments set to :Optional in the signature"""
+    """
+    determine names of arguments a function must receive by filtering out
+    arguments explicitly annotated as Optional or named "_" or "__". Note that
+    "nonoptional" here describes a _convention of this module_, not a Python
+    typing requirement.
+    """
     sig_dict = valfilter(not_optional, dict(signature(func).parameters))
     return set(sig_dict.keys())
 
 
+# noinspection PyTypeChecker
 def get_all_argnames(*funcs: Callable, nonoptional=False) -> set[str]:
-    """reads the names of the arguments the function will accept, can filter out
-    :Optional arguments by setting nonoptional=True"""
+    """
+    return all parameter names found in the signatures of funcs. if nonoptional
+    is True, don't include parameters marked as optional according to the
+    conventions of this module (explicitly type-annotated as Optional or named
+    _ or __)
+    """
     if nonoptional is True:
         return reduce(set.union, map(get_non_optional_argnames, funcs))
     return reduce(set.union, map(get_argnames, funcs))
@@ -39,28 +52,40 @@ def get_all_argnames(*funcs: Callable, nonoptional=False) -> set[str]:
 def filterkwargs(
     func: Callable, kwargdict: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """throws out all the keys of the dictionary that are not an argument name of the
-    function"""
+    """
+    return a copy of kwargdict, but discarding all keys that are not argument
+    names of func
+    """
     return keyfilter(lambda k: k in get_argnames(func), kwargdict)
 
 
 def call_kwargfiltered(func: Callable, *args, **kwargs) -> Any:
-    """can use this to call a function with keyword arguments it doesn't actually
-    accept (and it will throw out those keywords instead of creating an error)
+    """
+    call a function, filtering out any keyword arguments it doesn't actually
+    accept. intended to help unify signatures to call functions in a
+    dispatched or sequenced fashion.
     """
     # TODO: Maybe rewrite as decorator
     return func(*args, **filterkwargs(func, kwargs))
 
 
-def sigparams(func):
-    """gives you the parameters in a specific interface that the inspect module likes for
-    a function's signature"""
+def sigparams(func: Callable) -> set[Parameter]:
+    """
+    examine a function and extract a set of inspect.Parameter objects from its
+    signature
+    """
     return set(signature(func).parameters.values())
 
 
 # noinspection PyProtectedMember
-def sig_union(*funcs):
-    """smushes the parameters from multiple function signatures together"""
+def sig_union(*funcs: Callable) -> Signature:
+    """
+    examine multiple functions and produce a Signature object describing the
+    union of the parameters of all functions  -- i.e., the expected
+    signature of a function that routes all its arguments to the appropriate
+    elements of funcs and calls them in a dispatched, sequenced, or parallel
+    fashion, rather than composed)
+    """
     params = reduce(set.union, map(sigparams, funcs))
     outparams = set(p for p in params)
     for p1, p2 in combinations(params, r=2):
@@ -93,9 +118,12 @@ def specialize(
     check: Callable[[Any], tuple[bool, Any]],
     error: Optional[Callable[[Exception], str]] = None,
     tracker: TrivialTracker = TrivialTracker(),
-):
-    """replaces the common pdr special checks by wrapping a special and non-special
-    function together"""
+) -> Callable:
+    """
+    function decorator that permits dispatch of calls to func to an arbitrary
+    set of special-case functions defined in check.
+    replaces the pre-1.0 pdr special case checks.
+    """
 
     @wraps(func)
     def preempt_if_special(*args, **kwargs):
@@ -125,9 +153,15 @@ def softquery(
     querydict: Mapping[str, Callable],
     kwargdict: dict[str, Any],
 ) -> dict[str, Any]:
-    """accumulating pipeline of information gathering. later functions in the pipeline
-    can use information gathered by earlier functions as long as the keys correspond to
-    the argument names in the later functions"""
+    """
+    implements a pipeline that accumulates 'information' -- more literally a
+    dictionary of named parameters (kwargdict). querydict describes the
+    sequence of functions to call and the parameter names they will populate
+    in kwargdict. a function in querydict may use information gathered by
+    preceding functions or passed explicitly to softquery in kwargdict,
+    so long as the keys of kwargdict / querydict correspond to the parameter
+    names of that function.
+    """
     # explanatory variables
     have_args = kwargdict.keys()
     require_args = get_all_argnames(
