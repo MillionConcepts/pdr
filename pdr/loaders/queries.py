@@ -5,6 +5,7 @@ import warnings
 from _operator import mul
 from functools import reduce
 from itertools import product, chain
+from math import ceil
 from pathlib import Path
 from types import MappingProxyType
 from typing import Sequence, Mapping, TYPE_CHECKING
@@ -512,10 +513,10 @@ def get_identifiers(data):
 def get_fits_id(data, identifiers, fn, name):
     # annoying to have to match all files in the label here
     # but there is not really another reliable way to do it
-    matches = [
-        k for k in data.keys()
-        if (data._target_path(k) == fn) and not k.lower().endswith('header')
-    ]
+    name = name.lower()
+    matches = [k for k in data.keys() if (data._target_path(k) == fn)]
+    if not name.endswith('header'):
+        matches = [m for m in matches if not m.lower().endswith('header')]
     start_bytes = {
         m: data_start_byte(
             identifiers, get_block(data, m), get_target(data, m), fn
@@ -523,7 +524,12 @@ def get_fits_id(data, identifiers, fn, name):
         for m in matches
     }
     ordered = sorted(matches, key=lambda m: start_bytes[m])
-    return ordered.index(name), len(ordered)
+    ordered = tuple(map(str.lower, ordered))
+    ix, length = ordered.index(name), len(ordered)
+    if name.endswith('header'):
+        noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
+        ix, length = noheader.index(ordered[ix + 1]), len(noheader)
+    return ix, length
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
