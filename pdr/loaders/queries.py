@@ -254,7 +254,7 @@ def data_start_byte(
     """
     Determine the first byte of the data in a file from its pointer.
     """
-    if "RECORD_BYTES" in block.keys():
+    if (block is not None) and ("RECORD_BYTES" in block.keys()):
         record_bytes = block["RECORD_BYTES"]
     else:
         record_bytes = identifiers["RECORD_BYTES"]
@@ -516,22 +516,21 @@ def get_fits_id(data, identifiers, fn, name):
     # but there is not really another reliable way to do it
     name = name.lower()
     matches = [k for k in data.keys() if (data._target_path(k) == fn)]
-    noheader = [m for m in matches if not m.lower().endswith('header')]
     start_bytes = {
         m: data_start_byte(
             identifiers, get_block(data, m), get_target(data, m), fn
         )
         for m in matches
     }
+    ordered = sorted(matches, key=lambda m: start_bytes[m])
+    ordered = tuple(map(str.lower, ordered))
+    noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
     # this condition typically implies a "stub" primary hdu whose header but
     # not body is mentioned in the PDS label
     has_stub_primary = (
         (len(noheader) != len(matches) / 2)
         and (list(start_bytes.keys())[0] not in noheader)
     )
-    ordered = sorted(matches, key=lambda m: start_bytes[m])
-    ordered = tuple(map(str.lower, ordered))
-    noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
     if not name.endswith('header'):
         ix, length = noheader.index(name), len(noheader)
         if has_stub_primary:
