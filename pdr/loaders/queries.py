@@ -509,13 +509,21 @@ def get_identifiers(data):
     return data.identifiers
 
 
-def get_fits_name(name):
-    """
-    just a target for specialize(check_special_fits_name) to maintain
-    signatures
-    TODO: consider moving the HDU extension identifying stuff in here
-    """
-    return name
+def get_fits_id(data, identifiers, fn, name):
+    # annoying to have to match all files in the label here
+    # but there is not really another reliable way to do it
+    matches = [
+        k for k in data.keys()
+        if (data._target_path(k) == fn) and not k.lower().endswith('header')
+    ]
+    start_bytes = {
+        m: data_start_byte(
+            identifiers, get_block(data, m), get_target(data, m), fn
+        )
+        for m in matches
+    }
+    ordered = sorted(matches, key=lambda m: start_bytes[m])
+    return ordered.index(name), len(ordered)
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
