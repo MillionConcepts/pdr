@@ -53,8 +53,8 @@ def filterkwargs(
     func: Callable, kwargdict: Mapping[str, Any]
 ) -> dict[str, Any]:
     """
-    return a copy of kwargdict, but discarding all keys that are not argument
-    names of func
+    return a copy of kwargdict, discarding all keys that are not argument
+    names of func.
     """
     return keyfilter(lambda k: k in get_argnames(func), kwargdict)
 
@@ -63,7 +63,8 @@ def call_kwargfiltered(func: Callable, *args, **kwargs) -> Any:
     """
     call a function, filtering out any keyword arguments it doesn't actually
     accept. intended to help unify signatures to call functions in a
-    dispatched or sequenced fashion.
+    dispatched or sequenced fashion. NOTE: will not fix attempts to pass
+    positional-only arguments by name.
     """
     # TODO: Maybe rewrite as decorator
     return func(*args, **filterkwargs(func, kwargs))
