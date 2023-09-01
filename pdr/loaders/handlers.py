@@ -62,9 +62,19 @@ def handle_fits_file(fn, name="", hdu_id=""):
     body = hdu.data
     # i.e., it's a FITS table, binary or ascii
     if isinstance(body, fits.fitsrec.FITS_rec):
+        import pandas as pd
         from pdr.pd_utils import structured_array_to_df
 
-        body = structured_array_to_df(np.asarray(body))
+        try:
+            body = pd.DataFrame.from_records(body)
+        except ValueError:
+            # nested arrays, generally -- we don't do this by default because
+            # it requires us to 'reassemble' the array twice, so is inefficient
+            body = structured_array_to_df(
+                np.rec.fromarrays(
+                    [body[k] for k in body.dtype.names], dtype=body.dtype
+                )
+            )
     return output | {name: body}
 
 
