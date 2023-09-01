@@ -1,3 +1,6 @@
+import re
+
+
 def sdc_edr_hdu_name(name):
     """
     pointer names do not correspond to HDU names in some SDC raw FITS files,
@@ -6,17 +9,85 @@ def sdc_edr_hdu_name(name):
     """
     return {
         "HEADER": 0,
-        "EXTENSION_DATA_HEADER": 1,
-        "EXTENSION_DATA_TABLE": 1,
-        "EXTENSION_HK_SDC_HEADER": 2,
-        "EXTENSION_HK_SDC_TABLE": 2,
-        "EXTENSION_HK_0X004_HEADER": 3,
-        "EXTENSION_HK_0X004_TABLE": 3,
-        "EXTENSION_HK_0X00D_HEADER": 4,
-        "EXTENSION_HK_0X00D_TABLE": 4,
-        "EXTENSION_HK_0X00A_HEADER": 5,
-        "EXTENSION_HK_0X00A_TABLE": 5,
-        "EXTENSION_THRUSTERS_HEADER": 6,
-        "EXTENSION_THRUSTERS_TABLE": 6
-    }[name]
+        "EXTENSION_DATA": 1,
+        "EXTENSION_HK_SDC": 2,
+        "EXTENSION_HK_0X004": 3,
+        "EXTENSION_HK_0X00D": 4,
+        "EXTENSION_HK_0X00A": 5,
+        "EXTENSION_THRUSTERS": 6,
+    }[re.sub("(_HEADER|_TABLE)", "", name)]
 
+
+def rex_hdu_name(name):
+    """same issue."""
+    return {
+        "HEADER": 0,
+        "ARRAY": 0,
+        "EXTENSION_IQVALS": 1,
+        "EXTENSION_RAD_TIME_TAGS": 2,
+        "EXTENSION_HK_0X004": 3,
+        "EXTENSION_HK_0X016": 4,
+        "EXTENSION_HK_0X084": 5,
+        "EXTENSION_HK_0X096": 6,
+        "EXTENSION_THRUSTERS": 7,
+        "EXTENSION_SSR_SH": 8
+    }[re.sub(r"(_HEADER|_TABLE|_IMAGE|_ARRAY)(_\d)?", "", name)]
+
+
+def pepssi_edr_hdu_name(name):
+    """same issue."""
+    return {
+        "HEADER": 0,
+        "EXTENSION_N1": 1,
+        "EXTENSION_N2": 2,
+        "EXTENSION_N2_STATUS": 3,
+        "EXTENSION_PHA_ELECTRON": 4,
+        "EXTENSION_PHA_LOW_ION": 5,
+        "EXTENSION_PHA_HIGH_ION": 6
+    }[re.sub(r"(_HEADER|_TABLE)(_\d)?", "", name)]
+
+
+def pepssi_pluto_rdr_hdu_name(name):
+    """things are different on pluto."""
+    return {
+        "HEADER": 0,
+        "IMAGE": 0,
+        "EXTENSION_SPEC_PROTONS": 1,
+        "EXTENSION_SPEC_HELIUM": 2,
+        "EXTENSION_SPEC_HEAVIES": 3,
+        "EXTENSION_SPEC_ELECTRONS": 4,
+        "EXTENSION_SPEC_LOWION": 5,
+        "EXTENSION_FLUX": 6,
+        "EXTENSION_FLUXN1A": 7,
+        "EXTENSION_FLUXN1B": 8,
+        "EXTENSION_PHA_LOW_ION": 9,
+        "EXTENSION_PHA_HIGH_ION": 10,
+    }[re.sub(r"(_HEADER|_TABLE|_IMAGE|_ARRAY)(_\d)?", "", name)]
+
+def pepssi_rdr_hdu_name(name):
+    """same issue."""
+    return {
+        "HEADER": 0,
+        "IMAGE": 0,
+        "EXTENSION_SPEC_PROTONS": 1,
+        "EXTENSION_SPEC_HELIUM": 2,
+        "EXTENSION_SPEC_HEAVIES": 3,
+        "EXTENSION_SPEC_ELECTRONS": 4,
+        "EXTENSION_SPEC_LOWION": 5,
+        "EXTENSION_FLUX": 6,
+        "EXTENSION_FLUXN1A": 7,
+        "EXTENSION_FLUXN1B": 8,
+        "EXTENSION_PHA_ELECTRON": 9,
+        "EXTENSION_PHA_LOW_ION": 10,
+        "EXTENSION_PHA_HIGH_ION": 11,
+    }[re.sub(r"(_HEADER|_TABLE|_IMAGE|_ARRAY)(_\d)?", "", name)]
+
+def get_fn(data):
+    """
+    The PEPSSI DDRs have an extra space at the start of the SPREADSHEET
+    pointer's filename that causes 'file not found' errors.
+    """
+    from pathlib import Path
+
+    label = Path(data.labelname)
+    return True, Path(label.parent, f"{label.stem}.csv")

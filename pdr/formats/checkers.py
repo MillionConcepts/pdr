@@ -435,4 +435,17 @@ def check_special_hdu_name(identifiers, name):
         and identifiers['PRODUCT_TYPE'] == 'EDR'
     ):
         return True, formats.nh.sdc_edr_hdu_name(name)
+    if re.match(r"NH-\w-REX-[23]", identifiers['DATA_SET_ID']):
+        return True, formats.nh.rex_hdu_name(name)
+    if identifiers['INSTRUMENT_ID'] == 'PEPSSI':
+        if re.search(
+            r"(JUPITER|LAUNCH|CRUISE)", identifiers['DATA_SET_ID']
+        ):
+            return False, None  # these seem ok
+        elif identifiers['PRODUCT_TYPE'] == 'EDR':
+            return True, formats.nh.pepssi_edr_hdu_name(name)
+        elif "PLUTO" in identifiers['DATA_SET_ID']:
+            return True, formats.nh.pepssi_pluto_rdr_hdu_name(name)
+        else:
+            return True, formats.nh.pepssi_rdr_hdu_name(name)
     return False, None
