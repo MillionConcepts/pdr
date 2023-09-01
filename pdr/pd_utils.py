@@ -106,6 +106,7 @@ def compute_offsets(fmtdef):
 
 def _fill_empty_byte_rows(fmtdef):
     nobytes = fmtdef["BYTES"].isna()
+    #print(fmtdef.loc[nobytes])
     with warnings.catch_warnings():
         # we do not care that loc will set items inplace later. at all.
         warnings.simplefilter("ignore", category=FutureWarning)

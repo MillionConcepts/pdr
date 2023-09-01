@@ -5,7 +5,8 @@ from io import StringIO
 from pandas.errors import ParserError
 
 from pdr.loaders._helpers import check_explicit_delimiter
-from pdr.loaders.queries import get_array_num_items, check_array_for_subobject
+from pdr.loaders.queries import get_array_num_items, check_array_for_subobject, \
+    parse_array_structure, parse_table_structure, read_table_structure
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
@@ -13,23 +14,28 @@ from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals
 from pdr.utils import decompress, head_file
 
 
-def read_array(fn, block, start_byte):
+def read_array(fn, block, start_byte, name, data, identifiers):
     """
     Read an array object from this product and return it as a numpy array.
     """
-    # TODO: Maybe add block[AXES] as names? Might have to switch to pandas
+    # TODO: Maybe add block[AXES_NAMES] as names? Might have to switch to pandas
     #  or a flattened structured array or something weirder
     # TODO: Include offset calculations once an example with them is found
-    obj = check_array_for_subobject(block)
+    has_sub = check_array_for_subobject(block)
+    if has_sub:
+        dt = parse_array_structure(name, block, fn, data, identifiers)
+    else:
+        dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
+    count = get_array_num_items(block)
     if block.get("INTERCHANGE_FORMAT") == "BINARY":
         with decompress(fn) as f:
-            binary = np_from_buffered_io(
+            array = np_from_buffered_io(
                 f,
-                dtype=sample_types(obj["DATA_TYPE"], obj["BYTES"], True),
-                count=get_array_num_items(block),
+                dtype=dt,
+                count=count,
                 offset=start_byte,
             )
-        return binary.reshape(block["AXIS_ITEMS"])
+        return array.reshape(block["AXIS_ITEMS"])
     # assume objects without the optional interchange_format key are ascii
     with open(fn) as stream:
         text = stream.read()
@@ -38,9 +44,9 @@ def read_array(fn, block, start_byte):
     except (TypeError, IndexError, ValueError):
         text = re.split(r"\s+", text)
     array = np.asarray(text).reshape(block["AXIS_ITEMS"])
-    if "DATA_TYPE" in obj.keys():
+    if "DATA_TYPE" in block.keys():
         array = array.astype(
-            sample_types(obj["DATA_TYPE"], obj["BYTES"], True)
+            sample_types(block["DATA_TYPE"], block["BYTES"], True)
         )
     return array
 

@@ -218,8 +218,8 @@ def check_array_for_subobject(block):
             f"{len(subobj)})"
         )
     if len(subobj) < 1:
-        return block
-    return block[subobj[0]]
+        return False
+    return True
 
 
 def get_array_num_items(block):
@@ -396,6 +396,13 @@ def read_table_structure(block, name, fn, data, identifiers):
     return reindex_df_values(fmtdef)
 
 
+def parse_array_structure(name, block, fn, data, identifiers):
+    fmtdef = read_table_structure(block, name, fn, data, identifiers)
+    print(fmtdef)
+    from pdr.pd_utils import insert_sample_types_into_df
+    return insert_sample_types_into_df(fmtdef, identifiers)
+
+
 def read_format_block(
     block, object_name, fn, data, identifiers, within_container=False
 ):
@@ -406,7 +413,10 @@ def read_format_block(
         format_block = inject_format_files(format_block, object_name, fn, data)
     fields, needs_placeholder, add_placeholder = [], False, False
     for item_type, definition in format_block:
-        if item_type in ("COLUMN", "FIELD"):
+        if item_type == "ARRAY":
+            if not check_array_for_subobject(definition):
+                item_type = "PRIMITIVE_ARRAY"
+        if item_type in ("COLUMN", "FIELD", "ELEMENT", "PRIMITIVE_ARRAY"):
             if "^STRUCTURE" in definition:
                 definition_l = list(definition.items())
                 definition_l = inject_format_files(definition_l, object_name, fn, data)
@@ -415,15 +425,21 @@ def read_format_block(
                     definition.add(key, val)
             obj = dict(definition) | {"BLOCK_NAME": block_name}
             repeat_count = definition.get("ITEMS")
+            if "BIT_ELEMENT" in obj.keys():
+                raise NotImplementedError("BIT_ELEMENTS in ARRAYS not yet supported")
             obj = add_bit_column_info(obj, definition, identifiers)
             add_placeholder = False
-        elif item_type == "CONTAINER":
+        elif item_type in ("CONTAINER", "COLLECTION", "ARRAY"):
             if within_container is True and len(fields) == 0:
                 needs_placeholder = True
             obj, add_placeholder = read_format_block(
                 definition, object_name, fn, data, identifiers, True
             )
-            repeat_count = definition.get("REPETITIONS")
+            if item_type == "ARRAY":
+                repeat_count = get_array_num_items(definition)
+                add_placeholder = True
+            else:
+                repeat_count = definition.get("REPETITIONS")
         else:
             continue
         if add_placeholder is True:
@@ -434,8 +450,8 @@ def read_format_block(
                 'BYTES': 0,
                 'BLOCK_NAME': block_name
             }
-            # dblock_name = None if len(fields) == 0 else fields[-1]['BLOCK_NAME']
-            # dummy_column['BLOCK_NAME'] = dblock_name
+            if definition.get("AXIS_ITEMS"):
+                dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
             fields.append(dummy_column)
         # containers can have REPETITIONS,
         # and some "columns" contain a lot of columns (ITEMS)
@@ -448,7 +464,6 @@ def read_format_block(
     if object_name == "CONTAINER":
         if (repeat_count := block.get("REPETITIONS")) is not None:
             fields = list(chain(*[fields for _ in range(repeat_count)]))
-
     return fields, needs_placeholder
 
 
