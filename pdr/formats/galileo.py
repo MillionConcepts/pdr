@@ -6,7 +6,7 @@ import pdr.loaders.queries
 def mdis_hdu_name(name):
     """the MDIS cal labels do not include file size information."""
     if name in ("IMAGE", "HEADER"):
-        return True, 0
+        return 0
     raise NotImplementedError("Unknown MDIS extension name")
 
 

@@ -5,7 +5,7 @@ class DoesNotExistError(Exception):
 def dawn_hdu_name(name):
     """filter out spurious HISTORY pointer"""
     if name in ("IMAGE", "HEADER"):
-        return True, 0
+        return 0
     elif name == 'HISTORY':
         raise DoesNotExistError(
             "Dawn FITS HISTORY extensions do not actually exist."

@@ -426,7 +426,13 @@ def check_special_hdu_name(identifiers, name):
         identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
         and 'FC2' in identifiers['DATA_SET_ID']
     ):
-        return formats.dawn.dawn_hdu_name(name)
+        return True, formats.dawn.dawn_hdu_name(name)
     if identifiers['DATA_SET_ID'].startswith('MSGR-H-MDIS-6-CAL'):
-        return formats.galileo.mdis_hdu_name(name)
+        return True, formats.galileo.mdis_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_NAME"] == "STUDENT DUST COUNTER"
+        and '-SDC-' in identifiers["DATA_SET_ID"]
+        and identifiers['PRODUCT_TYPE'] == 'EDR'
+    ):
+        return True, formats.nh.sdc_edr_hdu_name(name)
     return False, None
