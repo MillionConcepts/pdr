@@ -22,12 +22,12 @@ def read_array(fn, block, start_byte, name, data, identifiers):
     #  or a flattened structured array or something weirder
     # TODO: Include offset calculations once an example with them is found
     has_sub = check_array_for_subobject(block)
-    if has_sub:
-        dt = parse_array_structure(name, block, fn, data, identifiers)
-    else:
-        dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
-    count = get_array_num_items(block)
     if block.get("INTERCHANGE_FORMAT") == "BINARY":
+        if has_sub:
+            _, dt = parse_array_structure(name, block, fn, data, identifiers)
+        else:
+            dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
+        count = get_array_num_items(block)
         with decompress(fn) as f:
             array = np_from_buffered_io(
                 f,

@@ -398,7 +398,9 @@ def read_table_structure(block, name, fn, data, identifiers):
 
 def parse_array_structure(name, block, fn, data, identifiers):
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
-    print(fmtdef)
+    # Sometimes arrays define start_byte, sometimes their elements do
+    fmtdef['START_BYTE'].fillna(1, inplace=True)
+
     from pdr.pd_utils import insert_sample_types_into_df
     return insert_sample_types_into_df(fmtdef, identifiers)
 
@@ -436,7 +438,6 @@ def read_format_block(
                 definition, object_name, fn, data, identifiers, True
             )
             if item_type == "ARRAY":
-                repeat_count = get_array_num_items(definition)
                 add_placeholder = True
             else:
                 repeat_count = definition.get("REPETITIONS")
@@ -459,7 +460,11 @@ def read_format_block(
         if repeat_count is not None:
             fields = append_repeated_object(obj, fields, repeat_count)
         else:
-            fields.append(obj)
+            if type(obj) == list and object_name in ("COLLECTION", "ARRAY"):
+                # list obj should only happen in COLLECTIONs and ARRAYs; extra guard
+                fields.extend(obj)
+            else:
+                fields.append(obj)
     # semi-legal top-level containers not wrapped in other objects
     if object_name == "CONTAINER":
         if (repeat_count := block.get("REPETITIONS")) is not None:
