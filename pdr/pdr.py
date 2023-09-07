@@ -208,6 +208,8 @@ class Data:
         self.file_mapping = {}
         # known special constants per data object
         self.specials = {}
+        # dict to flag images loaded prescaled (currently only from FITS files)
+        self._scaleflags = {}
         # where can we look for files containing data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + listify(search_paths)
@@ -217,6 +219,9 @@ class Data:
         # cache for hdulist, for primary FITS files -- this is primarily
         # an optimization for compressed files
         self._hdulist = None
+        # dict of [str, int] for cases in which we need to reindex duplicate
+        # HDU names in primary FITS files
+        self._hdumap = None
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
             self.filename, label_fn, skip_existence_check
@@ -418,9 +423,15 @@ class Data:
     def _load_primary_fits(self, object_name):
         from pdr.loaders.handlers import handle_fits_file
 
-        return handle_fits_file(
-            self.filename, object_name, object_name, self._hdulist
+        obj = handle_fits_file(
+            self.filename,
+            object_name,
+            self._hdumap[object_name],
+            self._hdulist
         )
+        if obj.__class__.__name__ == "ndarray":
+            self._scaleflags[object_name] = True
+        return obj
 
     def _init_primary_format(self):
         if self.standard == "FITS":
@@ -467,10 +478,10 @@ class Data:
         if self.standard == "FITS":
             from pdr.loaders.handlers import unpack_fits_headers
 
-            return Metadata(
-                unpack_fits_headers(self.filename, hdulist=self._hdulist),
-                standard="FITS"
+            mapping, params, self._hdumap = unpack_fits_headers(
+                self.filename, hdulist=self._hdulist
             )
+            return Metadata((mapping, params), standard="FITS")
         if self.standard == "PDS4":
             return Metadata(
                 reformat_pds4_tools_label(self.label), standard="PDS4"
@@ -495,9 +506,15 @@ class Data:
         self.tracker.set_metadata(
             filename=self.file_mapping[pointer], obj=pointer
         )
-        return self.loaders[pointer](
+        obj = self.loaders[pointer](
             self, pointer, tracker=self.tracker, **load_kwargs
         )
+        # FITS arrays are scaled by default
+        if (
+            (loader.__class__.__name__ == "ReadFits")
+            and (obj.__class__.__name__ == "ndarray")
+        ):
+            self._scaleflags[pointer] = True
 
     def get_scaled(
         self, object_name: str, inplace=False, float_dtype=None
@@ -514,6 +531,8 @@ class Data:
         # avoid numpy import just for type check
         if obj.__class__.__name__ != "ndarray":
             raise TypeError("get_scaled is only applicable to arrays.")
+        if self._scaleflags.get(object_name) is True:
+            return obj
         if self.standard == "PDS4":
             from pdr._scaling import scale_pds4_tools_struct
 
