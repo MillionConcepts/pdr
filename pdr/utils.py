@@ -197,7 +197,6 @@ def associate_label_file(
     skip_check: bool = False,
 ) -> Optional[str]:
     from pdr.loaders.utility import LABEL_EXTENSIONS
-
     if label_filename is not None:
         return check_cases(Path(label_filename).absolute(), skip_check)
     elif data_filename.lower().endswith(LABEL_EXTENSIONS):
@@ -208,6 +207,14 @@ def associate_label_file(
         except FileNotFoundError:
             continue
     return None
+
+
+def check_primary_fmt(data_filename: str):
+    from pdr.loaders.utility import FITS_EXTENSIONS
+
+    for ext in FITS_EXTENSIONS:
+        if data_filename.lower().endswith(ext):
+            return "FITS"
 
 
 def catch_return_default(debug: bool, return_default, exception: Exception):

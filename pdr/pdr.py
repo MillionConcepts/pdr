@@ -36,7 +36,7 @@ from pdr.utils import (
     check_cases,
     prettify_multidict,
     associate_label_file,
-    catch_return_default,
+    catch_return_default, check_primary_fmt,
 )
 
 
@@ -77,18 +77,20 @@ class Metadata(MultiDict):
         self.standard = standard
         if self.standard == "PDS3":
             self.formatter = literalize_pvl
-        elif self.standard == "PDS4":
-            # we're trusting that pds4_tools stringified everything correctly.
-            # also note that this has no default capacity to describe units --
-            # you have to explicitly check the 'attrib' attribute of the
-            # XML node, which is not preserved by Label.to_dict().
+        elif self.standard in ("PDS4", "FITS"):
+            # we're trusting that pds4_tools and/or our astropy wrapper
+            # stringified everything correctly.
+            # also note that this has no
+            # default capacity to describe PDS4 units -- you have to
+            # explicitly check the 'attrib' attribute of the XML node,
+            # which is not preserved by Label.to_dict().
             # TODO: replace pds4_tools' Label.to_dict() with our own
             #  literalizer function.
             self.formatter = identity
         else:
             raise NotImplementedError(
-                "Syntaxes other than PDS3-style PVL and preprocessed PDS4 XML "
-                "are not yet implemented."
+                "Syntaxes other than PDS3-style PVL, preprocessed PDS4 XML,"
+                "and preprocessed FITS headers are not yet implemented."
             )
         # note that 'directly' caching these methods can result in recursive
         # reference chains behind the lru_cache API that can prevent the
@@ -210,13 +212,27 @@ class Data:
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + listify(search_paths)
         self.standard = None
+        # cache for pds4_tools.reader.general_objects.Structure objects.
+        self._pds4_structures = None
+        # cache for hdulist, for primary FITS files -- this is primarily
+        # an optimization for compressed files
+        self._hdulist = None
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
             self.filename, label_fn, skip_existence_check
         )
-        # cache for pds4_tools.reader.general_objects.Structure objects.
-        self._pds4_structures = None
-        if str(self.labelname).endswith(".xml"):
+        # if unlabeled, check to see if we can read it in a non-PDS format
+        if self.labelname is None:
+            primary_format = check_primary_fmt(self.filename)
+        else:
+            primary_format = None
+        if primary_format is not None:
+            self.standard = primary_format
+            if self.standard == "FITS":
+                from astropy.io import fits
+
+                self._hdulist = fits.open(self.filename)
+        elif str(self.labelname).endswith(".xml"):
             self.standard = "PDS4"
             self._pds4_structures = {}
             self._init_pds4()
@@ -231,6 +247,9 @@ class Data:
         self._metaget_interior = _metaget_factory(self.metadata)
         self._metablock_interior = _metablock_factory(self.metadata)
         if self.standard == "PDS4":
+            return
+        if primary_format is not None:
+            self._init_primary_format()
             return
         self.pointers = get_pds3_pointers(self.metadata)
         # if self.pointers is None, we've probably got a weird edge case where
@@ -341,22 +360,21 @@ class Data:
             )
         if self.standard == "PDS4":
             return self._load_pds4(name)
-        target = self._target_path(name)
-        if target is None:
-            return self._file_not_found(name)
+        if self.standard == "FITS":
+            self._add_loaded_objects(self._load_primary_fits(name))
+            return
+        if self.file_mapping.get(name) is None:
+            target = self._target_path(name)
+            if target is None:
+                return self._file_not_found(name)
+            self.file_mapping[name] = target
         try:
             obj = self.load_from_pointer(name, **load_kwargs)
             if obj is None:
                 return
             if not isinstance(obj, dict):
-                raise TypeError(
-                    f"loader returned non-dict object of type ({type(obj)}"
-                )
-            for k, v in obj.items():
-                if v is not None:
-                    setattr(self, k, v)
-                    if k not in self.index:
-                        self.index.append(k)
+                raise TypeError(f"loader returned non-dict object of type ({type(obj)}")
+            self._add_loaded_objects(obj)
             return
         except KeyboardInterrupt:
             raise
@@ -367,6 +385,13 @@ class Data:
         except Exception as ex:
             warnings.warn(f"Unable to load {name}: {ex}")
         setattr(self, name, self.metaget_(name))
+
+    def _add_loaded_objects(self, obj):
+        for k, v in obj.items():
+            if v is not None:
+                setattr(self, k, v)
+                if k not in self.index:
+                    self.index.append(k)
 
     def load_all(self):
         from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
@@ -389,6 +414,20 @@ class Data:
             self.debug, return_default, FileNotFoundError()
         )
         setattr(self, object_name, maybe)
+
+    def _load_primary_fits(self, object_name):
+        from pdr.loaders.handlers import handle_fits_file
+
+        return handle_fits_file(
+            self.filename, object_name, object_name, self._hdulist
+        )
+
+    def _init_primary_format(self):
+        if self.standard == "FITS":
+            for k in self.metadata.keys():
+                self.index.append(k)
+            return
+        raise NotImplementedError
 
     def _load_pds4(self, object_name):
         """
@@ -425,8 +464,17 @@ class Data:
         Finally, if we have found no detached label, look for an attached PVL
         label (also using read_pvl_label).
         """
+        if self.standard == "FITS":
+            from pdr.loaders.handlers import unpack_fits_headers
+
+            return Metadata(
+                unpack_fits_headers(self.filename, hdulist=self._hdulist),
+                standard="FITS"
+            )
         if self.standard == "PDS4":
-            return Metadata(reformat_pds4_tools_label(self.label))
+            return Metadata(
+                reformat_pds4_tools_label(self.label), standard="PDS4"
+            )
         # self.labelname is None means we didn't find a detached label
         target = self.filename if self.labelname is None else self.labelname
         metadata = Metadata(read_pvl(target, max_size=pvl_limit))
