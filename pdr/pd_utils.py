@@ -158,12 +158,26 @@ def insert_sample_types_into_df(fmtdef, identifiers):
             raise KeyError(
                 f"{data_type} is not a currently-supported data type."
             )
+    if "BLOCK_NAME" in fmtdef.columns:
+        fmtdef = create_nested_array_dtypes(fmtdef)
+    dt = get_dtype(fmtdef)
+    return (fmtdef, dt)
+
+
+def get_dtype(fmtdef: pd.DataFrame):
+    dtype_spec = fmtdef[
+        [c for c in ("NAME", "dt", "SB_OFFSET") if c in fmtdef.columns]].to_dict("list")
+    spec_keys = ("names", "formats", "offsets")[: len(dtype_spec)]
+    return np.dtype({k: v for k, v in zip(spec_keys, dtype_spec.values())})
+
+
+def create_nested_array_dtypes(fmtdef: pd.DataFrame):
     block_names_df = fmtdef.drop(fmtdef[fmtdef["NAME"] == "PLACEHOLDER_0"].index)
     block_names = block_names_df["BLOCK_NAME"].unique()
     for block_name in block_names[1:]:
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
-        if prior["AXIS_ITEMS"]:
+        if "AXIS_ITEMS" in prior.keys():
             # TODO: Don't double offsets, might need to be more complex if more nests
             pd.options.mode.chained_assignment = None
             fmt_block["SB_OFFSET"] = 0
@@ -174,15 +188,7 @@ def insert_sample_types_into_df(fmtdef, identifiers):
             dt = (dt, axis_items)
             fmtdef.at[fmt_block.index[0] - 1, "dt"] = dt
             fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
-    dt = get_dtype(fmtdef)
-    return (fmtdef, dt)
-
-
-def get_dtype(fmtdef: pd.DataFrame):
-    dtype_spec = fmtdef[
-        [c for c in ("NAME", "dt", "SB_OFFSET") if c in fmtdef.columns]].to_dict("list")
-    spec_keys = ("names", "formats", "offsets")[: len(dtype_spec)]
-    return np.dtype({k: v for k, v in zip(spec_keys, dtype_spec.values())})
+    return fmtdef
 
 
 def booleanize_booleans(

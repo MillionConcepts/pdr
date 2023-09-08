@@ -399,7 +399,8 @@ def read_table_structure(block, name, fn, data, identifiers):
 def parse_array_structure(name, block, fn, data, identifiers):
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
     # Sometimes arrays define start_byte, sometimes their elements do
-    fmtdef['START_BYTE'].fillna(1, inplace=True)
+    if "START_BYTE" in fmtdef.columns:
+        fmtdef['START_BYTE'].fillna(1, inplace=True)
 
     from pdr.pd_utils import insert_sample_types_into_df
     return insert_sample_types_into_df(fmtdef, identifiers)
