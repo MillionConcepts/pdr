@@ -5,11 +5,13 @@ import warnings
 from _operator import mul
 from functools import reduce
 from itertools import product, chain
+from math import ceil
 from pathlib import Path
 from types import MappingProxyType
 from typing import Sequence, Mapping, TYPE_CHECKING
 
 import numpy as np
+from dustgoggles.func import naturals
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types
@@ -246,13 +248,11 @@ def get_target(data: PDRLike, name: str):
     return target
 
 
-def data_start_byte(
-    identifiers: dict, block: Mapping, target, fn
-) -> int:
+def data_start_byte(identifiers: dict, block: Mapping, target, fn) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
     """
-    if "RECORD_BYTES" in block.keys():
+    if (block is not None) and ("RECORD_BYTES" in block.keys()):
         record_bytes = block["RECORD_BYTES"]
     else:
         record_bytes = identifiers["RECORD_BYTES"]
@@ -529,13 +529,48 @@ def get_identifiers(data):
     return data.identifiers
 
 
-def get_fits_name(name):
-    """
-    just a target for specialize(check_special_fits_name) to maintain
-    signatures
-    TODO: consider moving the HDU extension identifying stuff in here
-    """
-    return name
+def get_fits_id(data, identifiers, fn, name):
+    # annoying to have to match all files in the label here
+    # but there is not really another reliable way to do it
+    name = name.lower()
+    matches = [
+        k for k in data.keys()
+        # 'in data.pointers' to avoid checking our own generated header keys
+        if (data._target_path(k) == fn) and (pointerize(k) in data.pointers)
+    ]
+    start_bytes = {
+        m: data_start_byte(
+            identifiers, get_block(data, m), get_target(data, m), fn
+        )
+        for m in matches
+    }
+    ordered = sorted(matches, key=lambda m: start_bytes[m])
+    ordered = tuple(map(str.lower, ordered))
+    noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
+    # this condition typically implies a "stub" primary hdu whose header but
+    # not body is mentioned in the PDS label
+    has_stub_primary = (
+        (len(noheader) != len(matches) / 2)
+        and (list(start_bytes.keys())[0] not in noheader)
+    )
+    if not name.endswith('header'):
+        ix, length = noheader.index(name), len(noheader)
+        if has_stub_primary:
+            ix, length = ix + 1, length + 1
+    else:
+        ix, length = ordered.index(name), len(noheader)
+        try:
+            if ix != 0:
+                ix = noheader.index(ordered[ix + 1])
+                if has_stub_primary:
+                    ix += 1
+        except ValueError:
+            raise KeyError(
+                "Unable to identify HDU associated with this header object"
+            )
+        if has_stub_primary:
+            length += 1
+    return ix, length
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(

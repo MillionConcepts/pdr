@@ -36,7 +36,7 @@ from pdr.utils import (
     check_cases,
     prettify_multidict,
     associate_label_file,
-    catch_return_default,
+    catch_return_default, check_primary_fmt,
 )
 
 
@@ -77,18 +77,20 @@ class Metadata(MultiDict):
         self.standard = standard
         if self.standard == "PDS3":
             self.formatter = literalize_pvl
-        elif self.standard == "PDS4":
-            # we're trusting that pds4_tools stringified everything correctly.
-            # also note that this has no default capacity to describe units --
-            # you have to explicitly check the 'attrib' attribute of the
-            # XML node, which is not preserved by Label.to_dict().
+        elif self.standard in ("PDS4", "FITS"):
+            # we're trusting that pds4_tools and/or our astropy wrapper
+            # stringified everything correctly.
+            # also note that this has no
+            # default capacity to describe PDS4 units -- you have to
+            # explicitly check the 'attrib' attribute of the XML node,
+            # which is not preserved by Label.to_dict().
             # TODO: replace pds4_tools' Label.to_dict() with our own
             #  literalizer function.
             self.formatter = identity
         else:
             raise NotImplementedError(
-                "Syntaxes other than PDS3-style PVL and preprocessed PDS4 XML "
-                "are not yet implemented."
+                "Syntaxes other than PDS3-style PVL, preprocessed PDS4 XML,"
+                "and preprocessed FITS headers are not yet implemented."
             )
         # note that 'directly' caching these methods can result in recursive
         # reference chains behind the lru_cache API that can prevent the
@@ -206,17 +208,36 @@ class Data:
         self.file_mapping = {}
         # known special constants per data object
         self.specials = {}
+        # dict to flag images loaded prescaled (currently only from FITS files)
+        self._scaleflags = {}
         # where can we look for files containing data objects?
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_paths()] + listify(search_paths)
         self.standard = None
+        # cache for pds4_tools.reader.general_objects.Structure objects.
+        self._pds4_structures = None
+        # cache for hdulist, for primary FITS files -- this is primarily
+        # an optimization for compressed files
+        self._hdulist = None
+        # dict of [str, int] for cases in which we need to reindex duplicate
+        # HDU names in primary FITS files
+        self._hdumap = None
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
             self.filename, label_fn, skip_existence_check
         )
-        # cache for pds4_tools.reader.general_objects.Structure objects.
-        self._pds4_structures = None
-        if str(self.labelname).endswith(".xml"):
+        # if unlabeled, check to see if we can read it in a non-PDS format
+        if self.labelname is None:
+            primary_format = check_primary_fmt(self.filename)
+        else:
+            primary_format = None
+        if primary_format is not None:
+            self.standard = primary_format
+            if self.standard == "FITS":
+                from astropy.io import fits
+
+                self._hdulist = fits.open(self.filename)
+        elif str(self.labelname).endswith(".xml"):
             self.standard = "PDS4"
             self._pds4_structures = {}
             self._init_pds4()
@@ -231,6 +252,9 @@ class Data:
         self._metaget_interior = _metaget_factory(self.metadata)
         self._metablock_interior = _metablock_factory(self.metadata)
         if self.standard == "PDS4":
+            return
+        if primary_format is not None:
+            self._init_primary_format()
             return
         self.pointers = get_pds3_pointers(self.metadata)
         # if self.pointers is None, we've probably got a weird edge case where
@@ -304,19 +328,21 @@ class Data:
             )
         return False, None
 
-    def _target_path(self, object_name, raise_missing=False):
+    def _target_path(self, object_name, cached=True, raise_missing=False):
         """
         find the path on the local filesystem to the file containing a named
-        data object.
+        data object. autopopulate the file_mapping
         """
-        if isinstance(object_name, set):
-            file_list = []
-            for obj in object_name:
-                file = self._target_path(obj)
-                file_list = file_list + [file]
-            return file_list
+        if cached is True and (self.file_mapping.get(object_name) is not None):
+            return self.file_mapping[object_name]
         try:
-            return check_cases(self._object_to_filename(object_name))
+            if isinstance(object_name, set):
+                file_list = [self._target_path(obj) for obj in object_name]
+                self.file_mapping[object_name] = file_list
+                return file_list
+            path = check_cases(self._object_to_filename(object_name))
+            self.file_mapping[object_name] = path
+            return path
         except FileNotFoundError:
             if raise_missing is True:
                 raise
@@ -326,6 +352,8 @@ class Data:
         return tuple(filter(lambda k: k not in dir(self), self.index))
 
     def load(self, name, reload=False, **load_kwargs):
+        # prelude: don't try to load nonexistent keys; facilitate
+        # load-everything behavior; don't reload by default
         if (name != "all") and (name not in self.index):
             raise KeyError(f"{name} not found in index: {self.index}.")
         if name == "all":
@@ -337,6 +365,9 @@ class Data:
             )
         if self.standard == "PDS4":
             return self._load_pds4(name)
+        if self.standard == "FITS":
+            self._add_loaded_objects(self._load_primary_fits(name))
+            return
         if self.file_mapping.get(name) is None:
             target = self._target_path(name)
             if target is None:
@@ -348,11 +379,7 @@ class Data:
                 return
             if not isinstance(obj, dict):
                 raise TypeError(f"loader returned non-dict object of type ({type(obj)}")
-            for k, v in obj.items():
-                if v is not None:
-                    setattr(self, k, v)
-                    if k not in self.index:
-                        self.index.append(k)
+            self._add_loaded_objects(obj)
             return
         except KeyboardInterrupt:
             raise
@@ -363,6 +390,13 @@ class Data:
         except Exception as ex:
             warnings.warn(f"Unable to load {name}: {ex}")
         setattr(self, name, self.metaget_(name))
+
+    def _add_loaded_objects(self, obj):
+        for k, v in obj.items():
+            if v is not None:
+                setattr(self, k, v)
+                if k not in self.index:
+                    self.index.append(k)
 
     def load_all(self):
         from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
@@ -385,6 +419,26 @@ class Data:
             self.debug, return_default, FileNotFoundError()
         )
         setattr(self, object_name, maybe)
+
+    def _load_primary_fits(self, object_name):
+        from pdr.loaders.handlers import handle_fits_file
+
+        obj = handle_fits_file(
+            self.filename,
+            object_name,
+            self._hdumap[object_name],
+            self._hdulist
+        )
+        if obj.__class__.__name__ == "ndarray":
+            self._scaleflags[object_name] = True
+        return obj
+
+    def _init_primary_format(self):
+        if self.standard == "FITS":
+            for k in self.metadata.keys():
+                self.index.append(k)
+            return
+        raise NotImplementedError
 
     def _load_pds4(self, object_name):
         """
@@ -421,8 +475,17 @@ class Data:
         Finally, if we have found no detached label, look for an attached PVL
         label (also using read_pvl_label).
         """
+        if self.standard == "FITS":
+            from pdr.loaders.handlers import unpack_fits_headers
+
+            mapping, params, self._hdumap = unpack_fits_headers(
+                self.filename, hdulist=self._hdulist
+            )
+            return Metadata((mapping, params), standard="FITS")
         if self.standard == "PDS4":
-            return Metadata(reformat_pds4_tools_label(self.label))
+            return Metadata(
+                reformat_pds4_tools_label(self.label), standard="PDS4"
+            )
         # self.labelname is None means we didn't find a detached label
         target = self.filename if self.labelname is None else self.labelname
         metadata = Metadata(read_pvl(target, max_size=pvl_limit))
@@ -443,9 +506,16 @@ class Data:
         self.tracker.set_metadata(
             filename=self.file_mapping[pointer], obj=pointer
         )
-        return self.loaders[pointer](
+        obj = self.loaders[pointer](
             self, pointer, tracker=self.tracker, **load_kwargs
         )
+        # FITS arrays are scaled by default
+        if (
+            (loader.__class__.__name__ == "ReadFits")
+            and (obj.__class__.__name__ == "ndarray")
+        ):
+            self._scaleflags[pointer] = True
+        return obj
 
     def get_scaled(
         self, object_name: str, inplace=False, float_dtype=None
@@ -462,6 +532,8 @@ class Data:
         # avoid numpy import just for type check
         if obj.__class__.__name__ != "ndarray":
             raise TypeError("get_scaled is only applicable to arrays.")
+        if self._scaleflags.get(object_name) is True:
+            return obj
         if self.standard == "PDS4":
             from pdr._scaling import scale_pds4_tools_struct
 

@@ -11,8 +11,9 @@ from pdr.formats import (
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
-from pdr.loaders.queries import DEFAULT_DATA_QUERIES, get_identifiers, \
-    get_fits_name, get_file_mapping
+from pdr.loaders.queries import (
+    DEFAULT_DATA_QUERIES, get_identifiers, get_file_mapping, get_fits_id
+)
 
 
 class Loader:
@@ -131,7 +132,7 @@ class ReadFits(Loader):
     queries = {
         'identifiers': get_identifiers,
         "fn": get_file_mapping,
-        'hdu_name': specialize(get_fits_name, check_special_hdu_name)
+        'hdu_id': specialize(get_fits_id, check_special_hdu_name),
     }
 
 

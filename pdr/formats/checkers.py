@@ -423,83 +423,29 @@ def check_special_qube_band_storage(identifiers):
 
 def check_special_hdu_name(identifiers, name):
     if (
-        identifiers["INSTRUMENT_HOST_NAME"] == "NEW HORIZONS"
-        and name == "HEADER"
+        identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
+        and 'FC2' in identifiers['DATA_SET_ID']
     ):
-        return formats.nh.generic_header_hdu_name(name)
+        return True, formats.dawn.dawn_hdu_name(name)
+    if identifiers['DATA_SET_ID'].startswith('MSGR-H-MDIS-6-CAL'):
+        return True, formats.galileo.mdis_hdu_name(name)
     if (
-        identifiers["INSTRUMENT_ID"] == "LORRI"
-        and identifiers["PRODUCT_TYPE"] == "EDR"
+        identifiers["INSTRUMENT_NAME"] == "STUDENT DUST COUNTER"
+        and '-SDC-' in identifiers["DATA_SET_ID"]
+        and identifiers['PRODUCT_TYPE'] == 'EDR'
     ):
-        return formats.nh.lorri_edr_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "ALICE"
-        and identifiers["PRODUCT_TYPE"] == "EDR"
-    ):
-        return formats.nh.alice_edr_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "LEISA"
-        and "-3-" in identifiers["DATA_SET_ID"]
-    ):
-        return formats.nh.leisa_cal_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "LEISA"
-        and identifiers["PRODUCT_TYPE"] == "EDR"
-    ):
-        return formats.nh.leisa_raw_hdu_name(name)
-    if re.match(r"NEAR-.*-EDR-", identifiers["DATA_SET_ID"]):
-        return formats.near.near_edr_hdu_name(name, identifiers["DATA_SET_ID"])
-    if (
-        identifiers["INSTRUMENT_ID"] == "MVIC"
-        and identifiers["PRODUCT_TYPE"] == "EDR"
-        and "-2-" in identifiers["DATA_SET_ID"]
-    ):
-        return formats.nh.mvic_eng_edr_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "MVIC"
-        and identifiers["PRODUCT_TYPE"] == "EDR"
-        and "-3-" in identifiers["DATA_SET_ID"]
-    ):
-        return formats.nh.mvic_sci_edr_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "MVIC"
-        and identifiers["PRODUCT_TYPE"] == "RDR"
-    ):
-        return formats.nh.mvic_rdr_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "PEPSSI"
-    ):
-        return formats.nh.pepssi_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "REX"
-        and identifiers["PRODUCT_TYPE"] == "EDR"
-        and name == "EXTENSION_SSR_SH_HEADER_0"
-    ):
-        return formats.nh.rex_SSR_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_ID"] == "REX"
-        and name == "EXTENSION_IQVALS_HEADER"
-    ):
-        return formats.nh.rex_IQval_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_HOST_NAME"] == "NEW HORIZONS"
-        and identifiers["INSTRUMENT_ID"] == "SDC"
-        and identifiers["PRODUCT_TYPE"] == "EDR"
-    ):
-        return formats.nh.sdc_edr_hdu_name(name)
-    if (
-        identifiers["DATA_SET_ID"] == "NH-P/PSA-LEISA/MVIC-5-COMP-V1.0"
-        and identifiers["INSTRUMENT_ID"] == "LEISA"
-    ):
-        return formats.nh.leisa_ddr_hdu_name(name)
-    if (
-        identifiers["DATA_SET_ID"] == "NH-P/PSA-LORRI/ALICE/REX-5-ATMOS-V1.0"
-        and identifiers["INSTRUMENT_ID"] == "ALICE"
-    ):
-        return formats.nh.alice_ddr_hdu_name(name)
-    if (
-        identifiers["DATA_SET_ID"] == "NH-P/PSA-LEISA/MVIC-5-COMP-V1.0"
-        and identifiers["INSTRUMENT_ID"] == "MVIC"
-    ):
-        return formats.nh.mvic_ddr_hdu_name(name)
+        return True, formats.nh.sdc_edr_hdu_name(name)
+    if re.match(r"NH-\w-REX-[23]", identifiers['DATA_SET_ID']):
+        return True, formats.nh.rex_hdu_name(name)
+    if identifiers['INSTRUMENT_ID'] == 'PEPSSI':
+        if re.search(
+            r"(JUPITER|LAUNCH|CRUISE)", identifiers['DATA_SET_ID']
+        ):
+            return False, None  # these seem ok
+        elif identifiers['PRODUCT_TYPE'] == 'EDR':
+            return True, formats.nh.pepssi_edr_hdu_name(name)
+        elif "PLUTO" in identifiers['DATA_SET_ID']:
+            return True, formats.nh.pepssi_pluto_rdr_hdu_name(name)
+        else:
+            return True, formats.nh.pepssi_rdr_hdu_name(name)
     return False, None
