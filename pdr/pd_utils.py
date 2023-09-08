@@ -180,7 +180,9 @@ def create_nested_array_dtypes(fmtdef: pd.DataFrame):
         if "AXIS_ITEMS" in prior.keys():
             # TODO: Don't double offsets, might need to be more complex if more nests
             pd.options.mode.chained_assignment = None
-            fmt_block["SB_OFFSET"] = 0
+            print(fmt_block)
+            fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
+            print(fmt_block)
             dt = get_dtype(fmt_block)
             axis_items = prior["AXIS_ITEMS"]
             if isinstance(axis_items, float):

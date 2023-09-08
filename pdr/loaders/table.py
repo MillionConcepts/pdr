@@ -35,6 +35,7 @@ def read_array(fn, block, start_byte, name, data, identifiers):
                 count=count,
                 offset=start_byte,
             )
+        return array
         return array.reshape(block["AXIS_ITEMS"])
     # assume objects without the optional interchange_format key are ascii
     with open(fn) as stream:
