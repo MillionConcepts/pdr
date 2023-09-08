@@ -10,6 +10,7 @@ from typing import Hashable
 import numpy as np
 import pandas.api.types
 import pandas as pd
+from pandas.errors import SettingWithCopyWarning
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_sample_type
@@ -178,11 +179,9 @@ def create_nested_array_dtypes(fmtdef: pd.DataFrame):
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
         if "AXIS_ITEMS" in prior.keys():
-            # TODO: Don't double offsets, might need to be more complex if more nests
-            pd.options.mode.chained_assignment = None
-            print(fmt_block)
-            fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
-            print(fmt_block)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
+                fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
             dt = get_dtype(fmt_block)
             axis_items = prior["AXIS_ITEMS"]
             if isinstance(axis_items, float):
