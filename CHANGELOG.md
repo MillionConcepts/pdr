@@ -1,12 +1,22 @@
 ## [X.X.X] - 20XX-XX-XX
 ### Added
+- FITS files can now be opened without a PDS3 label. (see updated README for more detailed usage)
+- 1d, non-structured ARRAY objects are now compatible with `dump_browse`
 - Support for most New Horizons datasets
 - Support for Venera 15 and 16 derived data
+- Support for ARRAY objects with nested ARRAY or COLLECTION objects in them
+- Support for Giotto PIA and VEGA 1/2 Puma_mode data
+- 
+
 ### Changed
 
+
 ### Fixed
+- FITS handling of HDUs improved (several data types were previously mapping to the wrong HDU)
+- FITS offset and scaling will now be applied properly for tables
 
 ### Removed
+
 
 
 ## [1.0.2] - 2023-08-01

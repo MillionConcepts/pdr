@@ -114,7 +114,8 @@ of their metadata appear to match other sources.
   - JPA DDRs
   - MAG RDRs
   - NMS ion and neutral gas RDRs
-  - OPE RDRs
+  - OPE RDRs 
+  - PIA
 - GRAIL
   - LGRS RDR: SHADR, SHBDR, and RSDMAP
   - RSS: BOF, ODF, OLF, and RSR
@@ -317,7 +318,8 @@ of their metadata appear to match other sources.
   - TN-M data
   - MISCHA data
   - Stooke Shape Models
-  - Balloon and lander EDRs and RDRs
+  - Balloon and lander EDRs and RDRs 
+  - PUMA mode data
 - Venera 15 and 16
   - ROE derived electron density profiles
 - Venus Radar Data (Earth-based)
@@ -377,7 +379,6 @@ of their metadata appear to match other sources.
   - PWS EDRs, binary REDRs, and REFDRs (support planned)
 - Giotto
   - GRE EDRs (support not planned)
-  - PIA (support planned)
 - GRAIL
   - LGRS: EDR and CDR (support not planned)
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
@@ -442,4 +443,3 @@ of their metadata appear to match other sources.
     - SD2 EDRs (support not planned)
 - Vega 1 and 2
   - PUMA raw and processed data (support not planned)
-  - PUMA mode data (support planned)
