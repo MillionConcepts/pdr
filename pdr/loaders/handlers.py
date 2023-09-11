@@ -64,6 +64,10 @@ def handle_fits_file(
     if isinstance(hdu, fits.BinTableHDU):
         reindex_dupe_names(hdu)
     body = hdu.data
+    if body is None:
+        import numpy as np
+
+        body = np.array([])
     # i.e., it's a FITS table, binary or ascii
     if isinstance(body, fits.fitsrec.FITS_rec):
         import pandas as pd
