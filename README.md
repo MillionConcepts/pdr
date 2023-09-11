@@ -190,7 +190,7 @@ label to open them. This gives FITS users access to all of the `pdr` convenience
 functions and idioms even if no PDS labels are available.
 
 `pdr` names data objects in FITS files opened 'directly' by FITS extension 
-names (EXTNAME) when speciufied, and by extension types ('PRIMARY', 
+names (EXTNAME) when specified, and by extension types ('PRIMARY', 
 'COMPRESSED_IMAGE', etc.) when not. Like duplicate objects in PDS products, 
 `pdr` disambiguates duplicate names by appending integers.
 
