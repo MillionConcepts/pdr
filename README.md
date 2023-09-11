@@ -167,38 +167,58 @@ However, in general, if a PDS3 label is available, we recommend initializing
 the object from the PDS3 label rather than the PDS4 label.
 
 #### FITS files
+
 `pdr.Data` wraps [ `astropy.io.fits` ](https://github.com/astropy/astropy/tree/main/astropy/io/fits)
-to read data from FITS files associated with PDS3 products, and prefers the 
-data specification given in FITS headers to the data specification in the PDS3 
-label. In our experience, because FITS is more rigorously standardized than 
-PDS3, using the FITS header is more reliable; also, the FITS header often 
-contains useful metadata that the PDS3 label does not. `pdr` converts objects 
-produced by`astropy` to `np.ndarrays` (FITS arrays and compressed arrays), 
-`pd.DataFrames` (FITS ASCII and binary tables), or `MultiDicts` (FITS 
-headers), so you do not need to change your code simply because a file is in
-FITS format. 
+to read data from FITS files. `pdr` converts objects produced by`astropy` to 
+`np.ndarrays` (FITS arrays and compressed arrays), `pd.DataFrames` (FITS ASCII 
+and binary tables), or `MultiDicts` (FITS headers), so you do not need to 
+change your code simply because a file is in FITS format. 
 
-Whenever you load a data object from a FITS file, `pdr` also 
-places the associated FITS header in a key of your `Data` object named 
-"$objectname_HEADER" -- for instance, if you load an object named "HK_TABLE", 
-its FITS header will appear in `Data.HK_TABLE_HEADER`. You can also use the same 
-name to directly load the header *without* loading the entire data object.
+Whenever you load a data object from a FITS file, `pdr` also places the associated 
+FITS header in a key of your `Data` object named "$objectname_HEADER" -- for instance, 
+if you load an object named "HK_TABLE", its FITS header will appear in 
+`Data.HK_TABLE_HEADER`. You can also use that name to directly load the header *without* 
+loading the entire data object. 
 
-Note that in some cases, the specification in the FITS header may differ 
-from the specification in the PDS3 label, even when the specification in the 
-PDS3 label is technically valid. For instance, column names might be given 
-differently in the FITS header, or a PDS3 TABLE might be stored as a FITS 
-array HDU.
-##### FITS files without PDS labels
-`pdr` can now also open FITS files without PDS labels. This will return objects 
-named based on the FITS extension names (e.g. 'PRIMARY', 'COMPRESSED_IMAGE', etc.).
-This gives FITS users access to all of the `pdr` convenience functions without 
-requiring PDS specification. If a FITS file is passed to `pdr.read` and does not 
-have an associated PDS label in the same directory, `pdr` will default to this behavior. 
-If you'd like to force pdr to open a file in this manner that you have a PDS label 
-for in the same directory, simply specify the label as the data file name:
+`pdr`'s FITS-loading behavior is somewhat different depending on whether a PDS3 label, 
+a PDS4 label, or no PDS label is present:
+
+##### FITS with no PDS label
+
+`pdr` has 'first-class' support for FITS files and does not require a PDS 
+label to open them. This gives FITS users access to all of the `pdr` convenience 
+functions and idioms even if no PDS labels are available.
+
+`pdr` names data objects in FITS files opened 'directly' by FITS extension 
+names (EXTNAME) when speciufied, and by extension types ('PRIMARY', 
+'COMPRESSED_IMAGE', etc.) when not. Like duplicate objects in PDS products, 
+`pdr` disambiguates duplicate names by appending integers.
+
+ Note that any time you pass a FITS file to `pdr`
+and there is no PDS label in that file's directory, `pdr` will default to this behavior. 
+Conversely, if you'd like to force pdr to open a file 'directly' from its FITS
+headers, but there _is_ a PDS label in its directory, simply specify that the FITS 
+file is also the label file, like:
+
 `pdr.read('name_of_data_file.fits', label_fn='name_of_data_file.fits')`.
 
+##### With PDS3 labels
+
+`pdr` prefers the data specification given in FITS headers to the data 
+specification in the PDS3 label, with one exception: it uses object names 
+from the PDS3 label. In our experience, because FITS is more rigorously 
+standardized than PDS3, using the FITS header is more reliable.
+Note that in some cases, PDS3 and FITS specifications may differ, even when the 
+specification in the PDS3 label is technically valid. For instance, column 
+names might be given differently in the FITS header, or a PDS3 TABLE might 
+be stored as a FITS array HDU.
+
+##### With PDS4 labels
+
+Because PDS4 is more reliable and rigorously standardized than PDS3, `pdr` 
+prefers the specification given in PDS4 labels to the specification given in 
+FITS headers. You can always override this by passing the `label_fn` 
+argument.
 
 #### Lazy loading
 Because many planetary data objects are very large, `pdr` helps conserve 
@@ -238,7 +258,3 @@ it both as a regression test suite and an active development tool.
 
 ---
 This work is supported by NASA grant No. 80NSSC21K0885.
-
-
-
-
