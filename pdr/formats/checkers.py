@@ -3,7 +3,7 @@ import re
 from typing import TYPE_CHECKING, Optional
 
 from pdr import formats
-from pdr.loaders.utility import trivial, is_trivial
+from pdr.loaders.utility import is_trivial
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
@@ -168,6 +168,13 @@ def check_special_structure(block, name, fn, identifiers, data):
     ):
         return True, formats.vega.get_structure(
             block, name, fn, data, identifiers
+        )
+    if (
+        "GIO-C-PIA-3-RDR-HALLEY-V1.0" == identifiers["DATA_SET_ID"]
+        or re.match(r"VEGA.-C-PUMA.*", str(identifiers["DATA_SET_ID"]))
+    ) and name == "ARRAY":
+        return True, formats.vega.fix_array_structure(
+            name, block, fn, data, identifiers
         )
     return False, None
 

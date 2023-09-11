@@ -150,8 +150,14 @@ class ReadArray(Loader):
 
     def __init__(self):
         from pdr.loaders.table import read_array
+        from pdr.loaders.queries import parse_array_structure
 
         super().__init__(read_array)
+        self.queries = DEFAULT_DATA_QUERIES | {
+            "fmtdef_dt": specialize(
+                parse_array_structure, check_special_structure
+            ),
+        }
 
 
 class TBD(Loader):

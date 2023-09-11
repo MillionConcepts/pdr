@@ -5,8 +5,7 @@ from io import StringIO
 from pandas.errors import ParserError
 
 from pdr.loaders._helpers import check_explicit_delimiter
-from pdr.loaders.queries import get_array_num_items, check_array_for_subobject, \
-    parse_array_structure, parse_table_structure, read_table_structure
+from pdr.loaders.queries import get_array_num_items
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
@@ -14,19 +13,12 @@ from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals
 from pdr.utils import decompress, head_file
 
 
-def read_array(fn, block, start_byte, name, data, identifiers):
+def read_array(fn, block, start_byte, fmtdef_dt):
     """
     Read an array object from this product and return it as a numpy array.
     """
-    # TODO: Maybe add block[AXES_NAMES] as names? Might have to switch to pandas
-    #  or a flattened structured array or something weirder
-    # TODO: Include offset calculations once an example with them is found
-    has_sub = check_array_for_subobject(block)
     if block.get("INTERCHANGE_FORMAT") == "BINARY":
-        if has_sub:
-            _, dt = parse_array_structure(name, block, fn, data, identifiers)
-        else:
-            dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
+        _, dt = fmtdef_dt
         count = get_array_num_items(block)
         with decompress(fn) as f:
             array = np_from_buffered_io(
@@ -35,7 +27,6 @@ def read_array(fn, block, start_byte, name, data, identifiers):
                 count=count,
                 offset=start_byte,
             )
-        return array
         return array.reshape(block["AXIS_ITEMS"])
     # assume objects without the optional interchange_format key are ascii
     with open(fn) as stream:

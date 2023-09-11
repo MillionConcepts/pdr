@@ -397,6 +397,12 @@ def read_table_structure(block, name, fn, data, identifiers):
 
 
 def parse_array_structure(name, block, fn, data, identifiers):
+    if not block.get("INTERCHANGE_FORMAT") == "BINARY":
+        return None, None
+    has_sub = check_array_for_subobject(block)
+    if not has_sub:
+        dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
+        return None, dt
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
     # Sometimes arrays define start_byte, sometimes their elements do
     if "START_BYTE" in fmtdef.columns:
