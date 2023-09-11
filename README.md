@@ -197,7 +197,7 @@ requiring PDS specification. If a FITS file is passed to `pdr.read` and does not
 have an associated PDS label in the same directory, `pdr` will default to this behavior. 
 If you'd like to force pdr to open a file in this manner that you have a PDS label 
 for in the same directory, simply specify the label as the data file name:
-`pdr.read('name_of_data_file.fits', label_fn='name_of_data_file.fits'`.
+`pdr.read('name_of_data_file.fits', label_fn='name_of_data_file.fits')`.
 
 
 #### Lazy loading
