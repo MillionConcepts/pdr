@@ -229,6 +229,8 @@ class Data:
         # if unlabeled, check to see if we can read it in a non-PDS format
         if self.labelname is None:
             primary_format = check_primary_fmt(self.filename)
+        elif (fmt := check_primary_fmt(self.labelname)) is not None:
+            primary_format = fmt
         else:
             primary_format = None
         if primary_format is not None:
