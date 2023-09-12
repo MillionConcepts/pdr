@@ -12,7 +12,7 @@ from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
 from pdr.loaders.queries import (
-    DEFAULT_DATA_QUERIES, get_identifiers, get_file_mapping, get_fits_id
+    DEFAULT_DATA_QUERIES, get_identifiers, get_file_mapping,
 )
 
 
@@ -119,6 +119,7 @@ class ReadLabel(Loader):
 
 class ReadFits(Loader):
     """wrapper for handle_fits_file"""
+    from pdr.loaders.queries import get_fits_id, get_none
 
     def __init__(self):
         from pdr.loaders.handlers import handle_fits_file
@@ -132,6 +133,7 @@ class ReadFits(Loader):
     queries = {
         'identifiers': get_identifiers,
         "fn": get_file_mapping,
+        'other_stubs': get_none,
         'hdu_id': specialize(get_fits_id, check_special_hdu_name),
     }
 

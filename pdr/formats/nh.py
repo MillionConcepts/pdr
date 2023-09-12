@@ -1,5 +1,7 @@
 import re
 
+from pdr.loaders.queries import get_fits_id
+
 
 def sdc_edr_hdu_name(name):
     """
@@ -64,6 +66,7 @@ def pepssi_pluto_rdr_hdu_name(name):
         "EXTENSION_PHA_HIGH_ION": 10,
     }[re.sub(r"(_HEADER|_TABLE|_IMAGE|_ARRAY)(_\d)?", "", name)]
 
+
 def pepssi_rdr_hdu_name(name):
     """same issue."""
     return {
@@ -82,6 +85,7 @@ def pepssi_rdr_hdu_name(name):
         "EXTENSION_PHA_HIGH_ION": 11,
     }[re.sub(r"(_HEADER|_TABLE|_IMAGE|_ARRAY)(_\d)?", "", name)]
 
+
 def get_fn(data):
     """
     The PEPSSI DDRs have an extra space at the start of the SPREADSHEET
@@ -91,3 +95,11 @@ def get_fn(data):
 
     label = Path(data.labelname)
     return True, Path(label.parent, f"{label.stem}.csv")
+
+
+def swap_hdu_stubs(data, identifiers, fn, name):
+    thrusters = [key for key in data.keys() if "THRUSTERS" in key]
+    if len(thrusters) == 1:
+        return get_fits_id(data, identifiers, fn, name, other_stubs=thrusters)
+    else:
+        return get_fits_id(data, identifiers, fn, name, other_stubs=None)

@@ -428,7 +428,7 @@ def check_special_qube_band_storage(identifiers):
     return False, None
 
 
-def check_special_hdu_name(identifiers, name):
+def check_special_hdu_name(data, identifiers, fn, name):
     if (
         identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
         and 'FC2' in identifiers['DATA_SET_ID']
@@ -455,4 +455,6 @@ def check_special_hdu_name(identifiers, name):
             return True, formats.nh.pepssi_pluto_rdr_hdu_name(name)
         else:
             return True, formats.nh.pepssi_rdr_hdu_name(name)
+    if re.match(r"NH.*SWAP", identifiers["DATA_SET_ID"]):
+        return True, formats.nh.swap_hdu_stubs(data, identifiers, fn, name)
     return False, None
