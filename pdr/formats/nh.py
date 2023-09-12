@@ -98,8 +98,13 @@ def get_fn(data):
 
 
 def swap_hdu_stubs(data, identifiers, fn, name):
-    thrusters = [key for key in data.keys() if "THRUSTERS" in key]
-    if len(thrusters) == 1:
-        return get_fits_id(data, identifiers, fn, name, other_stubs=thrusters)
+    print('went to special case')
+    headers = [key for key in data.keys() if key.startswith("EXTENSION") and key.endswith("_HEADER")]
+    noheaders = [key for key in data.keys() if key.startswith("EXTENSION") and not key.endswith("_HEADER")]
+    if len(headers) != len(noheaders):
+        headers_stripped = [n.rstrip(n.split('_')[-1]) for n in headers]
+        noheaders_stripped = [n.rstrip(n.split('_')[-1]) for n in noheaders]
+        stubs = [val+"HEADER" for val in headers_stripped if val not in noheaders_stripped]
+        return get_fits_id(data, identifiers, fn, name, other_stubs=stubs)
     else:
         return get_fits_id(data, identifiers, fn, name, other_stubs=None)
