@@ -243,7 +243,7 @@ of their metadata appear to match other sources.
   - RSS spherical harmonic models, gravity acceleration maps, Eros landmarks table, and ODFs
   - XRS EDRs, L2 and L3 products
 - New Horizons
-  - ALICE EDRs
+  - ALICE EDRs and RDRs
   - LEISA EDRs and RDRs
   - LORRI EDRs and RDRs
   - MVIC EDRs and RDRs
@@ -372,7 +372,7 @@ of their metadata appear to match other sources.
 - Dawn
   - Framing camera: a handful of calibration images
 - Galileo
-  - MAG summary tables (other tables supported)
+  - MAG summary tables (other tables supported, support not planned)
   - NIMS Jupiter EDRs and cubes (support planned)
   - SSI REDR telemetry and line-prefix tables (support planned)
   - PLS EDRs (support not planned)
@@ -427,7 +427,6 @@ of their metadata appear to match other sources.
     "calibrated" (RDR) files for these cameras are not compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
 - New Horizons
-  - ALICE RDRs (support planned)
   - SWAP EDRs and RDRs (support planned)
   - Pluto encounter derived data: ALICE stellar occultation data
 - Pioneer Venus Orbiter
