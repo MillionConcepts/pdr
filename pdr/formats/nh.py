@@ -102,9 +102,9 @@ def swap_hdu_stubs(data, identifiers, fn, name):
     headers = [key for key in data.keys() if key.startswith("EXTENSION") and key.endswith("_HEADER")]
     noheaders = [key for key in data.keys() if key.startswith("EXTENSION") and not key.endswith("_HEADER")]
     if len(headers) != len(noheaders):
-        headers_stripped = [n.rstrip(n.split('_')[-1]) for n in headers]
-        noheaders_stripped = [n.rstrip(n.split('_')[-1]) for n in noheaders]
-        stubs = [val+"HEADER" for val in headers_stripped if val not in noheaders_stripped]
+        headers_stripped = [n.split('_'+n.split('_')[-1])[0] for n in headers]
+        noheaders_stripped = [n.split('_'+n.split('_')[-1])[0] for n in noheaders]
+        stubs = [val+"_HEADER" for val in headers_stripped if val not in noheaders_stripped+noheaders]
         return get_fits_id(data, identifiers, fn, name, other_stubs=stubs)
     else:
         return get_fits_id(data, identifiers, fn, name, other_stubs=None)
