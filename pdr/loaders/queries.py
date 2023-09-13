@@ -536,7 +536,11 @@ def get_identifiers(data):
     return data.identifiers
 
 
-def get_fits_id(data, identifiers, fn, name):
+def get_none():
+    return None
+
+
+def get_fits_id(data, identifiers, fn, name, other_stubs):
     # annoying to have to match all files in the label here
     # but there is not really another reliable way to do it
     name = name.lower()
@@ -553,14 +557,19 @@ def get_fits_id(data, identifiers, fn, name):
     }
     ordered = sorted(matches, key=lambda m: start_bytes[m])
     ordered = tuple(map(str.lower, ordered))
-    noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
+    if other_stubs is not None:
+        noheader = tuple(filter(lambda n: (not n.endswith('header') or n.upper() in other_stubs), ordered))
+        num_other_stubs = len(other_stubs)
+    else:
+        noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
+        num_other_stubs = 0
     # this condition typically implies a "stub" primary hdu whose header but
     # not body is mentioned in the PDS label
     has_stub_primary = (
-        (len(noheader) != len(matches) / 2)
-        and (list(start_bytes.keys())[0] not in noheader)
+        (len(noheader) != (len(matches) + num_other_stubs) / 2)
+        and (list(start_bytes.keys())[0].lower() not in noheader)
     )
-    if not name.endswith('header'):
+    if not name.endswith('header') or name in noheader:
         ix, length = noheader.index(name), len(noheader)
         if has_stub_primary:
             ix, length = ix + 1, length + 1

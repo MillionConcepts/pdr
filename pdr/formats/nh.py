@@ -1,5 +1,7 @@
 import re
 
+from pdr.loaders.queries import get_fits_id
+
 
 def sdc_edr_hdu_name(name):
     """
@@ -64,6 +66,7 @@ def pepssi_pluto_rdr_hdu_name(name):
         "EXTENSION_PHA_HIGH_ION": 10,
     }[re.sub(r"(_HEADER|_TABLE|_IMAGE|_ARRAY)(_\d)?", "", name)]
 
+
 def pepssi_rdr_hdu_name(name):
     """same issue."""
     return {
@@ -82,6 +85,7 @@ def pepssi_rdr_hdu_name(name):
         "EXTENSION_PHA_HIGH_ION": 11,
     }[re.sub(r"(_HEADER|_TABLE|_IMAGE|_ARRAY)(_\d)?", "", name)]
 
+
 def get_fn(data):
     """
     The PEPSSI DDRs have an extra space at the start of the SPREADSHEET
@@ -91,3 +95,15 @@ def get_fn(data):
 
     label = Path(data.labelname)
     return True, Path(label.parent, f"{label.stem}.csv")
+
+
+def swap_hdu_stubs(data, identifiers, fn, name):
+    headers = [key for key in data.keys() if key.startswith("EXTENSION") and key.endswith("_HEADER")]
+    noheaders = [key for key in data.keys() if key.startswith("EXTENSION") and not key.endswith("_HEADER")]
+    if len(headers) != len(noheaders):
+        headers_stripped = [n.split('_'+n.split('_')[-1])[0] for n in headers]
+        noheaders_stripped = [n.split('_'+n.split('_')[-1])[0] for n in noheaders]
+        stubs = [val+"_HEADER" for val in headers_stripped if val not in noheaders_stripped+noheaders]
+        return get_fits_id(data, identifiers, fn, name, other_stubs=stubs)
+    else:
+        return get_fits_id(data, identifiers, fn, name, other_stubs=None)
