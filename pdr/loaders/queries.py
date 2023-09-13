@@ -5,13 +5,11 @@ import warnings
 from _operator import mul
 from functools import reduce
 from itertools import product, chain
-from math import ceil
 from pathlib import Path
 from types import MappingProxyType
 from typing import Sequence, Mapping, TYPE_CHECKING
 
 import numpy as np
-from dustgoggles.func import naturals
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types

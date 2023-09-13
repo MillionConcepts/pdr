@@ -250,7 +250,7 @@ of their metadata appear to match other sources.
   - PEPSSI EDRs, RDRs, and resampled plasma fluxes
   - REX EDRs and RDRs
   - SDC EDRs and RDRs
-  - SWAP derived solar wind characteristics
+  - SWAP EDRs and RDRs
   - Pluto encounter derived products: surface composition maps, most atmosphere data, and geology/geophysical maps
 - Pioneer Venus Orbiter
   - OEFD HIRES data and 24 second averages
@@ -427,7 +427,6 @@ of their metadata appear to match other sources.
     "calibrated" (RDR) files for these cameras are not compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
 - New Horizons
-  - SWAP EDRs and RDRs (support planned)
   - Pluto encounter derived data: ALICE stellar occultation data
 - Pioneer Venus Orbiter
   - ORPA raw data (support not planned)
