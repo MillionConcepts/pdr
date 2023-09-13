@@ -98,7 +98,6 @@ def get_fn(data):
 
 
 def swap_hdu_stubs(data, identifiers, fn, name):
-    print('went to special case')
     headers = [key for key in data.keys() if key.startswith("EXTENSION") and key.endswith("_HEADER")]
     noheaders = [key for key in data.keys() if key.startswith("EXTENSION") and not key.endswith("_HEADER")]
     if len(headers) != len(noheaders):
