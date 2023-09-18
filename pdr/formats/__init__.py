@@ -17,5 +17,6 @@ import pdr.formats.nh as nh
 import pdr.formats.odyssey as odyssey
 import pdr.formats.pvo as pvo
 import pdr.formats.rosetta as rosetta
+import pdr.formats.saturn_rpx as saturn_rpx
 import pdr.formats.themis as themis
 import pdr.formats.vega as vega

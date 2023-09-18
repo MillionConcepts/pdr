@@ -457,4 +457,6 @@ def check_special_hdu_name(data, identifiers, fn, name):
             return True, formats.nh.pepssi_rdr_hdu_name(name)
     if re.match(r"NH.*SWAP", identifiers["DATA_SET_ID"]):
         return True, formats.nh.swap_hdu_stubs(data, identifiers, fn, name)
+    if identifiers['DATA_SET_ID'].startswith('HST-S-WFPC2-3-RPX'):
+        return True, formats.saturn_rpx.hst_hdu_name(name)
     return False, None
