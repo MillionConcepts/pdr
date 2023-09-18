@@ -6,6 +6,8 @@
 - Support for Venera 15 and 16 derived data
 - Support for ARRAY objects with nested ARRAY or COLLECTION objects in them
 - Support for Giotto PIA and VEGA 1/2 Puma_mode data
+- Support for Venus Climate Orbiter data
+- Support for Saturn Ring Plane Crossings (RPX) 1995-1996 data
 - 
 
 ### Changed

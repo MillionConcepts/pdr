@@ -298,6 +298,12 @@ of their metadata appear to match other sources.
     - ROMAP EDRs, RDRs, and DDRs
     - SD2 RDRs
     - SESAME EDRs and RDRs
+- Saturn RPX
+  - HST images, masks, and engineering data
+  - WHT images and spectra
+  - IRTF images
+  - CFHT images
+  - WIYN images
 - Stardust
   - CIDA EDF and housekeeping data
   - DFMI products
@@ -322,6 +328,11 @@ of their metadata appear to match other sources.
   - PUMA mode data
 - Venera 15 and 16
   - ROE derived electron density profiles
+- Venus Climate Orbiter
+  - IR1 and IR2 raw, calibrated, and geometry data
+  - LIR raw, calibrated, and geometry data
+  - UVI raw, calibrated, and geometry data
+  - RS doppler and temperature-pressure profiles
 - Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
