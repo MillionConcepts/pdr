@@ -219,6 +219,14 @@ def check_special_position(identifiers, block, target, name, fn, start_byte):
         return formats.lro.rss_get_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "DIF-C-HRIV/MRI-5-HARTLEY2-SHAPE-V1.0"
+        and identifiers["PRODUCT_ID"] == "HARTLEY2-CARTESIAN-PLATE-MODEL"
+        and "TABLE" in name
+    ):
+        return True, formats.epoxi.cart_model_get_position(
+            identifiers, block, target, name, start_byte
+            )
     return False, None
 
 
