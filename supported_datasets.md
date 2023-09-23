@@ -85,9 +85,26 @@ of their metadata appear to match other sources.
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
   - VIR: mosaics, EDR and RDR cube products
   - RSS: gravity models
+- Deep Impact
+  - HRI-IR raw and reduced/calibrated spectra
+  - HRI-VIS raw and calibrated images
+  - MRI-VIS raw and calibrated images
+  - ITS-VIS raw and calibrated images
+  - Raw and calibrated navigation images (HRI-VIS, MRI-VIS, and ITS-VIS)
+  - Derived products: shape models, surface temperature maps, and MRI-VIS photometry data
+  - Pre-launch testing data
+  - Radio science ODF files
+  - Spacecraft instrument temperature data
 - Deep Space 1
   - IDS RDRs
   - MICAS DEM, images, and matrices
+- EPOXI
+  - HRI-IR raw and calibrated spectra
+  - HRI-VIS raw and calibrated images
+  - MRI-VIS raw and calibrated images
+  - Derived products: shape models, HRI-VIS deconvolved images, photometry data, and stellar PSFs
+  - In-flight calibration images
+  - Spacecraft instrument temperature data
 - Galileo 
   - EPD: calibrated Jupiter data (PDS4) and pre-Jupiter products (PDS3)
   - GDDS tables 
@@ -264,6 +281,15 @@ of their metadata appear to match other sources.
   - OUVS IMIDR images
   - POS VSO coordinates
   - POS SEDR
+- Phoenix
+  - TEGA EDRs
+  - MECA
+    - TECP EDRs and RDRs
+    - AFM EDRs
+    - OM EDRs and RDRs
+  - SSI EDRs, RDRs, and mosaics
+  - RAC EDRs, RDRs, and mosaics
+  - PDS4 products: RA, MET, LIDAR, ASE, AO, TT, and derived products
 - Pre-Magellan collection at the GEO node
   - AIRSAR images
   - Earth-based Mars, Mercury, Lunar, and Venus observations
@@ -382,6 +408,8 @@ of their metadata appear to match other sources.
   - RSS EDRs (support not planned)
 - Dawn
   - Framing camera: a handful of calibration images
+- Deep Impact
+  - Movies of 9P/Tempel 1 approach and encounter (support not planned; not an archive compliant format)
 - Galileo
   - MAG summary tables (other tables supported, support not planned)
   - NIMS Jupiter EDRs and cubes (support planned)
@@ -442,6 +470,11 @@ of their metadata appear to match other sources.
 - Pioneer Venus Orbiter
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
+- Phoenix
+  - TEGA RDRs (support planned)
+  - MECA
+    - WCL EDRs and RDRs (support planned)
+    - AFM RDRs (support planned)
 - Rosetta
   - Orbiter:
     - MIDAS RDRs with .dat file extension (support planned)

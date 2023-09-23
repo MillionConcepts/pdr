@@ -8,7 +8,8 @@
 - Support for Giotto PIA and VEGA 1/2 Puma_mode data
 - Support for Venus Climate Orbiter data
 - Support for Saturn Ring Plane Crossings (RPX) 1995-1996 data
-- 
+- Support for most Phoenix datasets
+- Support for Deep Impact and EPOXI data
 
 ### Changed
 
