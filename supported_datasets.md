@@ -214,6 +214,13 @@ of their metadata appear to match other sources.
     - special data products
     - improved derived neutron data (PDS4)
   - RSS ODF, RSR, and TDF products
+- Mars Pathfinder
+  - IMP EDRs
+  - RVRCAM EDRs and MIDRs
+  - APXS EDRs and DDRs
+  - Stereo-derived 3D position data
+  - Radio science ODFs, TDFs, reduced tracking data, and estimated Mars rotation parameters
+  - Engineering EDRs and RDRs
 - MESSENGER
   - GRNS
     - NS EDR, CDR, DDR

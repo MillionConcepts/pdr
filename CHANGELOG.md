@@ -10,6 +10,7 @@
 - Support for Saturn Ring Plane Crossings (RPX) 1995-1996 data
 - Support for most Phoenix datasets
 - Support for Deep Impact and EPOXI data
+- Support for Mars Pathfinder data
 
 ### Changed
 
