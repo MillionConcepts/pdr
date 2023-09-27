@@ -176,6 +176,14 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.vega.fix_array_structure(
             name, block, fn, data, identifiers
         )
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS RECONNAISSANCE ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "MARS CLIMATE SOUNDER"
+        and name == "TABLE"
+    ):
+        return True, formats.mro.get_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 

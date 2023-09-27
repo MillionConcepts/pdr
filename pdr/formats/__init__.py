@@ -11,6 +11,7 @@ import pdr.formats.lro as lro
 import pdr.formats.mex_marsis as mex_marsis
 import pdr.formats.mgn as mgn
 import pdr.formats.mgs as mgs
+import pdr.formats.mro as mro
 import pdr.formats.msl_apxs as msl_apxs
 import pdr.formats.msl_cmn as msl_cmn
 import pdr.formats.msl_ccam as msl_ccam
