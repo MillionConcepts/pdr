@@ -13,14 +13,7 @@ from pdr.func import (
     softquery,
     specialize,
 )
-
-
-def takes_a_few_things(a, b, c, *, d: Optional[int] = 1, e=5, **_):
-    return a + b + c + d + e
-
-
-def takes_x_only(x):
-    return x + 1
+from pdr.tests.objects import takes_a_few_things, takes_x_only
 
 
 def test_filterkwargs():
