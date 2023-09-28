@@ -65,5 +65,5 @@ def check_explicit_delimiter(block):
                 "TAB": "\t",
             }[block["FIELD_DELIMITER"]]
         except KeyError:
-            raise KeyError("Unkown FIELD_DELIMITER character.")
+            raise KeyError("Unknown FIELD_DELIMITER character.")
     return ","

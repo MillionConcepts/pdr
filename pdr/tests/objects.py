@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 
@@ -9,11 +10,85 @@ def takes_x_only(x):
     return x + 1
 
 
-STUB_LABEL = """
-^IMAGE = "IMAGE.IMG"
+STUB_BINARY_TABLE_LABEL = """
+^TABLE          = "PRODUCT.QQQ"
+RECORD_TYPE     = STREAM
+FILE_RECORDS    = 10
+RECORD_BYTES    = 13
+OBJECT           = TABLE
+    INTERCHANGE_FORMAT      = BINARY
+    ROWS                    = 10
+    ROW_BYTES               = 13
+    COLUMNS                 = 3
+    OBJECT                  = COLUMN
+        NAME                = "X"
+        DATA_TYPE           = "UNSIGNED_INTEGER"
+        START_BYTE          = 1
+        BYTES               = 1
+    END_OBJECT              = COLUMN
+    OBJECT                  = COLUMN
+        NAME                = "Y"
+        DATA_TYPE           = "PC_REAL"
+        START_BYTE          = 2
+        BYTES               = 4
+    END_OBJECT              = COLUMN
+    OBJECT                  = COLUMN
+        NAME                = "X"
+        DATA_TYPE           = "PC_REAL"
+        START_BYTE          = 6
+        BYTES               = 8
+    END_OBJECT              = COLUMN
+END_OBJECT                  = TABLE
+END 
+"""
+
+STUB_DSV_TABLE_LABEL = """
+^SPREADSHEET          = "PRODUCT.QQQ"
+RECORD_TYPE     = STREAM
+FILE_RECORDS    = 10
+RECORD_BYTES    = 17
+OBJECT           = SPREADSHEET
+    INTERCHANGE_FORMAT      = ASCII
+    ROWS                    = 10
+    FIELD_DELIMITER         = VERTICAL_BAR
+    COLUMNS                 = 3
+    OBJECT                  = COLUMN
+        NAME                = "X"
+        DATA_TYPE           = "ASCII_INTEGER"
+    END_OBJECT              = COLUMN
+    OBJECT                  = COLUMN
+        NAME                = "Y"
+        DATA_TYPE           = "ASCII_REAL"
+    END_OBJECT              = COLUMN
+    OBJECT                  = COLUMN
+        NAME                = "X"
+        DATA_TYPE           = "ASCII_REAL"
+    END_OBJECT              = COLUMN
+END_OBJECT                  = TABLE
+END 
+"""
+
+
+STUB_IMAGE_LABEL = """
+^IMAGE = "PRODUCT.QQQ"
 SPACECRAFT_NAME = "ORBITER"
+OBJECT       = IMAGE
+    INTERCHANGE_FORMAT              = BINARY
+    LINES                           = 100
+    LINE_SAMPLES                    = 100
+    SAMPLE_TYPE                     = LSB_UNSIGNED_INTEGER
+    SAMPLE_BITS                     = 8
+    BANDS                           = 1
+    BAND_STORAGE_TYPE               = BAND_SEQUENTIAL
+    FIRST_LINE                      = 1
+    FIRST_LINE_SAMPLE               = 1
+    SAMPLE_BIT_MASK                 = 2#0111111111111111#
+    INVALID_CONSTANT                = 0
+    MISSING_CONSTANT                = 0
+END_OBJECT       = IMAGE
 END
 """
+STUB_IMAGE_LABEL_MB = re.sub(r"BANDS.*?1", 'BANDS     = 3', STUB_IMAGE_LABEL)
 
 SILLY_LABEL = """
 PDS_VERSION_ID                    = NO
