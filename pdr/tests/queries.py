@@ -44,6 +44,7 @@ def generic_properties():
     props = generic_image_properties(block, imsamp())
     assert props == {
         "BYTES_PER_PIXEL": 4,
+        "is_vax_real": False,
         "sample_type": ">f",
         "nrows": 650,
         "ncols": 350,
@@ -96,3 +97,10 @@ def qube_props():
 def axplanes():
     qube_block, props = qube_props()
     assert extract_axplane_metadata(qube_block, props) == {'rowpad': 0, 'colpad': 0, 'bandpad': 8, 'suffix_bands': 8}
+
+
+basesamp()
+imsamp()
+axplanes()
+qube_props()
+generic_properties()

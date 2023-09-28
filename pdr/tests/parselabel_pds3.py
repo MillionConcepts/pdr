@@ -54,3 +54,6 @@ def parse_quantity():
         params['TAIL_COORDINATE_SYSTEM_PARMS']['ARTICULATION_DEVICE_ANGLE']
     )[0] == {'value': -4.5e-05, 'units': 'rad'}
 
+
+parse_quantity()
+parse_label()

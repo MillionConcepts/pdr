@@ -22,8 +22,9 @@ def integer_bytes(
         letter = "b"
     if signed is False:
         letter = letter.upper()
-    if for_numpy is True and sample_bytes == 4:
-        letter = "i4" if signed is True else "u4"
+    if for_numpy is True and sample_bytes in (4, 8):
+        letter = f"i{sample_bytes}" if signed is True else f"u{sample_bytes}"
+
     return f"{endian}{letter}"
 
 

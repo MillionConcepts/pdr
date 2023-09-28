@@ -56,7 +56,7 @@ def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
     return np.array(array, dtype=swapped_dtype)
 
 
-def casting_to_float(array: np.ndarray, *operands: Collection[Number]) -> bool:
+def casting_to_float(array: np.ndarray, *operands: Number) -> bool:
     """
     check: will this operation cast the array to float?
     return True if array is integer-valued and any operands are not integers.
