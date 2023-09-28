@@ -1,4 +1,6 @@
+import os
 from itertools import product
+from pathlib import Path
 
 # noinspection PyProtectedMember
 from pdr.loaders._helpers import (
@@ -30,9 +32,15 @@ def test_quantity_start_byte():
 
 def test_count_from_bottom_of_file():
     fn, rows, row_bytes = ['foo.bin', 'FOO.bin'], 100, 256
-    with open(fn[0], 'wb') as stream:
-        stream.write(b'\x00' * rows * row_bytes * 2)
-    assert _count_from_bottom_of_file(fn, rows, row_bytes) == rows * row_bytes
+    try:
+        with Path(fn[0]).open('wb') as stream:
+            stream.write(b'\x00' * rows * row_bytes * 2)
+        assert (
+            _count_from_bottom_of_file(fn, rows, row_bytes) == rows * row_bytes
+        )
+    finally:
+        Path(fn[0]).unlink(missing_ok=True)
+
 
 
 def test_check_delimiter_stream():
