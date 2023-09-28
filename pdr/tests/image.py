@@ -48,6 +48,15 @@ def test_enforce_order_and_object():
     assert np.all(enforced == grossarray)
     assert enforced.dtype[0] == np.dtype('O')
     assert enforced.dtype[2] == np.dtype('i2')
+    enforced2 = enforce_order_and_object(np.array([b'\x00'], dtype='V'))
+    assert enforced2[0] == b'\x00'
+    assert enforced2.dtype == np.dtype('O')
+    enforced3 = enforce_order_and_object(np.array([3], dtype='>i2'))
+    assert enforced3[0] == 3
+    assert enforced3.dtype == np.dtype('i2')
+    enforced4 = enforce_order_and_object(np.array([3], dtype='>i2'))
+    assert enforced4[0] == 3
+    assert enforced4.dtype == np.dtype('i2')
 
 
 def test_ibm_to_np():
