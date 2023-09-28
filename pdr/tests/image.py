@@ -1,10 +1,17 @@
 import gzip
 import os
-from gzip import GzipFile
 
 import numpy as np
 
-from pdr.np_utils import make_c_contiguous, casting_to_float, np_from_buffered_io
+from pdr.np_utils import (
+    make_c_contiguous,
+    casting_to_float,
+    np_from_buffered_io,
+    ibm32_to_np_f32,
+    ibm64_to_np_f64, enforce_order_and_object
+)
+
+RNG = np.random.default_rng()
 
 
 def make_contiguous():
@@ -22,7 +29,7 @@ def is_casting_to_float():
 
 
 def test_np_from_buffered_io():
-    arr = np.random.poisson(20, (100, 100)).astype(np.uint8)
+    arr = RNG.poisson(20, (100, 100)).astype(np.uint8)
     with gzip.open("arr.img.gz", "wb") as stream:
         stream.write(arr.tobytes())
     buf = gzip.open("arr.img.gz", "rb")
@@ -34,6 +41,24 @@ def test_np_from_buffered_io():
     os.unlink("arr.img.gz")
 
 
+def test_enforce_order_and_object():
+    gross = np.dtype([('f1', 'V4'), ('f2', 'i2'), ('f3', '>i2')])
+    grossarray = np.array([(b'\x00\x00\x00\x01', 12, 12)], dtype=gross)
+    enforced = enforce_order_and_object(grossarray)
+    assert np.all(enforced == grossarray)
+    assert enforced.dtype[0] == np.dtype('O')
+    assert enforced.dtype[2] == np.dtype('i2')
+
+
+def test_ibm_to_np():
+    assert ibm32_to_np_f32(np.frombuffer(b"\x00\x00\x01\xc2", 'i4')) == -1
+    assert ibm64_to_np_f64(
+        np.frombuffer(b"\x00\x00\x00\x00\x00\x00\x01\xc2", 'i8')
+    ) == -1
+
+
+test_ibm_to_np()
 test_np_from_buffered_io()
 make_contiguous()
 is_casting_to_float()
+test_enforce_order_and_object()
