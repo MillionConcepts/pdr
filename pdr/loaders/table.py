@@ -5,31 +5,29 @@ from io import StringIO
 from pandas.errors import ParserError
 
 from pdr.loaders._helpers import check_explicit_delimiter
-from pdr.loaders.queries import get_array_num_items, check_array_for_subobject
+from pdr.loaders.queries import get_array_num_items
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
-from pdr.pd_utils import booleanize_booleans
+from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals
 from pdr.utils import decompress, head_file
 
 
-def read_array(fn, block, start_byte):
+def read_array(fn, block, start_byte, fmtdef_dt):
     """
     Read an array object from this product and return it as a numpy array.
     """
-    # TODO: Maybe add block[AXES] as names? Might have to switch to pandas
-    #  or a flattened structured array or something weirder
-    # TODO: Include offset calculations once an example with them is found
-    obj = check_array_for_subobject(block)
     if block.get("INTERCHANGE_FORMAT") == "BINARY":
+        _, dt = fmtdef_dt
+        count = get_array_num_items(block)
         with decompress(fn) as f:
-            binary = np_from_buffered_io(
+            array = np_from_buffered_io(
                 f,
-                dtype=sample_types(obj["DATA_TYPE"], obj["BYTES"], True),
-                count=get_array_num_items(block),
+                dtype=dt,
+                count=count,
                 offset=start_byte,
             )
-        return binary.reshape(block["AXIS_ITEMS"])
+        return array.reshape(block["AXIS_ITEMS"])
     # assume objects without the optional interchange_format key are ascii
     with open(fn) as stream:
         text = stream.read()
@@ -38,9 +36,9 @@ def read_array(fn, block, start_byte):
     except (TypeError, IndexError, ValueError):
         text = re.split(r"\s+", text)
     array = np.asarray(text).reshape(block["AXIS_ITEMS"])
-    if "DATA_TYPE" in obj.keys():
+    if "DATA_TYPE" in block.keys():
         array = array.astype(
-            sample_types(obj["DATA_TYPE"], obj["BYTES"], True)
+            sample_types(block["DATA_TYPE"], block["BYTES"], True)
         )
     return array
 
@@ -76,7 +74,7 @@ def read_table(
             if record.get("SCALING_FACTOR") and not pd.isnull(record.get("SCALING_FACTOR")):
                 table[col] = table[col].mul(record["SCALING_FACTOR"])
             else:
-                scaling_factor = 1
+                scaling_factor = 1  # TODO: appears superfluous
             if record.get("OFFSET") and not pd.isnull(record.get("OFFSET")):
                 offset = record["OFFSET"]
                 table[col] = table[col]+offset
@@ -90,12 +88,14 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     count = block.get("ROWS")
     count = count if count is not None else 1
     with decompress(fn) as f:
-        array = np_from_buffered_io(
+        table = np_from_buffered_io(
             f, dtype=dt, offset=start_byte, count=count
         )
-    swapped = enforce_order_and_object(array, inplace=False)
-    table = pd.DataFrame(swapped)
+    table = enforce_order_and_object(table)
+    table = pd.DataFrame(table)
+    table = convert_ibm_reals(table, fmtdef)
     table.columns = fmtdef.NAME.tolist()
+    table = convert_ebcdic(table, fmtdef)
     table = booleanize_booleans(table, fmtdef)
     table = bit_handling.expand_bit_strings(table, fmtdef)
     return table

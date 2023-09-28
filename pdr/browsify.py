@@ -147,7 +147,10 @@ def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs):
     if isinstance(obj, np.recarray):
         _browsify_recarray(obj, outbase, **dump_kwargs)
     elif isinstance(obj, np.ndarray):
-        _browsify_array(obj, outbase, **dump_kwargs)
+        if len(obj.shape) == 1:
+            pd.DataFrame(obj).to_csv(outbase + ".csv", index=False)
+        else:
+            _browsify_array(obj, outbase, **dump_kwargs)
     elif isinstance(obj, pd.DataFrame):
         if len(obj) == 1:
             # noinspection PyTypeChecker

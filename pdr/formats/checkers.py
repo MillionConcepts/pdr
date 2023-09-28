@@ -3,7 +3,7 @@ import re
 from typing import TYPE_CHECKING, Optional
 
 from pdr import formats
-from pdr.loaders.utility import trivial, is_trivial
+from pdr.loaders.utility import is_trivial
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import PDRLike
@@ -41,12 +41,16 @@ def check_special_offset(
         )
     ):
         return formats.cassini.get_offset(fn, identifiers)
+    if (
+        identifiers["INSTRUMENT_ID"] == "CRAT"
+        and identifiers["PRODUCT_TYPE"] == "EDR"
+        and name == "TABLE_1"
+    ):
+        return formats.lro.get_crater_offset()
     return False, None
 
 
-def check_special_table_reader(
-    identifiers, name, fn, fmtdef_dt, block
-):
+def check_special_table_reader(identifiers, name, fn, fmtdef_dt, block):
     if identifiers["DATA_SET_ID"] in (
         "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
         "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
@@ -57,9 +61,7 @@ def check_special_table_reader(
         return True, formats.cassini.spreadsheet_loader(
             fn, fmtdef_dt, identifiers["DATA_SET_ID"]
         )
-    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (
-        "SPREADSHEET" in name
-    ):
+    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and ("SPREADSHEET" in name):
         # mangled object names + positions
         return True, formats.msl_cmn.spreadsheet_loader(fn)
     if (
@@ -95,14 +97,17 @@ def check_special_table_reader(
         and identifiers["PRODUCT_TYPE"] in ("GCP", "PCP", "PRP")
         and name == "TABLE"
     ):
-        return True, formats.diviner.diviner_l4_table_loader(
-            fmtdef_dt, fn
-        )
+        return True, formats.diviner.diviner_l4_table_loader(fmtdef_dt, fn)
     if (
         identifiers["DATA_SET_ID"] == "GO-J-PWS-5-DDR-PLASMA-DENSITY-FULL-V1.0"
         and name == "SPREADSHEET"
     ):
         return True, formats.galileo.pws_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "ODY-M-GRS-5-ELEMENTS-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.odyssey.map_table_loader(fn, fmtdef_dt)
     return False, None
 
 
@@ -142,10 +147,9 @@ def check_special_structure(block, name, fn, identifiers, data):
             block, name, fn, data, identifiers
         )
     if (
-        (identifiers["DATA_SET_ID"] == "GP-J-NMS-3-ENTRY-V1.0"
-        or identifiers["DATA_SET_ID"] == "GP-J-ASI-3-ENTRY-V1.0")
-        and name == "TABLE"
-    ):
+        identifiers["DATA_SET_ID"] == "GP-J-NMS-3-ENTRY-V1.0"
+        or identifiers["DATA_SET_ID"] == "GP-J-ASI-3-ENTRY-V1.0"
+    ) and name == "TABLE":
         return True, formats.galileo.probe_structure(
             block, name, fn, data, identifiers
         )
@@ -157,12 +161,33 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.galileo.epd_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        "VEGA" in identifiers["DATA_SET_ID"]
+        and "-C-DUCMA-3-RDR-HALLEY-V1.0" in identifiers["DATA_SET_ID"]
+        and name == "TABLE"
+    ):
+        return True, formats.vega.get_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        "GIO-C-PIA-3-RDR-HALLEY-V1.0" == identifiers["DATA_SET_ID"]
+        or re.match(r"VEGA.-C-PUMA.*", str(identifiers["DATA_SET_ID"]))
+    ) and name == "ARRAY":
+        return True, formats.vega.fix_array_structure(
+            name, block, fn, data, identifiers
+        )
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS RECONNAISSANCE ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "MARS CLIMATE SOUNDER"
+        and name == "TABLE"
+    ):
+        return True, formats.mro.get_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
-def check_special_position(
-    identifiers, block, target, name, fn, start_byte
-):
+def check_special_position(identifiers, block, target, name, fn, start_byte):
     if (
         identifiers["INSTRUMENT_ID"] == "MARSIS"
         and " TEC " in identifiers["DATA_SET_NAME"]
@@ -202,6 +227,14 @@ def check_special_position(
         return formats.lro.rss_get_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "DIF-C-HRIV/MRI-5-HARTLEY2-SHAPE-V1.0"
+        and identifiers["PRODUCT_ID"] == "HARTLEY2-CARTESIAN-PLATE-MODEL"
+        and "TABLE" in name
+    ):
+        return True, formats.epoxi.cart_model_get_position(
+            identifiers, block, target, name, start_byte
+            )
     return False, None
 
 
@@ -305,7 +338,7 @@ def check_special_block(name, data, identifiers):
     if (
         identifiers["INSTRUMENT_NAME"] == "PLASMA WAVE RECEIVER"
         and "SUMM" in identifiers["DATA_SET_ID"]
-        and (name == "TIME_SERIES" or name =="TABLE")
+        and (name == "TIME_SERIES" or name == "TABLE")
     ):
         return True, formats.galileo.pws_special_block(data, name)
     return False, None
@@ -353,9 +386,7 @@ def check_trivial_case(pointer, identifiers, fn) -> bool:
         and pointer == "HEADER"
     ):
         return formats.galileo.ssi_cubes_header_loader()
-    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (
-        pointer == "HEADER"
-    ):
+    if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (pointer == "HEADER"):
         return formats.msl_cmn.trivial_header_loader()
     return False
 
@@ -392,6 +423,13 @@ def check_special_fn(
     # THEMIS labels don't always mention when a file is stored gzipped
     if identifiers["INSTRUMENT_ID"] == "THEMIS":
         return formats.themis.check_gzip_fn(data, object_name)
+    if (
+        identifiers["DATA_SET_ID"] in ["NH-P-PEPSSI-4-PLASMA-V1.0",
+                                       "NH-X-SWAP-5-DERIVED-SOLARWIND-V1.0",
+                                       "NH-P/PSA-LORRI/ALICE/REX-5-ATMOS-V1.0"]
+        and object_name == "SPREADSHEET"
+    ):
+        return formats.nh.get_fn(data)
     return False, None
 
 
@@ -403,4 +441,38 @@ def check_special_qube_band_storage(identifiers):
         # inside a QUBE reading function.
     ):
         return formats.cassini.get_special_qube_band_storage()
+    return False, None
+
+
+def check_special_hdu_name(data, identifiers, fn, name):
+    if (
+        identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
+        and 'FC2' in identifiers['DATA_SET_ID']
+    ):
+        return True, formats.dawn.dawn_hdu_name(name)
+    if identifiers['DATA_SET_ID'].startswith('MSGR-H-MDIS-6-CAL'):
+        return True, formats.galileo.mdis_hdu_name(name)
+    if (
+        identifiers["INSTRUMENT_NAME"] == "STUDENT DUST COUNTER"
+        and '-SDC-' in identifiers["DATA_SET_ID"]
+        and identifiers['PRODUCT_TYPE'] == 'EDR'
+    ):
+        return True, formats.nh.sdc_edr_hdu_name(name)
+    if re.match(r"NH-\w-REX-[23]", identifiers['DATA_SET_ID']):
+        return True, formats.nh.rex_hdu_name(name)
+    if identifiers['INSTRUMENT_ID'] == 'PEPSSI':
+        if re.search(
+            r"(JUPITER|LAUNCH|CRUISE)", identifiers['DATA_SET_ID']
+        ):
+            return False, None  # these seem ok
+        elif identifiers['PRODUCT_TYPE'] == 'EDR':
+            return True, formats.nh.pepssi_edr_hdu_name(name)
+        elif "PLUTO" in identifiers['DATA_SET_ID']:
+            return True, formats.nh.pepssi_pluto_rdr_hdu_name(name)
+        else:
+            return True, formats.nh.pepssi_rdr_hdu_name(name)
+    if re.match(r"NH.*SWAP", identifiers["DATA_SET_ID"]):
+        return True, formats.nh.swap_hdu_stubs(data, identifiers, fn, name)
+    if identifiers['DATA_SET_ID'].startswith('HST-S-WFPC2-3-RPX'):
+        return True, formats.saturn_rpx.hst_hdu_name(name)
     return False, None

@@ -6,11 +6,14 @@ from pdr.formats import (
     check_special_position,
     check_special_structure,
     check_special_table_reader,
+    check_special_hdu_name
 )
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
-from pdr.loaders.queries import DEFAULT_DATA_QUERIES
+from pdr.loaders.queries import (
+    DEFAULT_DATA_QUERIES, get_identifiers, get_file_mapping,
+)
 
 
 class Loader:
@@ -63,6 +66,7 @@ class ReadImage(Loader):
                 get_qube_band_storage_type, check_special_qube_band_storage
             ),
             "gen_props": specialize(generic_image_properties, check_if_qube),
+            # just modifies gen_props in place, triggers transform in load step
         }
 
 
@@ -115,6 +119,7 @@ class ReadLabel(Loader):
 
 class ReadFits(Loader):
     """wrapper for handle_fits_file"""
+    from pdr.loaders.queries import get_fits_id, get_none
 
     def __init__(self):
         from pdr.loaders.handlers import handle_fits_file
@@ -122,7 +127,15 @@ class ReadFits(Loader):
         super().__init__(handle_fits_file)
 
     def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
-        return super().__call__(pdrlike, name, **kwargs)[name]
+        # slightly hacky but works with how we've done dictionary construction
+        return tuple(super().__call__(pdrlike, name, **kwargs).values())[0]
+
+    queries = {
+        'identifiers': get_identifiers,
+        "fn": get_file_mapping,
+        'other_stubs': get_none,
+        'hdu_id': specialize(get_fits_id, check_special_hdu_name),
+    }
 
 
 class ReadCompressedImage(Loader):
@@ -139,8 +152,14 @@ class ReadArray(Loader):
 
     def __init__(self):
         from pdr.loaders.table import read_array
+        from pdr.loaders.queries import parse_array_structure
 
         super().__init__(read_array)
+        self.queries = DEFAULT_DATA_QUERIES | {
+            "fmtdef_dt": specialize(
+                parse_array_structure, check_special_structure
+            ),
+        }
 
 
 class TBD(Loader):

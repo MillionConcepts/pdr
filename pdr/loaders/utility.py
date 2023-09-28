@@ -1,7 +1,8 @@
-import warnings
 from functools import partial
 from operator import contains
 from pathlib import Path
+import warnings
+
 from multidict import MultiDict
 
 
@@ -9,7 +10,7 @@ LABEL_EXTENSIONS = (".xml", ".lbl")
 IMAGE_EXTENSIONS = (".img", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
-FITS_EXTENSIONS = (".fits", ".fit")
+FITS_EXTENSIONS = (".fits", ".fit", ".fits.gz", ".fit.gz", ".fz")
 TIFF_EXTENSIONS = (".tif", ".tiff")
 JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 

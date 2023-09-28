@@ -93,3 +93,24 @@ def make_c_contiguous(arr: np.ndarray) -> np.ndarray:
     if arr.flags["C_CONTIGUOUS"] is False:
         return np.ascontiguousarray(arr)
     return arr
+
+
+# TODO: really all arguments but ibm/sreg are redundant for basic S/360 formats
+def ibm_to_np(ibm, sreg, ereg, mmask):
+    # dtype conversion: this field must be signed
+    ibm_sign = (ibm >> sreg & 0x01).astype('int8')
+    # dtype_conversion: largest values possible will overfloat int64 or float32
+    ibm_exponent = (ibm >> ereg & 0x7f).astype('float64')
+    ibm_mantissa = ibm & mmask
+    mantissa = ibm_mantissa / (2 ** ereg)
+    exponent = 16 ** (ibm_exponent - 64)
+    sign = 1 - (2 * ibm_sign).astype('int8')
+    return sign * mantissa * exponent
+
+
+def ibm32_to_np_f32(ibm):
+    return ibm_to_np(ibm, 31, 24, 0x00ffffff)
+
+
+def ibm64_to_np_f64(ibm):
+    return ibm_to_np(ibm, 63, 56, 0x00ffffffffffffff)

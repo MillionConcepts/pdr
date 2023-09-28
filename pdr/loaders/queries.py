@@ -181,7 +181,10 @@ def base_sample_info(block):
 
 def generic_image_properties(block, sample_type):
     props = {
+        # TODO: BYTES_PER_PIXEL check appears repeated with slight variation
+        #  from base_sample_info()
         "BYTES_PER_PIXEL": int(block["SAMPLE_BITS"] / 8),
+        "is_vax_real": block.get("SAMPLE_TYPE") == "VAX_REAL",
         "sample_type": sample_type,
         "nrows": block["LINES"],
         "ncols": block["LINE_SAMPLES"],
@@ -215,8 +218,8 @@ def check_array_for_subobject(block):
             f"{len(subobj)})"
         )
     if len(subobj) < 1:
-        return block
-    return block[subobj[0]]
+        return False
+    return True
 
 
 def get_array_num_items(block):
@@ -243,13 +246,11 @@ def get_target(data: PDRLike, name: str):
     return target
 
 
-def data_start_byte(
-    identifiers: dict, block: Mapping, target, fn
-) -> int:
+def data_start_byte(identifiers: dict, block: Mapping, target, fn) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
     """
-    if "RECORD_BYTES" in block.keys():
+    if (block is not None) and ("RECORD_BYTES" in block.keys()):
         record_bytes = block["RECORD_BYTES"]
     else:
         record_bytes = identifiers["RECORD_BYTES"]
@@ -344,6 +345,10 @@ def parse_table_structure(name, block, fn, data, identifiers):
     to np.fromfile or one of several ASCII table readers.
     """
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
+    if fmtdef['DATA_TYPE'].str.contains('VAX_REAL').any():
+        raise NotImplementedError(
+            "VAX reals are not currently supported in tables."
+        )
     if fmtdef["DATA_TYPE"].str.contains("ASCII").any() or looks_like_ascii(
         block, name
     ):
@@ -377,7 +382,7 @@ def read_table_structure(block, name, fn, data, identifiers):
     if "HISTOGRAM" in name:
         fields = get_histogram_fields(block)
     else:
-        fields = read_format_block(block, name, fn, data, identifiers)
+        fields, _ = read_format_block(block, name, fn, data, identifiers)
     # give columns unique names so that none of our table handling explodes
     import pandas as pd
 
@@ -389,37 +394,87 @@ def read_table_structure(block, name, fn, data, identifiers):
     return reindex_df_values(fmtdef)
 
 
-def read_format_block(block, object_name, fn, data, identifiers):
+def parse_array_structure(name, block, fn, data, identifiers):
+    if not block.get("INTERCHANGE_FORMAT") == "BINARY":
+        return None, None
+    has_sub = check_array_for_subobject(block)
+    if not has_sub:
+        dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
+        return None, dt
+    fmtdef = read_table_structure(block, name, fn, data, identifiers)
+    # Sometimes arrays define start_byte, sometimes their elements do
+    if "START_BYTE" in fmtdef.columns:
+        fmtdef['START_BYTE'].fillna(1, inplace=True)
+
+    from pdr.pd_utils import insert_sample_types_into_df
+    return insert_sample_types_into_df(fmtdef, identifiers)
+
+
+def read_format_block(
+    block, object_name, fn, data, identifiers, within_container=False
+):
     # load external structure specifications
     format_block = list(block.items())
     block_name = block.get("NAME")
     while "^STRUCTURE" in [obj[0] for obj in format_block]:
         format_block = inject_format_files(format_block, object_name, fn, data)
-    fields = []
+    fields, needs_placeholder, add_placeholder = [], False, False
     for item_type, definition in format_block:
-        if item_type in ("COLUMN", "FIELD"):
+        if item_type == "ARRAY":
+            if not check_array_for_subobject(definition):
+                item_type = "PRIMITIVE_ARRAY"
+        if item_type in ("COLUMN", "FIELD", "ELEMENT", "PRIMITIVE_ARRAY"):
+            if "^STRUCTURE" in definition:
+                definition_l = list(definition.items())
+                definition_l = inject_format_files(definition_l, object_name, fn, data)
+                definition = MultiDict()
+                for key, val in definition_l:
+                    definition.add(key, val)
             obj = dict(definition) | {"BLOCK_NAME": block_name}
             repeat_count = definition.get("ITEMS")
+            if "BIT_ELEMENT" in obj.keys():
+                raise NotImplementedError("BIT_ELEMENTS in ARRAYS not yet supported")
             obj = add_bit_column_info(obj, definition, identifiers)
-        elif item_type == "CONTAINER":
-            obj = read_format_block(
-                definition, object_name, fn, data, identifiers
+            add_placeholder = False
+        elif item_type in ("CONTAINER", "COLLECTION", "ARRAY"):
+            if within_container is True and len(fields) == 0:
+                needs_placeholder = True
+            obj, add_placeholder = read_format_block(
+                definition, object_name, fn, data, identifiers, True
             )
-            repeat_count = definition.get("REPETITIONS")
+            if item_type == "ARRAY":
+                add_placeholder = True
+            else:
+                repeat_count = definition.get("REPETITIONS")
         else:
             continue
+        if add_placeholder is True:
+            dummy_column = {
+                'NAME': f'PLACEHOLDER_{definition["NAME"]}',
+                'DATA_TYPE': 'VOID',
+                'START_BYTE': definition['START_BYTE'],
+                'BYTES': 0,
+                'BLOCK_NAME': block_name
+            }
+            if definition.get("AXIS_ITEMS"):
+                dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
+            fields.append(dummy_column)
         # containers can have REPETITIONS,
         # and some "columns" contain a lot of columns (ITEMS)
         # repeat the definition, renaming duplicates, for these cases
         if repeat_count is not None:
             fields = append_repeated_object(obj, fields, repeat_count)
         else:
-            fields.append(obj)
+            if type(obj) == list and object_name in ("COLLECTION", "ARRAY"):
+                # list obj should only happen in COLLECTIONs and ARRAYs; extra guard
+                fields.extend(obj)
+            else:
+                fields.append(obj)
     # semi-legal top-level containers not wrapped in other objects
     if object_name == "CONTAINER":
         if (repeat_count := block.get("REPETITIONS")) is not None:
             fields = list(chain(*[fields for _ in range(repeat_count)]))
-    return fields
+    return fields, needs_placeholder
 
 
 def get_histogram_fields(block):
@@ -477,6 +532,59 @@ def load_format_file(data, format_file, name, fn):
 
 def get_identifiers(data):
     return data.identifiers
+
+
+def get_none():
+    return None
+
+
+def get_fits_id(data, identifiers, fn, name, other_stubs):
+    # annoying to have to match all files in the label here
+    # but there is not really another reliable way to do it
+    name = name.lower()
+    matches = [
+        k for k in data.keys()
+        # 'in data.pointers' to avoid checking our own generated header keys
+        if (data._target_path(k) == fn) and (pointerize(k) in data.pointers)
+    ]
+    start_bytes = {
+        m: data_start_byte(
+            identifiers, get_block(data, m), get_target(data, m), fn
+        )
+        for m in matches
+    }
+    ordered = sorted(matches, key=lambda m: start_bytes[m])
+    ordered = tuple(map(str.lower, ordered))
+    if other_stubs is not None:
+        noheader = tuple(filter(lambda n: (not n.endswith('header') or n.upper() in other_stubs), ordered))
+        num_other_stubs = len(other_stubs)
+    else:
+        noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
+        num_other_stubs = 0
+    # this condition typically implies a "stub" primary hdu whose header but
+    # not body is mentioned in the PDS label
+    has_stub_primary = (
+        (len(noheader) != (len(matches) + num_other_stubs) / 2)
+        and (list(start_bytes.keys())[0].lower() not in noheader)
+    )
+    if not name.endswith('header') or name in noheader:
+        ix, length = noheader.index(name), len(noheader)
+        if has_stub_primary:
+            ix, length = ix + 1, length + 1
+    else:
+        ix, length = ordered.index(name), len(noheader)
+        try:
+            if ix != 0:
+                ix = noheader.index(ordered[ix + 1])
+                if has_stub_primary:
+                    ix += 1
+        except ValueError:
+            raise KeyError(
+                "Unable to identify HDU associated with this header object"
+            )
+        if has_stub_primary:
+            length += 1
+    return ix, length
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
