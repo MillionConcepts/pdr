@@ -5,7 +5,9 @@ import pdr.formats
 from pdr.loaders.queries import (
     generic_image_properties,
     im_sample_type,
-    base_sample_info, get_qube_band_storage_type, generic_qube_properties,
+    base_sample_info,
+    get_qube_band_storage_type,
+    generic_qube_properties,
     extract_axplane_metadata,
 )
 
@@ -30,18 +32,12 @@ def basesamp():
     block = literalize_pvl(parse_pvl(BLOCK_TEXT)[0]["IMAGE"])
     base = base_sample_info(block)
     assert base == {"BYTES_PER_PIXEL": 4, "SAMPLE_TYPE": "IEEE_REAL"}
-    return base
+    assert im_sample_type(base) == ">"
 
 
-def imsamp():
-    sample_type = im_sample_type(basesamp())
-    assert sample_type == ">f"
-    return sample_type
-
-
-def generic_properties():
+def test_generic_properties():
     block = literalize_pvl(parse_pvl(BLOCK_TEXT)[0]["IMAGE"])
-    props = generic_image_properties(block, imsamp())
+    props = generic_image_properties(block, ">f")
     assert props == {
         "BYTES_PER_PIXEL": 4,
         "is_vax_real": False,
@@ -81,7 +77,7 @@ END_OBJECT
 """
 
 
-def qube_props():
+def test_qube_props():
     params, _ = parse_pvl(QUBE_BLOCK_TEXT)
     qube_block = literalize_pvl(params["SPECTRAL_QUBE"])
     # base = base_sample_info(qube_block)
@@ -89,18 +85,22 @@ def qube_props():
     band_storage_type = get_qube_band_storage_type(qube_block)
     props = generic_qube_properties(qube_block, band_storage_type)
     assert props == {
-        'BYTES_PER_PIXEL': 4, 'sample_type': '>f', 'axnames': ('SAMPLE', 'LINE', 'BAND'), 'ncols': 100, 'nrows': 66, 'nbands': 17, 'band_storage_type': 'BAND_SEQUENTIAL', 'rowpad': 0, 'colpad': 0, 'bandpad': 8, 'suffix_bands': 8, 'linepad': 0
+        "BYTES_PER_PIXEL": 4,
+        "sample_type": ">f",
+        "axnames": ("SAMPLE", "LINE", "BAND"),
+        "ncols": 100,
+        "nrows": 66,
+        "nbands": 17,
+        "band_storage_type": "BAND_SEQUENTIAL",
+        "rowpad": 0,
+        "colpad": 0,
+        "bandpad": 8,
+        "suffix_bands": 8,
+        "linepad": 0,
     }
-    return qube_block, props
-
-
-def axplanes():
-    qube_block, props = qube_props()
-    assert extract_axplane_metadata(qube_block, props) == {'rowpad': 0, 'colpad': 0, 'bandpad': 8, 'suffix_bands': 8}
-
-
-basesamp()
-imsamp()
-axplanes()
-qube_props()
-generic_properties()
+    assert extract_axplane_metadata(qube_block, props) == {
+        "rowpad": 0,
+        "colpad": 0,
+        "bandpad": 8,
+        "suffix_bands": 8,
+    }

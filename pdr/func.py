@@ -1,7 +1,8 @@
 from functools import wraps, reduce
+# noinspection PyProtectedMember
 from inspect import signature, _empty, Signature, Parameter
-from itertools import combinations
-from typing import Callable, Any, Mapping, Optional
+from itertools import combinations, chain
+from typing import Callable, Any, Mapping, Optional, Collection
 
 from cytoolz import keyfilter
 from cytoolz.curried import valfilter
@@ -78,6 +79,21 @@ def sigparams(func: Callable) -> set[Parameter]:
     return set(signature(func).parameters.values())
 
 
+def paramsort(params: Collection[Parameter]) -> list[Parameter]:
+    """sorts signature parameters into legal order"""
+    bins = {
+        'POSITIONAL_ONLY': [],
+        'POSITIONAL_OR_KEYWORD': [],
+        'VAR_POSITIONAL': [],
+        'KEYWORD_ONLY': [],
+        'VAR_KEYWORD': []
+    }
+    for p in params:
+        bins[p.kind.name].append(p)
+    # noinspection PyTypeChecker
+    return list(chain.from_iterable(bins.values()))
+
+
 # noinspection PyProtectedMember
 def sig_union(*funcs: Callable) -> Signature:
     """
@@ -111,7 +127,7 @@ def sig_union(*funcs: Callable) -> Signature:
         except KeyError:
             # we already removed it
             continue
-    return Signature(list(outparams))
+    return Signature(paramsort(outparams))
 
 
 def specialize(

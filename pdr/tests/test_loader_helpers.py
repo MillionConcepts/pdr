@@ -75,10 +75,3 @@ def test_check_explicit_delimiter():
         raise KeyError
     except KeyError:
         pass
-
-
-test_looks_like_ascii()
-test_quantity_start_byte()
-test_count_from_bottom_of_file()
-test_check_delimiter_stream()
-test_check_explicit_delimiter()

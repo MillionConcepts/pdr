@@ -38,22 +38,17 @@ END
 """
 
 
-def parse_label():
-    params, aggregations = parse_pvl(label)
+def test_parse_label():
+    params, _ = parse_pvl(label)
     assert params['^CAT'] == '"MEOW.CAT"'
     assert params['CAT_NAME'] == 'LILY'
     assert params[
        'TAIL_COORDINATE_SYSTEM_PARMS'
     ]['TIP_OF_TAIL_FORMAT']['POINTINESS'] == '12'
-    return params
 
 
-def parse_quantity():
-    params = parse_label()
+def test_parse_quantity():
+    params, _ = parse_pvl(label)
     assert parse_pvl_quantity_statement(
         params['TAIL_COORDINATE_SYSTEM_PARMS']['ARTICULATION_DEVICE_ANGLE']
     )[0] == {'value': -4.5e-05, 'units': 'rad'}
-
-
-parse_quantity()
-parse_label()

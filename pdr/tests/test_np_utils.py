@@ -68,10 +68,3 @@ def test_ibm_to_np():
         )
         == -1
     )
-
-
-test_ibm_to_np()
-test_np_from_buffered_io()
-test_make_c_contiguous()
-test_casting_to_float()
-test_enforce_order_and_object()

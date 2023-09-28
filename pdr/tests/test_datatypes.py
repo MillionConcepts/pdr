@@ -75,6 +75,3 @@ def test_sample_types():
         "S8",
     )
     assert numpy_dtype_strings == expected_dtype_strings
-
-
-test_sample_types()
