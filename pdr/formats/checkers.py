@@ -50,7 +50,9 @@ def check_special_offset(
     return False, None
 
 
-def check_special_table_reader(identifiers, name, fn, fmtdef_dt, block):
+def check_special_table_reader(
+    identifiers, name, fn, fmtdef_dt, block, start_byte
+):
     if identifiers["DATA_SET_ID"] in (
         "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
         "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
@@ -108,6 +110,13 @@ def check_special_table_reader(identifiers, name, fn, fmtdef_dt, block):
         and name == "TABLE"
     ):
         return True, formats.odyssey.map_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "MRO-M-MCS-5-DDR-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.mro.mcs_ddr_table_loader(
+            fmtdef_dt, block, fn, start_byte
+        )
     return False, None
 
 
@@ -177,8 +186,8 @@ def check_special_structure(block, name, fn, identifiers, data):
             name, block, fn, data, identifiers
         )
     if (
-        identifiers["INSTRUMENT_HOST_NAME"] == "MARS RECONNAISSANCE ORBITER"
-        and identifiers["INSTRUMENT_NAME"] == "MARS CLIMATE SOUNDER"
+        (identifiers["DATA_SET_ID"] == "MRO-M-MCS-4-RDR-V1.0"
+        or identifiers["DATA_SET_ID"] == "MRO-M-MCS-2-EDR-V1.0")
         and name == "TABLE"
     ):
         return True, formats.mro.get_structure(
