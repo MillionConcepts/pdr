@@ -10,4 +10,4 @@ nav:
   - 'supported_datasets.md'
   - 'version_history.md'
   - License: 'LICENSE.md'
-  - pdr Internal API: 'pdr_internal_api.md'
+  - API Reference: 'pdr_api.md'
