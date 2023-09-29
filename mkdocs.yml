@@ -2,6 +2,7 @@ site_name: My Docs
 theme:
   name: readthedocs
 plugins:
+- search
 - mkdocstrings:
     enabled: !ENV [ENABLE_MKDOCSTRINGS, true]
     custom_templates: templates
