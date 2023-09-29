@@ -126,14 +126,3 @@ def test_softquery():
     # f = a + b + c + d + e == 5 + 6 + 11 + 100 + 20 == 142
     # then: a * b * c * d * e * f == 5 * 6 * 11 * 100 * 20 * 142 == 93720000
     assert target(**softquery(target, querydict, kwargdict)) == 93720000
-
-
-# test_filterkwargs()
-# test_call_kwargfiltered()
-# test_get_all_argnames()
-# test_get_argnames()
-# test_get_non_optional_argnames()
-# test_sigparams()
-# test_sig_union()
-# test_specialize()
-# test_softquery()
