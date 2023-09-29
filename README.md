@@ -42,7 +42,7 @@ quick interactive demo of functionality:
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/main))
 
 Additional information on usage including examples, output data types, notes and caveats, test, etc. 
-can now be accessed in our documentation on readthedocs at: https://pdr.readthedocs.io
+can now be accessed in our documentation on readthedocs at: https://pdr.readthedocs.io [![Documentation Status](https://readthedocs.org/projects/pdr/badge/?version=latest)](https://pdr.readthedocs.io/en/latest/?badge=latest)
 
 ---
 This work is supported by NASA grant No. 80NSSC21K0885.
