@@ -3,11 +3,11 @@ theme:
   name: readthedocs
 plugins:
 - search
-- mkdocstrings:
-    enabled: !ENV [ENABLE_MKDOCSTRINGS, true]
-    custom_templates: templates
-    default_handler: python
-    handlers:
-      python:
-        options:
-          show_source: false
+- mkdocstrings
+
+nav:
+  - 'index.md'
+  - 'supported_datasets.md'
+  - 'version_history.md'
+  - License: 'LICENSE.md'
+  - pdr Internal API: 'pdr_internal_api.md'

@@ -257,4 +257,5 @@ the test suite for *pdr* lives in a different repository: [pdr-tests](https://gi
 it both as a regression test suite and an active development tool.
 
 ---
+#### Funding Acknowledgement
 This work is supported by NASA grant No. 80NSSC21K0885.
