@@ -43,7 +43,6 @@ END_OBJECT              = COLUMN
 NULL_IDENTIFIERS = {field: "" for field in ID_FIELDS}
 
 
-# mild integration test. TODO: split up a bit.
 def test_bit_handling():
     block = literalize_pvl_block(parse_pvl(BIT_STUB)[0])
     fmtdef = read_table_structure(block, 'TABLE', None, None, NULL_IDENTIFIERS)
