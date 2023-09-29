@@ -2,6 +2,7 @@
 definitions of sample types / data types / dtypes / ctypes, file formats
 and extensions, associated special constants, and so on.
 """
+import re
 from itertools import product
 from types import MappingProxyType
 
@@ -56,14 +57,17 @@ def sample_types(
         _float = "d"
     elif sample_bytes == 4:
         _float = "f"
-    else:
+    elif re.search("REAL|FLOAT", sample_type):
         raise NotImplementedError(
             f"{sample_bytes}-byte floats are not supported."
         )
+    else:
+        _float = ""
     if sample_type == "VAX_REAL" and sample_bytes != 4:
         raise NotImplementedError(
             "VAX reals that are not 4 bytes wide are not supported."
         )
+    # noinspection PyUnboundLocalVariable
     return {
         "IEEE_REAL": f">{_float}",
         "PC_REAL": f"<{_float}",
@@ -85,10 +89,11 @@ def sample_types(
         "VOID": f"{void}{sample_bytes}",
         "BCD": f"{void}{sample_bytes}",
         "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}",
-        # this one (VAX_REAL) unfortunately doesn't work perfectly cleanly -- numpy
-        # doesn't have built-in support for it, so we just get the byte width
-        # correct here and add an additional check to transform it after load.
-        # the data type used here is totally arbitrary apart from byte size.
+        # this one (VAX_REAL) unfortunately doesn't work perfectly cleanly
+        # -- numpy doesn't have built-in support for it, so we just get the
+        # byte width correct here and add an additional check to transform
+        # it after load. the data type used here is totally arbitrary apart
+        # from byte size.
         "VAX_REAL": f"<{_float}",
         "IBM_REAL": f">u{sample_bytes}",
         "EBCDIC": f"V{sample_bytes}",
