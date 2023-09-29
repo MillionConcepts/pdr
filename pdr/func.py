@@ -1,5 +1,5 @@
 from functools import wraps, reduce
-# noinspection PyProtectedMember
+# noinspection PyProtectedMember,PyUnresolvedReferences
 from inspect import signature, _empty, Signature, Parameter
 from itertools import combinations, chain
 from typing import Callable, Any, Mapping, Optional, Collection
@@ -194,4 +194,3 @@ def softquery(
         kwargdict["tracker"].track(querydict[qname])
         kwargdict[qname] = call_kwargfiltered(querydict[qname], **kwargdict)
     return kwargdict
-

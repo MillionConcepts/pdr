@@ -1,5 +1,7 @@
 from typing import Union
 
+from dustgoggles.dynamic import exc_report
+
 from pdr.formats import (
     check_special_sample_type,
     check_special_qube_band_storage,
@@ -14,6 +16,16 @@ from pdr.pdrtypes import LoaderFunction, PDRLike
 from pdr.loaders.queries import (
     DEFAULT_DATA_QUERIES, get_identifiers, get_file_mapping,
 )
+
+
+def _format_exc_report(exc: Exception) -> dict:
+    """format an exception report for inclusion in another dict"""
+    report = exc_report(exc)
+    for k, v in tuple(report.items()):
+        if k != 'exception':
+            del report[k]
+            report[f"exception_{k}"] = v
+    return report
 
 
 class Loader:
@@ -34,12 +46,13 @@ class Loader:
         try:
             info = softquery(self.loader_function, self.queries, kwargdict)
         except Exception as exc:
-            record_exc = {"status": "query_failed", "exception": str(exc)}
+            record_exc = {"status": "query_failed"} | _format_exc_report(exc)
             raise exc
         finally:
             kwargdict["tracker"].track(self.loader_function, **record_exc)
             kwargdict["tracker"].dump()
         return {name: call_kwargfiltered(self.loader_function, **info)}
+
     queries = DEFAULT_DATA_QUERIES
 
 
