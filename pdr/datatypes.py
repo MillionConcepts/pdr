@@ -52,7 +52,14 @@ def sample_types(
         signed = "UNSIGNED" not in sample_type
         return integer_bytes(endian, signed, sample_bytes, for_numpy)
     void = "V" if for_numpy is True else "s"
-    _float = "d" if sample_bytes == 8 else "f"
+    if sample_bytes == 8:
+        _float = "d"
+    elif sample_bytes == 4:
+        _float = "f"
+    else:
+        raise NotImplementedError(
+            f"{sample_bytes}-byte floats are not supported."
+        )
     if sample_type == "VAX_REAL" and sample_bytes != 4:
         raise NotImplementedError(
             "VAX reals that are not 4 bytes wide are not supported."
