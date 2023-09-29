@@ -40,8 +40,6 @@ OBJECT                  = COLUMN
 END_OBJECT              = COLUMN
 """
 
-NULL_IDENTIFIERS = {field: "" for field in ID_FIELDS}
-
 
 def test_bit_handling():
     block = literalize_pvl_block(parse_pvl(BIT_STUB)[0])
