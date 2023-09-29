@@ -246,7 +246,11 @@ of their metadata appear to match other sources.
   - CRISM speclib and typespec tables
   - SHARAD EDR and RDR (*note: EDR science telemetry tables will only open the "science data" column(s) and does not output the columns described in the science_ancillary.fmt)
   - SHARAD rgram and geom files
-  - RSS ODF, RSR, RSDMAP, SHADR, and SHBDR
+  - RSS ODF, RSR, RSDMAP, SHADR, SHBDR, and TPS
+  - HiRISE EDRs and DTMs (*note: only the .img DTMs are officially supported*)
+  - MCS EDRs, RDRs, and DDRs
+  - CTX EDRs
+  - MARCI EDRs
 - MSL
   - Hazcam EDR and RDR (including ops parameter maps)
   - Navcam EDR and RDR (including ops parameter maps)
@@ -386,7 +390,7 @@ of their metadata appear to match other sources.
   - WAC derived tif files without labels (under EXTRAS folder at LROC
   mission node)
 - MRO
-  - HiRISE RDRs
+  - HiRISE RDRs and DTMs (the .jp2 products)
 - MSL
   - CheMin Film EDRs (have efm in filename)
 - MSX
@@ -463,6 +467,7 @@ of their metadata appear to match other sources.
   - RSS PostScript files from both Raw Data and Science Data Products (support not planned)
 - MRO
   - RSS .tnf (support not planned)
+  - HiRISE EDR line prefix tables (support planned)
 - MSL
   - Malin Space Science Systems (MSSS) Camera EDRs: "Raw" (EDR) data from the
     Mars Science Laboratory's MSSS-produced cameras (Mastcam, MAHLI, and

@@ -11,6 +11,7 @@
 - Support for most Phoenix datasets
 - Support for Deep Impact and EPOXI data
 - Support for Mars Pathfinder data
+- Support for several MRO datasets including HiRISE EDRs, MCS, MARCI, and CTX
 
 ### Changed
 
