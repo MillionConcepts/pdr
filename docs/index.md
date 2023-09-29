@@ -73,7 +73,7 @@ For instance:
 'MARS SCIENCE LABORATORY'
 ```
 Some PDS products (like this one) contain multiple data objects. You can look
-at all of the objects associated with a product with `.keys()`:
+at all the objects associated with a product with `.keys()`:
 ```
 >>> data.keys()
 ['LABEL',
@@ -88,8 +88,8 @@ at all of the objects associated with a product with `.keys()`:
  'MUFOOTER_TABLE',
  'IMAGE_REPLY_TABLE',
  'IMAGE',
- 'MODEL_DESC']
- ```
+ 'MODEL_DESC'] 
+```
 
 ### Output data types
 In general:
