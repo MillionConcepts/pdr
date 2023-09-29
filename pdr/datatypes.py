@@ -15,6 +15,7 @@ def integer_bytes(
     """
     translation for inconsistent integer types
     """
+    # TODO: add struct letter for longlong
     if sample_bytes == 4:
         letter = "l"
     elif sample_bytes == 2:
