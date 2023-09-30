@@ -3,8 +3,6 @@ from pdr.parselabel.pds3 import parse_pvl, literalize_pvl
 # TODO: shouldn't have to do this import. partial circular import issue.
 from pdr.loaders.queries import (
     generic_image_properties,
-    im_sample_type,
-    base_sample_info,
     get_qube_band_storage_type,
     generic_qube_properties,
     extract_axplane_metadata,
@@ -40,8 +38,6 @@ def test_generic_properties():
 def test_qube_props():
     params, _ = parse_pvl(QUBE_BLOCK_TEXT)
     qube_block = literalize_pvl(params["SPECTRAL_QUBE"])
-    # base = base_sample_info(qube_block)
-    # samp_type = im_sample_type(base)
     band_storage_type = get_qube_band_storage_type(qube_block)
     props = generic_qube_properties(qube_block, band_storage_type)
     assert props == {
