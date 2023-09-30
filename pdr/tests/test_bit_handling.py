@@ -48,7 +48,7 @@ def test_bit_handling():
     fmtdef = read_table_structure(block, 'TABLE', None, None, NULL_IDENTIFIERS)
     bits = random.choices((0, 1), k=16)
     table = pd.DataFrame(
-        {'BITS1': [int("".join(map(str, bits)), 2).to_bytes(2)]}
+        {'BITS1': [int("".join(map(str, bits)), 2).to_bytes(2, 'big')]}
     )
     table = expand_bit_strings(table, fmtdef)
     strings = table.loc[0, 'BITS1']
