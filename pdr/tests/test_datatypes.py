@@ -1,4 +1,4 @@
-from itertools import product, starmap
+from itertools import product
 
 from pdr.datatypes import sample_types
 
