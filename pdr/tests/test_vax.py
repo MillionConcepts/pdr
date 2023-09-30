@@ -147,5 +147,5 @@ def test_vax_things():
         assert np.all(result == ieee)
 
     assert from_vax32(
-        int('0b10000000010000000000000000000000', 2).to_bytes(4)
+        int('0b10000000010000000000000000000000', 2).to_bytes(4, 'big')
     ) == 1
