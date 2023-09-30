@@ -1,27 +1,37 @@
 ## [X.X.X] - 20XX-XX-XX
 ### Added
-- FITS files can now be opened without a PDS3 label. (see updated README for more detailed usage)
+#### Features
+- FITS files can now be opened without a PDS3 label. 
+(see [README.md](https://github.com/MillionConcepts/pdr/blob/main/README.md) for more detailed usage)
 - 1d, non-structured ARRAY objects are now compatible with `dump_browse`
-- Support for most New Horizons datasets
-- Support for Venera 15 and 16 derived data
-- Support for ARRAY objects with nested ARRAY or COLLECTION objects in them
-- Support for Giotto PIA and VEGA 1/2 Puma_mode data
-- Support for Venus Climate Orbiter data
-- Support for Saturn Ring Plane Crossings (RPX) 1995-1996 data
-- Support for most Phoenix datasets
-- Support for Deep Impact and EPOXI data
-- Support for Mars Pathfinder data
-- Support for several MRO datasets including HiRISE EDRs, MCS, MARCI, and CTX
+- support for ARRAY objects with nested ARRAY or COLLECTION objects
+- [`pytest`-compatible unit test suite](https://github.com/MillionConcepts/pdr/blob/main/pdr/tests/) 
+intended to complement our [comprehensive regression test framework](https://github.com/MillionConcepts/pdr-tests)
+
+#### Dataset Support
+- most New Horizons datasets
+- Venera 15 and 16 derived data
+- Giotto PIA and VEGA 1/2 Puma_mode data
+- Venus Climate Orbiter data
+- Saturn Ring Plane Crossings (RPX) 1995-1996 data
+- most Phoenix datasets
+- Deep Impact and EPOXI data
+- Mars Pathfinder data
+- several MRO datasets including HiRISE EDRs, MCS, MARCI, and CTX
+- see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
 ### Changed
-
+- Debug-mode error tracking is substantially more detailed
+- Debug-mode error logs are now written as JSON
+- Assorted backend refactoring, cleanup, error checks, and in-code documentation
 
 ### Fixed
 - FITS handling of HDUs improved (several data types were previously mapping to the wrong HDU)
 - FITS offset and scaling will now be applied properly for tables
+- 8-byte integers found in some nonstandard binary files are now handled correctly
+- improved handling of long / malformatted PVL comments
 
 ### Removed
-
 
 
 ## [1.0.2] - 2023-08-01
