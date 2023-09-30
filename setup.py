@@ -35,5 +35,6 @@ setuptools.setup(
         "fits": ["astropy"],
         "tiff": ["pillow"],
         "pvl": ["pvl"],
+        "tests": ["pytest"]
     }
 )
