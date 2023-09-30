@@ -2,6 +2,7 @@
 definitions of sample types / data types / dtypes / ctypes, file formats
 and extensions, associated special constants, and so on.
 """
+import re
 from itertools import product
 from types import MappingProxyType
 
@@ -14,6 +15,7 @@ def integer_bytes(
     """
     translation for inconsistent integer types
     """
+    # TODO: add struct letter for longlong
     if sample_bytes == 4:
         letter = "l"
     elif sample_bytes == 2:
@@ -22,8 +24,9 @@ def integer_bytes(
         letter = "b"
     if signed is False:
         letter = letter.upper()
-    if for_numpy is True and sample_bytes == 4:
-        letter = "i4" if signed is True else "u4"
+    if for_numpy is True and sample_bytes in (4, 8):
+        letter = f"i{sample_bytes}" if signed is True else f"u{sample_bytes}"
+
     return f"{endian}{letter}"
 
 
@@ -51,11 +54,21 @@ def sample_types(
         signed = "UNSIGNED" not in sample_type
         return integer_bytes(endian, signed, sample_bytes, for_numpy)
     void = "V" if for_numpy is True else "s"
-    _float = "d" if sample_bytes == 8 else "f"
+    if sample_bytes == 8:
+        _float = "d"
+    elif sample_bytes == 4:
+        _float = "f"
+    elif re.search("REAL|FLOAT", sample_type):
+        raise NotImplementedError(
+            f"{sample_bytes}-byte floats are not supported."
+        )
+    else:
+        _float = ""
     if sample_type == "VAX_REAL" and sample_bytes != 4:
         raise NotImplementedError(
             "VAX reals that are not 4 bytes wide are not supported."
         )
+    # noinspection PyUnboundLocalVariable
     return {
         "IEEE_REAL": f">{_float}",
         "PC_REAL": f"<{_float}",
@@ -77,10 +90,11 @@ def sample_types(
         "VOID": f"{void}{sample_bytes}",
         "BCD": f"{void}{sample_bytes}",
         "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}",
-        # this one (VAX_REAL) unfortunately doesn't work perfectly cleanly -- numpy
-        # doesn't have built-in support for it, so we just get the byte width
-        # correct here and add an additional check to transform it after load.
-        # the data type used here is totally arbitrary apart from byte size.
+        # this one (VAX_REAL) unfortunately doesn't work perfectly cleanly
+        # -- numpy doesn't have built-in support for it, so we just get the
+        # byte width correct here and add an additional check to transform
+        # it after load. the data type used here is totally arbitrary apart
+        # from byte size.
         "VAX_REAL": f"<{_float}",
         "IBM_REAL": f">u{sample_bytes}",
         "EBCDIC": f"V{sample_bytes}",

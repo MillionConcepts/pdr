@@ -21,3 +21,6 @@ git
 meta.yaml
 *.DS_store
 */.tracker_logs
+/.coverage
+/.pytest_cache/
+/htmlcov/

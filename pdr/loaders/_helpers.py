@@ -57,10 +57,13 @@ def _check_delimiter_stream(identifiers, name, target):
 
 def check_explicit_delimiter(block):
     if "FIELD_DELIMITER" in block.keys():
-        return {
-            "COMMA": ",",
-            "VERTICAL_BAR": "|",
-            "SEMICOLON": ";",
-            "TAB": "\t",
-        }[block["FIELD_DELIMITER"]]
+        try:
+            return {
+                "COMMA": ",",
+                "VERTICAL_BAR": "|",
+                "SEMICOLON": ";",
+                "TAB": "\t",
+            }[block["FIELD_DELIMITER"]]
+        except KeyError:
+            raise KeyError("Unknown FIELD_DELIMITER character.")
     return ","
