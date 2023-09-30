@@ -248,13 +248,35 @@ on Windows itself and Linux.
 
 ### Tests
 
-Our testing methodology for *pdr* currently focuses on end-to-end integration
-testing to ensure consistency, coverage of supported datasets, and 
-(to the extent we can verify it) correctness of output.
+#### Philosophy
+Our testing strategy focuses on end-to-end systems integration testing to 
+ensure consistency, coverage of supported datasets, and (to the extent we can 
+verify it) correctness of output. We prioritize this kind of testing because 
+`pdr` is intended to work with a wildly diverse body of data. Most of 
+`pdr`'s source code is highly multifunctional, designed to accept format 
+ambiguity and unexpected inputs. 
 
-the test suite for *pdr* lives in a different repository: [pdr-tests](https://github.com/MillionConcepts/pdr-tests). Its core is an application called
-**ix**. It should be considered a fairly complete alpha; we are actively using 
-it both as a regression test suite and an active development tool.
+This means that obtaining *meaningful* coverage from unit tests is 
+extremely difficult. _No written standard is reliable: the products are the 
+only reliable representation of the products_.  Describing their 
+idiosyncracies well enough to test against them requires replicating a 
+representative subset of the data corpus and verifying that `pdr` behaves 
+consistently when executed on this subset.
+
+#### `ix`
+This is exactly what our application `ix` is designed to facilitate. 
+It serves both as a regression testing framework and a development tool. 
+Although it serves as `pdr`'s primary test suite, it is really a distinct 
+application, so it lives in a different repository: [pdr-tests](https://github.com/MillionConcepts/pdr-tests). Note 
+that `ix` is feature-complete and stable, but lacks comprehensive user-facing 
+documentation.
+
+#### Unit Tests
+All this being said, many potential bugs in `pdr` _are_ detectable by 
+unit testing on simple cases, and although `ix` is well-optimized, running a 
+comprehensive regression test against >100 GB of data products is simply not 
+a fast affair. For these reasons, `pdr` also features a small suite of unit 
+tests. You can run them by executing `pytest` from the repository root.
 
 ---
 #### Funding Acknowledgement
