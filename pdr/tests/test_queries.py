@@ -1,6 +1,5 @@
 from pdr.parselabel.pds3 import parse_pvl, literalize_pvl
 
-# TODO: shouldn't have to do this import. partial circular import issue.
 from pdr.loaders.queries import (
     generic_image_properties,
     get_qube_band_storage_type,
