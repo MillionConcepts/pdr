@@ -1,7 +1,7 @@
 import os.path as _osp
 from pdr.pdr import Data, Metadata
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 pkg_dir = _osp.abspath(_osp.dirname(__file__))
 

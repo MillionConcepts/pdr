@@ -1,4 +1,4 @@
-## [X.X.X] - 20XX-XX-XX
+## [1.0.3] - 2023-10-03
 ### Added
 #### Features
 - FITS files can now be opened 'directly' (without a PDS label). 

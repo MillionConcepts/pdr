@@ -1,57 +1,69 @@
 # Version History
-## [X.X.X] - 20XX-XX-XX
+## [1.0.3] - 2023-10-03
 ### Added
-- FITS files can now be opened without a PDS3 label. (see updated README for more detailed usage)
+#### Features
+- FITS files can now be opened 'directly' (without a PDS label). 
+See [README.md](https://github.com/MillionConcepts/pdr/blob/main/README.md) for more detailed usage.
 - 1d, non-structured ARRAY objects are now compatible with `dump_browse`
-- Support for most New Horizons datasets
-- Support for Venera 15 and 16 derived data
-- Support for ARRAY objects with nested ARRAY or COLLECTION objects in them
-- Support for Giotto PIA and VEGA 1/2 Puma_mode data
-- Support for Venus Climate Orbiter data
-- Support for Saturn Ring Plane Crossings (RPX) 1995-1996 data
-- Support for most Phoenix datasets
-- Support for Deep Impact and EPOXI data
-- Support for Mars Pathfinder data
+- support for ARRAY objects with nested ARRAY or COLLECTION objects
+- [`pytest`-compatible unit test suite](https://github.com/MillionConcepts/pdr/blob/main/pdr/tests/) 
+intended to complement our [comprehensive regression test framework](https://github.com/MillionConcepts/pdr-tests)
+
+#### Dataset Support
+- most New Horizons datasets
+- Venera 15 and 16 derived data
+- Giotto PIA and VEGA 1/2 Puma_mode data
+- Venus Climate Orbiter data
+- Saturn Ring Plane Crossings (RPX) 1995-1996 data
+- most Phoenix datasets
+- Deep Impact and EPOXI data
+- Mars Pathfinder data
+- several MRO datasets including HiRISE EDRs, MCS, MARCI, and CTX
+- see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
 ### Changed
-
+- Debug-mode error tracking is substantially more detailed
+- Debug-mode error logs are now written as JSON
+- Assorted backend refactoring, cleanup, error checks, and in-code documentation
 
 ### Fixed
-- FITS handling of HDUs improved (several data types were previously mapping to the wrong HDU)
-- FITS offset and scaling will now be applied properly for tables
-
-### Removed
-
+- Fixed incorrect PDS3 object -> FITS HDU mapping for several data types
+- scaling/offset defined in FITS tables (BSCALE/BZERO) is now applied correctly to output `DataFrames`  
+- 8-byte integers found in some nonstandard binary files are now handled correctly
+- more consistent handling of long / malformatted PVL comments
+- improved handling of 'stub' primary FITS HDUs
 
 
 ## [1.0.2] - 2023-08-01
 ### Added
-- Support for Rosetta ALICE EDR, RDR, and REFDR data
-- Support for several Galileo datasets
-- Support for sample interleaved (BIP) images, including:
-  - Support for DAWN VIR EDR and RDR cube products
-  - Support for Rosetta VIRTIS EDRs
-- Support for Deep Space 1, NEAR, Stardust, and Stardust-NExT datasets
-- Support for VAX_REAL image products, including Pioneer Venus radar and IMIDR images
-- Support for IBM_REAL and EBCIDC data types, including Pioneer Venus SEDR
-- Support for LRO CRaTER EDR secondary science and housekeeping tables
-- Support for several Mars Odyssey datasets
-- Support for several Vega datasets
+#### Features
 - Support for FITS tables
 - Documentation on behavior of FITS files (in README)
+- Support for VAX floating-point numbers
+#### Dataset Support
+- Rosetta ALICE EDR, RDR, and REFDR data
+- several Galileo datasets
+- sampleninterleaved (BIP) images, including:
+  - DAWN VIR EDR and RDR cube products
+  - Rosetta VIRTIS EDRs
+- Deep Space 1, NEAR, Stardust, and Stardust-NExT datasets
+- various image products stored as VAX floats, including Pioneer Venus radar and IMIDR images
+- IBM_REAL and EBCIDC data types, including Pioneer Venus SEDR
+- LRO CRaTER EDR secondary science and housekeeping tables
+- several Mars Odyssey datasets
+- several Vega datasets
 
 ### Changed
-- Tables/Series objects will now apply label provided offset and scaling factors. 
-  This has not yet been implemented for ARRAY objects or BIT COLUMNS
-- The license has been updated to reflect the additional license from the vendoring of 
-  vax.py
+- TABLE and SERIES objects now apply label provided offset and scaling factors. 
+  This has not yet been implemented for ARRAY objects or BIT COLUMNS.
+- License file updated to incorporate license from the vendored vax.py module.
 
 ### Fixed
 - Tables with nested containers now read correctly; closes [issue 50](https://github.com/MillionConcepts/pdr/issues/50))
-- ^STRUCTURE pointers inside a COLUMN/FIELD will now load in the relevant format file 
+- ^STRUCTURE pointers inside a COLUMN/FIELD now correctly load the relevant format file 
 
 ### Removed
-- No longer get a UserWarning when a data type has spaces in bit column data type
+- Spaces in BIT_COLUMN DATA_TYPE values no longer raise `UserWarning`s
 
 ## [1.0.1] - 2023-06-20
 ### Fixed
@@ -59,20 +71,30 @@
 
 ## [1.0.0] - 2023-06-03
 This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 
-**The fundamental way end users interact with the main `pdr.read()` interface has not changed.**
+**The user-facing `pdr.read()` interface has not changed.**
 ###  Added
-- error/workflow tracking for all loaders. Errors can be accessed using `data.loaders["OBJECT_NAME"].errors`.  
-  Tracking files will now generate in a `.tracker_logs` folder in the `pdr` repo. They show which functions 
-  have been hit by a particular call of `pdr` and if those functions were successful.
+#### FEATURES
+- `pdr.Data`  initialized with `debug=True`
+  - Errors can be inspected at runtime by accessing `Data.loaders["OBJECT_NAME"].errors`.
+  - Tracking logs are also saved to the `pdr/.tracker_logs` folder.  
+  directory of the installation folder. They show which functions `Data` objects
+  used during loading processes -- and if those functions were successful.
 - handling for a wider array of ISIS-style "qube" data and metadata, 
   including side/back/bottom/topplanes (as long as they are along only one
   image axis)
-- support for (most) THEMIS qube products
+#### Dataset Support
+- most THEMIS qube products
 - TODO for cassini XDR image scaling functionality
-- support for additional LRO datasets: CRaTER, LAMP, LEND, LOLA, Mini-RF, and Radio Science
-- support for several Venusian datasets including: Magellan GVDR, Pioneer Venus, 
+- additional LRO datasets: CRaTER, LAMP, LEND, LOLA, Mini-RF, and Radio Science
+- several Venusian datasets including: Magellan GVDR, Pioneer Venus, 
   "Pre-Magellan" products at the GEO node, and Earth-based radar observations.
-- support for several Lunar datasets including: GRAIL, Lunar Prospector, MSX, 
+- several Lunar datasets including: GRAIL, Lunar Prospector, MSX, 
+  Kaguya/Selene, and Earth-based radar and spectroscopy data.- (most) THEMIS qube products
+- TODO for cassini XDR image scaling functionality
+- additional LRO datasets: CRaTER, LAMP, LEND, LOLA, Mini-RF, and Radio Science
+- several Venusian datasets including: Magellan GVDR, Pioneer Venus, 
+  "Pre-Magellan" products at the GEO node, and Earth-based radar observations.
+- several Lunar datasets including: GRAIL, Lunar Prospector, MSX, 
   Kaguya/Selene, and Earth-based radar and spectroscopy data.
 
 ### Changed
@@ -118,13 +140,15 @@ This release represents a major refactoring effort to reduce technical debt and 
 
 ## [0.7.4] - 2023-03-13
 ### Added
- - support for a variety of LRO Diviner, Cassini, and Huygens data products    
-   (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
-   for specifics)
+#### Features
  - This change log file
  - Support for bit columns with ITEMS
  - Browse images can now be output in grayscale
  - handling for COMPRESSED_FILE objects 
+#### Dataset Support
+ - a variety of LRO Diviner, Cassini, and Huygens data products    
+   (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
+   for specifics)
 
 ### Changed
  - pdr will now accept non-UTF-8 characters in detached PVL label / format files
@@ -158,12 +182,14 @@ This release represents a major refactoring effort to reduce technical debt and 
 
 ## [0.7.3] - 2023-01-18
 ### Added
+#### Features
  - Array pointers are now supported
  - FITS headers are now supported. (If a pointer with HEADER in it points to a FITS
    file it will return that header. If there is a pointer without HEADER in it that 
    points to the FITS file then after loading that key, an additional key will appear 
    in the format: `{key}_HEADER` that will contain the FITS header).
  - JPEG2000 (`.jp2`) files are now supported
+#### Dataset Support
  - Many new datatypes from missions including MGS, Clementine, Rosetta, and more
    (see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) 
    for specifics)
@@ -182,13 +208,15 @@ This release represents a major refactoring effort to reduce technical debt and 
 
 ## [0.7.2] - 2022-10-31
 ### Added
+#### Features
  - better search functionality for format files (description of behavior/usage can be found 
    [here](https://github.com/MillionConcepts/pdr/issues/36#issuecomment-1276764335))
  - A pretty printer for label metadata is now available. (Use print(data.metadata) to see the
    nicely formatted label information)
  - Image data with different scales and offsets can now be used with the browse products 
    created by `get_scaled`
- - Support was added for several Juno datasets (see supported_datasets.md for specifics).
+#### Dataset Support
+ - several Juno datasets (see supported_datasets.md for specifics).
 
 ### Changed
  - Accelerated bit handling (files with bit columns will now be processed faster).
