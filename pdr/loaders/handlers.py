@@ -49,8 +49,11 @@ def handle_fits_file(
     # quite slow. so, when astropy.io.fits decides something is too invalid to
     # show us, tell it to fix it first.
     except fits.VerifyError:
-        hdulist.verify('silentfix')
-        hdr_val = handle_fits_header(hdulist, hdu_id)
+        try:
+            hdulist.verify('silentfix')
+            hdr_val = handle_fits_header(hdulist, hdu_id)
+        except fits.VerifyError:  # real messed up
+            hdr_val = handle_fits_header(hdulist, hdu_id, skip_bad_cards=True)
     if (
         "HEADER" not in name
         # cases where HDUs are named things like "IMAGE HEADER"
@@ -112,21 +115,30 @@ def handle_compressed_image(fn):
     return image
 
 
-def handle_fits_header(hdulist, hdu_id=""):
+def handle_fits_header(hdulist, hdu_id="", skip_bad_cards=False):
     if isinstance(hdu_id, int):
         astro_hdr = hdulist[hdu_id].header
     else:
         astro_hdr = hdulist[pointer_to_fits_key(hdu_id, hdulist)].header
     output_hdr = MultiDict()
-    for key, val, com in astro_hdr.cards:
-        if len(key) > 0:
-            if isinstance(val, (str, float, int)):
-                output_hdr.add(key, val)
-            else:
-                output_hdr.add(key, str(val))
-            if len(com) > 0:
-                comment_key = key + "_comment"
-                output_hdr.add(comment_key, com)
+    from astropy.io import fits
+    for i in range(len(astro_hdr.cards)):
+        try:
+            key, val, com = astro_hdr.cards[i]
+            if len(key) > 0:
+                if isinstance(val, (str, float, int)):
+                    output_hdr.add(key, val)
+                else:
+                    output_hdr.add(key, str(val))
+                if len(com) > 0:
+                    comment_key = key + "_comment"
+                    output_hdr.add(comment_key, com)
+        except fits.VerifyError:
+            if skip_bad_cards is True:
+                continue
+            raise
+        except StopIteration:
+            break
     return output_hdr
 
 

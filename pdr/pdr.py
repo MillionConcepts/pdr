@@ -175,6 +175,10 @@ class Metadata(MultiDict):
         return f"Metadata({prettify_multidict(self)})"
 
 
+class DebugExceptionPreempted(Exception):
+    pass
+
+
 class Data:
     def __init__(
         self,
@@ -383,6 +387,8 @@ class Data:
                 raise TypeError(f"loader returned non-dict object of type ({type(obj)}")
             self._add_loaded_objects(obj)
             return
+        except DebugExceptionPreempted:
+            pass
         except KeyboardInterrupt:
             raise
         except NotImplementedError as ex:
@@ -518,7 +524,10 @@ class Data:
         ):
             self._scaleflags[pointer] = True
         if self.debug is True and len(loader.errors) > 0:
-            raise loader.errors[-1]
+            warnings.warn(
+                f"Unable to load {pointer}: {loader.errors[-1]['exception']}"
+            )
+            raise DebugExceptionPreempted
         return obj
 
     def get_scaled(
