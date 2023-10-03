@@ -1,0 +1,13 @@
+site_name: Planetary Data Reader
+theme:
+  name: readthedocs
+plugins:
+- search
+- mkdocstrings
+
+nav:
+  - 'index.md'
+  - 'supported_datasets.md'
+  - 'version_history.md'
+  - License: 'LICENSE.md'
+  - API Reference: 'pdr_api.md'
