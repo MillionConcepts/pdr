@@ -104,6 +104,8 @@ def swap_hdu_stubs(data, identifiers, fn, name):
         headers_stripped = [n.split('_'+n.split('_')[-1])[0] for n in headers]
         noheaders_stripped = [n.split('_'+n.split('_')[-1])[0] for n in noheaders]
         stubs = [val+"_HEADER" for val in headers_stripped if val not in noheaders_stripped+noheaders]
+        if "EXTENSION_HISTOGRAM32_HEADER" in stubs and "EXTENSION_HISTOGRAM32_IMAGE_HISTOGRAM" in noheaders:
+            stubs.remove('EXTENSION_HISTOGRAM32_HEADER')
         return get_fits_id(data, identifiers, fn, name, other_stubs=stubs)
     else:
         return get_fits_id(data, identifiers, fn, name, other_stubs=None)
