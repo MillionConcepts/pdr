@@ -1,4 +1,4 @@
-from itertools import product, starmap
+from itertools import product
 
 from pdr.datatypes import sample_types
 
@@ -17,20 +17,19 @@ def test_sample_types():
         "ASCII_REAL",
     )
     bit_depths = [1, 2, 4, 8]
-    numpy_dtype_strings = tuple(
-        starmap(sample_types, product(pds3_data_types, bit_depths, (True,)))
-    )
-    expected_dtype_strings = (
+    numpy_dtype_strings = []
+    for dt, depth in product(pds3_data_types, bit_depths):
+        try:
+            numpy_dtype_strings.append(sample_types(dt, depth, True))
+        except NotImplementedError:
+            assert ("REAL" in dt) and (depth in (1, 2))
+    expected_dtype_strings = [
         # CHARACTER
         "S1",
         "S2",
         "S4",
         "S8",
         # IEEE_REAL
-        # we don't actually support minifloat or half-float,
-        # so these are expected to be >f
-        ">f",
-        ">f",
         ">f",
         ">d",
         # LSB_INTEGER
@@ -55,8 +54,6 @@ def test_sample_types():
         ">u8",
         # PC_REAL
         "<f",
-        "<f",
-        "<f",
         "<d",
         # UNSIGNED_INTEGER
         ">B",
@@ -73,5 +70,5 @@ def test_sample_types():
         "S2",
         "S4",
         "S8",
-    )
+    ]
     assert numpy_dtype_strings == expected_dtype_strings

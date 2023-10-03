@@ -12,7 +12,6 @@ from pdr.browsify import (
     colorfill_maskedarray,
     browsify,
 )
-from pdr.tests.utils import TempFile
 
 RNG = np.random.default_rng()
 # NOTE: all these tests have miniscule chances of randomly failing.

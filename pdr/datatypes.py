@@ -58,6 +58,8 @@ def sample_types(
         _float = "d"
     elif sample_bytes == 4:
         _float = "f"
+    elif "ASCII" in sample_type:
+        _float = ""
     elif re.search("REAL|FLOAT", sample_type):
         raise NotImplementedError(
             f"{sample_bytes}-byte floats are not supported."

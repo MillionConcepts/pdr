@@ -517,6 +517,8 @@ class Data:
             and (obj.__class__.__name__ == "ndarray")
         ):
             self._scaleflags[pointer] = True
+        if self.debug is True and len(loader.errors) > 0:
+            raise loader.errors[-1]
         return obj
 
     def get_scaled(

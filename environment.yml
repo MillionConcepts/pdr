@@ -20,5 +20,6 @@ dependencies:
   - jupyter
   - pillow
   - matplotlib
+  - pytest
   - pip:
       - ipyflow
