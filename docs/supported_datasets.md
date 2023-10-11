@@ -221,6 +221,12 @@ of their metadata appear to match other sources.
   - Stereo-derived 3D position data
   - Radio science ODFs, TDFs, reduced tracking data, and estimated Mars rotation parameters
   - Engineering EDRs and RDRs
+#### MER 1 and 2
+  - Hazcam operations EDRs, RDRs, and mosaics
+  - Navcam operations EDRs, RDRs, and mosaics
+  - Pancam operations EDRs, RDRs, and mosaics
+  - Microscopic Imager operations EDRs, RDRs, and mosaics
+  - Descent Camera EDRs
 #### MESSENGER
   - GRNS
     - NS EDR, CDR, DDR
@@ -389,6 +395,11 @@ of their metadata appear to match other sources.
   - NAC DTM without labels (under EXTRAS folder at LROC mission node)
   - WAC derived tif files without labels (under EXTRAS folder at LROC
   mission node)
+#### MER 1 and 2
+  - Many MER products have been converted to PDS4, including: 
+    - APXS, Mössbauer and Mini-TES products
+    - Navcam and Pancam science images
+    - Pancam color mosaics
 #### MRO
   - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
@@ -457,6 +468,8 @@ of their metadata appear to match other sources.
       v1 is, per data providers, unsuitable for science due to cosmetic 
       processing)
   - RSS products not listed above as supported (support not planned)
+#### MER 1 and 2
+  - Terrain MESH and WEDGE products (support not planned)
 #### MESSENGER
   - Ground calibration data for MASCS and NS (support not planned)
 #### MGS
