@@ -193,6 +193,14 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.mro.get_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        identifiers["DATA_SET_ID"] == "ULY-J-GAS-5-SKY-MAPS-V1.0"
+        and name == "TABLE"
+        and block["^STRUCTURE"] == "GASDATA.FMT"
+    ):
+        return True, formats.ulysses.get_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
@@ -275,6 +283,11 @@ def check_special_sample_type(
         and "-NIMS-2-EDR-V1.0" in identifiers["DATA_SET_ID"]
     ):
         return formats.galileo.nims_edr_sample_type(base_samp_info)
+    if (
+        identifiers["DATA_SET_ID"] == "ULY-J-EPAC-4-SUMM-PHA-24HR-V1.0"
+        and identifiers["PRODUCT_ID"].endswith("BIN")
+    ):
+        return formats.ulysses.get_sample_type(base_samp_info)
     return False, None
 
 
@@ -350,6 +363,11 @@ def check_special_block(name, data, identifiers):
         and (name == "TIME_SERIES" or name == "TABLE")
     ):
         return True, formats.galileo.pws_special_block(data, name)
+    if (
+        "ULY-J-EPAC-4-SUMM-PSTL" in identifiers["DATA_SET_ID"]
+        and name == "TABLE"
+    ):
+        return True, formats.ulysses.get_special_block(data, name)
     return False, None
 
 
