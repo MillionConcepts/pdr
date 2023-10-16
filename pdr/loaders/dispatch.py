@@ -8,7 +8,7 @@ from pdr.loaders.utility import (
     JP2_EXTENSIONS,
     IMAGE_EXTENSIONS,
     TABLE_EXTENSIONS,
-    TEXT_EXTENSIONS,
+    TEXT_EXTENSIONS, GIF_EXTENSIONS,
 )
 from pdr.loaders.datawrap import (
     ReadLabel,
@@ -28,14 +28,14 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
     """
     check file extensions to see if we want to toss a file to an external
     library rather than using our internal raster handling. current cases are:
-    pillow for tiff, astropy for fits
+    pillow for tiff, gif, or jp2; astropy for fits
     """
     object_filename = data._target_path(pointer)
     if looks_like_this_kind_of_file(object_filename, FITS_EXTENSIONS):
         return ReadFits()
-    if looks_like_this_kind_of_file(object_filename, TIFF_EXTENSIONS):
-        return ReadCompressedImage()
-    if looks_like_this_kind_of_file(object_filename, JP2_EXTENSIONS):
+    if looks_like_this_kind_of_file(
+        object_filename, TIFF_EXTENSIONS + JP2_EXTENSIONS + GIF_EXTENSIONS
+    ):
         return ReadCompressedImage()
     return None
 

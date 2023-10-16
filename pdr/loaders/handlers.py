@@ -107,8 +107,12 @@ def handle_compressed_image(fn):
     # deactivate pillow's DecompressionBombError: many planetary images
     # are legitimately very large
     Image.MAX_IMAGE_PIXELS = None
+    im = Image.open(fn)
+    if im.mode == 'P':
+        # classic-style GIFs
+        im = im.convert('RGB', palette=im.palette)
     # noinspection PyTypeChecker
-    image = np.ascontiguousarray(Image.open(fn)).copy()
+    image = np.ascontiguousarray(im).copy()
     # pillow reads images as [x, y, channel] rather than [channel, x, y]
     if len(image.shape) == 3:
         return np.ascontiguousarray(np.rollaxis(image, 2))
