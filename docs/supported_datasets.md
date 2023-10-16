@@ -369,6 +369,17 @@ of their metadata appear to match other sources.
   - Stooke Shape Models
   - Balloon and lander EDRs and RDRs 
   - PUMA mode data
+#### Ulysses
+  - COSPIN
+  - EPAC
+  - GAS (table and GIF files only)
+  - GRB
+  - HISCALE
+  - SCE
+  - SWOOPS
+  - UDDS
+  - URAP
+  - VHM/FGM
 #### Venera 15 and 16
   - ROE derived electron density profiles
 #### Venus Climate Orbiter
@@ -482,7 +493,6 @@ of their metadata appear to match other sources.
   - RSS .tnf (support not planned)
   - HiRISE EDR line prefix tables (support planned)
 #### MSL
->>>>>>> docs:docs/supported_datasets.md
   - Malin Space Science Systems (MSSS) Camera EDRs: "Raw" (EDR) data from the
     Mars Science Laboratory's MSSS-produced cameras (Mastcam, MAHLI, and
     MARDI), are archived in a bespoke compressed format. These images carry
@@ -509,5 +519,7 @@ of their metadata appear to match other sources.
   - Lander:
     - CONSERT EDRs, RDRs, and REFDRs (support planned)
     - SD2 EDRs (support not planned)
+#### Ulysses
+  - GAS PostScript files (support not planned)
 #### Vega 1 and 2
   - PUMA raw and processed data (support not planned)
