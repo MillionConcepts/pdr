@@ -249,7 +249,7 @@ def parse_unusual_collection(
             return parse_non_base_10_collection(class_, obj)
         except (SyntaxError, ValueError):
             pass
-    return class_(map(lambda s: s.strip(' '), obj.strip('{}()').split(',')))
+    return class_([s.strip(' ') for s in obj.strip('{}()').split(',')])
 
 
 def literalize_pvl(
