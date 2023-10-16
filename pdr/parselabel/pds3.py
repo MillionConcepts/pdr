@@ -275,7 +275,7 @@ def literalize_pvl(
         try:
             if ("<" in obj) and (">" in obj):
                 return parse_pvl_quantity_statement(obj)
-            elif obj[0] in ('(', '{'):
+            elif obj.startswith(('(', '{')):
                 return parse_unusual_collection(obj)
         except (SyntaxError, ValueError):
             pass
