@@ -1,7 +1,7 @@
 ## [X.X.X] - 20XX-XX-XX
 ### Added
 #### Features
-- 
+- improved verbosity of some file-not-found error messages
 
 #### Dataset Support
 -
