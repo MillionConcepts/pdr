@@ -89,12 +89,11 @@ class BlockParser:
         for parameter, value in statements:
             if parameter in PVL_BLOCK_INITIALS:
                 self._step_in(value)
-            elif (
-                # ignore invalid end block statements at top level
-                parameter.startswith("END") and len(self.names) > 0
-            ):
+            elif parameter.startswith("END"):
                 # not bothering with aggregation name verification
-                self._step_out()
+                if len(self.names) > 0:
+                    self._step_out()
+                # ignore invalid end block statements at top level
             else:
                 self.add_statement(parameter, value)
         if len(self.aggregations) > 1:
@@ -275,10 +274,12 @@ def literalize_pvl(
         try:
             if ("<" in obj) and (">" in obj):
                 return parse_pvl_quantity_statement(obj)
-            elif obj.startswith(('(', '{')):
+            elif obj[0] in ('(', '{'):
                 return parse_unusual_collection(obj)
         except (SyntaxError, ValueError):
             pass
+        except IndexError:
+            a = 1
     return obj
 
 
