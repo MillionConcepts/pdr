@@ -104,7 +104,7 @@ def check_cases(
                 f"{matches[0].name}."
             )
         return str(matches[0])
-    filelist = '\n  * ' + '\n  * '.join([str(f) for f in filenames])
+    filelist = ';'.join([str(f) for f in filenames])
     raise FileNotFoundError(
         f"No candidate paths for required file exist. Checked:{filelist}"
     )
