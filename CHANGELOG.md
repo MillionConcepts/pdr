@@ -1,7 +1,8 @@
 ## [X.X.X] - 20XX-XX-XX
 ### Added
 #### Features
-- 
+- support for GIF files referenced as PDS3 objects
+
 #### Dataset Support
 - MER 1 and 2
 - Ulysses
