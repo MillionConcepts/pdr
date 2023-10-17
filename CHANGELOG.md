@@ -2,17 +2,29 @@
 ### Added
 #### Features
 - 
+
 #### Dataset Support
-- 
+-
 
 ### Changed
-- 
+- updated install specifications
+- Python 3.12 temporarily deprecated due to `pds4-tools` incompatibility
 
 ### Fixed
-- 
+- correctly interpret PVL non-decimal integer representations as 
+  `int(non_decimal_integer, base=int(radix))`. e.g., `pdr` will now interpret 
+   the PVL statement 
+
+   "SAMPLE_BIT_MASK          = 2#1111111111111111#"
+  
+   as a metadata item with key "SAMPLE_BIT_MASK" and value 65535. 
+- correctly interpret PVL Sequences and Sets of Unquoted Strings as 
+  `tuple[str]` or `set[str]` respectively
+- fix some cases in which PVL End Statements were incorrectly interpreted 
+  as parameters with empty-string values
 
 ### Removed
-- 
+-
 
 ## [1.0.3] - 2023-10-03
 ### Added
