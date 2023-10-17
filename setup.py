@@ -19,11 +19,11 @@ setuptools.setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.9',
+    python_requires='>=3.9, <3.12',
     install_requires=[
         "pds4_tools",
         "multidict",
-        "pandas",
+        "pandas>=2.0.0",
         "numpy",
         "python-Levenshtein",
         "dustgoggles",

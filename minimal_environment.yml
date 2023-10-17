@@ -1,12 +1,11 @@
 name: pdr
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - python=3.11
+  - python>=3.9,<3.12
   - cytoolz
   - numpy
-  - pandas
+  - pandas>=2.0.0
   - git
   - pip
   - python-Levenshtein
