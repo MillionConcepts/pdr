@@ -8,7 +8,8 @@
 
 ### Changed
 - updated install specifications
-- Python 3.12 temporarily deprecated due to `pds4-tools` incompatibility
+- added hotpatch to address `pds4-tools` Python 3.12 incompatibility, 
+to be removed following `pds4-tools` 1.4 release
 
 ### Fixed
 - correctly interpret PVL non-decimal integer representations as 
