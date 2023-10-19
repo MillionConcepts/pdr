@@ -368,6 +368,12 @@ def check_special_block(name, data, identifiers):
         and name == "TABLE"
     ):
         return True, formats.ulysses.get_special_block(data, name)
+    if (
+        "VG2-N-MAG-4-RDR-HGCOORDS" in identifiers["DATA_SET_ID"]
+        and identifiers["STANDARD_DATA_PRODUCT_ID"] == "ASCII DATA"
+        and name == "TABLE"
+    ):
+        return True, formats.voyager.get_special_block(data, name)
     return False, None
 
 
