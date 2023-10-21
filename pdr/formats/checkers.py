@@ -201,6 +201,14 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.ulysses.get_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        identifiers["DATA_SET_ID"] == "VG2-SS-PLS-4-SUMM-1HR-AVG-V1.0"
+        and name == "TABLE"
+        and block["^STRUCTURE"] == "VGR_PLS_HR_2017.FMT"
+    ):
+        return True, formats.voyager.get_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
@@ -373,7 +381,23 @@ def check_special_block(name, data, identifiers):
         and identifiers["STANDARD_DATA_PRODUCT_ID"] == "ASCII DATA"
         and name == "TABLE"
     ):
-        return True, formats.voyager.get_special_block(data, name)
+        return True, formats.voyager.mag_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "VG2-SS-PLS-4-SUMM-1HR-AVG-V1.0"
+        and name == "TABLE"
+    ):
+        return formats.voyager.pls_avg_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "VG2-SS-PLS-3-RDR-FINE-RES-V1.0"
+        and name == "TABLE"
+    ):
+        return formats.voyager.pls_fine_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "VG2-U-PLS-5-SUMM-IONBR-48SEC-V1.0"
+        and identifiers["PRODUCT_ID"] == "SUMRY.DAT"
+        and name == "TIME_SERIES"
+    ):
+        return formats.voyager.pls_ionbr_special_block(data, name, identifiers)
     return False, None
 
 
