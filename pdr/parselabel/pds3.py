@@ -3,7 +3,7 @@ from ast import literal_eval
 import re
 from operator import eq
 from pathlib import Path
-from typing import Iterable, Mapping, Optional
+from typing import Iterable, Mapping, Optional, Type, Union, Collection, Any
 import warnings
 
 from cytoolz import groupby, identity
@@ -89,12 +89,11 @@ class BlockParser:
         for parameter, value in statements:
             if parameter in PVL_BLOCK_INITIALS:
                 self._step_in(value)
-            elif (
-                # ignore invalid end block statements at top level
-                parameter.startswith("END") and len(self.names) > 0
-            ):
+            elif parameter.startswith("END"):
                 # not bothering with aggregation name verification
-                self._step_out()
+                if len(self.names) > 0:
+                    self._step_out()
+                # ignore invalid end block statements at top level
             else:
                 self.add_statement(parameter, value)
         if len(self.aggregations) > 1:
@@ -223,26 +222,68 @@ def multidict_dig_and_edit(
     return output_multidict
 
 
-def literalize_pvl(obj):
-    if isinstance(obj, Mapping):
+def parse_non_base_10(text: str) -> int:
+    try:
+        base, number = text[:-1].split("#")
+        return int(number, int(base))
+    except ValueError:
+        raise SyntaxError("possible malformatted non-base-10 number")
+
+
+def parse_non_base_10_collection(
+    class_: Union[Type[set], Type[tuple]], obj: str
+) -> Union[tuple[int], set[int]]:
+    return class_(
+        map(parse_non_base_10, obj.strip('{}()').replace(" ", '').split(','))
+    )
+
+
+def parse_unusual_collection(
+    obj: str
+) -> Union[tuple[Union[int, str]], set[Union[int, str]]]:
+    """handle collections of non-base-10 numbers or unquoted strings"""
+    class_ = set if obj.startswith('{') else tuple
+    if re.match(r'.*\d{1,2}#', obj):
+        try:
+            return parse_non_base_10_collection(class_, obj)
+        except (SyntaxError, ValueError):
+            pass
+    return class_([s.strip(' ') for s in obj.strip('{}()').split(',')])
+
+
+def literalize_pvl(
+    obj: Union[str, MultiDict]
+) -> Union[MultiDict[str, Any], str, int, float, set, tuple]:
+    """
+    attempt to interpret string representations of PVL values or aggregations
+    as Python objects. if `obj` is a MultiDict, attempt to interpret all its
+    values, diving recursively into any contained MultiDicts.
+    permissive; if parsing fails, simply return the string.
+    """
+    if isinstance(obj, MultiDict):
         return literalize_pvl_block(obj)
     try:
         # with warnings.catch_warnings(record=True) as w:
         # warnings.simplefilter("always")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", SyntaxWarning)
+            if (not obj.startswith('"')) and ("#" in obj[1:3]):
+                return parse_non_base_10(obj)
             return literal_eval(obj)
     except (SyntaxError, ValueError):
-        # note: this is very permissive, and handled downstream with a simple
-        #  exception catch that should work for most cases.
-        if ("<" in obj) and (">" in obj):
-            return parse_pvl_quantity_statement(obj)
-        return obj
-        # TODO, maybe: handle sequences/sets containing unquoted character
-        #  strings
+        try:
+            if ("<" in obj) and (">" in obj):
+                return parse_pvl_quantity_statement(obj)
+            elif obj[0] in ('(', '{'):
+                return parse_unusual_collection(obj)
+        except (SyntaxError, ValueError):
+            pass
+        except IndexError:
+            a = 1
+    return obj
 
 
-def literalize_pvl_block(block):
+def literalize_pvl_block(block: MultiDict) -> MultiDict:
     literalized = multidict_dig_and_edit(
         block,
         None,

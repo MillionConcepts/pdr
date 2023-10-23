@@ -104,7 +104,10 @@ def check_cases(
                 f"{matches[0].name}."
             )
         return str(matches[0])
-    raise FileNotFoundError
+    filelist = ';'.join([str(f) for f in filenames])
+    raise FileNotFoundError(
+        f"No candidate paths for required file exist. Checked:{filelist}"
+    )
 
 
 def append_repeated_object(

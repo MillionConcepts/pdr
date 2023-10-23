@@ -24,3 +24,4 @@ meta.yaml
 /.coverage
 /.pytest_cache/
 /htmlcov/
+six_old.py
