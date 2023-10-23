@@ -7,7 +7,6 @@
 #### Dataset Support
 - MER 1 and 2
 - Ulysses
-- 
 - see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
 ### Changed
