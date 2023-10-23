@@ -105,7 +105,7 @@ intended to complement our [comprehensive regression test framework](https://git
 - License file updated to incorporate license from the vendored vax.py module.
 
 ### Fixed
-- Tables with nested containers now read correctly; closes [issue 50](https://github.com/MillionConcepts/pdr/issues/50))
+- Tables with nested containers now read correctly; closes [issue 50](https://github.com/MillionConcepts/pdr/issues/50)
 - ^STRUCTURE pointers inside a COLUMN/FIELD now correctly load the relevant format file 
 
 ### Removed
