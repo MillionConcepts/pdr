@@ -1,4 +1,35 @@
 # Version History
+## [1.0.4] - 2023-10-23
+### Added
+#### Features
+- support for GIF files referenced as PDS3 objects
+- improved verbosity of some file-not-found error messages
+
+#### Dataset Support
+- MER 1 and 2
+- Ulysses
+- 
+- see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
+
+### Changed
+- updated install specifications
+- added hotpatch to address `pds4-tools` Python 3.12 incompatibility, 
+to be removed following `pds4-tools` 1.4 release
+
+### Fixed
+- correctly interpret PVL non-decimal integer representations as 
+  `int(non_decimal_integer, base=int(radix))`. e.g., `pdr` will now interpret 
+   the PVL statement 
+
+   "SAMPLE_BIT_MASK          = 2#1111111111111111#"
+  
+   as a metadata item with key "SAMPLE_BIT_MASK" and value 65535.
+  ([Resolves issue #51](https://github.com/MillionConcepts/pdr/issues/51))
+- correctly interpret PVL Sequences and Sets of Unquoted Strings as 
+  `tuple[str]` or `set[str]` respectively
+- fix some cases in which PVL End Statements were incorrectly interpreted 
+  as parameters with empty-string values
+
 ## [1.0.3] - 2023-10-03
 ### Added
 #### Features

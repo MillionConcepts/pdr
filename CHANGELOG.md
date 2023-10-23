@@ -1,7 +1,6 @@
-## [X.X.X] - 20XX-XX-XX
+## [1.0.4] - 2023-10-23
 ### Added
 #### Features
-<<<<<<< HEAD
 - support for GIF files referenced as PDS3 objects
 - improved verbosity of some file-not-found error messages
 
@@ -23,14 +22,13 @@ to be removed following `pds4-tools` 1.4 release
 
    "SAMPLE_BIT_MASK          = 2#1111111111111111#"
   
-   as a metadata item with key "SAMPLE_BIT_MASK" and value 65535. 
+   as a metadata item with key "SAMPLE_BIT_MASK" and value 65535.
+  ([Resolves issue #51](https://github.com/MillionConcepts/pdr/issues/51))
 - correctly interpret PVL Sequences and Sets of Unquoted Strings as 
   `tuple[str]` or `set[str]` respectively
 - fix some cases in which PVL End Statements were incorrectly interpreted 
   as parameters with empty-string values
 
-### Removed
--
 
 ## [1.0.3] - 2023-10-03
 ### Added
