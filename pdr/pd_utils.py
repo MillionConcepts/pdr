@@ -10,6 +10,7 @@ from typing import Hashable
 import numpy as np
 import pandas.api.types
 import pandas as pd
+from more_itertools import chunked, divide
 from pandas.errors import SettingWithCopyWarning
 
 from pdr.datatypes import sample_types
@@ -77,7 +78,15 @@ def compute_offsets(fmtdef):
         fmtdef.loc[fmt_block.index, "SB_OFFSET"] += (
             prior["SB_OFFSET"] + prior["BYTES"]
         )
+        count = fmt_block["BLOCK_REPETITIONS"].iloc[0]
+        if count == 1:
+            continue
+        chunks = tuple(map(list, divide(count, fmt_block.index)))
+        block_size = fmt_block.loc[chunks[0]]['BYTES'].sum()
+        for repetition, indices in enumerate(chunks):
+            fmtdef.loc[indices, "SB_OFFSET"] += int(repetition * block_size)
     # correctly compute offsets within columns w/multiple items
+    # TODO: ITEM_BYTES will _always_ be in fmtdef because we filled it with NaN earlier
     if "ITEM_BYTES" in fmtdef:
         fmtdef["ITEM_SIZE"] = _apply_item_offsets(fmtdef)
         column_groups = fmtdef.loc[fmtdef["ITEM_SIZE"].notna()]
@@ -162,7 +171,7 @@ def insert_sample_types_into_df(fmtdef, identifiers):
     if "BLOCK_NAME" in fmtdef.columns:
         fmtdef = create_nested_array_dtypes(fmtdef)
     dt = get_dtype(fmtdef)
-    return (fmtdef, dt)
+    return fmtdef, dt
 
 
 def get_dtype(fmtdef: pd.DataFrame):
