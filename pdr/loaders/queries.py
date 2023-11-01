@@ -457,8 +457,7 @@ def read_format_block(
                 'DATA_TYPE': 'VOID',
                 'START_BYTE': definition['START_BYTE'],
                 'BYTES': 0,
-                'BLOCK_NAME': block_info['BLOCK_NAME']
-            }
+            } | block_info
             if definition.get("AXIS_ITEMS"):
                 dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
             fields.append(dummy_column)
