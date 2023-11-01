@@ -39,7 +39,15 @@ class Loader:
         finally:
             kwargdict["tracker"].track(self.loader_function, **record_exc)
             kwargdict["tracker"].dump()
-        return {name: call_kwargfiltered(self.loader_function, **info)}
+        load_exc = {"status": "load_ok"}
+        try:
+            return {name: call_kwargfiltered(self.loader_function, **info)}
+        except Exception as exc:
+            load_exc = {"status": "load_failed", "exception": str(exc)}
+            raise exc
+        finally:
+            kwargdict["tracker"].track(self.loader_function, **load_exc)
+            kwargdict["tracker"].dump()
     queries = DEFAULT_DATA_QUERIES
 
 
