@@ -82,7 +82,10 @@ def compute_offsets(fmtdef):
         if count == 1:
             continue
         chunks = tuple(map(list, divide(count, fmt_block.index)))
-        block_size = fmt_block.loc[chunks[0]]['BYTES'].sum()
+        block_size = fmt_block['BLOCK_SIZE'].iloc[0] / count
+        if block_size != int(block_size):
+            raise NotImplementedError("irregular repeated container size.")
+        block_size = int(block_size)
         for repetition, indices in enumerate(chunks):
             fmtdef.loc[indices, "SB_OFFSET"] += int(repetition * block_size)
     # correctly compute offsets within columns w/multiple items

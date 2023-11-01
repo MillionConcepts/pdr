@@ -418,6 +418,7 @@ def read_format_block(
     block_info = {
         f"BLOCK_NAME": block.get("NAME"),
         f"BLOCK_REPETITIONS": block.get("REPETITIONS", 1),
+        f"BLOCK_BYTES": block.get("BYTES")
     }
     while "^STRUCTURE" in [obj[0] for obj in format_block]:
         format_block = inject_format_files(format_block, object_name, fn, data)
