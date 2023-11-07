@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 def looks_like_ascii(block, name):
+    """"""
     return (
         ("SPREADSHEET" in name)
         or ("ASCII" in name)
@@ -13,6 +14,7 @@ def looks_like_ascii(block, name):
 
 
 def quantity_start_byte(quantity_dict, record_bytes):
+    """"""
     # TODO: are there cases in which _these_ aren't 1-indexed?
     if quantity_dict["units"] == "BYTES":
         return quantity_dict["value"] - 1
@@ -20,7 +22,8 @@ def quantity_start_byte(quantity_dict, record_bytes):
         return record_bytes * max(quantity_dict["value"] - 1, 0)
 
 
-def _count_from_bottom_of_file(fn, rows, row_bytes):
+def count_from_bottom_of_file(fn, rows, row_bytes):
+    """"""
     tab_size = rows * row_bytes
     if isinstance(fn, list):
         fn = fn[0]
@@ -56,6 +59,7 @@ def _check_delimiter_stream(identifiers, name, target):
 
 
 def check_explicit_delimiter(block):
+    """"""
     if "FIELD_DELIMITER" in block.keys():
         try:
             return {

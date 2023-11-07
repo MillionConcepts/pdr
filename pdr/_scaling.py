@@ -10,9 +10,10 @@ def find_special_constants(meta, obj, object_name):
     attempts to find special constants in the associated object
     by referencing the label and "standard" implicit special constant
     values, then populates self.special_constants as appropriate.
-    TODO: doesn't do anything for PDS4 products at present. Also, we
-     need an attribute for distinguishing PDS3 from PDS4 products.
     """
+    #TODO: doesn't do anything for PDS4 products at present. Also, we
+    # need an attribute for distinguishing PDS3 from PDS4 products.
+
     block = meta.metablock_(object_name)
     # check for explicitly-defined special constants
     specials = {
@@ -34,6 +35,7 @@ def find_special_constants(meta, obj, object_name):
 
 
 def mask_specials(obj, specials):
+    """"""
     obj = np.ma.masked_array(obj)
     obj.mask = np.isin(obj.data, specials)
     return obj
@@ -46,6 +48,7 @@ def scale_array(
     inplace: bool = False,
     float_dtype=None,
 ):
+    """"""
     scale, offset, block = 1, 0, meta.metablock_(object_name)
     if "SCALING_FACTOR" in block.keys():
         scale = block["SCALING_FACTOR"]

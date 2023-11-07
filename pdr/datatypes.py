@@ -31,6 +31,7 @@ def integer_bytes(
 
 
 def determine_byte_order(sample_type):
+    """"""
     if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
         endian = "<"
     else:

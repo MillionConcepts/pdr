@@ -7,6 +7,7 @@ pkg_dir = _osp.abspath(_osp.dirname(__file__))
 
 
 def read(fp, **kwargs):
+    """"""
     from pdr.pdr import Data, Metadata
     from pdr.utils import check_cases
 
@@ -21,4 +22,5 @@ def read(fp, **kwargs):
 
 
 def open(fp, **kwargs):
+    """"""
     return read(fp, **kwargs)

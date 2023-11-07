@@ -37,6 +37,7 @@ def head_file(
     offset: int = 0,
     tail: bool = False,
 ) -> BytesIO:
+    """"""
     head_buffer = BytesIO()
     if not hasattr(fn_or_reader, "read"):
         fn_or_reader = open(fn_or_reader, "rb")
@@ -115,6 +116,7 @@ def append_repeated_object(
     fields: MutableSequence[Mapping],
     repeat_count: int,
 ) -> Sequence[Mapping]:
+    """"""
     # sum lists (from containers) together and add to fields
     if hasattr(obj, "__add__"):
         if repeat_count > 1:
@@ -131,6 +133,7 @@ def append_repeated_object(
 
 
 def import_best_gzip():
+    """"""
     try:
         from isal import igzip as gzip_lib
     except ImportError:
@@ -139,6 +142,7 @@ def import_best_gzip():
 
 
 def decompress(filename):
+    """"""
     if filename.lower().endswith(".gz"):
         f = import_best_gzip().open(filename, "rb")
     elif filename.lower().endswith(".bz2"):
@@ -153,10 +157,12 @@ def decompress(filename):
 
 
 def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
+    """"""
     return str(Path(fn).with_suffix(new_suffix))
 
 
 def find_repository_root(absolute_path):
+    """"""
     parts = Path(absolute_path).parts
     data_indices = [
         ix for ix, part in enumerate(parts) if part.lower() == "data"
@@ -165,6 +171,7 @@ def find_repository_root(absolute_path):
 
 
 def prettify_multidict(multi, sep=" ", indent=0):
+    """"""
     indentation, output, first_line = "", "{", True
     for k, v in multi.items():
         if sep == "\n":
@@ -199,6 +206,7 @@ def associate_label_file(
     label_filename: Optional[str] = None,
     skip_check: bool = False,
 ) -> Optional[str]:
+    """"""
     from pdr.loaders.utility import LABEL_EXTENSIONS
     if label_filename is not None:
         return check_cases(Path(label_filename).absolute(), skip_check)
@@ -213,6 +221,7 @@ def associate_label_file(
 
 
 def check_primary_fmt(data_filename: str):
+    """"""
     from pdr.loaders.utility import FITS_EXTENSIONS
 
     for ext in FITS_EXTENSIONS:

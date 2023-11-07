@@ -3,16 +3,18 @@ from pdr.loaders.queries import read_table_structure, check_array_for_subobject
 
 
 def get_structure(block, name, filename, data, identifiers):
+    """The "encounter data" tables miscount the last column's START_BYTE by 1"""
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
-    # The "encounter data" tables miscount the last column's START_BYTE by 1
+
     if "encounter data" in block['DESCRIPTION']:
         fmtdef.at[10, "START_BYTE"] = 62
     return fmtdef, None
 
 
 def fix_array_structure(name, block, fn, data, identifiers):
+    """"""
     if not block.get("INTERCHANGE_FORMAT") == "BINARY":
         return None, None
     has_sub = check_array_for_subobject(block)

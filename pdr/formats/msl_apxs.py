@@ -2,8 +2,8 @@ import warnings
 
 
 def table_loader(pointer):
-    # we don't support these right now, or maybe ever
+    """we don't support these right now, or maybe ever"""
     warnings.warn(
-        f"The MSL APXS {pointer} tables are not currently " f"supported."
+        f"The MSL APXS {pointer} tables are not currently supported."
     )
     return True

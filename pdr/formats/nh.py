@@ -98,6 +98,7 @@ def get_fn(data):
 
 
 def swap_hdu_stubs(data, identifiers, fn, name):
+    """repairs mismatched fits headers and keys due to _HEADER in some fits extensions"""
     headers = [key for key in data.keys() if key.startswith("EXTENSION") and key.endswith("_HEADER")]
     noheaders = [key for key in data.keys() if key.startswith("EXTENSION") and not key.endswith("_HEADER")]
     if len(headers) != len(noheaders):

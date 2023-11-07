@@ -11,21 +11,22 @@ def mdis_hdu_name(name):
 
 
 def galileo_table_loader():
+    """"""
     warnings.warn("Galileo EDR binary tables are not yet supported.")
     return True
 
 
 def ssi_cubes_header_loader():
-    # The Ida and Gaspra cubes have HEADER pointers but no defined HEADER
-    # objects
+    """ The Ida and Gaspra cubes have HEADER pointers but no defined HEADER
+    objects"""
     return True
 
 
 def nims_edr_sample_type(base_samp_info):
+    """ Each time byte order is specified for these products it is LSB, so this
+    assumes BIT_STRING refers to LSB_BIT_STRING. N/A samples are read as CHARACTER"""
     from pdr.datatypes import sample_types
 
-    # Each time byte order is specified for these products it is LSB, so this
-    # assumes BIT_STRING refers to LSB_BIT_STRING
     sample_type = base_samp_info["SAMPLE_TYPE"]
     sample_bytes = base_samp_info["BYTES_PER_PIXEL"]
     if "BIT_STRING" == sample_type:
@@ -42,6 +43,8 @@ def nims_edr_sample_type(base_samp_info):
 
 
 def probe_structure(block, name, filename, data, identifiers):
+    """Several NMS products have an incorrect BYTES value in one column.
+    One ASI product has incorrect BYTES values in multiple columns """
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -57,15 +60,15 @@ def probe_structure(block, name, filename, data, identifiers):
 
 
 def epd_special_block(data, name):
-    # All 'E1' EPD SUMM products incorrectly say ROW_BYTES = 90; changing them
-    # to the RECORD_BYTES values.
+    """All 'E1' EPD SUMM products incorrectly say ROW_BYTES = 90; changing them
+    to the RECORD_BYTES values."""
     block = data.metablock_(name)
     block["ROW_BYTES"] = data.metaget_("RECORD_BYTES")
     return block
 
 
 def epd_structure(block, name, filename, data, identifiers):
-    # E1PAD_7.TAB has an extra/unaccounted for byte at the start of each row
+    """E1PAD_7.TAB has an extra/unaccounted for byte at the start of each row"""
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -75,7 +78,7 @@ def epd_structure(block, name, filename, data, identifiers):
 
 
 def pws_special_block(data, name):
-    # The PWS SUMM products sometimes undercount ROW_BYTES by 2
+    """The PWS SUMM products sometimes undercount ROW_BYTES by 2"""
     block = data.metablock_(name)
     product_id = data.metaget_("PRODUCT_ID")
     if "B.TAB" in product_id:
@@ -86,6 +89,7 @@ def pws_special_block(data, name):
 
 
 def pws_table_loader(filename, fmtdef_dt):
+    """"""
     import pandas as pd
 
     fmtdef, dt = fmtdef_dt
