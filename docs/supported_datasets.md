@@ -390,6 +390,17 @@ of their metadata appear to match other sources.
 #### Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
+#### Voyager 1 and 2
+  - CRS RDR and SUMM products
+  - IRIS derived maps and the expanded collection of full-res Jupiter/Saturn data
+  - ISS uncompressed images, and ascii ancillary tables
+  - MAG RDR and SUMM products
+  - PLS RDR and SUMM products (except a few 'original binary' products)
+  - POS SUMM products
+  - PWS RDR, SUMM, and DDR products
+  - RSS Triton derived atmospheric profile
+  - UVS reformatted airglow spectra and derived maps
+  - Ring Profiles derived from ISS, PPS, UVS, and RSS data (except VAX_REAL tables)
 
 ## Notionally Supported Datasets:
 #### Apollo
@@ -523,3 +534,10 @@ of their metadata appear to match other sources.
   - GAS PostScript files (support not planned)
 #### Vega 1 and 2
   - PUMA raw and processed data (support not planned)
+#### Voyager 1 and 2
+  - IRIS full-res spectral observations (support planned; VAX_REAL)
+  - ISS ancillary binary tables (support planned; VAX_REAL)
+  - ISS compressed raw images (support not planned)
+  - PLS binary versions of VG2-N-PLS-5-RDR-ELEMAGSPHERE-96SEC-V1.0 data (support not planned)
+  - RSS ODRs (support not planned)
+  - Ring Profile tables with the VAX_REAL data type (support planned)

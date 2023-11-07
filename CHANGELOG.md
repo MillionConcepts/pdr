@@ -3,7 +3,8 @@
 #### Features
 - 
 #### Dataset Support
-- 
+- most Voyager 1 and 2 datasets
+- see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
 ### Changed
 - 
