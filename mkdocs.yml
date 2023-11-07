@@ -1,4 +1,5 @@
 site_name: Planetary Data Reader
+site_description: one tool to read them all; https://github.com/MillionConcepts/pdr
 theme:
   name: readthedocs
 plugins:
