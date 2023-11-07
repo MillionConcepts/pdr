@@ -10,11 +10,13 @@ from multidict import MultiDict
 
 
 def log_and_pass(sequence, key, value):
+    """"""
     sequence.append(key)
     return value
 
 
 def unpack_to_multidict(packed, mtypes=(dict,)):
+    """"""
     unpacked = MultiDict()
     for k, v in packed.items():
         if isinstance(v, (list, tuple)):
@@ -27,6 +29,7 @@ def unpack_to_multidict(packed, mtypes=(dict,)):
 
 
 def unpack_if_mapping(possibly_packed, mtypes=(dict,)):
+    """"""
     if isinstance(possibly_packed, mtypes):
         return unpack_to_multidict(possibly_packed)
     return possibly_packed
@@ -34,6 +37,7 @@ def unpack_if_mapping(possibly_packed, mtypes=(dict,)):
 
 # noinspection PyTypeChecker
 def reformat_pds4_tools_label(label):
+    """"""
     result = dig_and_edit(
         label.to_dict(),
         constant(True),

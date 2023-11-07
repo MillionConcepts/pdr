@@ -1,3 +1,9 @@
+"""This module contains special case formats for nonconforming or malformatted data
+types organized by mission and/or instrument. The `checkers` module consists of functions
+that are called by `pdr.func.specialize` to determine if a given file meets the stated criteria.
+If a file meets the criteria in the checker, a file from the respective special case formats
+module is returned. If not, the base pdr workflow is continued."""
+
 from .checkers import *
 import pdr.formats.cassini as cassini
 import pdr.formats.clementine as clementine

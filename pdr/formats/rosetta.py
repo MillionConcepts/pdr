@@ -1,4 +1,5 @@
 def rosetta_table_loader(filename, fmtdef_dt):
+    """"""
     import astropy.io.ascii
 
     table = astropy.io.ascii.read(filename).to_pandas()

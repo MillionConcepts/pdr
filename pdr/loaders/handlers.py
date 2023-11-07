@@ -16,12 +16,13 @@ def handle_fits_file(
     we distinguish name and hdu_name as a slightly hacky way to facilitate
     special cases in which we explicitly map a PDS pointer to a FITS HDU name
     or index.
-
-    TODO, maybe: dispatch to decompress() for weirdo compression
-      formats, but possibly not right here? hopefully we shouldn't need
-      to handle compressed FITS files too often anyway, and astropy can deal
-      with gzip without special help (although inline igzip is faster)
     """
+
+    #TODO, maybe: dispatch to decompress() for weirdo compression
+    # formats, but possibly not right here? hopefully we shouldn't need
+    # to handle compressed FITS files too often anyway, and astropy can deal
+    # with gzip without special help (although inline igzip is faster)
+
     from astropy.io import fits
 
     if hdulist is None:
@@ -101,6 +102,7 @@ def reindex_dupe_names(hdu: "astropy.io.fits.BinTableHDU"):
 
 
 def handle_compressed_image(fn):
+    """"""
     import numpy as np
     from PIL import Image
 
@@ -120,6 +122,7 @@ def handle_compressed_image(fn):
 
 
 def handle_fits_header(hdulist, hdu_id="", skip_bad_cards=False):
+    """"""
     if isinstance(hdu_id, int):
         astro_hdr = hdulist[hdu_id].header
     else:
@@ -185,6 +188,7 @@ def add_bit_column_info(obj, definition, identifiers):
 def unpack_fits_headers(
     filename, hdulist=None
 ) -> tuple[MultiDict, list[str], dict[str, int]]:
+    """"""
     from astropy.io import fits
 
     hdumap = {}

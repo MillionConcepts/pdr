@@ -71,6 +71,7 @@ class Metadata(MultiDict):
     """
 
     def __init__(self, mapping_params, standard="PDS3", **kwargs):
+        """"""
         mapping, params = mapping_params
         super().__init__(mapping, **kwargs)
         self.fieldcounts = countby(identity, params)
@@ -100,6 +101,7 @@ class Metadata(MultiDict):
         self._metablock_interior = _metablock_factory(self)
 
     def __getitem__(self, key):
+        """"""
         value = super().__getitem__(key)
         return self.formatter(value)
 
@@ -129,6 +131,7 @@ class Metadata(MultiDict):
         return self.metaget(text, default, evaluate, False)
 
     def metaget_fuzzy(self, text, evaluate=True):
+        """"""
         levratio = {
             key: lev.ratio(key, text) for key in set(self.fieldcounts.keys())
         }
@@ -169,17 +172,21 @@ class Metadata(MultiDict):
         return self.metablock(text, evaluate, False)
 
     def __str__(self):
+        """"""
         return f"Metadata({prettify_multidict(self)})"
 
     def __repr__(self):
+        """"""
         return f"Metadata({prettify_multidict(self)})"
 
 
 class DebugExceptionPreempted(Exception):
+    """"""
     pass
 
 
 class Data:
+    """"""
     def __init__(
         self,
         fn: Union[Path, str],
@@ -191,6 +198,7 @@ class Data:
         pvl_limit: int = DEFAULT_PVL_LIMIT,
         tracker: Optional[TrivialTracker] = None,
     ):
+        """"""
         # list of the product's associated data objects
         self.index = []
         # do we raise an exception rather than a warning if loading a data
@@ -293,12 +301,14 @@ class Data:
         self.index.append("label")
 
     def _init_search_paths(self):
+        """"""
         for target in ("labelname", "filename"):
             if (target in dir(self)) and (target is not None):
                 return str(Path(self.getattr(target)).absolute().parent)
         raise FileNotFoundError
 
     def _find_objects(self):
+        """"""
         from pdr.loaders.utility import is_trivial
 
         # TODO: make this not add objects again if called multiple times
@@ -309,6 +319,7 @@ class Data:
             self.index.append(object_name)
 
     def _object_to_filename(self, object_name):
+        """"""
         is_special, special_target = check_special_fn(
             self, object_name, self.identifiers
         )
@@ -328,6 +339,7 @@ class Data:
             return self.filename
 
     def _check_compressed_file_pointer(self, object_name):
+        """"""
         compkeys = {"COMPRESSED_FILE", "UNCOMPRESSED_FILE"}
         if (
             len(compkeys.intersection(self.metadata.keys())) == 2
@@ -361,9 +373,11 @@ class Data:
             return None
 
     def unloaded(self):
+        """"""
         return tuple(filter(lambda k: k not in dir(self), self.index))
 
     def load(self, name, reload=False, **load_kwargs):
+        """"""
         # prelude: don't try to load nonexistent keys; facilitate
         # load-everything behavior; don't reload by default
         if (name != "all") and (name not in self.index):
@@ -406,6 +420,7 @@ class Data:
         setattr(self, name, self.metaget_(name))
 
     def _add_loaded_objects(self, obj):
+        """"""
         for k, v in obj.items():
             if v is not None:
                 setattr(self, k, v)
@@ -413,6 +428,7 @@ class Data:
                     self.index.append(k)
 
     def load_all(self):
+        """"""
         from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
 
         for name in self.keys():
@@ -424,6 +440,7 @@ class Data:
                 continue
 
     def _file_not_found(self, object_name):
+        """"""
         warnings.warn(
             f"{object_name} file {self._object_to_filename(object_name)} "
             f"not found in path."
@@ -435,6 +452,7 @@ class Data:
         setattr(self, object_name, maybe)
 
     def _load_primary_fits(self, object_name):
+        """"""
         from pdr.loaders.handlers import handle_fits_file
 
         obj = handle_fits_file(
@@ -448,6 +466,7 @@ class Data:
         return obj
 
     def _init_primary_format(self):
+        """"""
         if self.standard == "FITS":
             for k in self.metadata.keys():
                 self.index.append(k)
@@ -511,6 +530,7 @@ class Data:
         return metadata
 
     def load_from_pointer(self, pointer, **load_kwargs):
+        """"""
         from pdr.loaders.dispatch import pointer_to_loader
 
         loader = pointer_to_loader(pointer, self)
@@ -613,6 +633,7 @@ class Data:
         return self.metadata.metablock(text, evaluate, False)
 
     def get_absolute_paths(self, filename: Union[str, Path]) -> list[str]:
+        """"""
         return gmap(
             lambda sf: Path(*sf).absolute(),
             product(self.search_paths, listify(filename)),
@@ -622,6 +643,7 @@ class Data:
     # TODO: reorganize this -- common dispatch funnel with dump_browse,
     #  split up the image-gen part of _browsify_array, something like that
     def show(self, object_name=None, scaled=True, **browse_kwargs):
+        """"""
         if object_name is None:
             raise ValueError(
                 f"please specify the name of an image object. "
@@ -689,6 +711,7 @@ class Data:
                 self.__delattr__(obj)
 
     def __getattribute__(self, attr):
+        """"""
         # provide a way to sidestep special behavior
         if attr == "getattr":
             return super().__getattribute__
@@ -719,32 +742,39 @@ class Data:
     # The following two functions make this object act sort of dict-like
     #  in useful ways for data exploration.
     def keys(self):
-        # Returns the keys for observational data and metadata objects
+        """Returns the keys for observational data and metadata objects"""
         return self.index
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
+        """"""
         return self.__getattribute__(item)
 
     def __repr__(self):
+        """"""
         rep = f"pdr.Data({self.filename})\nkeys={self.keys()}"
         if len(self.unloaded()) > 0:
             rep += f"\nnot yet loaded: {self.unloaded()}"
         return rep
 
     def __str__(self):
+        """"""
         return self.__repr__()
 
     def __len__(self):
+        """"""
         return len(self.index)
 
     def __iter__(self):
+        """"""
         for key in self.keys():
             yield self[key]
 
 
 def _metaget_factory(metadata, cached=True):
+    """"""
     def metaget_interior(text, default, evaluate):
+        """"""
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
         if value is not None:
             return metadata.formatter(value) if evaluate is True else value
@@ -756,7 +786,9 @@ def _metaget_factory(metadata, cached=True):
 
 
 def _metablock_factory(metadata, cached=True):
+    """"""
     def metablock_interior(text, evaluate):
+        """"""
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
         if not isinstance(value, Mapping):
             value = metadata

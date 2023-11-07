@@ -6,7 +6,7 @@ from pathlib import Path
 from pdr.loaders._helpers import (
     looks_like_ascii,
     quantity_start_byte,
-    _count_from_bottom_of_file,
+    count_from_bottom_of_file,
     _check_delimiter_stream,
     check_explicit_delimiter
 )
@@ -36,7 +36,7 @@ def test_count_from_bottom_of_file():
         with Path(fn[0]).open('wb') as stream:
             stream.write(b'\x00' * rows * row_bytes * 2)
         assert (
-            _count_from_bottom_of_file(fn, rows, row_bytes) == rows * row_bytes
+                count_from_bottom_of_file(fn, rows, row_bytes) == rows * row_bytes
         )
     finally:
         Path(fn[0]).unlink(missing_ok=True)

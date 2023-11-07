@@ -11,21 +11,22 @@ from pdr.loaders.queries import table_position
 # that cause ix check to crash (refers to original special case in /develop
 # -- this is a rewrite)
 def lamp_rdr_histogram_image_loader(data):
-    # Products can have multiple unique pointers that are
-    # defined by a single image object (CAL_HISTOGRAM_DATA_IMAGE).
+    """Products can have multiple unique pointers that are
+    defined by a single image object (CAL_HISTOGRAM_DATA_IMAGE)."""
     object_name = "CAL_HISTOGRAM_DATA_IMAGE"
     block = data.metablock_(object_name)
     return block
 
 
 def get_crater_offset():
-    # lro crater edr products have a header table with 64 bytes per row, the second
-    # table start byte is given in rows (also the wrong row) but had a different number
-    # of row bytes
+    """lro crater edr products have a header table with 64 bytes per row, the second
+    table start byte is given in rows (also the wrong row) but had a different number
+    of row bytes"""
     return True, 64
 
 
 def crater_bit_col_sample_type(base_samp_info):
+    """"""
     from pdr.datatypes import sample_types
 
     sample_type = base_samp_info["SAMPLE_TYPE"]
@@ -44,7 +45,7 @@ def crater_bit_col_sample_type(base_samp_info):
 
 
 def rss_get_position(identifiers, block, target, name, start_byte):
-    # The RSS WEA products' WEAREC_TABLE undercounts ROW_BYTES by 1
+    """The RSS WEA products' WEAREC_TABLE undercounts ROW_BYTES by 1"""
     table_props = table_position(identifiers, block, target, name, start_byte)
     n_records = block["ROWS"]
     record_bytes = block["ROW_BYTES"] + 1
@@ -54,7 +55,7 @@ def rss_get_position(identifiers, block, target, name, start_byte):
 
 
 def mini_rf_image_loader(data, name):
-    # one of the mosaic labels has the wrong values for lines/line_samples
+    """one of the mosaic labels has the wrong values for lines/line_samples"""
     block = data.metablock_(name)
     block["LINES"] = 5760
     block["LINE_SAMPLES"] = 11520

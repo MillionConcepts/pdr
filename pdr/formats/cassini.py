@@ -5,11 +5,12 @@ import os
 
 import pdr.loaders.queries
 from pdr.loaders.utility import tbd
-from pdr.loaders._helpers import _count_from_bottom_of_file
+from pdr.loaders._helpers import count_from_bottom_of_file
 from pdr.loaders.queries import table_position
 
 
 def spreadsheet_loader(filename, fmtdef_dt, data_set_id):
+    """"""
     import pandas as pd
 
     if "UNCALIB" in data_set_id:
@@ -34,6 +35,7 @@ def spreadsheet_loader(filename, fmtdef_dt, data_set_id):
 
 
 def get_structure(block, name, filename, data, identifiers):
+    """"""
     # the data type that goes here double defines the 32 byte prefix/offset.
     # By skipping the parse_table_structure we never add the prefix bytes so
     # it works as is. (added HASI/HUY if block after this comment)
@@ -56,6 +58,7 @@ def get_structure(block, name, filename, data, identifiers):
 
 
 def looks_like_ascii(data, pointer):
+    """"""
     return (
         ("SPREADSHEET" in pointer)
         or ("ASCII" in pointer)
@@ -87,18 +90,20 @@ def get_position(identifiers, block, target, name, filename, start_byte):
 
 
 def get_offset(filename, identifiers):
+    """"""
     if any(sub in filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         row_bytes = identifiers["ROW_BYTES"]
     else:
         row_bytes = identifiers["ROW_BYTES"] + 1
     rows = identifiers["ROWS"]
-    start_byte = _count_from_bottom_of_file(
+    start_byte = count_from_bottom_of_file(
         filename, rows, row_bytes=row_bytes
     )
     return True, start_byte
 
 
 def trivial_loader(pointer):
+    """"""
     warnings.warn(
         f"The Cassini ISS EDR/calibration {pointer} tables are not currently "
         f"supported."
@@ -107,6 +112,7 @@ def trivial_loader(pointer):
 
 
 def cda_table_filename(data):
+    """"""
     label = Path(data.labelname)
     return True, Path(label.parent, f"{label.stem}.TAB")
 
@@ -114,11 +120,13 @@ def cda_table_filename(data):
 # TODO: find a way to point find_special_constants at this so we can write
 #  scaled versions of these images
 def xdr_redirect_to_image_block(data):
+    """"""
     object_name = "IMAGE"
     block = data.metablock_(object_name)
     return block
 
 
 def get_special_qube_band_storage():
+    """"""
     band_storage_type = "BAND_SEQUENTIAL"
     return True, band_storage_type

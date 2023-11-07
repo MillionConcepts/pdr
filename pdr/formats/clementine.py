@@ -4,16 +4,19 @@ import pdr.loaders.queries
 
 
 def get_offset(data, pointer):
+    """"""
     start_row = int(re.split(r",|[(|)]", data.metadata[f"^{pointer}"])[2])
     return True, (start_row - 1) * data.metadata["RECORD_BYTES"]
 
 
 def get_fn(data, object_name):
+    """"""
     target = re.split(r",|[(|)]", data.metadata[f"^{object_name}"])[1]
     return True, target
 
 
 def get_structure(block, name, filename, data, identifiers):
+    """"""
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )

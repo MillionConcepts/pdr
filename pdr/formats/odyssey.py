@@ -1,6 +1,6 @@
 def map_table_loader(filename, fmtdef_dt):
-    # A few products open fine from their labels, but most do not. Seems like
-    # a byte counting issue in the labels.
+    """A few products open fine from their labels, but most do not. Seems like
+    a byte counting issue in the labels."""
     import pandas as pd
     fmtdef, dt = fmtdef_dt
     # Some tables use tabs as column deliminators, others use spaces.

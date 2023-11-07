@@ -35,6 +35,7 @@ def read_image(name, gen_props, fn, start_byte):
 
 
 def make_format_specifications(props):
+    """"""
     endian, ctype = props["sample_type"][0], props["sample_type"][-1]
     struct_fmt = f"{endian}{props['pixels']}{ctype}"
     np_type = props["sample_type"][1:]
@@ -43,6 +44,7 @@ def make_format_specifications(props):
 
 
 def extract_single_band_linefix(image, props):
+    """"""
     if props["linepad"] == 0:
         return image, None, None
     prefix, suffix = None, None
@@ -57,12 +59,14 @@ def extract_single_band_linefix(image, props):
 
 
 def convert_if_vax(image, props):
+    """"""
     if props.get('is_vax_real') is True:
         return vax.from_vax32(image)
     return image
 
 
 def process_single_band_image(f, props):
+    """"""
     _, numpy_dtype = make_format_specifications(props)
     # TODO: added this 'count' parameter to handle a case in which the image
     #  was not the last object in the file. We might want to add it to
@@ -78,6 +82,7 @@ def process_single_band_image(f, props):
 
 
 def extract_bil_linefix(image, props):
+    """"""
     if props["linepad"] == 0:
         return image, None, None
     prefix, suffix = None, None
@@ -92,6 +97,7 @@ def extract_bil_linefix(image, props):
 
 
 def process_multiband_image(f, props):
+    """"""
     bst = props["band_storage_type"]
     if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED", "SAMPLE_INTERLEAVED"):
         warnings.warn(
@@ -149,6 +155,7 @@ def extract_axplanes(image, props):
 
 
 def make_c_contiguous(image: np.ndarray) -> np.ndarray:
+    """"""
     if image.flags["C_CONTIGUOUS"] is False:
         return np.ascontiguousarray(image)
     return image

@@ -23,6 +23,7 @@ PVL_QUANTITY_UNITS = re.compile(r"<(.*)>")
 
 
 def extract_pvl_block_terminal(line):
+    """"""
     try:
         return re.match(PVL_BLOCK_TERMINAL, line).group()
     except AttributeError:
@@ -71,21 +72,27 @@ def chunk_statements(trimmed_lines: Iterable[str]):
 
 
 class BlockParser:
+    """"""
     def __init__(self):
+        """"""
         self.names, self.aggregations, self.parameters = [], [MultiDict()], []
 
     def _step_out(self):
+        """"""
         self.add_statement(self.names.pop(), self.aggregations.pop())
 
     def _step_in(self, name):
+        """"""
         self.names.append(name)
         self.aggregations.append(MultiDict())
 
     def add_statement(self, parameter, value):
+        """"""
         self.aggregations[-1].add(parameter, value)
         self.parameters.append(parameter)
 
     def parse_statements(self, statements):
+        """"""
         for parameter, value in statements:
             if parameter in PVL_BLOCK_INITIALS:
                 self._step_in(value)
@@ -109,10 +116,12 @@ class BlockParser:
 
 
 def looks_pvl(filename):
+    """"""
     return Path(filename).suffix.lower() in (".lbl", ".fmt")
 
 
 def parse_pvl(label, deduplicate_pointers=True):
+    """"""
     uncommented_label = re.sub(r"/\*.*?(\r|\n|/\*)", "\n", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
@@ -126,6 +135,7 @@ def parse_pvl(label, deduplicate_pointers=True):
 
 
 def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
+    """"""
     with decompress(filename) as stream:
         errors = "replace" if looks_pvl(filename) else "strict"
         label = trim_label(stream, max_size).decode("utf-8", errors=errors)
@@ -133,6 +143,7 @@ def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
 
 
 def parse_pvl_quantity_object(obj):
+    """"""
     return {
         "value": literalize_pvl(
             re.search(PVL_QUANTITY_VALUE, obj).group()
@@ -223,6 +234,7 @@ def multidict_dig_and_edit(
 
 
 def parse_non_base_10(text: str) -> int:
+    """"""
     try:
         base, number = text[:-1].split("#")
         return int(number, int(base))
@@ -233,6 +245,7 @@ def parse_non_base_10(text: str) -> int:
 def parse_non_base_10_collection(
     class_: Union[Type[set], Type[tuple]], obj: str
 ) -> Union[tuple[int], set[int]]:
+    """"""
     return class_(
         map(parse_non_base_10, obj.strip('{}()').replace(" ", '').split(','))
     )
@@ -284,6 +297,7 @@ def literalize_pvl(
 
 
 def literalize_pvl_block(block: MultiDict) -> MultiDict:
+    """"""
     literalized = multidict_dig_and_edit(
         block,
         None,
@@ -316,6 +330,7 @@ def depointerize(string: str) -> str:
 
 
 def index_duplicate_pointers(pointers, mapping, params):
+    """"""
     if pointers is None:
         return mapping, params
     # noinspection PyTypeChecker
@@ -358,6 +373,7 @@ def index_duplicate_pointers(pointers, mapping, params):
 
 
 def set_key_index(pointer_range: list, key: str) -> str:
+    """"""
     indexed_key = f"{key}_{pointer_range[0]}"
     pointer_range.pop(0)
     return indexed_key

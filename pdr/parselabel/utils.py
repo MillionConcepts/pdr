@@ -19,6 +19,7 @@ def trim_label(
     max_size: int = DEFAULT_PVL_LIMIT,
     raise_for_failure: bool = False,
 ) -> Union[str, bytes]:
+    """"""
     head = head_file(fn, max_size).read()
     for ending in KNOWN_LABEL_ENDINGS:
         if (endmatch := re.search(ending, head)) is not None:

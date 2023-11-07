@@ -1,4 +1,5 @@
 class DoesNotExistError(Exception):
+    """"""
     pass
 
 
