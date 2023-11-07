@@ -1,7 +1,7 @@
 site_name: Planetary Data Reader
 site_description: one tool to read them all; https://github.com/MillionConcepts/pdr
 theme:
-  name: readthedocs
+  name: material
 plugins:
 - search
 - mkdocstrings:
@@ -9,6 +9,7 @@ plugins:
       python:
         options:
           filters: []
+          show_signature_annotations: true
 
 nav:
   - 'index.md'

@@ -26,18 +26,18 @@ to be removed following `pds4-tools` 1.4 release
   
    as a metadata item with key "SAMPLE_BIT_MASK" and value 65535.
 
-    Please note that the bit masks are not applied programmatically because we don't believe 
-    their meanings are consistent across the corpus of planetary data. However, users are 
-    encouraged to explore their use within their own work and enjoy the glories of the Python `&` operator.
+   Please note that the bit masks are not applied programmatically because we don't believe 
+   their meanings are consistent across the corpus of planetary data. However, users are 
+   encouraged to explore their use within their own work and enjoy the glories of the Python `&` operator.
 
-    An example for how to apply a bit mask using the `&` bitwise operator:
-    ``` 
-        data = pdr.read('/path/to/file.img')
-        masked = data.IMAGE & data.metaget('SAMPLE_BIT_MASK')
-    ```
-    Alternatively, if you're using this value for something for which you'd prefer to have the original PVL 
-    value, use the `bin`, `oct`, or `hex` packages for base 2, 8, or 16 respectively to convert the value
-    back from an integer.
+   An example for how to apply a bit mask using the `&` bitwise operator:
+
+    data = pdr.read('/path/to/file.img')
+    masked = data.IMAGE & data.metaget('SAMPLE_BIT_MASK')
+   
+   Alternatively, if you're using this value for something for which you'd prefer to have the original PVL 
+   value, use the `bin`, `oct`, or `hex` packages for base 2, 8, or 16 respectively to convert the value
+   back from an integer.
 
   ([Resolves issue #51](https://github.com/MillionConcepts/pdr/issues/51))
 - correctly interpret PVL Sequences and Sets of Unquoted Strings as 
