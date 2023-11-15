@@ -247,6 +247,9 @@ of their metadata appear to match other sources.
   - TES Thermal Inertia and Albedo maps
   - MOLA PRDR, IEGDR (v1 and v2), MEGDR, and SHADR
   - RSS most Raw Data and Science Data Products (see Known Unsupported Datasets below for excluded products)
+  - RSS electron density profiles
+  - MOC decompressed standard data products
+  - MAG/ER fullword and high-res MAG data, omnidirectional and angular ER flux data, and the derived magnetic field map
 #### MRO
   - CRISM EDR, CDR, DDR, LDR, TER, TRDR, MRDR, and MTRDR
   - CRISM speclib and typespec tables
@@ -500,6 +503,7 @@ of their metadata appear to match other sources.
   - MOLA AEDR and PEDR (support planned)
   - RSS Raw Data products with a "stream" or undefined RECORD_TYPE (support not planned)
   - RSS PostScript files from both Raw Data and Science Data Products (support not planned)
+  - MOC Compressed Standard Data Products (*Note: similar to the MSL MSSS Camera EDRs below, software for converting these files to uncompressed PDS3-style files exists in the archive.*)
 #### MRO
   - RSS .tnf (support not planned)
   - HiRISE EDR line prefix tables (support planned)

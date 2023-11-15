@@ -4,6 +4,7 @@
 - 
 #### Dataset Support
 - most Voyager 1 and 2 datasets
+- additional MGS datasets (MAG/ER, RSS EDS, MOC)
 - see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
 ### Changed
