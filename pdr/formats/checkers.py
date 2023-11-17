@@ -406,6 +406,13 @@ def check_special_block(name, data, identifiers):
         and name == "TIME_SERIES"
     ):
         return formats.voyager.pls_ionbr_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "M9-M-IRIS-3-RDR-V1.0"
+        and (name == "SPECTRAL_SERIES" # the data product
+             or "SPECTRUM" in name # the calibration data
+             )
+    ):
+        return True, formats.mariner.get_special_block(data, name)
     return False, None
 
 
