@@ -5,6 +5,9 @@
 #### Dataset Support
 - most Voyager 1 and 2 datasets
 - additional MGS datasets (MAG/ER, RSS EDS, MOC)
+- Mariner 9 datasets
+- Pioneer 10 and 11 GTT RDRs
+- Sakigake, Suisei, and SOHO datasets
 - see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
 ### Changed

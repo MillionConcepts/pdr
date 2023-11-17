@@ -195,6 +195,10 @@ of their metadata appear to match other sources.
   - Spherical Harmonic, Topography, and Gravity models and maps
   - Occultation raw data and derived profiles
   - Radio Tracking Data (except ODF3B tables)
+#### Mariner 9
+  - IRIS data
+  - RSS electron density profiles
+  - Cloud catalog
 #### Mars Express
   - MARSIS EDRs and RDRs
 #### Mars Odyssey
@@ -289,6 +293,8 @@ of their metadata appear to match other sources.
   - SDC EDRs and RDRs
   - SWAP EDRs and RDRs
   - Pluto encounter derived products: surface composition maps, most atmosphere data, and geology/geophysical maps
+#### Pioneer 10 and 11
+  - GTT RDRs
 #### Pioneer Venus Orbiter
   - OEFD HIRES data and 24 second averages
   - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and solar EUV data
@@ -344,12 +350,17 @@ of their metadata appear to match other sources.
     - ROMAP EDRs, RDRs, and DDRs
     - SD2 RDRs
     - SESAME EDRs and RDRs
+#### Sakigake
+  - IMF RDRs
+  - SOW RDRs
 #### Saturn RPX
   - HST images, masks, and engineering data
   - WHT images and spectra
   - IRTF images
   - CFHT images
   - WIYN images
+#### SOHO
+  - LASCO images and photometry data
 #### Stardust
   - CIDA EDF and housekeeping data
   - DFMI products
@@ -361,6 +372,8 @@ of their metadata appear to match other sources.
   - DFMI
   - NAVCAM EDRs and RDRs
   - Derived shape models
+#### Suisei
+  - Solar wind experiment RDRs
 #### Vega 1 and 2
   - TVS raw, processed, and transform images
   - IKS raw and processed data
