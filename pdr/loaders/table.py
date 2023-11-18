@@ -82,6 +82,7 @@ def read_table(
 
 
 def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
+    """"""
     # TODO: this works poorly (from a usability and performance
     #  perspective; it's perfectly stable) for tables defined as
     #  a single row with tens or hundreds of thousands of columns

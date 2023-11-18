@@ -17,7 +17,7 @@ from pdr.formats import check_special_block, check_special_offset
 from pdr.func import specialize
 from pdr.loaders._helpers import (
     quantity_start_byte,
-    _count_from_bottom_of_file,
+    count_from_bottom_of_file,
     looks_like_ascii,
     _check_delimiter_stream,
 )
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
 
 def generic_qube_properties(block: MultiDict, band_storage_type) -> dict:
+    """"""
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
     props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
@@ -117,10 +118,12 @@ def extract_linefix_metadata(block: MultiDict, props: dict) -> dict:
 
 
 def gt0f(seq):
+    """"""
     return tuple(filter(lambda x: x > 0, seq))
 
 
 def check_fix_validity(props):
+    """"""
     if (props["linepad"] > 0) and (
         (props["rowpad"] + props["colpad"] + props["bandpad"]) > 0
     ):
@@ -143,6 +146,7 @@ def check_fix_validity(props):
 
 
 def check_if_qube(name, block, band_storage_type):
+    """"""
     if "QUBE" in name:  # ISIS2 QUBE format
         return True, generic_qube_properties(block, band_storage_type)
     else:
@@ -150,6 +154,7 @@ def check_if_qube(name, block, band_storage_type):
 
 
 def get_image_properties(gen_props) -> dict:
+    """"""
     props = gen_props
     check_fix_validity(props)
     props["pixels"] = (
@@ -161,6 +166,7 @@ def get_image_properties(gen_props) -> dict:
 
 
 def im_sample_type(base_samp_info):
+    """"""
     if base_samp_info["SAMPLE_TYPE"] != "":
         return sample_types(
             base_samp_info["SAMPLE_TYPE"],
@@ -170,6 +176,7 @@ def im_sample_type(base_samp_info):
 
 
 def base_sample_info(block):
+    """"""
     return {
         "BYTES_PER_PIXEL": int(block.get("SAMPLE_BITS", 0) / 8),
         "SAMPLE_TYPE": block.get("SAMPLE_TYPE", ""),
@@ -177,6 +184,7 @@ def base_sample_info(block):
 
 
 def generic_image_properties(block, sample_type):
+    """"""
     props = {
         # TODO: BYTES_PER_PIXEL check appears repeated with slight variation
         #  from base_sample_info()
@@ -203,10 +211,12 @@ def generic_image_properties(block, sample_type):
 
 
 def get_qube_band_storage_type(block):
+    """"""
     return block.get("BAND_STORAGE_TYPE")
 
 
 def check_array_for_subobject(block):
+    """"""
     valid_subobjects = ["ARRAY", "BIT_ELEMENT", "COLLECTION", "ELEMENT"]
     subobj = [sub for sub in valid_subobjects if sub in block]
     if len(subobj) > 1:
@@ -220,6 +230,7 @@ def check_array_for_subobject(block):
 
 
 def get_array_num_items(block):
+    """"""
     items = block["AXIS_ITEMS"]
     if isinstance(items, int):
         return items
@@ -229,14 +240,17 @@ def get_array_num_items(block):
 
 
 def get_block(data: PDRLike, name: str) -> MultiDict:
+    """"""
     return data.metablock_(name)
 
 
 def get_file_mapping(data: PDRLike, name: str):
+    """"""
     return data.file_mapping[name]
 
 
 def get_target(data: PDRLike, name: str):
+    """"""
     target = data.metaget_(name)
     if isinstance(target, Mapping) or target is None:
         target = data.metaget_(pointerize(name))
@@ -260,7 +274,7 @@ def data_start_byte(identifiers: dict, block: Mapping, target, fn) -> int:
         else:
             rows = identifiers["ROWS"]
             row_bytes = identifiers["ROW_BYTES"]
-            return _count_from_bottom_of_file(fn, rows, row_bytes)
+            return count_from_bottom_of_file(fn, rows, row_bytes)
     elif isinstance(target, dict):
         start_byte = quantity_start_byte(target, record_bytes)
     elif isinstance(target, str):
@@ -271,6 +285,7 @@ def data_start_byte(identifiers: dict, block: Mapping, target, fn) -> int:
 
 
 def _extract_table_records(block):
+    """"""
     if "RECORDS" in block.keys():
         return block["RECORDS"]
     elif "ROWS" in block.keys():
@@ -279,6 +294,7 @@ def _extract_table_records(block):
 
 
 def _table_row_position(length, n_records, target):
+    """"""
     if isinstance(target[1], dict):
         start = target[1]["value"] - 1
     else:
@@ -293,6 +309,7 @@ def _table_row_position(length, n_records, target):
 
 
 def _table_length(block, identifiers, length, n_records):
+    """"""
     try:
         if "BYTES" in block.keys():
             length = block["BYTES"]
@@ -314,6 +331,7 @@ def _table_length(block, identifiers, length, n_records):
 
 
 def table_position(identifiers: dict, block, target, name, start_byte):
+    """"""
     try:
         n_records = _extract_table_records(block)
     except AttributeError:
@@ -328,10 +346,12 @@ def table_position(identifiers: dict, block, target, name, start_byte):
 
 
 def get_return_default(data: PDRLike, name: str):
+    """"""
     return data.metaget_(name)
 
 
 def get_debug(data: PDRLike):
+    """"""
     return data.debug
 
 
@@ -392,6 +412,7 @@ def read_table_structure(block, name, fn, data, identifiers):
 
 
 def parse_array_structure(name, block, fn, data, identifiers):
+    """"""
     if not block.get("INTERCHANGE_FORMAT") == "BINARY":
         return None, None
     has_sub = check_array_for_subobject(block)
@@ -410,6 +431,7 @@ def parse_array_structure(name, block, fn, data, identifiers):
 def read_format_block(
     block, object_name, fn, data, identifiers, within_container=False
 ):
+    """"""
     # load external structure specifications
     format_block = list(block.items())
     # propagate top-level NAME to set offsets correctly for a variety of
@@ -481,6 +503,7 @@ def read_format_block(
 
 
 def get_histogram_fields(block):
+    """"""
     # This error could go somewhere else, but at least we catch it early here
     if block.get("INTERCHANGE_FORMAT") == "ASCII":
         raise NotImplementedError(
@@ -495,6 +518,7 @@ def get_histogram_fields(block):
 
 
 def inject_format_files(block, name, fn, data):
+    """"""
     format_fns = {
         ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
     }
@@ -511,6 +535,7 @@ def inject_format_files(block, name, fn, data):
 
 
 def load_format_file(data, format_file, name, fn):
+    """"""
     label_fns = data.get_absolute_paths(format_file)
     try:
         repo_paths = [
@@ -534,14 +559,17 @@ def load_format_file(data, format_file, name, fn):
 
 
 def get_identifiers(data):
+    """"""
     return data.identifiers
 
 
 def get_none():
+    """"""
     return None
 
 
 def get_fits_id(data, identifiers, fn, name, other_stubs):
+    """"""
     # annoying to have to match all files in the label here
     # but there is not really another reliable way to do it
     name = name.lower()

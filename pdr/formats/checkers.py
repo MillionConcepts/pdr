@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 def check_special_offset(
     name: str, data: PDRLike, identifiers: dict, fn
 ) -> tuple[bool, Optional[int]]:
+    """"""
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
     if identifiers["INSTRUMENT_ID"] == "CHEMIN":
@@ -53,6 +54,7 @@ def check_special_offset(
 def check_special_table_reader(
     identifiers, name, fn, fmtdef_dt, block, start_byte
 ):
+    """"""
     if identifiers["DATA_SET_ID"] in (
         "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
         "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
@@ -121,6 +123,7 @@ def check_special_table_reader(
 
 
 def check_special_structure(block, name, fn, identifiers, data):
+    """"""
     if (
         identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
         and name == "DATA_TABLE"
@@ -213,6 +216,7 @@ def check_special_structure(block, name, fn, identifiers, data):
 
 
 def check_special_position(identifiers, block, target, name, fn, start_byte):
+    """"""
     if (
         identifiers["INSTRUMENT_ID"] == "MARSIS"
         and " TEC " in identifiers["DATA_SET_NAME"]
@@ -267,6 +271,7 @@ def check_special_sample_type(
     identifiers: dict,
     base_samp_info: dict,
 ) -> tuple[bool, Optional[str]]:
+    """"""
     if (
         identifiers["DATA_SET_ID"] == "JNO-J-JIRAM-3-RDR-V1.0"
         and identifiers.get("PRODUCT_TYPE", "") == "RDR"
@@ -300,6 +305,7 @@ def check_special_sample_type(
 
 
 def check_special_bit_column_case(identifiers: dict):
+    """"""
     instrument = identifiers["INSTRUMENT_NAME"]
     if instrument in (
         "ALPHA PARTICLE X-RAYSPECTROMETER",
@@ -314,6 +320,7 @@ def check_special_bit_column_case(identifiers: dict):
 def check_special_bit_start_case(
     identifiers, list_of_pvl_objects_for_bit_columns, start_bit_list
 ):
+    """"""
     if identifiers["INSTRUMENT_NAME"] in "JOVIAN INFRARED AURORAL MAPPER":
         return formats.juno.bit_start_find_and_fix(
             list_of_pvl_objects_for_bit_columns, start_bit_list
@@ -322,6 +329,7 @@ def check_special_bit_start_case(
 
 
 def check_special_block(name, data, identifiers):
+    """"""
     if name == "XDR_DOCUMENT":
         return True, formats.cassini.xdr_redirect_to_image_block(data)
     if name == "CHMN_HSK_HEADER_TABLE":
@@ -397,11 +405,19 @@ def check_special_block(name, data, identifiers):
         and identifiers["PRODUCT_ID"] == "SUMRY.DAT"
         and name == "TIME_SERIES"
     ):
-        return formats.voyager.pls_ionbr_special_block(data, name, identifiers)
+        return formats.voyager.pls_ionbr_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "M9-M-IRIS-3-RDR-V1.0"
+        and (name == "SPECTRAL_SERIES" # the data product
+             or "SPECTRUM" in name # the calibration data
+             )
+    ):
+        return True, formats.mariner.get_special_block(data, name)
     return False, None
 
 
 def check_trivial_case(pointer, identifiers, fn) -> bool:
+    """"""
     if is_trivial(pointer):
         return True
     if (
@@ -449,6 +465,7 @@ def check_trivial_case(pointer, identifiers, fn) -> bool:
 
 
 def special_image_constants(identifiers):
+    """"""
     consts = {}
     if identifiers["INSTRUMENT_ID"] == "CRISM":
         consts["NULL"] = 65535
@@ -491,6 +508,7 @@ def check_special_fn(
 
 
 def check_special_qube_band_storage(identifiers):
+    """"""
     if (
         identifiers["INSTRUMENT_HOST_NAME"]
         == "CASSINI_ORBITER"
@@ -502,6 +520,7 @@ def check_special_qube_band_storage(identifiers):
 
 
 def check_special_hdu_name(data, identifiers, fn, name):
+    """"""
     if (
         identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
         and 'FC2' in identifiers['DATA_SET_ID']

@@ -2,6 +2,7 @@ import pdr.loaders.queries
 
 
 def get_structure(block, name, filename, data, identifiers):
+    """"""
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )

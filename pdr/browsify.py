@@ -180,8 +180,8 @@ def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs):
 
 
 def _browsify_recarray(obj: np.recarray, outbase: str, **_):
-    # some tabular data with column groups ends up as numpy recarray, which is
-    # challenging to turn into a useful .csv file in some cases
+    """some tabular data with column groups ends up as numpy recarray, which is
+    challenging to turn into a useful .csv file in some cases"""
     try:
         obj = pd.DataFrame.from_records(obj)
         # noinspection PyTypeChecker
@@ -229,6 +229,7 @@ def _browsify_array(
 def _render_and_save(
     obj, outbase, purge, image_clip, mask_color, save, image_format
 ):
+    """"""
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
     if (obj.dtype.char in np.typecodes["AllInteger"]) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
@@ -259,6 +260,7 @@ def _render_and_save(
 
 
 def _format_as_rgb(obj):
+    """"""
     if isinstance(obj, np.ma.MaskedArray):
         return np.ma.dstack([channel for channel in obj[0:3]])
     else:
@@ -313,6 +315,7 @@ def save_sparklines(
     sparkline_column_key=lambda c: "spectrum" in c.lower(),
     orientation="rows",
 ):
+    """"""
     from matplotlib import pyplot as plt
 
     sparkframe = (

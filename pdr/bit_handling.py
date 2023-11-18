@@ -12,6 +12,7 @@ import warnings
 
 
 def expand_bit_strings(table, fmtdef):
+    """"""
     if "start_bit_list" not in fmtdef.columns:
         return table
     table = convert_to_full_bit_string(table, fmtdef)
@@ -19,6 +20,7 @@ def expand_bit_strings(table, fmtdef):
 
 
 def convert_to_full_bit_string(table, fmtdef):
+    """"""
     for column in fmtdef.start_bit_list.dropna().index:
         if isinstance(fmtdef.start_bit_list[column], list):
             byte_column = table[fmtdef.NAME[column]]
@@ -31,6 +33,7 @@ def convert_to_full_bit_string(table, fmtdef):
 
 
 def factor_to_dtype(field_length, byte_order):
+    """"""
     lengths = [1, 2, 4, 8]
     if field_length in lengths:
         return np.dtype([("0", f"{byte_order}u{field_length}")])
@@ -47,6 +50,7 @@ def factor_to_dtype(field_length, byte_order):
 
 
 def convert_byte_column_to_bits(byte_column, byte_order):
+    """"""
     dtype = factor_to_dtype(len(byte_column.iloc[0]), byte_order)
     byte_array = np.frombuffer(b"".join(byte_column.tolist()), dtype=dtype)
     bytedf = pd.DataFrame.from_records(byte_array)
@@ -63,6 +67,7 @@ def convert_byte_column_to_bits(byte_column, byte_order):
 
 
 def splice_bit_string(table, fmtdef):
+    """"""
     if "start_bit_list" not in fmtdef.columns:
         return
     for column in fmtdef.start_bit_list.dropna().index:
@@ -84,6 +89,7 @@ def splice_bit_string(table, fmtdef):
 
 
 def split_bits(bit_string, start_bit_list, bit_size_list):
+    """"""
     end_bit_list = [
         start + size for start, size in zip(start_bit_list, bit_size_list)
     ]
@@ -94,6 +100,7 @@ def split_bits(bit_string, start_bit_list, bit_size_list):
 
 
 def set_bit_string_data_type(obj, identifiers):
+    """"""
     is_special, special_dtype = check_special_bit_column_case(identifiers)
     if is_special is False:
         try:
@@ -120,6 +127,7 @@ def set_bit_string_data_type(obj, identifiers):
 
 
 def get_bit_start_and_size(obj, definition, identifiers):
+    """"""
     start_bit_list = []
     bit_size_list = []
     list_of_pvl_objects_for_bit_columns = definition.getall("BIT_COLUMN")

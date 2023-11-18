@@ -3,7 +3,11 @@ theme:
   name: readthedocs
 plugins:
 - search
-- mkdocstrings
+- mkdocstrings:
+    handlers:
+      python:
+        options:
+          filters: []
 
 nav:
   - 'index.md'

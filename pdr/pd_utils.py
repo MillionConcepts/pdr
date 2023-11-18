@@ -20,6 +20,7 @@ from pdr.np_utils import enforce_order_and_object, ibm32_to_np_f32, \
 
 
 def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
+    """"""
     return [
         col
         for col, dtype in df.dtypes.iteritems()
@@ -47,6 +48,7 @@ def reindex_df_values(df: pd.DataFrame, column="NAME") -> pd.DataFrame:
 
 
 def _apply_item_offsets(fmtdef):
+    """"""
     item_offsets = fmtdef["ITEM_BYTES"].copy()
     if "ITEM_OFFSET" not in fmtdef.columns:
         return item_offsets
@@ -118,6 +120,7 @@ def compute_offsets(fmtdef):
 
 
 def _fill_empty_byte_rows(fmtdef):
+    """"""
     nobytes = fmtdef["BYTES"].isna()
     with warnings.catch_warnings():
         # we do not care that loc will set items inplace later. at all.
@@ -178,6 +181,7 @@ def insert_sample_types_into_df(fmtdef, identifiers):
 
 
 def get_dtype(fmtdef: pd.DataFrame):
+    """"""
     dtype_spec = fmtdef[
         [c for c in ("NAME", "dt", "SB_OFFSET") if c in fmtdef.columns]].to_dict("list")
     spec_keys = ("names", "formats", "offsets")[: len(dtype_spec)]
@@ -185,6 +189,7 @@ def get_dtype(fmtdef: pd.DataFrame):
 
 
 def create_nested_array_dtypes(fmtdef: pd.DataFrame):
+    """"""
     block_names_df = fmtdef.drop(fmtdef[fmtdef["NAME"] == "PLACEHOLDER_0"].index)
     block_names = block_names_df["BLOCK_NAME"].unique()
     for block_name in block_names[1:]:
@@ -207,6 +212,7 @@ def create_nested_array_dtypes(fmtdef: pd.DataFrame):
 def booleanize_booleans(
     table: pd.DataFrame, fmtdef: pd.DataFrame
 ) -> pd.DataFrame:
+    """"""
     boolean_columns = fmtdef.loc[fmtdef["DATA_TYPE"] == "BOOLEAN", "NAME"]
     table[boolean_columns] = table[boolean_columns].astype(bool)
     return table

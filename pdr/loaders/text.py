@@ -7,6 +7,7 @@ from pdr.utils import check_cases, decompress
 
 
 def read_text(target, fn):
+    """"""
     try:
         if isinstance(fn, str):
             return ignore_if_pdf(check_cases(fn))
@@ -28,6 +29,7 @@ def read_header(fn, table_props, name="HEADER"):
 
 
 def read_label(fn, fmt: Optional[str] = "text"):
+    """"""
     if fmt == "text":
         return trim_label(decompress(fn)).decode("utf-8")
     elif fmt == "pvl":
@@ -43,6 +45,7 @@ def skeptically_load_header(
     name="header",
     fmt: Optional[str] = "text",
 ):
+    """"""
     # TODO: all these check_cases calls are probably unnecessary w/new file
     #  mapping workflow
     try:
@@ -75,6 +78,7 @@ def skeptically_load_header(
 
 
 def ignore_if_pdf(fn):
+    """"""
     if looks_like_this_kind_of_file(fn, [".pdf"]):
         warnings.warn(f"Cannot open {fn}; PDF files are not supported.")
         return

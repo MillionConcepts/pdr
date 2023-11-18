@@ -35,11 +35,13 @@ def tbd(name: str, block: MultiDict, *_, **__):
 
 
 def looks_like_this_kind_of_file(filename: str, kind_extensions) -> bool:
+    """"""
     is_this_kind_of_extension = partial(contains, kind_extensions)
     return any(map(is_this_kind_of_extension, Path(filename.lower()).suffixes))
 
 
 def is_trivial(pointer) -> bool:
+    """"""
     # TIFF tags / headers should always be parsed by the TIFF parser itself
     if (
         ("TIFF" in pointer)

@@ -195,6 +195,10 @@ of their metadata appear to match other sources.
   - Spherical Harmonic, Topography, and Gravity models and maps
   - Occultation raw data and derived profiles
   - Radio Tracking Data (except ODF3B tables)
+#### Mariner 9
+  - IRIS data
+  - RSS electron density profiles
+  - Cloud catalog
 #### Mars Express
   - MARSIS EDRs and RDRs
 #### Mars Odyssey
@@ -247,6 +251,9 @@ of their metadata appear to match other sources.
   - TES Thermal Inertia and Albedo maps
   - MOLA PRDR, IEGDR (v1 and v2), MEGDR, and SHADR
   - RSS most Raw Data and Science Data Products (see Known Unsupported Datasets below for excluded products)
+  - RSS electron density profiles
+  - MOC decompressed standard data products
+  - MAG/ER fullword and high-res MAG data, omnidirectional and angular ER flux data, and the derived magnetic field map
 #### MRO
   - CRISM EDR, CDR, DDR, LDR, TER, TRDR, MRDR, and MTRDR
   - CRISM speclib and typespec tables
@@ -286,6 +293,8 @@ of their metadata appear to match other sources.
   - SDC EDRs and RDRs
   - SWAP EDRs and RDRs
   - Pluto encounter derived products: surface composition maps, most atmosphere data, and geology/geophysical maps
+#### Pioneer 10 and 11
+  - GTT RDRs
 #### Pioneer Venus Orbiter
   - OEFD HIRES data and 24 second averages
   - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and solar EUV data
@@ -341,12 +350,17 @@ of their metadata appear to match other sources.
     - ROMAP EDRs, RDRs, and DDRs
     - SD2 RDRs
     - SESAME EDRs and RDRs
+#### Sakigake
+  - IMF RDRs
+  - SOW RDRs
 #### Saturn RPX
   - HST images, masks, and engineering data
   - WHT images and spectra
   - IRTF images
   - CFHT images
   - WIYN images
+#### SOHO
+  - LASCO images and photometry data
 #### Stardust
   - CIDA EDF and housekeeping data
   - DFMI products
@@ -358,6 +372,8 @@ of their metadata appear to match other sources.
   - DFMI
   - NAVCAM EDRs and RDRs
   - Derived shape models
+#### Suisei
+  - Solar wind experiment RDRs
 #### Vega 1 and 2
   - TVS raw, processed, and transform images
   - IKS raw and processed data
@@ -390,6 +406,17 @@ of their metadata appear to match other sources.
 #### Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
+#### Voyager 1 and 2
+  - CRS RDR and SUMM products
+  - IRIS derived maps and the expanded collection of full-res Jupiter/Saturn data
+  - ISS uncompressed images, and ascii ancillary tables
+  - MAG RDR and SUMM products
+  - PLS RDR and SUMM products (except a few 'original binary' products)
+  - POS SUMM products
+  - PWS RDR, SUMM, and DDR products
+  - RSS Triton derived atmospheric profile
+  - UVS reformatted airglow spectra and derived maps
+  - Ring Profiles derived from ISS, PPS, UVS, and RSS data (except VAX_REAL tables)
 
 ## Notionally Supported Datasets:
 #### Apollo
@@ -489,6 +516,7 @@ of their metadata appear to match other sources.
   - MOLA AEDR and PEDR (support planned)
   - RSS Raw Data products with a "stream" or undefined RECORD_TYPE (support not planned)
   - RSS PostScript files from both Raw Data and Science Data Products (support not planned)
+  - MOC Compressed Standard Data Products (*Note: similar to the MSL MSSS Camera EDRs below, software for converting these files to uncompressed PDS3-style files exists in the archive.*)
 #### MRO
   - RSS .tnf (support not planned)
   - HiRISE EDR line prefix tables (support planned)
@@ -523,3 +551,10 @@ of their metadata appear to match other sources.
   - GAS PostScript files (support not planned)
 #### Vega 1 and 2
   - PUMA raw and processed data (support not planned)
+#### Voyager 1 and 2
+  - IRIS full-res spectral observations (support planned; VAX_REAL)
+  - ISS ancillary binary tables (support planned; VAX_REAL)
+  - ISS compressed raw images (support not planned)
+  - PLS binary versions of VG2-N-PLS-5-RDR-ELEMAGSPHERE-96SEC-V1.0 data (support not planned)
+  - RSS ODRs (support not planned)
+  - Ring Profile tables with the VAX_REAL data type (support planned)

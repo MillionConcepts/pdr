@@ -23,15 +23,19 @@ def geom_table_loader(filename, fmtdef_dt):
 
 
 def orbit_table_in_img_loader():
+    """"""
     return True
 
 
 def get_fn(data):
+    """"""
     target = data.filename
     return True, target
 
 
 def occultation_loader(identifiers, fmtdef_dt, block, filename):
+    """Checks end of each row for newline character. If missing, removes extraneous
+    newline from middle of the row and adjusts for the extra byte. Adapted from _interpret_as_ascii()"""
     import pandas as pd
 
     fmtdef, dt = fmtdef_dt
