@@ -84,7 +84,7 @@ def compute_offsets(fmtdef):
         if count == 1:
             continue
         chunks = tuple(map(list, divide(count, fmt_block.index)))
-        block_size = fmt_block['BLOCK_SIZE'].iloc[0] / count
+        block_size = fmt_block['BLOCK_BYTES'].iloc[0] * count
         if block_size != int(block_size):
             raise NotImplementedError("irregular repeated container size.")
         block_size = int(block_size)
