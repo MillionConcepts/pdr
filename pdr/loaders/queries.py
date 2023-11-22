@@ -480,7 +480,10 @@ def read_format_block(
                 'DATA_TYPE': 'VOID',
                 'START_BYTE': definition['START_BYTE'],
                 'BYTES': 0,
-            } | block_info
+                'BLOCK_REPETITIONS': definition.get("REPETITIONS", 1),
+                'BLOCK_BYTES': definition.get("BYTES"),
+                'BLOCK_NAME': ''
+            }
             if definition.get("AXIS_ITEMS"):
                 dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
             fields.append(dummy_column)
