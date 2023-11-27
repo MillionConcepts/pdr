@@ -72,7 +72,7 @@ def compute_offsets(fmtdef):
     fmtdef["SB_OFFSET"] = fmtdef["START_BYTE"].astype(int) - 1
     if "ROW_PREFIX_BYTES" in fmtdef.columns:
         fmtdef["SB_OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
-    block_names = fmtdef["BLOCK_NAME"].unique()
+    block_names = list(filter(None, fmtdef["BLOCK_NAME"].unique()))
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
@@ -191,7 +191,7 @@ def get_dtype(fmtdef: pd.DataFrame):
 def create_nested_array_dtypes(fmtdef: pd.DataFrame):
     """"""
     block_names_df = fmtdef.drop(fmtdef[fmtdef["NAME"] == "PLACEHOLDER_0"].index)
-    block_names = block_names_df["BLOCK_NAME"].unique()
+    block_names = list(filter(None, block_names_df["BLOCK_NAME"].unique()))
     for block_name in block_names[1:]:
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
