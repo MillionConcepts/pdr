@@ -6,7 +6,7 @@ def gas_table_loader(filename, fmtdef_dt, start_byte):
     import pandas as pd
     fmtdef, dt = fmtdef_dt
     # Some tables use tabs as column deliminators, others use spaces.
-    table = pd.read_csv(filename, header=50, delim_whitespace=True)
+    table = pd.read_csv(filename, skiprows=17, delim_whitespace=True, header=None)
     assert len(table.columns) == len(fmtdef.NAME.tolist())
     table.columns = fmtdef.NAME.tolist()
     return table
