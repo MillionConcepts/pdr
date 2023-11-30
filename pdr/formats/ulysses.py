@@ -1,16 +1,15 @@
-def get_structure(block, name, filename, data, identifiers):
+def gas_table_loader(filename, fmtdef_dt, start_byte):
     """GASDATA.FMT has the wrong START_BYTE for columns in the container.
     After manually changing the labels during testing, START_BYTE was still
     not incrementing correctly with each repetition of the container.
     This fixes both issues with 1 special case."""
-    from pdr.loaders.queries import read_table_structure
-    fmtdef = read_table_structure(
-        block, name, filename, data, identifiers
-    )
-
-    for i in range(10):
-        fmtdef.at[i+7, "START_BYTE"] = 1 + (i*7)
-    return fmtdef, None
+    import pandas as pd
+    fmtdef, dt = fmtdef_dt
+    # Some tables use tabs as column deliminators, others use spaces.
+    table = pd.read_csv(filename, header=50, delim_whitespace=True)
+    assert len(table.columns) == len(fmtdef.NAME.tolist())
+    table.columns = fmtdef.NAME.tolist()
+    return table
 
 
 def get_sample_type(base_samp_info):

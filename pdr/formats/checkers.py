@@ -113,6 +113,12 @@ def check_special_table_reader(
     ):
         return True, formats.odyssey.map_table_loader(fn, fmtdef_dt)
     if (
+        identifiers["DATA_SET_ID"] == "ULY-J-GAS-5-SKY-MAPS-V1.0"
+        and name == "TABLE"
+        and block["^STRUCTURE"] == "GASDATA.FMT"
+    ):
+        return True, formats.ulysses.gas_table_loader(fn, fmtdef_dt, start_byte)
+    if (
         identifiers["DATA_SET_ID"] == "MRO-M-MCS-5-DDR-V1.0"
         and name == "TABLE"
     ):
@@ -194,14 +200,6 @@ def check_special_structure(block, name, fn, identifiers, data):
         and name == "TABLE"
     ):
         return True, formats.mro.get_structure(
-            block, name, fn, data, identifiers
-        )
-    if (
-        identifiers["DATA_SET_ID"] == "ULY-J-GAS-5-SKY-MAPS-V1.0"
-        and name == "TABLE"
-        and block["^STRUCTURE"] == "GASDATA.FMT"
-    ):
-        return True, formats.ulysses.get_structure(
             block, name, fn, data, identifiers
         )
     if (
