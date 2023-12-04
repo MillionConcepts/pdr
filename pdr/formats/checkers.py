@@ -378,10 +378,10 @@ def check_special_block(name, data, identifiers):
     ):
         return True, formats.galileo.pws_special_block(data, name)
     if (
-        "ULY-J-EPAC-4-SUMM-PSTL" in identifiers["DATA_SET_ID"]
+        "ULY-J-EPAC-4-SUMM" in identifiers["DATA_SET_ID"]
         and name == "TABLE"
     ):
-        return True, formats.ulysses.get_special_block(data, name)
+        return True, formats.ulysses.get_special_block(data, name, identifiers)
     if (
         "VG2-N-MAG-4-RDR-HGCOORDS" in identifiers["DATA_SET_ID"]
         and identifiers["STANDARD_DATA_PRODUCT_ID"] == "ASCII DATA"
