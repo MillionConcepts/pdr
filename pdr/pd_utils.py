@@ -75,7 +75,7 @@ def compute_offsets(fmtdef):
     block_names = fmtdef["BLOCK_NAME"].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
-        if block_name == "":
+        if "PLACEHOLDER" in block_name:
             continue
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
