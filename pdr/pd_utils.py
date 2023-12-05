@@ -83,6 +83,8 @@ def compute_offsets(fmtdef):
             prior["SB_OFFSET"] + prior["BYTES"]
         )
         count = fmt_block["BLOCK_REPETITIONS"].iloc[0]
+        if isinstance(prior["BLOCK_REPETITIONS"], int):
+            count = count * prior["BLOCK_REPETITIONS"]
         if count == 1:
             continue
         chunks = tuple(map(list, divide(count, fmt_block.index)))
