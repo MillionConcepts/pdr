@@ -83,7 +83,7 @@ def compute_offsets(fmtdef):
             prior["SB_OFFSET"] + prior["BYTES"]
         )
         count = fmt_block["BLOCK_REPETITIONS"].iloc[0]
-        if isinstance(prior["BLOCK_REPETITIONS"], int):
+        if prior["BLOCK_REPETITIONS"]:
             count = count * prior["BLOCK_REPETITIONS"]
         if count == 1:
             continue
