@@ -482,7 +482,7 @@ def read_format_block(
                 'BYTES': 0,
                 'BLOCK_REPETITIONS': definition.get("REPETITIONS", 1),
                 'BLOCK_BYTES': definition.get("BYTES"),
-                'BLOCK_NAME': f'PLACEHOLDER_{definition.get("NAME")}'
+                'BLOCK_NAME': f'PLACEHOLDER_{block_info["BLOCK_NAME"]}'
             }
             if definition.get("AXIS_ITEMS"):
                 dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
