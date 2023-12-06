@@ -78,7 +78,10 @@ def compute_offsets(fmtdef):
         if "PLACEHOLDER_None" in block_name:
             continue
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
-        prior = fmtdef.loc[fmt_block.index[0] - 1]
+        if "PLACEHOLDER" in block_name:
+            prior = fmtdef[fmtdef["NAME"] == block_name].squeeze()
+        else:
+            prior = fmtdef.loc[fmt_block.index[0] - 1]
         fmtdef.loc[fmt_block.index, "SB_OFFSET"] += (
             prior["SB_OFFSET"] + prior["BYTES"]
         )
