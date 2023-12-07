@@ -36,16 +36,7 @@ def get_special_block(data, name, identifiers):
         block["CONTAINER"]["COLUMN"]["ITEM_BYTES"] = 13
         block["CONTAINER"]["COLUMN"]["START_BYTE"] = 1
     elif "ULY-J-EPAC-4-SUMM-ALL-CHAN" in identifiers["DATA_SET_ID"]:
-        block.getall('CONTAINER')[1]['START_BYTE'] = 431
         block.getall('CONTAINER')[0]['COLUMN']['START_BYTE'] = 1
-        block.getall('CONTAINER')[1]['CONTAINER']['START_BYTE'] = 431
-    return block
-
-
-def get_special_block_2(data, name):
-    """"""
-    block = data.metablock_(name)
-    block.getall('CONTAINER')[1]['START_BYTE'] = 431
-    block.getall('CONTAINER')[0]['COLUMN']['START_BYTE'] = 1
-    block.getall('CONTAINER')[1]['CONTAINER']['START_BYTE'] = 431
+        block.getall('CONTAINER')[1]['CONTAINER']['START_BYTE'] = 1
+        block.getall('CONTAINER')[1]['CONTAINER']['COLUMN']['START_BYTE'] = 1
     return block
