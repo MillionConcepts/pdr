@@ -583,22 +583,29 @@ class Data:
             #  stealthily in PDS4 data. etc.
             return scale_pds4_tools_struct(self._pds4_structures[object_name])
 
-        from pdr._scaling import (
-            find_special_constants,
-            mask_specials,
-            scale_array,
-        )
+        from pdr._scaling import mask_specials, scale_array
 
         if object_name not in self.specials:
-            consts = special_image_constants(self.identifiers)
-            self.specials[object_name] = consts
-            if not consts:
-                self.specials[object_name] = find_special_constants(
-                    self.metadata, obj, object_name
-                )
+            self.specials[object_name] = self.find_special_constants(
+                object_name
+            )
         if self.specials[object_name] != {}:
             obj = mask_specials(obj, list(self.specials[object_name].values()))
         return scale_array(self, obj, object_name, inplace, float_dtype)
+
+    def find_special_constants(
+        self, object_name: str
+    ) -> dict[str, Union[float, int]]:
+        """
+        look up or infer special constants for one of our data objects.
+        in general, only works well on ndarrays.
+        """
+        if len(consts := special_image_constants(self.identifiers)) > 0:
+            return consts
+        from pdr._scaling import find_special_constants
+        return find_special_constants(
+            self.metadata, self[object_name], object_name
+        )
 
     def metaget(self, text, default=None, evaluate=True, warn=True):
         """
