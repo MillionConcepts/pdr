@@ -163,10 +163,7 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
     string_buffer.seek(0)
     if "BYTES" in fmtdef.columns:
         try:
-            from pdr.pd_utils import compute_offsets
-
-            colspecs = []
-            position_records = compute_offsets(fmtdef).to_dict("records")
+            colspecs, position_records = [], fmtdef.to_dict("records")
             for record in position_records:
                 if np.isnan(record.get("ITEM_BYTES", np.nan)):
                     col_length = record["BYTES"]
