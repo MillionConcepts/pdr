@@ -64,7 +64,7 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
     string_buffer.close()
 
     table.columns = fmtdef.NAME.tolist()
-    return table
+    return table.drop("PLACEHOLDER_0", axis=1)
 
 
 def gvanf_sample_type():
