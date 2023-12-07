@@ -136,6 +136,12 @@ of their metadata appear to match other sources.
 #### GRAIL
   - LGRS RDR: SHADR, SHBDR, and RSDMAP
   - RSS: BOF, ODF, OLF, and RSR
+#### ICE
+  - EPAS, MAG, PLAWAV, RADWAV, SWPLAS, and ULECA tables
+  - ICI text files
+#### IUE
+  - Raw and extracted spectra
+  - Most image products
 #### Juno
   - FGM tables
   - Gravity Science tables (EDR, RSR, and TNF)
@@ -481,6 +487,8 @@ of their metadata appear to match other sources.
 #### GRAIL
   - LGRS: EDR and CDR (support not planned)
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
+#### IUE
+  - A handful of the image products do not open becuase of a typo in their labels. The QUALITY_IMAGE object is written as QUALITY_QUALITY_IMAGE. (support planned)
 #### Juno
   - JADE Ion sensor housekeeping data prior to arrival at Jupiter (support not planned)
   - UVS (support planned)
