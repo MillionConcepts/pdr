@@ -75,7 +75,7 @@ def compute_offsets(fmtdef):
     block_names = fmtdef["BLOCK_NAME"].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
-        if "PLACEHOLDER_None" in block_name:
+        if block_name in ("PLACEHOLDER_None", f"PLACEHOLDER_{block_names[0]}"):
             continue
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         if "PLACEHOLDER" in block_name:
@@ -208,16 +208,17 @@ def create_nested_array_dtypes(fmtdef: pd.DataFrame):
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
         if "AXIS_ITEMS" in prior.keys():
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
-                fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
-            dt = get_dtype(fmt_block)
             axis_items = prior["AXIS_ITEMS"]
-            if isinstance(axis_items, float):
-                axis_items = int(axis_items)
-            dt = (dt, axis_items)
-            fmtdef.at[fmt_block.index[0] - 1, "dt"] = dt
-            fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
+            if not np.isnan(axis_items):
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
+                    fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
+                dt = get_dtype(fmt_block)
+                if isinstance(axis_items, float):
+                    axis_items = int(axis_items)
+                dt = (dt, axis_items)
+                fmtdef.at[fmt_block.index[0] - 1, "dt"] = dt
+                fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
     return fmtdef
 
 
