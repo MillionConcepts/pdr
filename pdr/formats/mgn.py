@@ -55,9 +55,7 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
     string_buffer = StringIO(processed.decode())
     # adapted from _interpret_as_ascii()
     colspecs = []
-    from pdr.pd_utils import compute_offsets
-
-    position_records = compute_offsets(fmtdef).to_dict("records")
+    position_records = fmtdef.to_dict("records")
     for record in position_records:
         col_length = record["BYTES"]
         colspecs.append((record["SB_OFFSET"], record["SB_OFFSET"] + col_length))

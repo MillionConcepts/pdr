@@ -72,7 +72,7 @@ def compute_offsets(fmtdef):
     fmtdef["SB_OFFSET"] = fmtdef["START_BYTE"].astype(int) - 1
     if "ROW_PREFIX_BYTES" in fmtdef.columns:
         fmtdef["SB_OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
-    block_names = fmtdef["BLOCK_NAME"].unique()
+    block_names = fmtdef.loc[fmtdef['NAME'] != "PLACEHOLDER_0", "BLOCK_NAME"].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
         if block_name in ("PLACEHOLDER_None", f"PLACEHOLDER_{block_names[0]}"):
