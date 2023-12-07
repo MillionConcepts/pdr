@@ -261,7 +261,7 @@ of their metadata appear to match other sources.
   - SHARAD rgram and geom files
   - RSS ODF, RSR, RSDMAP, SHADR, SHBDR, and TPS
   - HiRISE EDRs and DTMs (*note: only the .img DTMs are officially supported*)
-  - MCS EDRs, RDRs, and DDRs
+  - MCS EDRs and RDRs
   - CTX EDRs
   - MARCI EDRs
 #### MSL
@@ -519,6 +519,7 @@ of their metadata appear to match other sources.
   - MOC Compressed Standard Data Products (*Note: similar to the MSL MSSS Camera EDRs below, software for converting these files to uncompressed PDS3-style files exists in the archive.*)
 #### MRO
   - RSS .tnf (support not planned)
+  - MCS DDRs (support not planned)
   - HiRISE EDR line prefix tables (support planned)
 #### MSL
   - Malin Space Science Systems (MSSS) Camera EDRs: "Raw" (EDR) data from the
