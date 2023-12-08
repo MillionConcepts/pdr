@@ -26,7 +26,7 @@
 
 ### Fixed
 - Tables with containers with REPETITIONS in them were reading the same data each repetition, this has been fixed
-- Exponential notation in pvl quantity objects are now properly handled
+- Exponential notation in pvl quantity objects are now properly handled ([Fixes issue #53]((https://github.com/MillionConcepts/pdr/issues/53)))
 
 ### Removed
 - MRO MCS DDR data is not supported due to formatting issues
