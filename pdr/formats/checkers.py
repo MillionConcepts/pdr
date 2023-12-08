@@ -125,6 +125,11 @@ def check_special_table_reader(
         return True, formats.mro.mcs_ddr_table_loader(
             fmtdef_dt, block, fn, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "IHW-C-IRFCURV-3-EDR-HALLEY-V2.0"
+        and name == "TABLE"
+    ):
+        return True, formats.ihw.curve_table_loader(fn, fmtdef_dt)
     return False, None
 
 
