@@ -1,7 +1,8 @@
-## [X.X.X] - 20XX-XX-XX
+## [1.0.5] - 2023-12-07
 ### Added
 #### Features
-- 
+- doc strings for API on readthedocs
+- Error tracking features that were accidentally deleted from the last version were re-added
 #### Dataset Support
 - most Voyager 1 and 2 datasets
 - additional MGS datasets (MAG/ER, RSS EDS, MOC)
@@ -11,14 +12,12 @@
 - ICE and IUE datasets
 - see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
-### Changed
-- 
-
 ### Fixed
-- 
+- Tables with containers with REPETITIONS in them were reading the same data each repetition, this has been fixed
+- Exponential notation in pvl quantity objects are now properly handled
 
 ### Removed
-- 
+- MRO MCS DDR data is not supported due to formatting issues
 
 ## [1.0.4] - 2023-10-23
 ### Added
