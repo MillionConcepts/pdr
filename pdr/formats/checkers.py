@@ -113,6 +113,12 @@ def check_special_table_reader(
     ):
         return True, formats.odyssey.map_table_loader(fn, fmtdef_dt)
     if (
+        identifiers["DATA_SET_ID"] == "ULY-J-GAS-5-SKY-MAPS-V1.0"
+        and name == "TABLE"
+        and block["^STRUCTURE"] == "GASDATA.FMT"
+    ):
+        return True, formats.ulysses.gas_table_loader(fn, fmtdef_dt)
+    if (
         identifiers["DATA_SET_ID"] == "MRO-M-MCS-5-DDR-V1.0"
         and name == "TABLE"
     ):
@@ -194,14 +200,6 @@ def check_special_structure(block, name, fn, identifiers, data):
         and name == "TABLE"
     ):
         return True, formats.mro.get_structure(
-            block, name, fn, data, identifiers
-        )
-    if (
-        identifiers["DATA_SET_ID"] == "ULY-J-GAS-5-SKY-MAPS-V1.0"
-        and name == "TABLE"
-        and block["^STRUCTURE"] == "GASDATA.FMT"
-    ):
-        return True, formats.ulysses.get_structure(
             block, name, fn, data, identifiers
         )
     if (
@@ -380,10 +378,10 @@ def check_special_block(name, data, identifiers):
     ):
         return True, formats.galileo.pws_special_block(data, name)
     if (
-        "ULY-J-EPAC-4-SUMM-PSTL" in identifiers["DATA_SET_ID"]
+        "ULY-J-EPAC-4-SUMM" in identifiers["DATA_SET_ID"]
         and name == "TABLE"
     ):
-        return True, formats.ulysses.get_special_block(data, name)
+        return True, formats.ulysses.get_special_block(data, name, identifiers)
     if (
         "VG2-N-MAG-4-RDR-HGCOORDS" in identifiers["DATA_SET_ID"]
         and identifiers["STANDARD_DATA_PRODUCT_ID"] == "ASCII DATA"
@@ -406,6 +404,13 @@ def check_special_block(name, data, identifiers):
         and name == "TIME_SERIES"
     ):
         return formats.voyager.pls_ionbr_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "M9-M-IRIS-3-RDR-V1.0"
+        and (name == "SPECTRAL_SERIES"  # the data product
+             or "SPECTRUM" in name  # the calibration data
+             )
+    ):
+        return True, formats.mariner.get_special_block(data, name)
     return False, None
 
 

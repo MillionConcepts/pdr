@@ -10,6 +10,7 @@ from typing import Hashable
 import numpy as np
 import pandas.api.types
 import pandas as pd
+from more_itertools import chunked, divide
 from pandas.errors import SettingWithCopyWarning
 
 from pdr.datatypes import sample_types
@@ -74,12 +75,33 @@ def compute_offsets(fmtdef):
     block_names = fmtdef["BLOCK_NAME"].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
+        if block_name in ("PLACEHOLDER_None", f"PLACEHOLDER_{block_names[0]}"):
+            continue
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
-        prior = fmtdef.loc[fmt_block.index[0] - 1]
+        if "PLACEHOLDER" in block_name:
+            prior = fmtdef[fmtdef["NAME"] == block_name].squeeze()
+        else:
+            prior = fmtdef.loc[fmt_block.index[0] - 1]
         fmtdef.loc[fmt_block.index, "SB_OFFSET"] += (
             prior["SB_OFFSET"] + prior["BYTES"]
         )
+        count = fmt_block["BLOCK_REPETITIONS"].iloc[0]
+        if prior["BLOCK_REPETITIONS"]:
+            if "PLACEHOLDER" in block_name:
+                fmtdef.loc[fmt_block.index, "BLOCK_REPETITIONS"] *= prior["BLOCK_REPETITIONS"]
+            else:
+                count = count * prior["BLOCK_REPETITIONS"]
+        if count == 1:
+            continue
+        chunks = tuple(map(list, divide(count, fmt_block.index)))
+        block_size = fmt_block['BLOCK_BYTES'].iloc[0]
+        if block_size != int(block_size):
+            raise NotImplementedError("irregular repeated container size.")
+        block_size = int(block_size)
+        for repetition, indices in enumerate(chunks):
+            fmtdef.loc[indices, "SB_OFFSET"] += int(repetition * block_size)
     # correctly compute offsets within columns w/multiple items
+    # TODO: ITEM_BYTES will _always_ be in fmtdef because we filled it with NaN earlier
     if "ITEM_BYTES" in fmtdef:
         fmtdef["ITEM_SIZE"] = _apply_item_offsets(fmtdef)
         column_groups = fmtdef.loc[fmtdef["ITEM_SIZE"].notna()]
@@ -165,7 +187,7 @@ def insert_sample_types_into_df(fmtdef, identifiers):
     if "BLOCK_NAME" in fmtdef.columns:
         fmtdef = create_nested_array_dtypes(fmtdef)
     dt = get_dtype(fmtdef)
-    return (fmtdef, dt)
+    return fmtdef, dt
 
 
 def get_dtype(fmtdef: pd.DataFrame):
@@ -181,19 +203,22 @@ def create_nested_array_dtypes(fmtdef: pd.DataFrame):
     block_names_df = fmtdef.drop(fmtdef[fmtdef["NAME"] == "PLACEHOLDER_0"].index)
     block_names = block_names_df["BLOCK_NAME"].unique()
     for block_name in block_names[1:]:
+        if block_name == "":
+            continue
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
         if "AXIS_ITEMS" in prior.keys():
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
-                fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
-            dt = get_dtype(fmt_block)
             axis_items = prior["AXIS_ITEMS"]
-            if isinstance(axis_items, float):
-                axis_items = int(axis_items)
-            dt = (dt, axis_items)
-            fmtdef.at[fmt_block.index[0] - 1, "dt"] = dt
-            fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
+            if not np.isnan(axis_items):
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
+                    fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
+                dt = get_dtype(fmt_block)
+                if isinstance(axis_items, float):
+                    axis_items = int(axis_items)
+                dt = (dt, axis_items)
+                fmtdef.at[fmt_block.index[0] - 1, "dt"] = dt
+                fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
     return fmtdef
 
 

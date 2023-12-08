@@ -14,6 +14,7 @@ import pdr.formats.galileo as galileo
 import pdr.formats.juno as juno
 import pdr.formats.lroc as lroc
 import pdr.formats.lro as lro
+import pdr.formats.mariner as mariner
 import pdr.formats.mex_marsis as mex_marsis
 import pdr.formats.mgn as mgn
 import pdr.formats.mgs as mgs

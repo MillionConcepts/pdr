@@ -18,7 +18,7 @@ from pdr.utils import decompress
 
 PVL_BLOCK_INITIALS = ("OBJECT", "GROUP", "BEGIN_OBJECT", "BEGIN_GROUP")
 PVL_BLOCK_TERMINAL = re.compile(r"END(_OBJECT|$)")
-PVL_QUANTITY_VALUE = re.compile(r"((\d|\.|-)+|NULL|UNK|N/A)")
+PVL_QUANTITY_VALUE = re.compile(r"((\d|\.|-)+([eE]-?\d+)?)|NULL|UNK|N/A")
 PVL_QUANTITY_UNITS = re.compile(r"<(.*)>")
 
 

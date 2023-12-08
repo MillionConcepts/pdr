@@ -1,16 +1,15 @@
-def get_structure(block, name, filename, data, identifiers):
+def gas_table_loader(filename, fmtdef_dt):
     """GASDATA.FMT has the wrong START_BYTE for columns in the container.
     After manually changing the labels during testing, START_BYTE was still
     not incrementing correctly with each repetition of the container.
     This fixes both issues with 1 special case."""
-    from pdr.loaders.queries import read_table_structure
-    fmtdef = read_table_structure(
-        block, name, filename, data, identifiers
-    )
-
-    for i in range(10):
-        fmtdef.at[i+7, "START_BYTE"] = 1 + (i*7)
-    return fmtdef, None
+    import pandas as pd
+    fmtdef, dt = fmtdef_dt
+    # Some tables use tabs as column deliminators, others use spaces.
+    table = pd.read_csv(filename, skiprows=17, delim_whitespace=True, header=None)
+    assert len(table.columns) == len(fmtdef.NAME.tolist())
+    table.columns = fmtdef.NAME.tolist()
+    return table
 
 
 def get_sample_type(base_samp_info):
@@ -29,10 +28,15 @@ def get_sample_type(base_samp_info):
     return False, None
 
 
-def get_special_block(data, name):
+def get_special_block(data, name, identifiers):
     """START_BYTE is wrong for repeated columns within the container.
     ITEM_BYTES is also off by 1."""
     block = data.metablock_(name)
-    block["CONTAINER"]["COLUMN"]["ITEM_BYTES"] = 13
-    block["CONTAINER"]["COLUMN"]["START_BYTE"] = 1
+    if "ULY-J-EPAC-4-SUMM-PSTL" in identifiers["DATA_SET_ID"]:
+        block["CONTAINER"]["COLUMN"]["ITEM_BYTES"] = 13
+        block["CONTAINER"]["COLUMN"]["START_BYTE"] = 1
+    elif "ULY-J-EPAC-4-SUMM-ALL-CHAN" in identifiers["DATA_SET_ID"]:
+        block.getall('CONTAINER')[0]['COLUMN']['START_BYTE'] = 1
+        block.getall('CONTAINER')[1]['CONTAINER']['START_BYTE'] = 1
+        block.getall('CONTAINER')[1]['CONTAINER']['COLUMN']['START_BYTE'] = 1
     return block

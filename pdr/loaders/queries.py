@@ -434,7 +434,14 @@ def read_format_block(
     """"""
     # load external structure specifications
     format_block = list(block.items())
-    block_name = block.get("NAME")
+    # propagate top-level NAME to set offsets correctly for a variety of
+    # nesting objects; propagate top-level REPETITIONS and BYTES to set byte
+    # offsets correctly in repeating CONTAINERs
+    block_info = {
+        f"BLOCK_NAME": block.get("NAME"),
+        f"BLOCK_REPETITIONS": block.get("REPETITIONS", 1),
+        f"BLOCK_BYTES": block.get("BYTES")
+    }
     while "^STRUCTURE" in [obj[0] for obj in format_block]:
         format_block = inject_format_files(format_block, object_name, fn, data)
     fields, needs_placeholder, add_placeholder = [], False, False
@@ -449,7 +456,7 @@ def read_format_block(
                 definition = MultiDict()
                 for key, val in definition_l:
                     definition.add(key, val)
-            obj = dict(definition) | {"BLOCK_NAME": block_name}
+            obj = dict(definition) | block_info
             repeat_count = definition.get("ITEMS")
             if "BIT_ELEMENT" in obj.keys():
                 raise NotImplementedError("BIT_ELEMENTS in ARRAYS not yet supported")
@@ -473,7 +480,9 @@ def read_format_block(
                 'DATA_TYPE': 'VOID',
                 'START_BYTE': definition['START_BYTE'],
                 'BYTES': 0,
-                'BLOCK_NAME': block_name
+                'BLOCK_REPETITIONS': definition.get("REPETITIONS", 1),
+                'BLOCK_BYTES': definition.get("BYTES"),
+                'BLOCK_NAME': f'PLACEHOLDER_{block_info["BLOCK_NAME"]}'
             }
             if definition.get("AXIS_ITEMS"):
                 dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
