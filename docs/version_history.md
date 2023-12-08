@@ -1,4 +1,25 @@
 # Version History
+## [1.0.5] - 2023-12-07
+### Added
+#### Features
+- doc strings for API on readthedocs
+- Error tracking features that were accidentally deleted from the last version were re-added
+#### Dataset Support
+- most Voyager 1 and 2 datasets
+- additional MGS datasets (MAG/ER, RSS EDS, MOC)
+- Mariner 9 datasets
+- Pioneer 10 and 11 GTT RDRs
+- Sakigake, Suisei, and SOHO datasets
+- ICE and IUE datasets
+- see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
+
+### Fixed
+- Tables with containers with REPETITIONS in them were reading the same data each repetition, this has been fixed
+- Exponential notation in pvl quantity objects are now properly handled
+
+### Removed
+- MRO MCS DDR data is not supported due to formatting issues
+
 ## [1.0.4] - 2023-10-23
 ### Added
 #### Features
@@ -26,18 +47,18 @@ to be removed following `pds4-tools` 1.4 release
   
    as a metadata item with key "SAMPLE_BIT_MASK" and value 65535.
 
-    Please note that the bit masks are not applied programmatically because we don't believe 
-    their meanings are consistent across the corpus of planetary data. However, users are 
-    encouraged to explore their use within their own work and enjoy the glories of the Python `&` operator.
+   Please note that the bit masks are not applied programmatically because we don't believe 
+   their meanings are consistent across the corpus of planetary data. However, users are 
+   encouraged to explore their use within their own work and enjoy the glories of the Python `&` operator.
 
-    An example for how to apply a bit mask using the `&` bitwise operator:
-    ``` 
-        data = pdr.read('/path/to/file.img')
-        masked = data.IMAGE & data.metaget('SAMPLE_BIT_MASK')
-    ```
-    Alternatively, if you're using this value for something for which you'd prefer to have the original PVL 
-    value, use the `bin`, `oct`, or `hex` packages for base 2, 8, or 16 respectively to convert the value
-    back from an integer.
+   An example for how to apply a bit mask using the `&` bitwise operator:
+
+    data = pdr.read('/path/to/file.img')
+    masked = data.IMAGE & data.metaget('SAMPLE_BIT_MASK')
+   
+   Alternatively, if you're using this value for something for which you'd prefer to have the original PVL 
+   value, use the `bin`, `oct`, or `hex` packages for base 2, 8, or 16 respectively to convert the value
+   back from an integer.
 
   ([Resolves issue #51](https://github.com/MillionConcepts/pdr/issues/51))
 - correctly interpret PVL Sequences and Sets of Unquoted Strings as 

@@ -1,4 +1,4 @@
-def gas_table_loader(filename, fmtdef_dt, start_byte):
+def gas_table_loader(filename, fmtdef_dt):
     """GASDATA.FMT has the wrong START_BYTE for columns in the container.
     After manually changing the labels during testing, START_BYTE was still
     not incrementing correctly with each repetition of the container.

@@ -117,7 +117,7 @@ def check_special_table_reader(
         and name == "TABLE"
         and block["^STRUCTURE"] == "GASDATA.FMT"
     ):
-        return True, formats.ulysses.gas_table_loader(fn, fmtdef_dt, start_byte)
+        return True, formats.ulysses.gas_table_loader(fn, fmtdef_dt)
     if (
         identifiers["DATA_SET_ID"] == "MRO-M-MCS-5-DDR-V1.0"
         and name == "TABLE"
@@ -125,6 +125,11 @@ def check_special_table_reader(
         return True, formats.mro.mcs_ddr_table_loader(
             fmtdef_dt, block, fn, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "IHW-C-IRFCURV-3-EDR-HALLEY-V2.0"
+        and name == "TABLE"
+    ):
+        return True, formats.ihw.curve_table_loader(fn, fmtdef_dt)
     return False, None
 
 
@@ -406,8 +411,8 @@ def check_special_block(name, data, identifiers):
         return formats.voyager.pls_ionbr_special_block(data, name)
     if (
         identifiers["DATA_SET_ID"] == "M9-M-IRIS-3-RDR-V1.0"
-        and (name == "SPECTRAL_SERIES" # the data product
-             or "SPECTRUM" in name # the calibration data
+        and (name == "SPECTRAL_SERIES"  # the data product
+             or "SPECTRUM" in name  # the calibration data
              )
     ):
         return True, formats.mariner.get_special_block(data, name)
