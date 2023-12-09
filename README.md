@@ -37,9 +37,9 @@ and the added functionality they support are listed below:
 
 ### Usage
 
-(You can check out our example Notebook on Binder for a 
+You can check out our example Notebook on Binder for a 
 quick interactive demo of functionality: 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/main))
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/main)
 
 Additional information on usage including examples, output data types, notes and caveats, test, etc. 
 can now be accessed in our documentation on readthedocs at: https://pdr.readthedocs.io [![Documentation Status](https://readthedocs.org/projects/pdr/badge/?version=latest)](https://pdr.readthedocs.io/en/latest/?badge=latest)
