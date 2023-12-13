@@ -130,6 +130,21 @@ def check_special_table_reader(
         and name == "TABLE"
     ):
         return True, formats.ihw.curve_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] in (
+            "IHW-C-PPFLX-3-RDR-HALLEY-V1.0",
+            "IHW-C-PPOL-3-RDR-HALLEY-V1.0",
+            "IHW-C-PPSTOKE-3-RDR-HALLEY-V1.0",
+            "IHW-C-PPMAG-3-RDR-HALLEY-V1.0",
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ETA-AQUAR-V1.0",
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ORIONID-V1.0",
+            "IHW-C-MSNVIS-3-RDR-HALLEY-ETA-AQUAR-V1.0",
+            "IHW-C-MSNVIS-3-RDR-HALLEY-ORIONID-V1.0",
+        ) and name == "TABLE"
+    ):
+        return True, formats.ihw.add_newlines_table_loader(
+            fmtdef_dt, block, fn, start_byte
+        )
     return False, None
 
 
@@ -416,6 +431,13 @@ def check_special_block(name, data, identifiers):
              )
     ):
         return True, formats.mariner.get_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] in (
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ETA-AQUAR-V1.0",
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ORIONID-V1.0",
+        ) and name == "TABLE"
+    ):
+        return True, formats.ihw.get_special_block(data, name)
     return False, None
 
 
