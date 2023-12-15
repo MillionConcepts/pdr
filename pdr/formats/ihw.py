@@ -49,3 +49,17 @@ def get_special_block(data, name):
             if item[1]["START_BYTE"] == 21 and "NAME" not in item[1]:
                 item[1].add("NAME", ">=8SEC")
     return block
+
+def get_structure(block, name, filename, data, identifiers):
+    """SSN products with a SPECTRUM pointer were opening with an incorrect
+    column name."""
+    from pdr.loaders.queries import read_table_structure
+    from pdr.pd_utils import insert_sample_types_into_df
+    
+    fmtdef = read_table_structure(
+        block, name, filename, data, identifiers
+    )
+    fmtdef.at[0, "NAME"] = fmtdef.at[0, "COLUMN_NAME"]
+    
+    fmtdef, dt = insert_sample_types_into_df(fmtdef, identifiers)
+    return fmtdef, dt

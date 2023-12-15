@@ -233,6 +233,13 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.voyager.get_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        "IHW-C-SPEC-" in identifiers["DATA_SET_ID"]
+        and name == "SPECTRUM"
+    ):
+        return True, formats.ihw.get_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
