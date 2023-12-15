@@ -139,6 +139,19 @@ of their metadata appear to match other sources.
 #### ICE
   - EPAS, MAG, PLAWAV, RADWAV, and SWPLAS
   - ICI text files
+#### IHW
+  - AMSN Halley visual data
+  - ASTR Halley observations from 1835 and 1910, and Giacobini-Zinner data
+  - IRSN Halley images, tables and spectra, and Giacobini-Zinner images
+  - LSPN Halley images, and subsampled Giacobini-Zinner images
+  - MSN radar and visual tables
+  - NNSN Halley addenda images, and Giacobini-Zinner images
+  - PPN Halley flux, magnitude, polarimetry, and stokes parameter data
+  - SSN
+    - Halley calibrated 1D spectra, and raw and calibrated 2D spectral images
+    - Giacobini-Zinner raw 2D spectral images
+  - RSN Halley continuum, occultation, OH, radar, and spectral line data
+  - *Note: most of the Halley datasets listed above are available at the SBN in 2 versions. Version 2.0 tends to open better with `pdr` and in a more user friendly format. When V2.0 is available, V1.0 should be considered notionally supported.*
 #### IUE
   - Raw and extracted spectra
   - Most image products
@@ -434,6 +447,9 @@ of their metadata appear to match other sources.
 #### Juno
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
+#### IHW
+  - Version 1.0 of Halley data from ASTR, IRSN (except filter curves and spectroscopy data), LSPN (subsampled images only), NNSN, and PPN
+  - NNSN Halley images version 1.0 and 2.0 (excluding the V1.0 addenda dataset, which is officially supported)
 #### LROC
   - Anaglyphs
   - NAC DTM without labels (under EXTRAS folder at LROC mission node)
@@ -489,6 +505,14 @@ of their metadata appear to match other sources.
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
 #### ICE
   - ULECA tables (support planned)
+#### IHW
+  - Most Giacobini-Zinner products have incomplete PDS3 labels. Text files and most images will still open, but tables do not. (support not planned)
+  - ASTR Halley v2.0 tables with observations from the 1980's (support planned)
+  - IRSN Halley v1.0 spectroscopy and filter response curve tables (support planned)
+  - LSPN compressed images in the Halley V1.0 and Giacobini-Zinner datasets (support not planned)
+  - SSN 2D spectral products with SPECTRAL_IMAGE_QUBE pointers (support planned)
+  - SSN 2D spectral products with typos in their filenames (support not planned)
+  - RSN UV visibility products (support planned)
 #### IUE
   - A handful of the image products do not open because of a typo in their labels. The QUALITY_IMAGE object is written as QUALITY_QUALITY_IMAGE. (support planned)
 #### Juno
