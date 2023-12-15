@@ -140,6 +140,9 @@ def check_special_table_reader(
             "IHW-C-MSNRDR-3-RDR-HALLEY-ORIONID-V1.0",
             "IHW-C-MSNVIS-3-RDR-HALLEY-ETA-AQUAR-V1.0",
             "IHW-C-MSNVIS-3-RDR-HALLEY-ORIONID-V1.0",
+            "IHW-C-IRFTAB-3-RDR-HALLEY-V1.0",
+            "IHW-C-IRPOL-3-RDR-HALLEY-V1.0",
+            "IHW-C-IRPHOT-3-RDR-HALLEY-V1.0",
         ) and name == "TABLE"
     ):
         return True, formats.ihw.add_newlines_table_loader(

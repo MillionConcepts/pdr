@@ -8,7 +8,7 @@ def curve_table_loader(filename, fmtdef_dt):
     return table
 
 def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
-    """ Some of the Halley V1.0 tables (MSN and PPN datasets) are missing
+    """ Some Halley V1.0 tables (MSN, PPN, and IRSN datasets) are missing 
     newline characters between rows. """
     from io import StringIO
     from pdr.utils import head_file
