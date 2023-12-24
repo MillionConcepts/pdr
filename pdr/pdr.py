@@ -8,6 +8,7 @@ from typing import (
     Union,
     Sequence,
     Collection,
+    Literal, Any, Callable,
 )
 
 import Levenshtein as lev
@@ -33,15 +34,15 @@ from pdr.parselabel.pds3 import (
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
 from pdr.utils import (
-    check_cases,
-    prettify_multidict,
     associate_label_file,
-    catch_return_default, check_primary_fmt,
+    catch_return_default,
+    check_cases,
+    check_primary_fmt,
+    prettify_multidict,
 )
 
 
 ID_FIELDS = (
-    # used during special case checks
     "INSTRUMENT_ID",
     "INSTRUMENT_NAME",
     "SPACECRAFT_NAME",
@@ -61,6 +62,10 @@ ID_FIELDS = (
     "LABEL_RECORDS",
     "NOTE",
 )
+"""
+Standard 'identifier' fields for PDS3 products. Used to make special case 
+checks more compact.
+"""
 
 
 class Metadata(MultiDict):
@@ -70,7 +75,12 @@ class Metadata(MultiDict):
     common access and display interfaces, etc.
     """
 
-    def __init__(self, mapping_params, standard="PDS3", **kwargs):
+    def __init__(
+        self,
+        mapping_params: Sequence[Mapping, Collection[str]],
+        standard: Literal["PDS3", "PDS4", "FITS"] = "PDS3",
+        **kwargs
+    ):
         """"""
         mapping, params = mapping_params
         super().__init__(mapping, **kwargs)
@@ -105,15 +115,24 @@ class Metadata(MultiDict):
         value = super().__getitem__(key)
         return self.formatter(value)
 
-    def metaget(self, text, default=None, evaluate=True, warn=True):
+    def metaget(
+        self,
+        text: str,
+        default: Any = None,
+        evaluate: bool = True,
+        warn: bool = True
+    ) -> Any:
         """
-        get the first value from this object whose key exactly
-        matches `text`, even if it is nested inside a mapping. optionally
-        evaluate it using self.formatter. raise a warning if there are
-        multiple keys matching this.
-        WARNING: this function's return values are memoized for performance.
-        updating elements of self that have already been accessed
-        with this function will not update future calls to this function.
+        get the first value from this object whose key exactly matches `text`,
+        even if it is nested inside a mapping. optionally evaluate it using
+        `self.formatter`. raise a warning if there are multiple keys matching
+        this.
+
+        Warning:
+            This function's return values are memoized for performance.
+            Updating elements of a `Metadata` object's underlying mapping
+            that have already been accessed with this function will not update
+            future calls to this function.
         """
         count = self.fieldcounts.get(text)
         if count is None:
@@ -126,11 +145,13 @@ class Metadata(MultiDict):
             )
         return self._metaget_interior(text, default, evaluate)
 
-    def metaget_(self, text, default=None, evaluate=True):
+    def metaget_(
+        self, text: str, default: Any = None, evaluate: bool = True
+    ) -> Any:
         """quiet-by-default version of metaget"""
         return self.metaget(text, default, evaluate, False)
 
-    def metaget_fuzzy(self, text, evaluate=True):
+    def metaget_fuzzy(self, text: str, evaluate: bool = True) -> Any:
         """"""
         levratio = {
             key: lev.ratio(key, text) for key in set(self.fieldcounts.keys())
@@ -142,7 +163,9 @@ class Metadata(MultiDict):
             if v == peak:
                 return self.metaget(k, None, evaluate)
 
-    def metablock(self, text, evaluate=True, warn=True):
+    def metablock(
+        self, text: str, evaluate: bool = True, warn: bool = True
+    ) -> Optional[Mapping]:
         """
         get the first value from this object whose key exactly
         matches `text`, even if it is nested inside a mapping, if the value
@@ -151,10 +174,12 @@ class Metadata(MultiDict):
         multiple keys matching this.
         if there is no key matching 'text', will evaluate and return the
         metadata as a whole.
-        WARNING: this function's return values are memoized for performance.
-        updating elements of self that have already been accessed
-        with this function and then calling it again will result in
-        unpredictable behavior.
+
+        Warning:
+            This function's return values are memoized for performance.
+            Updating elements of a `Metadata` object's underlying mapping
+            that have already been accessed with this function will not update
+            future calls to this function.
         """
         count = self.fieldcounts.get(text)
         if count is None:
@@ -167,7 +192,9 @@ class Metadata(MultiDict):
             )
         return self._metablock_interior(text, evaluate)
 
-    def metablock_(self, text, evaluate=True):
+    def metablock_(
+        self, text: str, evaluate: bool = True
+    ) -> Optional[Mapping]:
         """quiet-by-default version of metablock"""
         return self.metablock(text, evaluate, False)
 
@@ -318,7 +345,7 @@ class Data:
                 continue
             self.index.append(object_name)
 
-    def _object_to_filename(self, object_name):
+    def _object_to_filename(self, object_name: str) -> Union[str, list[str]]:
         """"""
         is_special, special_target = check_special_fn(
             self, object_name, self.identifiers
@@ -376,7 +403,7 @@ class Data:
         """"""
         return tuple(filter(lambda k: k not in dir(self), self.index))
 
-    def load(self, name, reload=False, **load_kwargs):
+    def load(self, name: str, reload: bool = False, **load_kwargs: Any):
         """"""
         # prelude: don't try to load nonexistent keys; facilitate
         # load-everything behavior; don't reload by default
@@ -419,7 +446,7 @@ class Data:
             warnings.warn(f"Unable to load {name}: {ex}")
         setattr(self, name, self.metaget_(name))
 
-    def _add_loaded_objects(self, obj):
+    def _add_loaded_objects(self, obj: Mapping[str, Any]):
         """"""
         for k, v in obj.items():
             if v is not None:
@@ -439,7 +466,7 @@ class Data:
             except AlreadyLoadedError:
                 continue
 
-    def _file_not_found(self, object_name):
+    def _file_not_found(self, object_name: str):
         """"""
         warnings.warn(
             f"{object_name} file {self._object_to_filename(object_name)} "
@@ -451,7 +478,9 @@ class Data:
         )
         setattr(self, object_name, maybe)
 
-    def _load_primary_fits(self, object_name):
+    def _load_primary_fits(
+        self, object_name: str
+    ) -> Union["np.ndarray", "pd.DataFrame", None]:
         """"""
         from pdr.loaders.handlers import handle_fits_file
 
@@ -473,7 +502,7 @@ class Data:
             return
         raise NotImplementedError
 
-    def _load_pds4(self, object_name):
+    def _load_pds4(self, object_name: str):
         """
         load this object however pds4_tools wants to load this object, then
         reformat to df or expose the array handle in accordance with our type
@@ -497,7 +526,7 @@ class Data:
         else:
             setattr(self, object_name, structure.data)
 
-    def read_metadata(self, pvl_limit=DEFAULT_PVL_LIMIT):
+    def read_metadata(self, pvl_limit: int = DEFAULT_PVL_LIMIT) -> Metadata:
         """
         Attempt to ingest a product's metadata. if it is a PDS4 product,
         pds4_tools will already have ingested its detached XML label in
@@ -529,7 +558,7 @@ class Data:
         self.index.append("LABEL")
         return metadata
 
-    def load_from_pointer(self, pointer, **load_kwargs):
+    def load_from_pointer(self, pointer: str, **load_kwargs: Any) -> Any:
         """"""
         from pdr.loaders.dispatch import pointer_to_loader
 
@@ -557,14 +586,17 @@ class Data:
         return obj
 
     def get_scaled(
-        self, object_name: str, inplace=False, float_dtype=None
+        self,
+        object_name: str,
+        inplace: bool = False,
+        float_dtype: Optional["np.dtype"] = None
     ) -> "np.ndarray":
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.
         only relevant to arrays.
 
-        if inplace is True, does calculations in-place on original array,
+        if `inplace` is True, does calculations in-place on original array,
         with attendant memory savings and destructiveness.
         """
         obj = self[object_name]
@@ -607,22 +639,34 @@ class Data:
             self.metadata, self[object_name], object_name
         )
 
-    def metaget(self, text, default=None, evaluate=True, warn=True):
+    def metaget(
+        self,
+        text: str,
+        default: Any = None,
+        evaluate: bool = True,
+        warn: bool = True
+    ) -> Any:
         """
         get the first value from this object's metadata whose key exactly
         matches `text`, even if it is nested inside a mapping. evaluate it
-        using self.metadata.formatter.
-        WARNING: this function's return values are memoized for performance.
-        updating elements of self.metadata that have already been accessed
-        with this function will not update future calls to this function.
+        using `self.metadata.formatter`.
+
+        Warning:
+            this function's return values are memoized for performance.
+            updating elements of self.metadata that have already been accessed
+            with this function will not update future calls to this function.
         """
         return self.metadata.metaget(text, default, evaluate, warn)
 
-    def metaget_(self, text, default=None, evaluate=True):
+    def metaget_(
+        self, text: str, default: bool = None, evaluate: bool = True
+    ) -> Any:
         """quiet-by-default version of metaget"""
         return self.metadata.metaget(text, default, evaluate, False)
 
-    def metablock(self, text, evaluate=True, warn=True):
+    def metablock(
+        self, text: str, evaluate: bool = True, warn: bool = True
+    ) -> Optional[Mapping]:
         """
         get the first value from this object's metadata whose key exactly
         matches `text`, even if it is nested inside a mapping, if the value
@@ -635,7 +679,9 @@ class Data:
         """
         return self.metadata.metablock(text, evaluate, warn)
 
-    def metablock_(self, text, evaluate=True):
+    def metablock_(
+        self, text: str, evaluate: bool = True
+    ) -> Optional[Mapping]:
         """quiet-by-default version of metablock"""
         return self.metadata.metablock(text, evaluate, False)
 
@@ -649,7 +695,12 @@ class Data:
 
     # TODO: reorganize this -- common dispatch funnel with dump_browse,
     #  split up the image-gen part of _browsify_array, something like that
-    def show(self, object_name=None, scaled=True, **browse_kwargs):
+    def show(
+        self,
+        object_name: str = None,
+        scaled: bool = True,
+        **browse_kwargs: Any
+    ) -> "PIL.Image.Image":
         """"""
         if object_name is None:
             raise ValueError(
@@ -671,9 +722,9 @@ class Data:
         self,
         prefix: Optional[Union[str, Path]] = None,
         outpath: Optional[Union[str, Path]] = None,
-        scaled=True,
-        purge=False,
-        **browse_kwargs,
+        scaled: bool = True,
+        purge: bool = False,
+        **browse_kwargs: Any,
     ) -> None:
         """
         attempt to dump all data objects associated with this Data object
@@ -748,7 +799,7 @@ class Data:
 
     # The following two functions make this object act sort of dict-like
     #  in useful ways for data exploration.
-    def keys(self):
+    def keys(self) -> list[str]:
         """Returns the keys for observational data and metadata objects"""
         return self.index
 
@@ -778,7 +829,9 @@ class Data:
             yield self[key]
 
 
-def _metaget_factory(metadata, cached=True):
+def _metaget_factory(
+    metadata: Metadata, cached: bool = True
+) -> Callable[[str, bool, bool], Any]:
     """"""
     def metaget_interior(text, default, evaluate):
         """"""
@@ -792,7 +845,9 @@ def _metaget_factory(metadata, cached=True):
     return metaget_interior
 
 
-def _metablock_factory(metadata, cached=True):
+def _metablock_factory(
+    metadata: Metadata, cached: bool = True
+) -> Callable[[str, bool], Mapping]:
     """"""
     def metablock_interior(text, evaluate):
         """"""

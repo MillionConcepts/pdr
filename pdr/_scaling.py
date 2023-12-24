@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 
 from pdr.datatypes import PDS3_CONSTANT_NAMES, IMPLICIT_PDS3_CONSTANTS
@@ -46,7 +48,7 @@ def scale_array(
     obj: np.ndarray,
     object_name: str,
     inplace: bool = False,
-    float_dtype=None,
+    float_dtype: Optional["np.dtype"] = None,
 ):
     """"""
     scale, offset, block = 1, 0, meta.metablock_(object_name)
