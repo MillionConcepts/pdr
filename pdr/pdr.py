@@ -77,7 +77,7 @@ class Metadata(MultiDict):
 
     def __init__(
         self,
-        mapping_params: Sequence[Mapping, Collection[str]],
+        mapping_params: tuple[Mapping, Collection[str]],
         standard: Literal["PDS3", "PDS4", "FITS"] = "PDS3",
         **kwargs
     ):
