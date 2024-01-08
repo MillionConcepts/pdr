@@ -429,9 +429,11 @@ of their metadata appear to match other sources.
   - CRS RDR and SUMM products
   - IRIS derived maps and the expanded collection of full-res Jupiter/Saturn data
   - ISS uncompressed images, and ascii ancillary tables
+  - LECP RDR and SUMM products (except a few 'original binary' products)
   - MAG RDR and SUMM products
   - PLS RDR and SUMM products (except a few 'original binary' products)
   - POS SUMM products
+  - PRA RDR and most SUMM products
   - PWS RDR, SUMM, and DDR products
   - RSS Triton derived atmospheric profile
   - UVS reformatted airglow spectra and derived maps
@@ -590,6 +592,9 @@ of their metadata appear to match other sources.
   - IRIS full-res spectral observations (support planned; VAX_REAL)
   - ISS ancillary binary tables (support planned; VAX_REAL)
   - ISS compressed raw images (support not planned)
+  - LECP some Jupiter and Saturn SUMM Sector products (support planned; low priority)
+  - LECP binary versions of most Uranus products (support not planned)
   - PLS binary versions of VG2-N-PLS-5-RDR-ELEMAGSPHERE-96SEC-V1.0 data (support not planned)
+  - PRA Uranus SUMM products (support not planned)
   - RSS ODRs (support not planned)
   - Ring Profile tables with the VAX_REAL data type (support planned)

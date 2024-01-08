@@ -148,6 +148,11 @@ def check_special_table_reader(
         return True, formats.ihw.add_newlines_table_loader(
             fmtdef_dt, block, fn, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "VG1-J-LECP-4-SUMM-SECTOR-15MIN-V1.1"
+        and name == "TABLE"
+    ):
+        return True, formats.voyager.lecp_table_loader(fn, fmtdef_dt)
     return False, None
 
 
@@ -448,6 +453,12 @@ def check_special_block(name, data, identifiers):
         ) and name == "TABLE"
     ):
         return True, formats.ihw.get_special_block(data, name)
+    if (
+        "VG2-" in identifiers["DATA_SET_ID"]
+        and "-PRA-3-RDR-LOWBAND-6SEC-V1.0" in identifiers["DATA_SET_ID"]
+        and name == "TABLE"
+    ):
+        return formats.voyager.pra_special_block(data, name, identifiers)
     return False, None
 
 

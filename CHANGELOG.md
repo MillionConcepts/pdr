@@ -4,6 +4,7 @@
 - 
 #### Dataset Support
 - most IHW datasets
+- additional Voyager 1 and 2 datasets
 - 
 ### Changed
 - 
