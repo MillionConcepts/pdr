@@ -136,6 +136,9 @@ of their metadata appear to match other sources.
 #### GRAIL
   - LGRS RDR: SHADR, SHBDR, and RSDMAP
   - RSS: BOF, ODF, OLF, and RSR
+#### GRSFE
+  - Airborne datasets: ASAS, AVIRIS, and TIMS images
+  - Ground-based datasets: GPS profiles, helicopter stereo profiles, spectral hygrometer, PARABOLA, PFES, reagan radiometer, wind experiment, and weather station data
 #### ICE
   - EPAS, MAG, PLAWAV, RADWAV, and SWPLAS
   - ICI text files
@@ -438,6 +441,8 @@ of their metadata appear to match other sources.
   - RSS Triton derived atmospheric profile
   - UVS reformatted airglow spectra and derived maps
   - Ring Profiles derived from ISS, PPS, UVS, and RSS data (except VAX_REAL tables)
+#### WFF/ATM
+  - DEM vector data tables
 
 ## Notionally Supported Datasets:
 #### Apollo
@@ -505,6 +510,14 @@ of their metadata appear to match other sources.
 #### GRAIL
   - LGRS: EDR and CDR (support not planned)
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
+#### GRSFE
+  - AVIRIS and TIMS tables (support planned; VAX_REAL)
+  - all TABLE_HEADER and SPECTRUM_HEADER pointers (support planned; low priority)
+    - Affected datasets: AVIRIS and TIMS tables, PARABOLA, and wind experiment
+  - AIRSAR compressed images (support not planned)
+  - Daedalus spectra (support not planned)
+  - Directional emissivity experiment (support not planned)
+  - SIRIS spectra (support not planned)
 #### ICE
   - ULECA tables (support planned)
 #### IHW
@@ -598,3 +611,5 @@ of their metadata appear to match other sources.
   - PRA Uranus SUMM products (support not planned)
   - RSS ODRs (support not planned)
   - Ring Profile tables with the VAX_REAL data type (support planned)
+#### WFF/ATM
+  - DEM derived raster images (support planned)
