@@ -6,6 +6,8 @@
 - most IHW datasets
 - additional Voyager 1 and 2 datasets
 - GRSFE and WFF/ATM datasets
+- LOIRP dataset
+- additional MSL datasets
 - 
 ### Changed
 - 

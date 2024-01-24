@@ -23,6 +23,7 @@ import pdr.formats.mro as mro
 import pdr.formats.msl_apxs as msl_apxs
 import pdr.formats.msl_cmn as msl_cmn
 import pdr.formats.msl_ccam as msl_ccam
+import pdr.formats.msl_places as msl_places
 import pdr.formats.nh as nh
 import pdr.formats.odyssey as odyssey
 import pdr.formats.pvo as pvo

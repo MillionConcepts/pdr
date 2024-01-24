@@ -69,6 +69,11 @@ def check_special_table_reader(
         # mangled object names + positions
         return True, formats.msl_cmn.spreadsheet_loader(fn)
     if (
+        identifiers["DATA_SET_ID"] == "MSL-M-ROVER-6-RDR-PLACES-V1.0"
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.msl_places.spreadsheet_loader(fn, fmtdef_dt)
+    if (
         identifiers["INSTRUMENT_NAME"]
         == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE "
         "PROBE"

@@ -170,6 +170,8 @@ of their metadata appear to match other sources.
   requires .FMT (format) files, available in the root directories of the MWR
   volumes.*
   - Waves RDR 'Burst' tables
+#### LOIRP
+  - Lunar Orbiter 1-5 EDRs 
 #### Kaguya/Selene
   - Spectral Profiler data
   - other datasets have been migrated to PDS4 and are notionally supported
@@ -293,6 +295,8 @@ of their metadata appear to match other sources.
   - CCAM LIBS EDR, L1B, and L2; CCAM RMI EDR and RDR
   - APXS EDR and RDR (*note: the EDR checksum suffix is not supported*)
   - Chemin L1B and L2 RDRs, and EDRs
+  - Navcam mosaics
+  - PLACES localization data and orbital maps
 #### MSX
   - Infrared Minor Planet Survey
   - Small Bodies Images
