@@ -49,6 +49,7 @@ of their metadata appear to match other sources.
     - Apollo 14 and 15 Cold Cathode Ion Gage digitized plots and index tables
     - Apollo 15 and 16 Lunar Self-Recording Penetrometer transcribed tables
     - BUG soil reflectance tables
+    - Apollo 15, 16, and 17 Metric Camera images
 #### Cassini
   - CAPS EDRs, RDRs, and DDRs
   - CDA
@@ -223,6 +224,7 @@ of their metadata appear to match other sources.
   - IRIS data
   - RSS electron density profiles
   - Cloud catalog
+  - ISS images
 #### Mars Express
   - MARSIS EDRs and RDRs
 #### Mars Odyssey
@@ -486,6 +488,8 @@ of their metadata appear to match other sources.
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
 
 ## Known Unsupported Datasets
+#### Apollo
+  - Lunar Sample Photographs (support planned; low priority)
 #### Cassini
   - CIRS variable-length '.VAR' tables (support not planned)
   - ISS telemetry and prefix tables (support planned)
