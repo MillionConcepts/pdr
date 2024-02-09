@@ -32,4 +32,5 @@ import pdr.formats.saturn_rpx as saturn_rpx
 import pdr.formats.themis as themis
 import pdr.formats.ulysses as ulysses
 import pdr.formats.vega as vega
+import pdr.formats.viking as viking
 import pdr.formats.voyager as voyager

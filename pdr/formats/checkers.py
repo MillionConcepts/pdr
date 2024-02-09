@@ -158,6 +158,11 @@ def check_special_table_reader(
         and name == "TABLE"
     ):
         return True, formats.voyager.lecp_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "VL2-M-SEIS-5-RDR-V1.0"
+        and name in ("TABLE", "SPREADSHEET")
+    ):
+        return True, formats.viking.seis_table_loader(fn, fmtdef_dt)
     return False, None
 
 
