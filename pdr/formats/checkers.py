@@ -163,6 +163,11 @@ def check_special_table_reader(
         and name in ("TABLE", "SPREADSHEET")
     ):
         return True, formats.viking.seis_table_loader(fn, fmtdef_dt)
+    if (
+        "MEX-M-ASPERA3-2-EDR-IMA" in identifiers["DATA_SET_ID"]
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.mex.aspera_table_loader(fn, fmtdef_dt)
     return False, None
 
 
@@ -264,7 +269,7 @@ def check_special_position(identifiers, block, target, name, fn, start_byte):
         identifiers["INSTRUMENT_ID"] == "MARSIS"
         and " TEC " in identifiers["DATA_SET_NAME"]
     ):
-        return True, formats.mex_marsis.get_position(
+        return True, formats.mex.marsis_get_position(
             identifiers, block, target, name, start_byte
         )
     if (
