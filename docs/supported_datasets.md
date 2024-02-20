@@ -206,6 +206,7 @@ of their metadata appear to match other sources.
 #### Lunar Radar (Earth-based)
   - 70 cm radar maps
   - 12.6 cm (S-band) backscatter maps
+  - south pole DEM
 #### Lunar Spectroscopy (Earth-based)
   - RELAB spectra
 #### Magellan
@@ -227,6 +228,7 @@ of their metadata appear to match other sources.
   - ISS images
 #### Mars Express
   - MARSIS EDRs and RDRs
+  - ASPERA EDRs, RDRs, and DDRs
 #### Mars Odyssey
   - THEMIS 
     - spectral qubes: VIS and IR v2 geoprojected images, VIS EDR and RDR,
@@ -434,6 +436,11 @@ of their metadata appear to match other sources.
 #### Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
+#### Viking 1 and 2
+  - Lander
+    - LCS image EDRs and rock data
+    - Labeled release experiment
+    - Seismology experiment
 #### Voyager 1 and 2
   - CRS RDR and SUMM products
   - IRIS derived maps and the expanded collection of full-res Jupiter/Saturn data
@@ -609,6 +616,10 @@ of their metadata appear to match other sources.
   - GAS PostScript files (support not planned)
 #### Vega 1 and 2
   - PUMA raw and processed data (support not planned)
+#### Viking 1 and 2
+  - Orbiter
+    - IRTM 1989 version (support planned)
+    - IRTM 1994 version (support not planned)
 #### Voyager 1 and 2
   - IRIS full-res spectral observations (support planned; VAX_REAL)
   - ISS ancillary binary tables (support planned; VAX_REAL)

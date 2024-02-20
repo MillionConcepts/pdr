@@ -7,7 +7,10 @@
 - additional Voyager 1 and 2 datasets
 - GRSFE and WFF/ATM datasets
 - LOIRP dataset
-- additional MSL datasets
+- additional MSL, Apollo, and Mariner datasets
+- additional Earth-based lunar data
+- Viking Lander datasets
+- MEX ASPERA data
 - 
 ### Changed
 - 
