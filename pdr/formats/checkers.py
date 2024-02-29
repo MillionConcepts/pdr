@@ -168,6 +168,13 @@ def check_special_table_reader(
         and name == "SPREADSHEET"
     ):
         return True, formats.mex.aspera_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] in ("MER1-M-RSS-1-EDR-V1.0",
+                                       "MER2-M-RSS-1-EDR-V1.0",)
+        and identifiers["PRODUCT_TYPE"] == "UHFD"
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.mer.rss_spreadsheet_loader(fn, fmtdef_dt)
     return False, None
 
 

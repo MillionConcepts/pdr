@@ -16,6 +16,7 @@ import pdr.formats.juno as juno
 import pdr.formats.lroc as lroc
 import pdr.formats.lro as lro
 import pdr.formats.mariner as mariner
+import pdr.formats.mer as mer
 import pdr.formats.mex as mex
 import pdr.formats.mgn as mgn
 import pdr.formats.mgs as mgs
