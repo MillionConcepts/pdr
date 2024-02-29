@@ -50,6 +50,7 @@ of their metadata appear to match other sources.
     - Apollo 15 and 16 Lunar Self-Recording Penetrometer transcribed tables
     - BUG soil reflectance tables
     - Apollo 15, 16, and 17 Metric Camera images
+    - Apollo 17 Traverse Gravimeter Experiment
 #### Cassini
   - CAPS EDRs, RDRs, and DDRs
   - CDA
@@ -177,11 +178,11 @@ of their metadata appear to match other sources.
   - Spectral Profiler data
   - other datasets have been migrated to PDS4 and are notionally supported
 #### Lunar Prospector
-  - all PDS3 datasets that have not been deprecated by PDS4 versions. 
-    specifically:
+  - PDS3 datasets that have not been deprecated by PDS4 versions. specifically:
     - LOSAPDR
     - ER: RDR, SUMM, and level 2 products
     - MAG: SUMM, and level 2, 3, and 4 products
+    - Level 0: attitude, trajectory, and command products
 #### LRO
   - CRaTER EDR secondary science and housekeeping tables, CDR, and DDR
   - DIVINER
@@ -201,7 +202,7 @@ of their metadata appear to match other sources.
   - Mini-RF
     - Bistatic Radar EDR, RDR, and DDR
     - Global mosaics
-    - SAR raw, level 1 and level 2 data
+    - SAR level 1 and level 2 data, and polar mosaics
   - Radio Science RANGE, SFF, TRK, and WEA
 #### Lunar Radar (Earth-based)
   - 70 cm radar maps
@@ -259,12 +260,13 @@ of their metadata appear to match other sources.
   - Pancam operations EDRs, RDRs, and mosaics
   - Microscopic Imager operations EDRs, RDRs, and mosaics
   - Descent Camera EDRs
+  - RSS UHFD tables and most ODFs
 #### MESSENGER
   - GRNS
     - NS EDR, CDR, DDR
     - GRS EDR, RDR, CDR, DAP
   - MASCS
-    - UVVS EDR, CDR, and DDR
+    - UVVS EDR, CDR, DDR, and models
     - VIRS EDR, CDR, DDR, and DAP
   - MLA EDR, RDR, RADR, CDR, and GDR
   - XRS EDR, RDR, and CDR
@@ -305,6 +307,7 @@ of their metadata appear to match other sources.
   - Infrared Minor Planet Survey
   - Small Bodies Images
   - Zodiacal Dust Data
+  - QUBE images
 #### NEAR
   - GRS EDRs, L2 and L3 products
   - MAG EDRs and RDRs
@@ -484,8 +487,6 @@ of their metadata appear to match other sources.
   - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
   - CheMin Film EDRs (have efm in filename)
-#### MSX
-  - QUBE images
 #### Pioneer Venus Orbiter
   - OMAG spacecraft coordinates: HIRES data and 24 second averages (ASCII versions)
 #### Rosetta
@@ -550,9 +551,13 @@ of their metadata appear to match other sources.
   - UVS (support planned)
   - Waves EDR (support not planned) and RDR 'Survey' tables (support planned)
     - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
+#### Lunar Prospector
+  - Level 0: ephemeris and position (support not planned)
+  - Level 0: sun pulse and merged telemetry (support planned; low priority)
 #### LRO
   - CRaTER EDR primary science data (support not planned)
   - LAMP EDR/RDR acquisition list tables and spectral image 'door open' headers (support planned)
+  - Mini-RF raw SAR products (support not planned)
 #### Magellan
   - C-BIDR ancillary tables (support not planned)
   - F-BIDR (support not planned)
@@ -572,6 +577,7 @@ of their metadata appear to match other sources.
   - RSS products not listed above as supported (support not planned)
 #### MER 1 and 2
   - Terrain MESH and WEDGE products (support not planned)
+  - RSS ODFs in mer2rs_0002
 #### MESSENGER
   - Ground calibration data for MASCS and NS (support not planned)
 #### MGS
