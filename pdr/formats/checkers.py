@@ -69,6 +69,13 @@ def check_special_table_reader(
         # mangled object names + positions
         return True, formats.msl_cmn.spreadsheet_loader(fn)
     if (
+        "MSL-M-SAM-" in identifiers["DATA_SET_ID"]
+        and "QMS" in identifiers["PRODUCT_ID"]
+        and "TABLE" in name
+    ):
+        # reusing the msl_cmn special case for msl_sam qms tables
+        return True, formats.msl_cmn.spreadsheet_loader(fn)
+    if (
         identifiers["DATA_SET_ID"] == "MSL-M-ROVER-6-RDR-PLACES-V1.0"
         and name == "SPREADSHEET"
     ):
@@ -528,6 +535,12 @@ def check_trivial_case(pointer, identifiers, fn) -> bool:
     ):
         return formats.galileo.ssi_cubes_header_loader()
     if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (pointer == "HEADER"):
+        return formats.msl_cmn.trivial_header_loader()
+    if (
+        "MSL-M-SAM-" in identifiers["DATA_SET_ID"]
+        and "FILE" in pointer
+    ):
+        # reusing the msl_cmn special case for msl_sam 'FILE' pointers
         return formats.msl_cmn.trivial_header_loader()
     return False
 
