@@ -182,6 +182,12 @@ def check_special_table_reader(
         and name == "SPREADSHEET"
     ):
         return True, formats.mer.rss_spreadsheet_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
+        and identifiers["INSTRUMENT_ID"] == "MECA_AFM"
+        and "TABLE" in name
+    ):
+        return True, formats.phoenix.afm_table_loader(fn, fmtdef_dt, name)
     return False, None
 
 
@@ -272,6 +278,22 @@ def check_special_structure(block, name, fn, identifiers, data):
         and name == "SPECTRUM"
     ):
         return True, formats.ihw.get_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-2-NIEDR-V1.0"
+        and name == "TBL_TABLE"
+        and block["CONTAINER"]["^STRUCTURE"] == "TBL_0_STATE_DATA.FMT"
+    ):
+        return True, formats.phoenix.elec_em6_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
+        and identifiers["INSTRUMENT_ID"] == "MECA_AFM"
+        and "HEADER_TABLE" in name
+    ):
+        return True, formats.phoenix.afm_rdr_structure(
             block, name, fn, data, identifiers
         )
     return False, None
