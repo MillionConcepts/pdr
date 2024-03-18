@@ -510,6 +510,14 @@ def check_special_block(name, data, identifiers):
         and name == "TABLE"
     ):
         return formats.voyager.pra_special_block(data, name, identifiers)
+    if (
+         identifiers["DATA_SET_ID"] == "PHX-M-MECA-2-NIEDR-V1.0"
+         and identifiers["PRODUCT_TYPE"] in ("MECA-EM10",
+                                             "MECA-EM11",
+                                             "MECA-EM12",)
+         and name == "WCHEM_TABLE"
+    ):
+        return True, formats.phoenix.wcl_edr_special_block(data, name)
     return False, None
 
 

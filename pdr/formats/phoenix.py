@@ -55,3 +55,16 @@ def afm_table_loader(filename, fmtdef_dt, name):
     assert len(table.columns) == len(fmtdef.NAME.tolist())
     table.columns = fmtdef.NAME.tolist()
     return table
+
+def wcl_edr_special_block(data, name):
+    """WCL EDR ema/emb/emc tables: the START_BYTE for columns 13 and 14 are
+    off by 1 and 2 bytes respectively. (The em8/em9/emf tables are fine.)"""
+    block = data.metablock_(name)
+    
+    for item in iter(block.items()):
+        if "COLUMN" in item:
+            if item[1]["COLUMN_NUMBER"] == 13:
+                item[1]["START_BYTE"] -= 1
+            if item[1]["COLUMN_NUMBER"] == 14:
+                item[1]["START_BYTE"] -= 2
+    return block
