@@ -43,3 +43,37 @@ def pls_ionbr_special_block(data, name):
     block = data.metablock_(name)
     block["^STRUCTURE"] = "SUMRY.FMT" 
     return True, block
+
+def pra_special_block(data, name, identifiers):
+    """PRA Lowband RDRs: The Jupiter labels use the wrong START_BYTE for columns 
+    in containers. The Saturn/Uranus/Neptune labels define columns with multiple 
+    ITEMS, but ITEM_BYTES is missing and the BYTES value is wrong."""
+    block = data.metablock_(name)
+    if identifiers["DATA_SET_ID"] in ("VG2-S-PRA-3-RDR-LOWBAND-6SEC-V1.0",
+                                      "VG2-N-PRA-3-RDR-LOWBAND-6SEC-V1.0",
+                                      "VG2-U-PRA-3-RDR-LOWBAND-6SEC-V1.0"
+                                      ):
+      for item in iter(block.items()):
+            if "COLUMN" in item and "SWEEP" in item[1]["NAME"]:
+                item[1].add("ITEM_BYTES", 4) # The original BYTES value
+                item[1]["BYTES"] = 284 # ITEM_BYTES * ITEMS
+    elif identifiers["DATA_SET_ID"] == "VG2-J-PRA-3-RDR-LOWBAND-6SEC-V1.0":
+        for item in iter(block["CONTAINER"].items()):
+            if "COLUMN" in item:
+                if item[1]["NAME"] == "STATUS_WORD":
+                    item[1]["START_BYTE"] = 1
+                if item[1]["NAME"] == "DATA_CHANNELS":
+                    item[1]["START_BYTE"] = 5
+    return True, block
+
+def lecp_table_loader(filename, fmtdef_dt):
+    """VG1 LECP Jupiter SUMM Sector tables reference a format file with
+    incorrect START_BYTEs for columns within a CONTAINER. Columns are
+    consistently separated by whitespace."""
+    import pandas as pd
+
+    fmtdef, dt = fmtdef_dt
+    table = pd.read_csv(filename, header=None, delim_whitespace=True)
+    assert len(table.columns) == len(fmtdef.NAME.tolist())
+    table.columns = fmtdef.NAME.tolist()
+    return table

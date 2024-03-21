@@ -3,6 +3,14 @@
 #### Features
 - 
 #### Dataset Support
+- most IHW datasets
+- additional Voyager 1 and 2 datasets
+- GRSFE and WFF/ATM datasets
+- LOIRP dataset
+- additional MSL, Apollo, and Mariner datasets
+- additional Earth-based lunar data
+- Viking Lander datasets
+- MEX ASPERA data
 - 
 ### Changed
 - 
