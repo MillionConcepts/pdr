@@ -303,6 +303,8 @@ of their metadata appear to match other sources.
   - Chemin L1B and L2 RDRs, and EDRs
   - Navcam mosaics
   - PLACES localization data and orbital maps
+  - DAN EDRs and RDRs
+  - SAM RDRs
 #### MSX
   - Infrared Minor Planet Survey
   - Small Bodies Images
@@ -341,11 +343,13 @@ of their metadata appear to match other sources.
   - POS VSO coordinates
   - POS SEDR
 #### Phoenix
-  - TEGA EDRs
+  - TEGA EDRs (except LED tables) and most RDRs
   - MECA
     - TECP EDRs and RDRs
-    - AFM EDRs
+    - WCL EDRs and some RDRs (PT, ISE, CND)
+    - AFM EDRs and RDRs
     - OM EDRs and RDRs
+    - ELEC EDRs
   - SSI EDRs, RDRs, and mosaics
   - RAC EDRs, RDRs, and mosaics
   - PDS4 products: RA, MET, LIDAR, ASE, AO, TT, and derived products
@@ -606,10 +610,8 @@ of their metadata appear to match other sources.
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
 #### Phoenix
-  - TEGA RDRs (support planned)
-  - MECA
-    - WCL EDRs and RDRs (support planned)
-    - AFM RDRs (support planned)
+  - TEGA LED EDRs and SC RDRs (support planned)
+  - MECA WCL RDRs (specifically CT and CP products; support planned)
 #### Rosetta
   - Orbiter:
     - MIDAS RDRs with .dat file extension (support planned)

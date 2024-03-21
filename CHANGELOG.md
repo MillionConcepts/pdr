@@ -11,6 +11,7 @@
 - additional Earth-based lunar data
 - Viking Lander datasets
 - MEX ASPERA data
+- additional Phoenix datasets
 - 
 ### Changed
 - 
