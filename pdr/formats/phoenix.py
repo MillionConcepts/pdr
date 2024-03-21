@@ -68,3 +68,12 @@ def wcl_edr_special_block(data, name):
             if item[1]["COLUMN_NUMBER"] == 14:
                 item[1]["START_BYTE"] -= 2
     return block
+
+def wcl_rdr_offset(data, name):
+    """WCL RDR CP/CV tables: in the labels, each pointer's start byte is
+    missing '<BYTES>' even though the units are bytes rather than file_records.
+    This doesn't fix the header table though, they still need attention."""
+    target = data.metaget_("^"+name)
+    start_byte = target[-1] - 1
+    return True, start_byte
+

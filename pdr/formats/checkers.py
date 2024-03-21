@@ -48,6 +48,13 @@ def check_special_offset(
         and name == "TABLE_1"
     ):
         return formats.lro.get_crater_offset()
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
+         and identifiers["PRODUCT_TYPE"] in ("MECA_WCL_CP",
+                                             "MECA_WCL_CV")
+         and "TABLE" in name
+    ):
+        return formats.phoenix.wcl_rdr_offset(data, name)
     return False, None
 
 
