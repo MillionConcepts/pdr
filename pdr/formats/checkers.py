@@ -303,6 +303,13 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.phoenix.afm_rdr_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        identifiers["DATA_SET_ID"] == "MEX-SUN-ASPERA3-4-SWM-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.mex.aspera_ima_ddr_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 

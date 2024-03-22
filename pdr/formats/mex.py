@@ -27,3 +27,14 @@ def aspera_table_loader(filename, fmtdef_dt):
     table.columns = fmtdef.NAME.tolist()
     return table
 
+def aspera_ima_ddr_structure(block, name, filename, data, identifiers):
+    """The ASPERA IMA DDR table opens correctly as written in its label, but
+    the BYTES values for columns 3 and 4 are wrong."""
+    from pdr.loaders.queries import read_table_structure
+
+    fmtdef = read_table_structure(
+        block, name, filename, data, identifiers
+    )
+    fmtdef.at[2, "BYTES"] = 12
+    fmtdef.at[3, "BYTES"] = 12
+    return fmtdef, None
