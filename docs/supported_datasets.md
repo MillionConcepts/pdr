@@ -608,7 +608,8 @@ of their metadata appear to match other sources.
 #### Phoenix
   - TEGA RDRs (support planned)
   - MECA
-    - WCL EDRs and RDRs (support planned)
+    - WCL EDRs (support planned)
+    - WCL CP/CV-mode RDRs (support not planned)
     - AFM RDRs (support planned)
 #### Rosetta
   - Orbiter:
