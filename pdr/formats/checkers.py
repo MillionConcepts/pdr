@@ -214,7 +214,16 @@ def check_special_structure(block, name, fn, identifiers, data):
         and identifiers["PRODUCT_TYPE"] == "ODF"
         and name == "ODF3B_TABLE"
     ):
-        return True, formats.mgs.get_structure(
+        return True, formats.mgs.get_odf_structure(
+            block, name, fn, data, identifiers
+        )
+
+    if (
+        identifiers.get("INSTRUMENT_HOST_NAME") == "MARS GLOBAL SURVEYOR"
+        and identifiers.get("INSTRUMENT_NAME") == "RADIO SCIENCE SUBSYSTEM"
+        and identifiers.get("PRODUCT_TYPE") == "ECS"
+    ):
+        return True, formats.mgs.get_ecs_structure(
             block, name, fn, data, identifiers
         )
     if (
