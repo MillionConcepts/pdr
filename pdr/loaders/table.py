@@ -102,6 +102,7 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     return table
 
 
+# TODO: this is still generally hacky and should be untangled
 # noinspection PyTypeChecker
 def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
     """
@@ -128,18 +129,17 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
         string_buffer.seek(0)
     try:
         table = pd.read_csv(string_buffer, sep=sep, header=None)
-    # TODO: I'm not sure this is a good idea
-    # TODO: hacky, untangle this tree
-    # TODO: this won't work for compressed files, but I'm not even
-    #  sure what we're using it for right now
+    # TODO: I'm not sure this except clause is a good idea.
     except (UnicodeError, AttributeError, ParserError):
         table = None
     if table is None:
         try:
             table = pd.DataFrame(
+                # TODO: are we ever actually using this at this point? note
+                #  that it will never work for compressed files.
                 np.loadtxt(
                     fn,
-                    delimiter=",",
+                    delimiter=sep,
                     # TODO, maybe: this currently fails -- perhaps
                     #  correctly -- when there is no LABEL_RECORDS key.
                     #  but perhaps it is better to set a default of 0
@@ -153,13 +153,15 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
         except (TypeError, KeyError, ValueError):
             pass
     if table is not None:
-        try:
-            assert len(table.columns) == len(fmtdef.NAME.tolist())
+        # TODO: adding this placeholder check allows many tables to use
+        #  read_csv() instead of read_fwf(). This may be able to invalidate
+        #  some special cases; should check.
+        n_place = len(
+            fmtdef.loc[fmtdef.NAME.str.contains('PLACEHOLDER')]
+        )
+        if len(table.columns) + n_place == len(fmtdef.NAME.tolist()):
             string_buffer.close()
             return table
-        except AssertionError:
-            pass
-    # TODO: handle this better
     string_buffer.seek(0)
     if "BYTES" in fmtdef.columns:
         try:
