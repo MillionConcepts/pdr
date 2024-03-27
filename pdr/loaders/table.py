@@ -9,7 +9,7 @@ from pdr.loaders.queries import get_array_num_items
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
-from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals
+from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals, compute_offsets
 from pdr.utils import decompress, head_file
 
 
@@ -163,7 +163,10 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
     string_buffer.seek(0)
     if "BYTES" in fmtdef.columns:
         try:
-            colspecs, position_records = [], fmtdef.to_dict("records")
+            if "SB_OFFSET" not in fmtdef.columns:
+                colspecs, position_records = [], compute_offsets(fmtdef).to_dict("records")
+            else:
+                colspecs, position_records = [], fmtdef.to_dict("records")
             for record in position_records:
                 if np.isnan(record.get("ITEM_BYTES", np.nan)):
                     col_length = record["BYTES"]
