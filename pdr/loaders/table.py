@@ -172,11 +172,11 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
                 colspecs.append(
                     (record["SB_OFFSET"], record["SB_OFFSET"] + col_length)
                 )
-            table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs, delimiter='\t'+' '+'"')
+            table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs, delimiter='\t'+' '+'"'+',')
             string_buffer.close()
             return table
         except (pd.errors.EmptyDataError, pd.errors.ParserError):
             string_buffer.seek(0)
-    table = pd.read_fwf(string_buffer, header=None, delimiter='\t'+' '+'"')
+    table = pd.read_fwf(string_buffer, header=None, delimiter='\t'+' '+'"'+',')
     string_buffer.close()
     return table
