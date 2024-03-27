@@ -230,6 +230,8 @@ of their metadata appear to match other sources.
 #### Mars Express
   - MARSIS EDRs and RDRs
   - ASPERA EDRs, RDRs, and DDRs
+  - HRSC REFDRs, and SRC RDRs
+  - PFS raw interferograms, and housekeeping tables
 #### Mars Odyssey
   - THEMIS 
     - spectral qubes: VIS and IR v2 geoprojected images, VIS EDR and RDR,
@@ -482,6 +484,9 @@ of their metadata appear to match other sources.
   - NAC DTM without labels (under EXTRAS folder at LROC mission node)
   - WAC derived tif files without labels (under EXTRAS folder at LROC
   mission node)
+#### Mars Express
+  - HRSC derived clouds data
+  - PFS derived water vapor maps
 #### MER 1 and 2
   - Many MER products have been converted to PDS4, including: 
     - APXS, Mössbauer and Mini-TES products
@@ -572,6 +577,9 @@ of their metadata appear to match other sources.
   - Radio Tracking ODF3B tables (support planned)
   - RSS solar wind experiment ('safed' dataset)
   - SAR EDR ('safed' dataset)
+#### Mars Express
+  - HRSC RDRs (support planned)
+  - HRSC calibrated radiance spectra
 #### Mars Odyssey
   - THEMIS
     - IR RDRs (support planned)

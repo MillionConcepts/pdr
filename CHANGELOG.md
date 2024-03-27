@@ -10,7 +10,7 @@
 - additional MSL, Apollo, and Mariner datasets
 - additional Earth-based lunar data
 - Viking Lander datasets
-- MEX ASPERA data
+- MEX ASPERA, HRSC, and PFS data
 - additional Phoenix datasets
 - 
 ### Changed
