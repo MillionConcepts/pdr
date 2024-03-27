@@ -532,6 +532,13 @@ def check_special_block(name, data, identifiers):
          and name == "WCHEM_TABLE"
     ):
         return True, formats.phoenix.wcl_edr_special_block(data, name)
+    if (
+         "MEX-M-PFS-2-EDR-" in identifiers["DATA_SET_ID"]
+         and ("RAW" in identifiers["PRODUCT_ID"]
+              or "HK" in identifiers["PRODUCT_ID"])
+         and name == "TABLE"
+    ):
+        return formats.mex.pfs_edr_special_block(data, name)
     return False, None
 
 

@@ -38,3 +38,24 @@ def aspera_ima_ddr_structure(block, name, filename, data, identifiers):
     fmtdef.at[2, "BYTES"] = 12
     fmtdef.at[3, "BYTES"] = 12
     return fmtdef, None
+
+def pfs_edr_special_block(data, name):
+    """The PFS EDRs have a few errors in their labels prior to orbit 8945, after
+    which they are corrected. ix ptypes affected: raw_lwc, raw_swc, cal_lwc,
+    cal_swc, and hk_early_mission."""
+    block = data.metablock_(name)
+    orbit_number = data.metaget_("ORBIT_NUMBER")
+    
+    if orbit_number == "N/A" or int(orbit_number) < 8945:
+        # Fixes the number of rows in the table by replacing ROWS with FILE_RECORDS.
+        block["ROWS"] = data.metaget_("FILE_RECORDS")
+        # Replaces the time columns' DATA_TYPEs with the correct type based on
+        # products created later in the mission.
+        for item in iter(block.items()):
+            if "COLUMN" in item:
+                if item[1]["NAME"] == "OBT OBSERVATION TIME":
+                    item[1]["DATA_TYPE"] = "PC_REAL"
+                if item[1]["NAME"] == "SCET OBSERVATION TIME":
+                    item[1]["DATA_TYPE"] = "PC_UNSIGNED_INTEGER"
+        return True, block
+    return False, block
