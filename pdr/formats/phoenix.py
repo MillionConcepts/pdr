@@ -48,12 +48,15 @@ def afm_table_loader(filename, fmtdef_dt, name):
     elif name == "AFM_B_HEIGHT_TABLE":
         num_rows_skipped = 1540
         num_rows = 512
-    
-    fmtdef, dt = fmtdef_dt
-    table = pd.read_csv(filename, header=None, sep=",",
-                        skiprows=num_rows_skipped, nrows=num_rows)
-    assert len(table.columns) == len(fmtdef.NAME.tolist())
-    table.columns = fmtdef.NAME.tolist()
+    table = pd.read_csv(
+        filename,
+        header=None,
+        sep=",",
+        skiprows=num_rows_skipped, nrows=num_rows
+    )
+    names = [c for c in fmtdef_dt[0]['NAME'] if "PLACEHOLDER" not in c]
+    assert len(table.columns) == len(names), "mismatched column count"
+    table.columns = names
     return table
 
 def wcl_edr_special_block(data, name):

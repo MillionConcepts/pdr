@@ -12,9 +12,8 @@ def diviner_l4_table_loader(fmtdef_dt, filename):
     import numpy as np
     import pandas as pd
 
-    fmtdef, dt = fmtdef_dt
     table = pd.DataFrame(
         np.loadtxt(filename, delimiter=",", skiprows=1),
-        columns=fmtdef["NAME"].tolist(),
+        columns=[c for c in fmtdef_dt[0]["NAME"] if "PLACEHOLDER" not in c],
     )
     return table

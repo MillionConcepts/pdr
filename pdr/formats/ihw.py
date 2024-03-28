@@ -1,12 +1,14 @@
 def curve_table_loader(filename, fmtdef_dt):
     """ The labels do not always count column bytes correctly. """
     import pandas as pd
-    fmtdef, dt = fmtdef_dt
+    names = [c for c in fmtdef_dt[0].NAME if "PLACEHOLDER" not in c]
     table = pd.read_csv(filename, header=None, delim_whitespace=True)
-    assert len(table.columns) == len(fmtdef.NAME.tolist())
-    table.columns = fmtdef.NAME.tolist()
+    assert len(table.columns) == len(names), "mismatched column count"
+    table.columns = names
     return table
 
+# TODO: this appears to add a spurious extra column to one file (msnrdr04)
+#  that prevents correct column matching -- maybe it should be excluded from this
 def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     """ Some Halley V1.0 tables (MSN, PPN, and IRSN datasets) are missing 
     newline characters between rows. """
@@ -28,12 +30,13 @@ def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     colspecs = []
     position_records = compute_offsets(fmtdef).to_dict("records")
     for record in position_records:
-        col_length = record["BYTES"]
+        col_length = int(record["BYTES"])
         colspecs.append((record["SB_OFFSET"], record["SB_OFFSET"] + col_length))
+    print(colspecs)
     string_buffer.seek(0)
     table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
     string_buffer.close()
-
+    print(table)
     table.columns = fmtdef.NAME.tolist()
     return table
 
