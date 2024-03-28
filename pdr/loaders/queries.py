@@ -5,7 +5,7 @@ from functools import reduce
 from itertools import chain, product
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Mapping, Optional, Sequence, TYPE_CHECKING
+from typing import Any, Mapping, Optional, Sequence, TYPE_CHECKING, Callable
 import warnings
 
 import numpy as np
@@ -145,15 +145,23 @@ def check_fix_validity(props):
         )
 
 
-def check_if_qube(name, block, band_storage_type):
-    """"""
+def check_if_qube(
+    name: str,
+    block: MultiDict,
+    band_storage_type: str
+) -> tuple[bool, Optional[dict]]:
+    """
+    If this is a metadata block associated with a qube-type object, parse its
+    properties using the various special rules necessary to read ISIS2
+    parameters.
+    """
     if "QUBE" in name:  # ISIS2 QUBE format
         return True, generic_qube_properties(block, band_storage_type)
     else:
         return False, None
 
 
-def get_image_properties(gen_props) -> dict:
+def get_image_properties(gen_props: dict) -> dict:
     """"""
     props = gen_props
     check_fix_validity(props)
@@ -165,8 +173,8 @@ def get_image_properties(gen_props) -> dict:
     return props
 
 
-def im_sample_type(base_samp_info):
-    """"""
+def im_sample_type(base_samp_info: dict) -> str:
+    """Determine appropriate numpy dtype string for an IMAGE object"""
     if base_samp_info["SAMPLE_TYPE"] != "":
         return sample_types(
             base_samp_info["SAMPLE_TYPE"],
@@ -175,16 +183,19 @@ def im_sample_type(base_samp_info):
         )
 
 
-def base_sample_info(block):
-    """"""
+def base_sample_info(block: MultiDict) -> dict:
+    """Determine basic sample-level type info for an image object."""
     return {
         "BYTES_PER_PIXEL": int(block.get("SAMPLE_BITS", 0) / 8),
         "SAMPLE_TYPE": block.get("SAMPLE_TYPE", ""),
     }
 
 
-def generic_image_properties(block, sample_type):
-    """"""
+def generic_image_properties(block: MultiDict, sample_type: str) -> dict:
+    """
+    Construct a dict of image properties later used in the image-loading
+    workflow.
+    """
     props = {
         # TODO: BYTES_PER_PIXEL check appears repeated with slight variation
         #  from base_sample_info()
@@ -210,8 +221,8 @@ def generic_image_properties(block, sample_type):
     return props
 
 
-def get_qube_band_storage_type(block):
-    """"""
+def get_qube_band_storage_type(block: MultiDict) -> str:
+    """Get band storage type from a QUBE definition."""
     return block.get("BAND_STORAGE_TYPE")
 
 

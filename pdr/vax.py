@@ -11,7 +11,7 @@ to this module.
 Million Concepts explicitly makes no claim to the SETI name or trademarks.
 
 ############################################################################
-# vax.py: Conversions between Vax single-precision floats IEEE floats
+# vax.py: Conversions between Vax single-precision floats and IEEE floats
 ############################################################################
 """
 

@@ -1,8 +1,9 @@
-from typing import Any, Callable, Union
+from typing import Any, Callable, Literal, Union
 
 from pdr.pdr import Data, Metadata
 
+ByteOrder = Literal["<", ">"]
 PDRLike = Union[Data, Metadata]
 LoaderFunction = Callable[
-    [Any, ...], Union[str, "MultiDict", "pd.DataFrame", "np.ndarray"]
+    ..., Union[str, "MultiDict", "pd.DataFrame", "np.ndarray"]
 ]

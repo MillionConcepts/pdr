@@ -2,11 +2,15 @@
 definitions of sample types / data types / dtypes / ctypes, file formats
 and extensions, associated special constants, and so on.
 """
-import re
 from itertools import product
+import re
 from types import MappingProxyType
+from typing import TYPE_CHECKING
 
 from pdr.utils import read_hex
+
+if TYPE_CHECKING:
+    from pdr.pdrtypes import ByteOrder
 
 
 def integer_bytes(
@@ -30,22 +34,20 @@ def integer_bytes(
     return f"{endian}{letter}"
 
 
-def determine_byte_order(sample_type):
-    """"""
+def determine_byte_order(sample_type: str) -> "ByteOrder":
+    """defines generic byte order for PDS3 physical data types"""
     if any(sample_type.startswith(s) for s in ("PC", "LSB", "VAX")):
-        endian = "<"
-    else:
-        endian = ">"
-    return endian
+        return "<"
+    return ">"
 
 
 def sample_types(
     sample_type: str, sample_bytes: int, for_numpy: bool = False
 ) -> str:
     """
-    Defines a translation from PDS data types to Python struct or numpy dtype
-    format strings, using both the type and bytes specified (because the
-    mapping to type alone is not consistent across PDS3).
+    Defines a translation from PDS3 physical data types to Python struct or
+    numpy dtype format strings, using both the type and byte width specified
+    (because the mapping to type alone is not consistent across PDS3).
     """
     sample_type = sample_type.replace(" ", "_")
     if (("INTEGER" in sample_type) or (sample_type == "BOOLEAN")) and (

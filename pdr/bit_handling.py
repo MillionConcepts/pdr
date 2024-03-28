@@ -13,6 +13,8 @@ from pdr.formats import (
 )
 import warnings
 
+from pdr.pdrtypes import ByteOrder
+
 
 def expand_bit_strings(
     table: pd.DataFrame, fmtdef: pd.DataFrame
@@ -50,9 +52,7 @@ def convert_to_full_bit_string(
     return table
 
 
-def factor_to_dtype(
-    field_length: int, byte_order: Literal[">", "<"]
-) -> np.dtype:
+def factor_to_dtype(field_length: int, byte_order: ByteOrder) -> np.dtype:
     """
     Determine the smallest (in terms of length) structured dtype composed of
     unsigned integer dtypes that can parse binary blob of a particular length
@@ -78,7 +78,7 @@ def factor_to_dtype(
 
 
 def convert_byte_column_to_bits(
-    byte_column: pd.Series, byte_order: Literal["<", ">"]
+    byte_column: pd.Series, byte_order: ByteOrder
 ) -> pd.Series:
     """
     Converts byte strings in a Series into binary strings

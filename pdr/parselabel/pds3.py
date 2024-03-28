@@ -1,9 +1,11 @@
 """simple parsing utilities for PDS3 labels."""
 from ast import literal_eval
 import re
+from numbers import Number
 from operator import eq
 from pathlib import Path
-from typing import Iterable, Mapping, Optional, Type, Union, Collection, Any
+from typing import Iterable, Mapping, Optional, Type, Union, Collection, Any, \
+    Hashable, Callable
 import warnings
 
 from cytoolz import groupby, identity
@@ -22,15 +24,15 @@ PVL_QUANTITY_VALUE = re.compile(r"((\d|\.|-)+([eE]-?\d+)?)|NULL|UNK|N/A")
 PVL_QUANTITY_UNITS = re.compile(r"<(.*)>")
 
 
-def extract_pvl_block_terminal(line):
-    """"""
+def extract_pvl_block_terminal(line: str) -> Optional[str]:
+    """get the PVL block terminator, if any, from a string"""
     try:
         return re.match(PVL_BLOCK_TERMINAL, line).group()
     except AttributeError:
         return None
 
 
-def is_an_assignment_line(line):
+def is_an_assignment_line(line: str) -> bool:
     """
     pick lines that begin assignment statements.
 
@@ -50,7 +52,7 @@ def is_an_assignment_line(line):
     return True
 
 
-def chunk_statements(trimmed_lines: Iterable[str]):
+def chunk_statements(trimmed_lines: Iterable[str]) -> list[tuple[str, str]]:
     """chunk trimmed lines from a pvl-text into assignment statements."""
     statements = []
     for statement in split_before(trimmed_lines, is_an_assignment_line):
@@ -72,27 +74,33 @@ def chunk_statements(trimmed_lines: Iterable[str]):
 
 
 class BlockParser:
-    """"""
+    """
+    Utility class for stateful recursive parsing and aggregation of a series
+    of PVL statements.
+    """
     def __init__(self):
         """"""
         self.names, self.aggregations, self.parameters = [], [MultiDict()], []
 
     def _step_out(self):
-        """"""
+        """Exit a block."""
         self.add_statement(self.names.pop(), self.aggregations.pop())
 
     def _step_in(self, name):
-        """"""
+        """Enter a block."""
         self.names.append(name)
         self.aggregations.append(MultiDict())
 
     def add_statement(self, parameter, value):
-        """"""
+        """Add a statement."""
         self.aggregations[-1].add(parameter, value)
         self.parameters.append(parameter)
 
-    def parse_statements(self, statements):
-        """"""
+    def parse_statements(self, statements) -> tuple[MultiDict, list[str]]:
+        """
+        Parse a series of PVL statements into a (possibly nested) MultiDict
+        and a flattened list of all keys at all levels of that MultiDict.
+        """
         for parameter, value in statements:
             if parameter in PVL_BLOCK_INITIALS:
                 self._step_in(value)
@@ -115,13 +123,15 @@ class BlockParser:
         return self.aggregations[0], self.parameters
 
 
-def looks_pvl(filename):
-    """"""
+def looks_pvl(filename) -> bool:
+    """Is this probably a PVL file?"""
     return Path(filename).suffix.lower() in (".lbl", ".fmt")
 
 
-def parse_pvl(label, deduplicate_pointers=True):
-    """"""
+def parse_pvl(
+    label: str, deduplicate_pointers: bool = True
+) -> tuple[MultiDict, list[str]]:
+    """Parse a PVL-text into a MultiDict and a flattened list of keys."""
     uncommented_label = re.sub(r"/\*.*?(\r|\n|/\*)", "\n", label)
     trimmed_lines = filter(
         None, map(lambda line: line.strip(), uncommented_label.split("\n"))
@@ -134,16 +144,22 @@ def parse_pvl(label, deduplicate_pointers=True):
     return mapping, params
 
 
-def read_pvl(filename, deduplicate_pointers=True, max_size=DEFAULT_PVL_LIMIT):
-    """"""
+def read_pvl(
+    filename: Union[str, Path],
+    deduplicate_pointers: bool = True,
+    max_size: int = DEFAULT_PVL_LIMIT
+) -> tuple[MultiDict, list[str]]:
+    """Read and parse a file containing a PVL-text."""
     with decompress(filename) as stream:
         errors = "replace" if looks_pvl(filename) else "strict"
         label = trim_label(stream, max_size).decode("utf-8", errors=errors)
     return parse_pvl(label, deduplicate_pointers)
 
 
-def parse_pvl_quantity_object(obj):
-    """"""
+def parse_pvl_quantity_object(obj: str) -> dict[str, Union[str, Number]]:
+    """
+    Parse a PVL quantity string into a dict like {'value': 2, 'units': 'km'}.
+    """
     return {
         "value": literalize_pvl(
             re.search(PVL_QUANTITY_VALUE, obj).group()
@@ -152,7 +168,7 @@ def parse_pvl_quantity_object(obj):
     }
 
 
-def parse_pvl_quantity_statement(statement):
+def parse_pvl_quantity_statement(statement: str) -> Any:
     """
     parse pvl statements including quantities. returns quantities as mappings.
     this will also handle statements that do not consist entirely of
@@ -178,14 +194,14 @@ def parse_pvl_quantity_statement(statement):
 
 
 def multidict_dig_and_edit(
-    input_multidict,
-    target,
-    input_object=None,
-    predicate=eq,
-    setter_function=None,
-    key_editor=False,
-    keep_values=True,
-):
+    input_multidict: MultiDict,
+    target: Hashable,
+    input_object: Any = None,
+    predicate: Callable[[Any, Any], bool] = eq,
+    setter_function: Callable = None,
+    key_editor: bool = False,
+    keep_values: bool = True,
+) -> MultiDict:
     """
     This function searches through a multidict's items, recursively continuing
     into any children that are themselves multidicts, looking for keys that
@@ -234,7 +250,10 @@ def multidict_dig_and_edit(
 
 
 def parse_non_base_10(text: str) -> int:
-    """"""
+    """
+    Convert a PVL representation of a non-base-10 integer to a base-10 Python
+    integer.
+    """
     try:
         base, number = text[:-1].split("#")
         return int(number, int(base))
@@ -245,7 +264,10 @@ def parse_non_base_10(text: str) -> int:
 def parse_non_base_10_collection(
     class_: Union[Type[set], Type[tuple]], obj: str
 ) -> Union[tuple[int], set[int]]:
-    """"""
+    """
+    Convert a collection of PVL representations of non-base-10 integers to a
+    collection (of the same class) of base-10 Python integers.
+    """
     return class_(
         map(parse_non_base_10, obj.strip('{}()').replace(" ", '').split(','))
     )
@@ -254,7 +276,7 @@ def parse_non_base_10_collection(
 def parse_unusual_collection(
     obj: str
 ) -> Union[tuple[Union[int, str]], set[Union[int, str]]]:
-    """handle collections of non-base-10 numbers or unquoted strings"""
+    """Parse a PVL collection of non-base-10 numbers or unquoted strings."""
     class_ = set if obj.startswith('{') else tuple
     if re.match(r'.*\d{1,2}#', obj):
         try:
@@ -297,7 +319,10 @@ def literalize_pvl(
 
 
 def literalize_pvl_block(block: MultiDict) -> MultiDict:
-    """"""
+    """
+    Parse the values of an entire (possibly-nested) MultiDict whose values are
+    PVL strings into Python objects.
+    """
     literalized = multidict_dig_and_edit(
         block,
         None,
