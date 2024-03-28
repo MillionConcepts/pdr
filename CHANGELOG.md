@@ -48,7 +48,7 @@
 - Incorrect column bounds due to container padding in some tables
 - FITS HDUs with non-printable characters in header cards will now load,
   discarding any such cards from the header (unless the cards are required, 
-  e.g. NAXIS1) 
+  e.g. NAXIS1) Resolves issue [#52](https://github.com/MillionConcepts/pdr/issues/52).
 
 ## [1.0.5] - 2023-12-07
 ### Added
