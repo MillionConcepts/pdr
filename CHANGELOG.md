@@ -1,3 +1,21 @@
+## [X.X.X] - 202X-XX-XX
+### Added
+#### Features
+- 
+
+#### Dataset Support
+- 
+- see [supported_datasets.md](docs/supported_datasets.md) for details
+
+### Changed
+- 
+
+### Fixed
+- 
+
+### Removed
+-
+
 ## [1.0.6] - 2024-03-28
 ### Added
 #### Features
