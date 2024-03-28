@@ -35,6 +35,7 @@ def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
     string_buffer.close()
     table.columns = fmtdef.NAME.tolist()
+    table = table.drop([k for k in table.keys() if "PLACEHOLDER" in k], axis=1)
     return table
 
 def get_special_block(data, name):
