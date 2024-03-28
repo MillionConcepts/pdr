@@ -82,6 +82,12 @@
     options:
         heading_level: 4
 
+### formats.ihw
+
+::: pdr.formats.ihw
+    options:
+        heading_level: 4
+
 ### formats.juno
 
 ::: pdr.formats.juno
@@ -100,7 +106,19 @@
     options:
         heading_level: 4
 
-### formats.mex_marsis
+### formats.mariner
+
+::: pdr.formats.mariner
+    options:
+        heading_level: 4
+
+### formats.mer
+
+::: pdr.formats.mer
+    options:
+        heading_level: 4
+
+### formats.mex
 
 ::: pdr.formats.mex_marsis
     options:
@@ -154,6 +172,12 @@
     options:
         heading_level: 4
 
+### formats.phoenix
+
+::: pdr.formats.phoenix
+    options:
+        heading_level: 4
+
 ### formats.pvo
 
 ::: pdr.formats.pvo
@@ -187,6 +211,12 @@
 ### formats.vega
 
 ::: pdr.formats.vega
+    options:
+        heading_level: 4
+
+### formats.viking
+
+::: pdr.formats.viking
     options:
         heading_level: 4
 
