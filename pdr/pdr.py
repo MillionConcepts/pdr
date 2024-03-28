@@ -1,6 +1,7 @@
 import warnings
 from functools import partial, cache
 from itertools import chain, product
+from numbers import Number
 from pathlib import Path
 from typing import (
     Mapping,
@@ -152,7 +153,7 @@ class Metadata(MultiDict):
         return self.metaget(text, default, evaluate, False)
 
     def metaget_fuzzy(self, text: str, evaluate: bool = True) -> Any:
-        """"""
+        """Like `metaget()`, but fuzzy-matches key names."""
         levratio = {
             key: lev.ratio(key, text) for key in set(self.fieldcounts.keys())
         }
@@ -208,12 +209,15 @@ class Metadata(MultiDict):
 
 
 class DebugExceptionPreempted(Exception):
-    """"""
+    """
+    Stub Exception subclass for selectively ignoring Exceptions from load
+    failures when not in debug mode.
+    """
     pass
 
 
 class Data:
-    """"""
+    """Core `pdr` class."""
     def __init__(
         self,
         fn: Union[Path, str],
@@ -328,14 +332,17 @@ class Data:
         self.index.append("label")
 
     def _init_search_paths(self):
-        """"""
+        """Set initial path(s) this object will check for files."""
         for target in ("labelname", "filename"):
             if (target in dir(self)) and (target is not None):
                 return str(Path(self.getattr(target)).absolute().parent)
         raise FileNotFoundError
 
     def _find_objects(self):
-        """"""
+        """
+        Add all top-level data objects mentioned in the label to this object's
+        index, except for 'trivial' ones.
+        """
         from pdr.loaders.utility import is_trivial
 
         # TODO: make this not add objects again if called multiple times
@@ -346,7 +353,10 @@ class Data:
             self.index.append(object_name)
 
     def _object_to_filename(self, object_name: str) -> Union[str, list[str]]:
-        """"""
+        """
+        Construct one or more on-disk search paths for the file that contains
+        a named data object. Does not check if files exist at those paths.
+        """
         is_special, special_target = check_special_fn(
             self, object_name, self.identifiers
         )
@@ -359,7 +369,6 @@ class Data:
         if isinstance(target, Sequence) and not (isinstance(target, str)):
             if isinstance(target[0], str):
                 target = target[0]
-        # TODO: should we move every check_cases call here?
         if isinstance(target, str):
             return self.get_absolute_paths(target)
         else:
@@ -627,7 +636,7 @@ class Data:
 
     def find_special_constants(
         self, object_name: str
-    ) -> dict[str, Union[float, int]]:
+    ) -> dict[str, Number]:
         """
         look up or infer special constants for one of our data objects.
         in general, only works well on ndarrays.
@@ -800,12 +809,14 @@ class Data:
     # The following two functions make this object act sort of dict-like
     #  in useful ways for data exploration.
     def keys(self) -> list[str]:
-        """Returns the keys for observational data and metadata objects"""
+        """
+        Returns names of all data objects defined in the label (or inferred
+        while loading an object, like FITS headers).
+        """
         return self.index
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
-        """"""
         return self.__getattribute__(item)
 
     def __repr__(self):
@@ -832,7 +843,10 @@ class Data:
 def _metaget_factory(
     metadata: Metadata, cached: bool = True
 ) -> Callable[[str, bool, bool], Any]:
-    """"""
+    """
+    Factory function for an internal component of `metaget()`. Reduces the risk
+    that the metadata access cache will create reference cycles.
+    """
     def metaget_interior(text, default, evaluate):
         """"""
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
@@ -848,7 +862,10 @@ def _metaget_factory(
 def _metablock_factory(
     metadata: Metadata, cached: bool = True
 ) -> Callable[[str, bool], Mapping]:
-    """"""
+    """
+    Factory function for an internal component of `metablock()`. Reduces the
+    risk that the metadata access cache will create reference cycles.
+    """
     def metablock_interior(text, evaluate):
         """"""
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
