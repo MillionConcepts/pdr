@@ -1,5 +1,6 @@
 from pdr.loaders.queries import read_table_structure
-from pdr.pd_utils import insert_sample_types_into_df
+from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+
 
 def elec_em6_structure(block, name, filename, data, identifiers):
     """ELEC EDR em6/TBL tables: All the START_BYTEs in TBL_0_STATE_DATA.FMT
@@ -10,8 +11,9 @@ def elec_em6_structure(block, name, filename, data, identifiers):
     for line in range(0, len(fmtdef)):
         if fmtdef.at[line, "BLOCK_NAME"] == "TBL0 DATA":
             fmtdef.at[line, "START_BYTE"] -= 36
-    
+    fmtdef = compute_offsets(fmtdef)
     return insert_sample_types_into_df(fmtdef, identifiers)
+
 
 def afm_rdr_structure(block, name, filename, data, identifiers):
     """AFM RDR header tables: Several columns' NAME fields start with lowercase
@@ -28,6 +30,7 @@ def afm_rdr_structure(block, name, filename, data, identifiers):
             fmtdef.at[line, "COLUMN_NUMBER"] = col_number_text.split("NAME = ")[0]
             fmtdef.at[line, "NAME"] = col_number_text.split("NAME = ")[1]
     return fmtdef, None
+
 
 def afm_table_loader(filename, fmtdef_dt, name):
     """AFM RDR tables: Several labels miscount bytes somewhere in the tables"""
@@ -48,13 +51,17 @@ def afm_table_loader(filename, fmtdef_dt, name):
     elif name == "AFM_B_HEIGHT_TABLE":
         num_rows_skipped = 1540
         num_rows = 512
-    
-    fmtdef, dt = fmtdef_dt
-    table = pd.read_csv(filename, header=None, sep=",",
-                        skiprows=num_rows_skipped, nrows=num_rows)
-    assert len(table.columns) == len(fmtdef.NAME.tolist())
-    table.columns = fmtdef.NAME.tolist()
+    table = pd.read_csv(
+        filename,
+        header=None,
+        sep=",",
+        skiprows=num_rows_skipped, nrows=num_rows
+    )
+    names = [c for c in fmtdef_dt[0]['NAME'] if "PLACEHOLDER" not in c]
+    assert len(table.columns) == len(names), "mismatched column count"
+    table.columns = names
     return table
+
 
 def wcl_edr_special_block(data, name):
     """WCL EDR ema/emb/emc tables: the START_BYTE for columns 13 and 14 are
@@ -68,6 +75,7 @@ def wcl_edr_special_block(data, name):
             if item[1]["COLUMN_NUMBER"] == 14:
                 item[1]["START_BYTE"] -= 2
     return block
+
 
 def wcl_rdr_offset(data, name):
     """WCL RDR CP/CV tables: in the labels, each pointer's start byte is

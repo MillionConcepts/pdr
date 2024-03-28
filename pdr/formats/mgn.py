@@ -16,9 +16,10 @@ def geom_table_loader(filename, fmtdef_dt):
     string_buffer = StringIO(bytes_.decode())
     string_buffer.seek(0)
     table = pd.read_csv(string_buffer, header=None)
-    assert len(table.columns) == len(fmtdef.NAME.tolist())
+    names = [n for n in fmtdef['NAME'] if 'PLACEHOLDER' not in n]
+    assert len(table.columns) == len(names), 'column name mismatch'
     string_buffer.close()
-    table.columns = fmtdef.NAME.tolist()
+    table.columns = names
     return table
 
 
@@ -55,9 +56,7 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
     string_buffer = StringIO(processed.decode())
     # adapted from _interpret_as_ascii()
     colspecs = []
-    from pdr.pd_utils import compute_offsets
-
-    position_records = compute_offsets(fmtdef).to_dict("records")
+    position_records = fmtdef.to_dict("records")
     for record in position_records:
         col_length = record["BYTES"]
         colspecs.append((record["SB_OFFSET"], record["SB_OFFSET"] + col_length))
@@ -66,7 +65,7 @@ def occultation_loader(identifiers, fmtdef_dt, block, filename):
     string_buffer.close()
 
     table.columns = fmtdef.NAME.tolist()
-    return table
+    return table.drop("PLACEHOLDER_0", axis=1)
 
 
 def gvanf_sample_type():

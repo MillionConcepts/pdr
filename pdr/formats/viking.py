@@ -5,11 +5,8 @@ def seis_table_loader(filepath, fmtdef_dt):
     bytes wrong. Half the labels define columns that do not match the data.
     """
     import pandas as pd
-
-    fmtdef, dt = fmtdef_dt
-    col_names = fmtdef.NAME.tolist()
+    col_names = [c for c in fmtdef_dt[0].NAME if "PLACEHOLDER" not in c]
     filename = filepath.split("/")[-1]
-    
     # The summary tables have miscounted bytes in their labels. The columns are
     # separated by whitespace, so can be read by read_csv() instead.
     # Both labels define a SEISMIC_TIME_SOLS column that doesn't exist in the data.
@@ -19,8 +16,7 @@ def seis_table_loader(filepath, fmtdef_dt):
         if "event_wind_summary" in filename.lower():
             # event_wind_summary.tab has a column not included in the label. It
             # is listed in: https://pds-geosciences.wustl.edu/viking/vl2-m-seis-5-rdr-v1/vl_9020/document/vpds_event_winds_format.txt
-            col_names.insert(7, "ORIGINAL_LINES_COUNT")            
-    
+            col_names.insert(7, "ORIGINAL_LINES_COUNT")
     # The raw event tables are variable-length CSVs. Their labels include a
     # SEISMIC_SOL column that doesn't exist in the data.
     elif "event" in filename.lower():
@@ -30,7 +26,6 @@ def seis_table_loader(filepath, fmtdef_dt):
     # correct number of columns.
     elif "high" in filename.lower():
         table = pd.read_csv(filepath, header=None, sep=",")
-    
-    assert len(table.columns) == len(col_names)
+    assert len(table.columns) == len(col_names), "mismatched column count"
     table.columns = col_names
     return table

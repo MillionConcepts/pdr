@@ -618,8 +618,11 @@ of their metadata appear to match other sources.
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
 #### Phoenix
-  - TEGA LED EDRs and SC RDRs (support planned)
-  - MECA WCL RDRs (specifically CT and CP products; support planned)
+  - TEGA RDRs (support planned)
+  - MECA
+    - WCL EDRs (support planned)
+    - WCL CP/CV-mode RDRs (support not planned)
+    - AFM RDRs (support planned)
 #### Rosetta
   - Orbiter:
     - MIDAS RDRs with .dat file extension (support planned)
@@ -637,14 +640,14 @@ of their metadata appear to match other sources.
     - IRTM 1989 version (support planned)
     - IRTM 1994 version (support not planned)
 #### Voyager 1 and 2
-  - IRIS full-res spectral observations (support planned; VAX_REAL)
-  - ISS ancillary binary tables (support planned; VAX_REAL)
+  - IRIS full-res spectral observations (support planned; 8-byte VAX_REALs of unknown type)
+  - ISS ancillary binary tables (support planned; 8-byte VAX_REALs of unknown type)
   - ISS compressed raw images (support not planned)
   - LECP some Jupiter and Saturn SUMM Sector products (support planned; low priority)
   - LECP binary versions of most Uranus products (support not planned)
   - PLS binary versions of VG2-N-PLS-5-RDR-ELEMAGSPHERE-96SEC-V1.0 data (support not planned)
   - PRA Uranus SUMM products (support not planned)
   - RSS ODRs (support not planned)
-  - Ring Profile tables with the VAX_REAL data type (support planned)
+  - Ring Profile tables with the VAX_REAL data type (support planned; 8-byte VAX_REALs of unknown type)
 #### WFF/ATM
   - DEM derived raster images (support planned)

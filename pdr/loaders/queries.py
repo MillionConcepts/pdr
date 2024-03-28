@@ -355,6 +355,28 @@ def get_debug(data: PDRLike):
     return data.debug
 
 
+def _fill_empty_byte_rows(fmtdef):
+    """"""
+    nobytes = fmtdef["BYTES"].isna()
+    with warnings.catch_warnings():
+        # we do not care that loc will set items inplace later. at all.
+        warnings.simplefilter("ignore", category=FutureWarning)
+        fmtdef.loc[nobytes, "BYTES"] = (
+            # TODO, maybe: update with ITEM_OFFSET should we implement that
+            fmtdef.loc[nobytes, "ITEMS"]
+            * fmtdef.loc[nobytes, "ITEM_BYTES"]
+        )
+    fmtdef["BYTES"] = fmtdef["BYTES"].astype(int)
+    return fmtdef
+
+
+def _probably_ascii(block, fmtdef, name):
+    return (
+        fmtdef["DATA_TYPE"].str.contains("ASCII").any()
+        or looks_like_ascii(block, name)
+    )
+
+
 def parse_table_structure(name, block, fn, data, identifiers):
     """
     Read a table's format specification and generate a DataFrame
@@ -366,18 +388,28 @@ def parse_table_structure(name, block, fn, data, identifiers):
         raise NotImplementedError(
             "VAX reals are not currently supported in tables."
         )
-    if fmtdef["DATA_TYPE"].str.contains("ASCII").any() or looks_like_ascii(
-        block, name
-    ):
-        # don't try to load it as a binary file
-        return fmtdef, None
-    if fmtdef is None:
-        return fmtdef, np.dtype([])
+    if "BYTES" not in fmtdef.columns:
+        if _probably_ascii(block, fmtdef, name):
+            # this is either a nonstandard fixed-width table or a DSV table.
+            # don't bother trying to calculate explicit byte offsets.
+            return fmtdef, None
+        fmtdef["BYTES"] = np.nan
+    if fmtdef['BYTES'].isna().any():
+        try:
+            fmtdef = _fill_empty_byte_rows(fmtdef)
+        except (KeyError, TypeError, IndexError):
+            raise ValueError("This table's byte sizes are underspecified.")
     for end in ("_PREFIX", "_SUFFIX", ""):
         length = block.get(f"ROW{end}_BYTES")
         if length is not None:
             fmtdef[f"ROW{end}_BYTES"] = length
-    from pdr.pd_utils import insert_sample_types_into_df
+    from pdr.pd_utils import compute_offsets, insert_sample_types_into_df
+
+    if "START_BYTE" in fmtdef.columns:
+        fmtdef = compute_offsets(fmtdef)
+    if _probably_ascii(block, fmtdef, name):
+        # don't attempt to compute numpy dtypes for ASCII tables
+        return fmtdef, None
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
