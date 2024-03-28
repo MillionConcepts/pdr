@@ -1,4 +1,38 @@
 # Version History
+## [1.0.6] - 2024-03-28
+### Added
+#### Features
+- `Data` now directly affords a `find_special_constants()` method   
+
+#### Dataset Support
+- most IHW datasets
+- additional Voyager 1 and 2 datasets
+- GRSFE and WFF/ATM datasets
+- LOIRP dataset
+- additional MSL, Apollo, and Mariner datasets
+- additional Earth-based lunar data
+- Viking Lander datasets
+- Mars Odyssey DAN and SAM data 
+- MEX ASPERA, HRSC, SRC, and PFS data
+- most Phoenix TEGA, ELEC, and WCL products
+- see [supported_datasets.md](docs/supported_datasets.md) for details
+
+### Changed
+- Assorted type-hinting and other in-code documentation improved.
+- Behavior for character stripping in string columns of ASCII tables was 
+  inconsistent. To increase usability, string columns of ASCII tables now 
+  discard preceding and trailing spaces, commas, newlines, and double-quotes 
+  (regardless of strict label specification).
+- Generally improved performance on table reading
+
+### Fixed
+- Incorrect column bounds due to unusual prefix/suffix/infix specifications 
+  in some ASCII tables 
+- Incorrect column bounds due to container padding in some tables
+- FITS HDUs with non-printable characters in header cards will now load,
+  discarding any such cards from the header (unless the cards are required, 
+  e.g. NAXIS1)
+
 ## [1.0.5] - 2023-12-07
 ### Added
 #### Features

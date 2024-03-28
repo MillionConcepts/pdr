@@ -32,8 +32,6 @@
   discarding any such cards from the header (unless the cards are required, 
   e.g. NAXIS1) 
 
-### Removed
-- 
 ## [1.0.5] - 2023-12-07
 ### Added
 #### Features
