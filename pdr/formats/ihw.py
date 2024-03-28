@@ -32,11 +32,9 @@ def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     for record in position_records:
         col_length = int(record["BYTES"])
         colspecs.append((record["SB_OFFSET"], record["SB_OFFSET"] + col_length))
-    print(colspecs)
     string_buffer.seek(0)
     table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
     string_buffer.close()
-    print(table)
     table.columns = fmtdef.NAME.tolist()
     return table
 
