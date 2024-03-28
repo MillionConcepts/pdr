@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import re
-import warnings
 from _operator import mul
 from functools import reduce
-from itertools import product, chain
+from itertools import chain, product
 from pathlib import Path
 from types import MappingProxyType
-from typing import Sequence, Mapping, TYPE_CHECKING
+from typing import Any, Mapping, Optional, Sequence, TYPE_CHECKING
+import warnings
 
 import numpy as np
+import pandas as pd
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types
@@ -377,11 +377,20 @@ def _probably_ascii(block, fmtdef, name):
     )
 
 
-def parse_table_structure(name, block, fn, data, identifiers):
+def parse_table_structure(
+    name: str,
+    block: MultiDict,
+    fn: str,
+    data: PDRLike,
+    identifiers: dict[str, Any]
+) -> tuple[pd.DataFrame, Optional[np.dtype]]:
     """
-    Read a table's format specification and generate a DataFrame
-    and -- if it's binary -- a numpy dtype object. These are later passed
-    to np.fromfile or one of several ASCII table readers.
+    Parse a TABLE or SPREADSHEET's format specification as a pd.DataFrame
+    (see `read_table_structure()`. If that specification contains byte-position
+    information for columns, further parse them into explicit offsets. If the
+    table is binary, also create a numpy dtype object (usually a compound
+    dtype). These typically become inputs for np.fromfile (for binary tables)
+    or for one of several ASCII parsers.
     """
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
     if fmtdef['DATA_TYPE'].str.contains('VAX_REAL').any():
@@ -413,20 +422,24 @@ def parse_table_structure(name, block, fn, data, identifiers):
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
-def read_table_structure(block, name, fn, data, identifiers):
+def read_table_structure(
+    block: MultiDict,
+    name: str,
+    fn: str,
+    data: PDRLike,
+    identifiers: dict[str, Any]
+) -> pd.DataFrame:
     """
-    Try to turn the TABLE definition into a column name / data type
-    array. Requires renaming some columns to maintain uniqueness. Also
-    requires unpacking columns that contain multiple entries. Also
-    requires adding "placeholder" entries for undefined data (e.g.
-    commas in cases where the allocated bytes is larger than given by
-    BYTES, so we need to read in the "placeholder" space and then
-    discard it later).
-
-    If the table format is defined in an external FMT file, then this
-    will attempt to locate it in the same directory as the data / label,
-    and throw an error if it's not there.
-    TODO, maybe: Grab external format files as needed.
+    Try to turn a TABLE/SPREADSHEET/ARRAY/HISTOGRAM definition into a
+    format definition DataFrame whose rows represent the columns of the
+    defined object and whose columns represent various properties of those
+    columns (data type, byte offset, etc.). Due to the complexity of the PDS3
+    Standards for these objects, this can include a wide variety of behaviors,
+    including recursively unpacking subobjects, loading external format files,
+    and adding "placeholder" entries for 'padding' (e.g. extra whitespace,
+    separator characters, and row prefixes/suffixes). This is most often
+    called by `parse_table_structure()` or `parse_array_structure()`, but some
+    special cases use it on its own.
     """
     if "HISTOGRAM" in name:
         fields = get_histogram_fields(block)
@@ -443,8 +456,16 @@ def read_table_structure(block, name, fn, data, identifiers):
     return reindex_df_values(fmtdef)
 
 
-def parse_array_structure(name, block, fn, data, identifiers):
-    """"""
+def parse_array_structure(
+    name: str,
+    block: MultiDict,
+    fn: str,
+    data: PDRLike,
+    identifiers: dict[str, Any]
+) -> tuple[Optional[pd.DataFrame], Optional[str]]:
+    """
+    Modification of `parse_table_structure()` for the special needs of ARRAYs.
+    """
     if not block.get("INTERCHANGE_FORMAT") == "BINARY":
         return None, None
     has_sub = check_array_for_subobject(block)
@@ -461,9 +482,21 @@ def parse_array_structure(name, block, fn, data, identifiers):
 
 
 def read_format_block(
-    block, object_name, fn, data, identifiers, within_container=False
-):
-    """"""
+    block: MultiDict,
+    object_name: str,
+    fn: str,
+    data: PDRLike,
+    identifiers: dict[str, Any],
+    within_container: bool = False
+) -> tuple[list[dict], bool]:
+    """
+    Parse a TABLE, ARRAY, SPREADSHEET, CONTAINER, or COLLECTION definition,
+    recursing into ARRAY, CONTAINER, or COLLECTION subcomponents of that
+    definition and loading external STRUCTURE specifications as needed.
+
+    This function's `fields` return value becomes the rows of the `fmtdef`
+    object used extensively in the table/array-reading workflow.
+    """
     # load external structure specifications
     format_block = list(block.items())
     # propagate top-level NAME to set offsets correctly for a variety of
@@ -552,8 +585,17 @@ def get_histogram_fields(block):
     return fields
 
 
-def inject_format_files(block, name, fn, data):
-    """"""
+def inject_format_files(
+    block: list[tuple[str, Any]],
+    name: str,
+    fn: str,
+    data: PDRLike
+) -> list[tuple[str, Any]]:
+    """
+    Load format files (recursively, if necessary) referenced by a
+    TABLE/SPREADSHEET/CONTAINER/COLLECTION definition and insert them into
+    that definition.
+    """
     format_fns = {
         ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
     }
@@ -569,8 +611,18 @@ def inject_format_files(block, name, fn, data):
     return assembled_structure
 
 
-def load_format_file(data, format_file, name, fn):
-    """"""
+def load_format_file(
+    data: PDRLike,
+    format_file: str,
+    name: str,
+    fn: str
+) -> MultiDict:
+    """
+    Attempt to find and read a PVL format file (usually referenced by
+    ^STRUCTURE pointers in an object definition). Normal PVL-reading workflows
+    (including just `pdr.read()`) work fine on these files, but this function
+    includes additional code to attempt to _find_ the format file.
+    """
     label_fns = data.get_absolute_paths(format_file)
     try:
         repo_paths = [
@@ -593,17 +645,17 @@ def load_format_file(data, format_file, name, fn):
         raise FileNotFoundError
 
 
-def get_identifiers(data):
+def get_identifiers(data) -> dict[str, Any]:
     """"""
     return data.identifiers
 
 
-def get_none():
+def get_none() -> None:
     """"""
     return None
 
 
-def get_fits_id(data, identifiers, fn, name, other_stubs):
+def get_fits_id(data: PDRLike, identifiers, fn, name, other_stubs):
     """"""
     # annoying to have to match all files in the label here
     # but there is not really another reliable way to do it

@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional
+from typing import Optional, Mapping, Any
 import Levenshtein as lev
 from cytoolz import groupby
 from multidict import MultiDict
@@ -173,7 +173,16 @@ def pointer_to_fits_key(pointer, hdulist):
     return levratio.index(max(levratio))
 
 
-def add_bit_column_info(obj, definition, identifiers):
+def add_bit_column_info(
+    obj: dict,
+    definition: MultiDict,
+    identifiers: dict[str, Any]
+) -> dict:
+    """
+    Parse the bit column description (if any) from a `dict` created from a
+    COLUMN PVL object and add that parsed description to `obj` (most likely
+    that definition plus block info). Used in `queries.read_format_block()`.
+    """
     if "BIT_COLUMN" not in obj.keys():
         return obj
     from pdr.bit_handling import (

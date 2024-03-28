@@ -1,5 +1,5 @@
 from functools import wraps, reduce
-# noinspection PyProtectedMember
+# noinspection PyProtectedMember,PyUnresolvedReferences
 from inspect import signature, _empty, Signature, Parameter
 from itertools import combinations, chain
 from typing import Callable, Any, Mapping, Optional, Collection
@@ -14,7 +14,7 @@ def get_argnames(func: Callable) -> set[str]:
     return set(signature(func).parameters.keys())
 
 
-def not_optional(param: Parameter):
+def not_optional(param: Parameter) -> bool:
     """
     is this Parameter flagged as not required according to the conventions of
     this module?
@@ -132,7 +132,7 @@ def sig_union(*funcs: Callable) -> Signature:
 
 def specialize(
     func: Callable,
-    check: Callable[[Any], tuple[bool, Any]],
+    check: Callable[..., tuple[bool, Any]],
     error: Optional[Callable[[Exception], str]] = None,
     tracker: TrivialTracker = TrivialTracker(),
 ) -> Callable:

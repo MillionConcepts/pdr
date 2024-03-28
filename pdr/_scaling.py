@@ -1,4 +1,5 @@
-from typing import Optional
+from numbers import Number
+from typing import Optional, Union
 
 import numpy as np
 
@@ -7,15 +8,15 @@ from pdr.np_utils import casting_to_float
 from pdr.pdrtypes import PDRLike
 
 
-def find_special_constants(meta, obj, object_name):
+def find_special_constants(
+    meta: PDRLike, obj: np.ndarray, object_name: str
+) -> dict[str, Number]:
     """
-    attempts to find special constants in the associated object
-    by referencing the label and "standard" implicit special constant
-    values, then populates self.special_constants as appropriate.
+    attempts to find special constants in an ndarray associated with a PDS3
+    object by referencing the label and "standard" special constant values.
     """
-    #TODO: doesn't do anything for PDS4 products at present. Also, we
-    # need an attribute for distinguishing PDS3 from PDS4 products.
-
+    # NOTE: doesn't do anything for PDS4 products at present, although this
+    #  may not be important; usually pds4_tools handles it.
     block = meta.metablock_(object_name)
     # check for explicitly-defined special constants
     specials = {

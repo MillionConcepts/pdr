@@ -1,6 +1,8 @@
 from __future__ import annotations
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Mapping, Any
+
+from multidict import MultiDict
 
 from pdr import formats
 from pdr.loaders.utility import is_trivial
@@ -411,8 +413,13 @@ def check_special_sample_type(
     return False, None
 
 
-def check_special_bit_column_case(identifiers: dict):
-    """"""
+def check_special_bit_column_case(
+    identifiers: Mapping[str, Any]
+) -> tuple[bool, Optional[str]]:
+    """
+    Special case checker used by `bit_handling.set_bit_string_data_type()`
+    to preempt generic data type inference.
+    """
     instrument = identifiers["INSTRUMENT_NAME"]
     if instrument in (
         "ALPHA PARTICLE X-RAYSPECTROMETER",
@@ -426,8 +433,11 @@ def check_special_bit_column_case(identifiers: dict):
 
 def check_special_bit_start_case(
     identifiers, list_of_pvl_objects_for_bit_columns, start_bit_list
-):
-    """"""
+) -> tuple[bool, Optional[list[int]]]:
+    """
+    Special case checker used by get_bit_start_and_size() to fix
+    incorrectly-defined bit offsets.
+    """
     if identifiers["INSTRUMENT_NAME"] in "JOVIAN INFRARED AURORAL MAPPER":
         return formats.juno.bit_start_find_and_fix(
             list_of_pvl_objects_for_bit_columns, start_bit_list
@@ -435,8 +445,13 @@ def check_special_bit_start_case(
     return False, None
 
 
-def check_special_block(name, data, identifiers):
-    """"""
+def check_special_block(
+    name: str, data: PDRLike, identifiers: Mapping
+) -> tuple[bool, Optional[MultiDict]]:
+    """
+    `specialize()` target for `queries.get_block()`. Intended for cases in
+    which label pointers don't correspond to label block names.
+    """
     if name == "XDR_DOCUMENT":
         return True, formats.cassini.xdr_redirect_to_image_block(data)
     if name == "CHMN_HSK_HEADER_TABLE":
