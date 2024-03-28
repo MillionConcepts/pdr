@@ -120,7 +120,7 @@
 
 ### formats.mex
 
-::: pdr.formats.mex_marsis
+::: pdr.formats.mex
     options:
         heading_level: 4
 
