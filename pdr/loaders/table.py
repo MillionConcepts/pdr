@@ -156,9 +156,6 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
         try:
             assert len(table.columns) == len(fmtdef.NAME.tolist())
             string_buffer.close()
-            for c, d in zip(table.columns, table.dtypes):
-                if d.name == "object":
-                    table[c] = table[c].str.strip('" \t')
             return table
         except AssertionError:
             pass
