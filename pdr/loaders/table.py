@@ -43,6 +43,12 @@ def read_array(fn, block, start_byte, fmtdef_dt):
     return array
 
 
+def _drop_placeholders(table: pd.DataFrame) -> pd.DataFrame:
+    return table.drop(
+        [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
+    )
+
+
 def read_table(
     identifiers,
     fn,
@@ -60,13 +66,18 @@ def read_table(
         table = _interpret_as_ascii(
             identifiers, fn, fmtdef, block, table_props
         )
-        table.columns = fmtdef.NAME.tolist()
+        if len(table.columns) != len(fmtdef):
+            table.columns = [
+                f for f in fmtdef['NAME'] if not f.startswith('PLACEHOLDER')
+        ]
+        else:
+            table.columns = fmtdef['NAME']
+#        print("columns\n", table.columns)
+#        print("names\n", fmtdef['NAME'])
+#        print("last\n", table.iloc[-1, 0])
     else:
         table = _interpret_as_binary(fn, fmtdef, dt, block, start_byte)
-    # If there were any cruft "placeholder" columns, discard them
-    table = table.drop(
-        [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
-    )
+    table = _drop_placeholders(table)
     # If there is an offset and/or scaling factor, apply them:
     if fmtdef.get("OFFSET") is not None or fmtdef.get("SCALING_FACTOR") is not None:
         for col in table.columns:
