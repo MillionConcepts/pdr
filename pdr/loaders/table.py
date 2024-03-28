@@ -9,7 +9,7 @@ from pdr.loaders.queries import get_array_num_items
 from pdr import bit_handling
 from pdr.datatypes import sample_types
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
-from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals
+from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals, compute_offsets
 from pdr.utils import decompress, head_file
 
 
@@ -43,6 +43,12 @@ def read_array(fn, block, start_byte, fmtdef_dt):
     return array
 
 
+def _drop_placeholders(table: pd.DataFrame) -> pd.DataFrame:
+    return table.drop(
+        [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
+    )
+
+
 def read_table(
     identifiers,
     fn,
@@ -60,13 +66,18 @@ def read_table(
         table = _interpret_as_ascii(
             identifiers, fn, fmtdef, block, table_props
         )
-        table.columns = fmtdef.NAME.tolist()
+        if len(table.columns) != len(fmtdef):
+            table.columns = [
+                f for f in fmtdef['NAME'] if not f.startswith('PLACEHOLDER')
+        ]
+        else:
+            table.columns = fmtdef['NAME']
+#        print("columns\n", table.columns)
+#        print("names\n", fmtdef['NAME'])
+#        print("last\n", table.iloc[-1, 0])
     else:
         table = _interpret_as_binary(fn, fmtdef, dt, block, start_byte)
-    # If there were any cruft "placeholder" columns, discard them
-    table = table.drop(
-        [k for k in table.keys() if "PLACEHOLDER" in k], axis=1
-    )
+    table = _drop_placeholders(table)
     # If there is an offset and/or scaling factor, apply them:
     if fmtdef.get("OFFSET") is not None or fmtdef.get("SCALING_FACTOR") is not None:
         for col in table.columns:
@@ -102,6 +113,7 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     return table
 
 
+# TODO: this is still generally hacky and should be untangled
 # noinspection PyTypeChecker
 def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
     """
@@ -128,18 +140,17 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
         string_buffer.seek(0)
     try:
         table = pd.read_csv(string_buffer, sep=sep, header=None)
-    # TODO: I'm not sure this is a good idea
-    # TODO: hacky, untangle this tree
-    # TODO: this won't work for compressed files, but I'm not even
-    #  sure what we're using it for right now
+    # TODO: I'm not sure this except clause is a good idea.
     except (UnicodeError, AttributeError, ParserError):
         table = None
     if table is None:
         try:
             table = pd.DataFrame(
+                # TODO: are we ever actually using this at this point? note
+                #  that it will never work for compressed files.
                 np.loadtxt(
                     fn,
-                    delimiter=",",
+                    delimiter=sep,
                     # TODO, maybe: this currently fails -- perhaps
                     #  correctly -- when there is no LABEL_RECORDS key.
                     #  but perhaps it is better to set a default of 0
@@ -153,20 +164,25 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
         except (TypeError, KeyError, ValueError):
             pass
     if table is not None:
-        try:
-            assert len(table.columns) == len(fmtdef.NAME.tolist())
+        # TODO: adding this placeholder check allows many tables to use
+        #  read_csv() instead of read_fwf(). This may be able to invalidate
+        #  some special cases; should check.
+        n_place = len(
+            fmtdef.loc[fmtdef.NAME.str.contains('PLACEHOLDER')]
+        )
+        if len(table.columns) + n_place == len(fmtdef.NAME.tolist()):
             string_buffer.close()
+            for c, d in zip(table.columns, table.dtypes):
+                if d.name == "object":
+                    table[c] = table[c].str.strip('" \t')
             return table
-        except AssertionError:
-            pass
-    # TODO: handle this better
     string_buffer.seek(0)
     if "BYTES" in fmtdef.columns:
         try:
-            from pdr.pd_utils import compute_offsets
-
-            colspecs = []
-            position_records = compute_offsets(fmtdef).to_dict("records")
+            if "SB_OFFSET" not in fmtdef.columns:
+                colspecs, position_records = [], compute_offsets(fmtdef).to_dict("records")
+            else:
+                colspecs, position_records = [], fmtdef.to_dict("records")
             for record in position_records:
                 if np.isnan(record.get("ITEM_BYTES", np.nan)):
                     col_length = record["BYTES"]
@@ -175,11 +191,11 @@ def _interpret_as_ascii(identifiers, fn, fmtdef, block, table_props):
                 colspecs.append(
                     (record["SB_OFFSET"], record["SB_OFFSET"] + col_length)
                 )
-            table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs)
+            table = pd.read_fwf(string_buffer, header=None, colspecs=colspecs, delimiter='\t'+' '+'"'+',')
             string_buffer.close()
             return table
         except (pd.errors.EmptyDataError, pd.errors.ParserError):
             string_buffer.seek(0)
-    table = pd.read_fwf(string_buffer, header=None)
+    table = pd.read_fwf(string_buffer, header=None, delimiter='\t'+' '+'"'+',')
     string_buffer.close()
     return table

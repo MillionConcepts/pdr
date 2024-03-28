@@ -49,6 +49,8 @@ of their metadata appear to match other sources.
     - Apollo 14 and 15 Cold Cathode Ion Gage digitized plots and index tables
     - Apollo 15 and 16 Lunar Self-Recording Penetrometer transcribed tables
     - BUG soil reflectance tables
+    - Apollo 15, 16, and 17 Metric Camera images
+    - Apollo 17 Traverse Gravimeter Experiment
 #### Cassini
   - CAPS EDRs, RDRs, and DDRs
   - CDA
@@ -136,9 +138,25 @@ of their metadata appear to match other sources.
 #### GRAIL
   - LGRS RDR: SHADR, SHBDR, and RSDMAP
   - RSS: BOF, ODF, OLF, and RSR
+#### GRSFE
+  - Airborne datasets: ASAS, AVIRIS, and TIMS images
+  - Ground-based datasets: GPS profiles, helicopter stereo profiles, spectral hygrometer, PARABOLA, PFES, reagan radiometer, wind experiment, and weather station data
 #### ICE
   - EPAS, MAG, PLAWAV, RADWAV, and SWPLAS
   - ICI text files
+#### IHW
+  - AMSN Halley visual data
+  - ASTR Halley observations from 1835 and 1910, and Giacobini-Zinner data
+  - IRSN Halley images, tables and spectra, and Giacobini-Zinner images
+  - LSPN Halley images, and subsampled Giacobini-Zinner images
+  - MSN radar and visual tables
+  - NNSN Halley addenda images, and Giacobini-Zinner images
+  - PPN Halley flux, magnitude, polarimetry, and stokes parameter data
+  - SSN
+    - Halley calibrated 1D spectra, and raw and calibrated 2D spectral images
+    - Giacobini-Zinner raw 2D spectral images
+  - RSN Halley continuum, occultation, OH, radar, and spectral line data
+  - *Note: most of the Halley datasets listed above are available at the SBN in 2 versions. Version 2.0 tends to open better with `pdr` and in a more user friendly format. When V2.0 is available, V1.0 should be considered notionally supported.*
 #### IUE
   - Raw and extracted spectra
   - Most image products
@@ -154,15 +172,17 @@ of their metadata appear to match other sources.
   requires .FMT (format) files, available in the root directories of the MWR
   volumes.*
   - Waves RDR 'Burst' tables
+#### LOIRP
+  - Lunar Orbiter 1-5 EDRs 
 #### Kaguya/Selene
   - Spectral Profiler data
   - other datasets have been migrated to PDS4 and are notionally supported
 #### Lunar Prospector
-  - all PDS3 datasets that have not been deprecated by PDS4 versions. 
-    specifically:
+  - PDS3 datasets that have not been deprecated by PDS4 versions. specifically:
     - LOSAPDR
     - ER: RDR, SUMM, and level 2 products
     - MAG: SUMM, and level 2, 3, and 4 products
+    - Level 0: attitude, trajectory, and command products
 #### LRO
   - CRaTER EDR secondary science and housekeeping tables, CDR, and DDR
   - DIVINER
@@ -182,11 +202,12 @@ of their metadata appear to match other sources.
   - Mini-RF
     - Bistatic Radar EDR, RDR, and DDR
     - Global mosaics
-    - SAR raw, level 1 and level 2 data
+    - SAR level 1 and level 2 data, and polar mosaics
   - Radio Science RANGE, SFF, TRK, and WEA
 #### Lunar Radar (Earth-based)
   - 70 cm radar maps
   - 12.6 cm (S-band) backscatter maps
+  - south pole DEM
 #### Lunar Spectroscopy (Earth-based)
   - RELAB spectra
 #### Magellan
@@ -205,8 +226,12 @@ of their metadata appear to match other sources.
   - IRIS data
   - RSS electron density profiles
   - Cloud catalog
+  - ISS images
 #### Mars Express
   - MARSIS EDRs and RDRs
+  - ASPERA EDRs, RDRs, and DDRs
+  - HRSC REFDRs, and SRC RDRs
+  - PFS raw interferograms, and housekeeping tables
 #### Mars Odyssey
   - THEMIS 
     - spectral qubes: VIS and IR v2 geoprojected images, VIS EDR and RDR,
@@ -237,12 +262,13 @@ of their metadata appear to match other sources.
   - Pancam operations EDRs, RDRs, and mosaics
   - Microscopic Imager operations EDRs, RDRs, and mosaics
   - Descent Camera EDRs
+  - RSS UHFD tables and most ODFs
 #### MESSENGER
   - GRNS
     - NS EDR, CDR, DDR
     - GRS EDR, RDR, CDR, DAP
   - MASCS
-    - UVVS EDR, CDR, and DDR
+    - UVVS EDR, CDR, DDR, and models
     - VIRS EDR, CDR, DDR, and DAP
   - MLA EDR, RDR, RADR, CDR, and GDR
   - XRS EDR, RDR, and CDR
@@ -277,10 +303,15 @@ of their metadata appear to match other sources.
   - CCAM LIBS EDR, L1B, and L2; CCAM RMI EDR and RDR
   - APXS EDR and RDR (*note: the EDR checksum suffix is not supported*)
   - Chemin L1B and L2 RDRs, and EDRs
+  - Navcam mosaics
+  - PLACES localization data and orbital maps
+  - DAN EDRs and RDRs
+  - SAM RDRs
 #### MSX
   - Infrared Minor Planet Survey
   - Small Bodies Images
   - Zodiacal Dust Data
+  - QUBE images
 #### NEAR
   - GRS EDRs, L2 and L3 products
   - MAG EDRs and RDRs
@@ -314,11 +345,13 @@ of their metadata appear to match other sources.
   - POS VSO coordinates
   - POS SEDR
 #### Phoenix
-  - TEGA EDRs
+  - TEGA EDRs (except LED tables) and most RDRs
   - MECA
     - TECP EDRs and RDRs
-    - AFM EDRs
+    - WCL EDRs and some RDRs (PT, ISE, CND)
+    - AFM EDRs and RDRs
     - OM EDRs and RDRs
+    - ELEC EDRs
   - SSI EDRs, RDRs, and mosaics
   - RAC EDRs, RDRs, and mosaics
   - PDS4 products: RA, MET, LIDAR, ASE, AO, TT, and derived products
@@ -412,17 +445,26 @@ of their metadata appear to match other sources.
 #### Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
+#### Viking 1 and 2
+  - Lander
+    - LCS image EDRs and rock data
+    - Labeled release experiment
+    - Seismology experiment
 #### Voyager 1 and 2
   - CRS RDR and SUMM products
   - IRIS derived maps and the expanded collection of full-res Jupiter/Saturn data
   - ISS uncompressed images, and ascii ancillary tables
+  - LECP RDR and SUMM products (except a few 'original binary' products)
   - MAG RDR and SUMM products
   - PLS RDR and SUMM products (except a few 'original binary' products)
   - POS SUMM products
+  - PRA RDR and most SUMM products
   - PWS RDR, SUMM, and DDR products
   - RSS Triton derived atmospheric profile
   - UVS reformatted airglow spectra and derived maps
   - Ring Profiles derived from ISS, PPS, UVS, and RSS data (except VAX_REAL tables)
+#### WFF/ATM
+  - DEM vector data tables
 
 ## Notionally Supported Datasets:
 #### Apollo
@@ -434,11 +476,17 @@ of their metadata appear to match other sources.
 #### Juno
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
+#### IHW
+  - Version 1.0 of Halley data from ASTR, IRSN (except filter curves and spectroscopy data), LSPN (subsampled images only), NNSN, and PPN
+  - NNSN Halley images version 1.0 and 2.0 (excluding the V1.0 addenda dataset, which is officially supported)
 #### LROC
   - Anaglyphs
   - NAC DTM without labels (under EXTRAS folder at LROC mission node)
   - WAC derived tif files without labels (under EXTRAS folder at LROC
   mission node)
+#### Mars Express
+  - HRSC derived clouds data
+  - PFS derived water vapor maps
 #### MER 1 and 2
   - Many MER products have been converted to PDS4, including: 
     - APXS, Mössbauer and Mini-TES products
@@ -448,8 +496,6 @@ of their metadata appear to match other sources.
   - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
   - CheMin Film EDRs (have efm in filename)
-#### MSX
-  - QUBE images
 #### Pioneer Venus Orbiter
   - OMAG spacecraft coordinates: HIRES data and 24 second averages (ASCII versions)
 #### Rosetta
@@ -459,6 +505,8 @@ of their metadata appear to match other sources.
     - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
 
 ## Known Unsupported Datasets
+#### Apollo
+  - Lunar Sample Photographs (support planned; low priority)
 #### Cassini
   - CIRS variable-length '.VAR' tables (support not planned)
   - ISS telemetry and prefix tables (support planned)
@@ -487,8 +535,24 @@ of their metadata appear to match other sources.
 #### GRAIL
   - LGRS: EDR and CDR (support not planned)
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
+#### GRSFE
+  - AVIRIS and TIMS tables (support planned; VAX_REAL)
+  - all TABLE_HEADER and SPECTRUM_HEADER pointers (support planned; low priority)
+    - Affected datasets: AVIRIS and TIMS tables, PARABOLA, and wind experiment
+  - AIRSAR compressed images (support not planned)
+  - Daedalus spectra (support not planned)
+  - Directional emissivity experiment (support not planned)
+  - SIRIS spectra (support not planned)
 #### ICE
   - ULECA tables (support planned)
+#### IHW
+  - Most Giacobini-Zinner products have incomplete PDS3 labels. Text files and most images will still open, but tables do not. (support not planned)
+  - ASTR Halley v2.0 tables with observations from the 1980's (support planned)
+  - IRSN Halley v1.0 spectroscopy and filter response curve tables (support planned)
+  - LSPN compressed images in the Halley V1.0 and Giacobini-Zinner datasets (support not planned)
+  - SSN 2D spectral products with SPECTRAL_IMAGE_QUBE pointers (support planned)
+  - SSN 2D spectral products with typos in their filenames (support not planned)
+  - RSN UV visibility products (support planned)
 #### IUE
   - A handful of the image products do not open because of a typo in their labels. The QUALITY_IMAGE object is written as QUALITY_QUALITY_IMAGE. (support planned)
 #### Juno
@@ -496,9 +560,13 @@ of their metadata appear to match other sources.
   - UVS (support planned)
   - Waves EDR (support not planned) and RDR 'Survey' tables (support planned)
     - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
+#### Lunar Prospector
+  - Level 0: ephemeris and position (support not planned)
+  - Level 0: sun pulse and merged telemetry (support planned; low priority)
 #### LRO
   - CRaTER EDR primary science data (support not planned)
   - LAMP EDR/RDR acquisition list tables and spectral image 'door open' headers (support planned)
+  - Mini-RF raw SAR products (support not planned)
 #### Magellan
   - C-BIDR ancillary tables (support not planned)
   - F-BIDR (support not planned)
@@ -509,6 +577,9 @@ of their metadata appear to match other sources.
   - Radio Tracking ODF3B tables (support planned)
   - RSS solar wind experiment ('safed' dataset)
   - SAR EDR ('safed' dataset)
+#### Mars Express
+  - HRSC RDRs (support planned)
+  - HRSC calibrated radiance spectra
 #### Mars Odyssey
   - THEMIS
     - IR RDRs (support planned)
@@ -518,6 +589,7 @@ of their metadata appear to match other sources.
   - RSS products not listed above as supported (support not planned)
 #### MER 1 and 2
   - Terrain MESH and WEDGE products (support not planned)
+  - RSS ODFs in mer2rs_0002
 #### MESSENGER
   - Ground calibration data for MASCS and NS (support not planned)
 #### MGS
@@ -548,7 +620,8 @@ of their metadata appear to match other sources.
 #### Phoenix
   - TEGA RDRs (support planned)
   - MECA
-    - WCL EDRs and RDRs (support planned)
+    - WCL EDRs (support planned)
+    - WCL CP/CV-mode RDRs (support not planned)
     - AFM RDRs (support planned)
 #### Rosetta
   - Orbiter:
@@ -562,10 +635,19 @@ of their metadata appear to match other sources.
   - GAS PostScript files (support not planned)
 #### Vega 1 and 2
   - PUMA raw and processed data (support not planned)
+#### Viking 1 and 2
+  - Orbiter
+    - IRTM 1989 version (support planned)
+    - IRTM 1994 version (support not planned)
 #### Voyager 1 and 2
-  - IRIS full-res spectral observations (support planned; VAX_REAL)
-  - ISS ancillary binary tables (support planned; VAX_REAL)
+  - IRIS full-res spectral observations (support planned; 8-byte VAX_REALs of unknown type)
+  - ISS ancillary binary tables (support planned; 8-byte VAX_REALs of unknown type)
   - ISS compressed raw images (support not planned)
+  - LECP some Jupiter and Saturn SUMM Sector products (support planned; low priority)
+  - LECP binary versions of most Uranus products (support not planned)
   - PLS binary versions of VG2-N-PLS-5-RDR-ELEMAGSPHERE-96SEC-V1.0 data (support not planned)
+  - PRA Uranus SUMM products (support not planned)
   - RSS ODRs (support not planned)
-  - Ring Profile tables with the VAX_REAL data type (support planned)
+  - Ring Profile tables with the VAX_REAL data type (support planned; 8-byte VAX_REALs of unknown type)
+#### WFF/ATM
+  - DEM derived raster images (support planned)

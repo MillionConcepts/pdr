@@ -72,7 +72,7 @@ def compute_offsets(fmtdef):
     fmtdef["SB_OFFSET"] = fmtdef["START_BYTE"].astype(int) - 1
     if "ROW_PREFIX_BYTES" in fmtdef.columns:
         fmtdef["SB_OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
-    block_names = fmtdef["BLOCK_NAME"].unique()
+    block_names = fmtdef.loc[fmtdef['NAME'] != "PLACEHOLDER_0", "BLOCK_NAME"].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
         if block_name in ("PLACEHOLDER_None", f"PLACEHOLDER_{block_names[0]}"):
@@ -129,21 +129,6 @@ def compute_offsets(fmtdef):
     return fmtdef
 
 
-def _fill_empty_byte_rows(fmtdef):
-    """"""
-    nobytes = fmtdef["BYTES"].isna()
-    with warnings.catch_warnings():
-        # we do not care that loc will set items inplace later. at all.
-        warnings.simplefilter("ignore", category=FutureWarning)
-        fmtdef.loc[nobytes, "BYTES"] = (
-            # TODO, maybe: update with ITEM_OFFSET should we implement that
-            fmtdef.loc[nobytes, "ITEMS"]
-            * fmtdef.loc[nobytes, "ITEM_BYTES"]
-        )
-    fmtdef["BYTES"] = fmtdef["BYTES"].astype(int)
-    return fmtdef
-
-
 def insert_sample_types_into_df(fmtdef, identifiers):
     """
     given a DataFrame containing PDS3 binary table structure specifications,
@@ -152,17 +137,8 @@ def insert_sample_types_into_df(fmtdef, identifiers):
     used in the Data.read_table pipeline.
     """
     fmtdef["dt"] = None
-    if "BYTES" not in fmtdef.columns:
-        fmtdef["BYTES"] = np.nan
-    if fmtdef["BYTES"].isna().any():
-        try:
-            fmtdef = _fill_empty_byte_rows(fmtdef)
-        except (KeyError, TypeError, IndexError):
-            raise ValueError("This table's byte sizes are underspecified.")
     if "ITEM_BYTES" not in fmtdef.columns:
         fmtdef["ITEM_BYTES"] = np.nan
-    if "START_BYTE" in fmtdef.columns:
-        fmtdef = compute_offsets(fmtdef)
     data_types = tuple(
         fmtdef.groupby(["DATA_TYPE", "ITEM_BYTES", "BYTES"], dropna=False)
     )

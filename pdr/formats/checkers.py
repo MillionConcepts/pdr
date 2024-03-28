@@ -48,6 +48,13 @@ def check_special_offset(
         and name == "TABLE_1"
     ):
         return formats.lro.get_crater_offset()
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
+         and identifiers["PRODUCT_TYPE"] in ("MECA_WCL_CP",
+                                             "MECA_WCL_CV")
+         and "TABLE" in name
+    ):
+        return formats.phoenix.wcl_rdr_offset(data, name)
     return False, None
 
 
@@ -68,6 +75,18 @@ def check_special_table_reader(
     if identifiers["INSTRUMENT_ID"] == "CHEMIN" and ("SPREADSHEET" in name):
         # mangled object names + positions
         return True, formats.msl_cmn.spreadsheet_loader(fn)
+    if (
+        "MSL-M-SAM-" in identifiers["DATA_SET_ID"]
+        and "QMS" in identifiers["PRODUCT_ID"]
+        and "TABLE" in name
+    ):
+        # reusing the msl_cmn special case for msl_sam qms tables
+        return True, formats.msl_cmn.spreadsheet_loader(fn)
+    if (
+        identifiers["DATA_SET_ID"] == "MSL-M-ROVER-6-RDR-PLACES-V1.0"
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.msl_places.spreadsheet_loader(fn, fmtdef_dt)
     if (
         identifiers["INSTRUMENT_NAME"]
         == "ROSETTA PLASMA CONSORTIUM - MUTUAL IMPEDANCE "
@@ -125,6 +144,57 @@ def check_special_table_reader(
         return True, formats.mro.mcs_ddr_table_loader(
             fmtdef_dt, block, fn, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "IHW-C-IRFCURV-3-EDR-HALLEY-V2.0"
+        and name == "TABLE"
+    ):
+        return True, formats.ihw.curve_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] in (
+            "IHW-C-PPFLX-3-RDR-HALLEY-V1.0",
+            "IHW-C-PPOL-3-RDR-HALLEY-V1.0",
+            "IHW-C-PPSTOKE-3-RDR-HALLEY-V1.0",
+            "IHW-C-PPMAG-3-RDR-HALLEY-V1.0",
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ETA-AQUAR-V1.0",
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ORIONID-V1.0",
+            "IHW-C-MSNVIS-3-RDR-HALLEY-ETA-AQUAR-V1.0",
+            "IHW-C-MSNVIS-3-RDR-HALLEY-ORIONID-V1.0",
+            "IHW-C-IRFTAB-3-RDR-HALLEY-V1.0",
+            "IHW-C-IRPOL-3-RDR-HALLEY-V1.0",
+            "IHW-C-IRPHOT-3-RDR-HALLEY-V1.0",
+        ) and name == "TABLE"
+    ):
+        return True, formats.ihw.add_newlines_table_loader(
+            fmtdef_dt, block, fn, start_byte
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "VG1-J-LECP-4-SUMM-SECTOR-15MIN-V1.1"
+        and name == "TABLE"
+    ):
+        return True, formats.voyager.lecp_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "VL2-M-SEIS-5-RDR-V1.0"
+        and name in ("TABLE", "SPREADSHEET")
+    ):
+        return True, formats.viking.seis_table_loader(fn, fmtdef_dt)
+    if (
+        "MEX-M-ASPERA3-2-EDR-IMA" in identifiers["DATA_SET_ID"]
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.mex.aspera_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] in ("MER1-M-RSS-1-EDR-V1.0",
+                                       "MER2-M-RSS-1-EDR-V1.0",)
+        and identifiers["PRODUCT_TYPE"] == "UHFD"
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.mer.rss_spreadsheet_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
+        and identifiers["INSTRUMENT_ID"] == "MECA_AFM"
+        and "TABLE" in name
+    ):
+        return True, formats.phoenix.afm_table_loader(fn, fmtdef_dt, name)
     return False, None
 
 
@@ -144,7 +214,16 @@ def check_special_structure(block, name, fn, identifiers, data):
         and identifiers["PRODUCT_TYPE"] == "ODF"
         and name == "ODF3B_TABLE"
     ):
-        return True, formats.mgs.get_structure(
+        return True, formats.mgs.get_odf_structure(
+            block, name, fn, data, identifiers
+        )
+
+    if (
+        identifiers.get("INSTRUMENT_HOST_NAME") == "MARS GLOBAL SURVEYOR"
+        and identifiers.get("INSTRUMENT_NAME") == "RADIO SCIENCE SUBSYSTEM"
+        and identifiers.get("PRODUCT_TYPE") == "ECS"
+    ):
+        return True, formats.mgs.get_ecs_structure(
             block, name, fn, data, identifiers
         )
     if (
@@ -210,6 +289,36 @@ def check_special_structure(block, name, fn, identifiers, data):
         return True, formats.voyager.get_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        "IHW-C-SPEC-" in identifiers["DATA_SET_ID"]
+        and name == "SPECTRUM"
+    ):
+        return True, formats.ihw.get_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-2-NIEDR-V1.0"
+        and name == "TBL_TABLE"
+        and block["CONTAINER"]["^STRUCTURE"] == "TBL_0_STATE_DATA.FMT"
+    ):
+        return True, formats.phoenix.elec_em6_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
+        and identifiers["INSTRUMENT_ID"] == "MECA_AFM"
+        and "HEADER_TABLE" in name
+    ):
+        return True, formats.phoenix.afm_rdr_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "MEX-SUN-ASPERA3-4-SWM-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.mex.aspera_ima_ddr_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
@@ -219,7 +328,7 @@ def check_special_position(identifiers, block, target, name, fn, start_byte):
         identifiers["INSTRUMENT_ID"] == "MARSIS"
         and " TEC " in identifiers["DATA_SET_NAME"]
     ):
-        return True, formats.mex_marsis.get_position(
+        return True, formats.mex.marsis_get_position(
             identifiers, block, target, name, start_byte
         )
     if (
@@ -411,6 +520,34 @@ def check_special_block(name, data, identifiers):
              )
     ):
         return True, formats.mariner.get_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] in (
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ETA-AQUAR-V1.0",
+            "IHW-C-MSNRDR-3-RDR-HALLEY-ORIONID-V1.0",
+        ) and name == "TABLE"
+    ):
+        return True, formats.ihw.get_special_block(data, name)
+    if (
+        "VG2-" in identifiers["DATA_SET_ID"]
+        and "-PRA-3-RDR-LOWBAND-6SEC-V1.0" in identifiers["DATA_SET_ID"]
+        and name == "TABLE"
+    ):
+        return formats.voyager.pra_special_block(data, name, identifiers)
+    if (
+         identifiers["DATA_SET_ID"] == "PHX-M-MECA-2-NIEDR-V1.0"
+         and identifiers["PRODUCT_TYPE"] in ("MECA-EM10",
+                                             "MECA-EM11",
+                                             "MECA-EM12",)
+         and name == "WCHEM_TABLE"
+    ):
+        return True, formats.phoenix.wcl_edr_special_block(data, name)
+    if (
+         "MEX-M-PFS-2-EDR-" in identifiers["DATA_SET_ID"]
+         and ("RAW" in identifiers["PRODUCT_ID"]
+              or "HK" in identifiers["PRODUCT_ID"])
+         and name == "TABLE"
+    ):
+        return formats.mex.pfs_edr_special_block(data, name)
     return False, None
 
 
@@ -458,6 +595,12 @@ def check_trivial_case(pointer, identifiers, fn) -> bool:
     ):
         return formats.galileo.ssi_cubes_header_loader()
     if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (pointer == "HEADER"):
+        return formats.msl_cmn.trivial_header_loader()
+    if (
+        "MSL-M-SAM-" in identifiers["DATA_SET_ID"]
+        and "FILE" in pointer
+    ):
+        # reusing the msl_cmn special case for msl_sam 'FILE' pointers
         return formats.msl_cmn.trivial_header_loader()
     return False
 

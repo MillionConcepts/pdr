@@ -51,8 +51,9 @@ def get_structure(block, name, filename, data, identifiers):
             fmtdef.at[7, "NAME"] = "REYNOLD NR. [=RHO*VREL*D/Mu]"
         dt = None
     else:
-        from pdr.pd_utils import insert_sample_types_into_df
+        from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
 
+        fmtdef = compute_offsets(fmtdef)
         fmtdef, dt = insert_sample_types_into_df(fmtdef, identifiers)
     return fmtdef, dt
 

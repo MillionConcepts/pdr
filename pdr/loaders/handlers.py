@@ -53,7 +53,7 @@ def handle_fits_file(
         try:
             hdulist.verify('silentfix')
             hdr_val = handle_fits_header(hdulist, hdu_id)
-        except fits.VerifyError:  # real messed up
+        except (fits.VerifyError, ValueError):  # real messed up
             hdr_val = handle_fits_header(hdulist, hdu_id, skip_bad_cards=True)
     if (
         "HEADER" not in name

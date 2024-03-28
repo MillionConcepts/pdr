@@ -1,3 +1,24 @@
+## [X.X.X] - 20XX-XX-XX
+### Added
+#### Features
+- 
+#### Dataset Support
+- most IHW datasets
+- additional Voyager 1 and 2 datasets
+- GRSFE and WFF/ATM datasets
+- LOIRP dataset
+- additional MSL, Apollo, and Mariner datasets
+- additional Earth-based lunar data
+- Viking Lander datasets
+- MEX ASPERA, HRSC, and PFS data
+- additional Phoenix datasets
+- 
+### Changed
+- 
+### Fixed
+- 
+### Removed
+- 
 ## [1.0.5] - 2023-12-07
 ### Added
 #### Features
@@ -14,7 +35,7 @@
 
 ### Fixed
 - Tables with containers with REPETITIONS in them were reading the same data each repetition, this has been fixed
-- Exponential notation in pvl quantity objects are now properly handled
+- Exponential notation in pvl quantity objects are now properly handled ([Fixes issue #53]((https://github.com/MillionConcepts/pdr/issues/53)))
 
 ### Removed
 - MRO MCS DDR data is not supported due to formatting issues
