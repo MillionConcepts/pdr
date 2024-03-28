@@ -28,8 +28,7 @@ def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     # Adapted from _interpret_as_ascii()
     fmtdef, dt = fmtdef_dt
     colspecs = []
-    position_records = compute_offsets(fmtdef).to_dict("records")
-    for record in position_records:
+    for record in fmtdef.to_dict("records"):
         col_length = int(record["BYTES"])
         colspecs.append((record["SB_OFFSET"], record["SB_OFFSET"] + col_length))
     string_buffer.seek(0)
