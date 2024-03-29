@@ -1,30 +1,38 @@
+from __future__ import annotations
+
 import re
-from typing import Optional, Callable
+from typing import Optional, TYPE_CHECKING
+
 from pdr.formats import check_trivial_case
 from pdr.loaders.utility import (
     looks_like_this_kind_of_file,
     FITS_EXTENSIONS,
-    TIFF_EXTENSIONS,
-    JP2_EXTENSIONS,
+    GIF_EXTENSIONS,
     IMAGE_EXTENSIONS,
+    JP2_EXTENSIONS,
     TABLE_EXTENSIONS,
-    TEXT_EXTENSIONS, GIF_EXTENSIONS,
+    TEXT_EXTENSIONS,
+    TIFF_EXTENSIONS,
 )
 from pdr.loaders.datawrap import (
-    ReadLabel,
+    Loader,
     ReadArray,
-    ReadFits,
-    ReadText,
-    ReadImage,
-    ReadHeader,
     ReadCompressedImage,
+    ReadFits,
+    ReadHeader,
+    ReadImage,
+    ReadLabel,
     ReadTable,
+    ReadText,
     TBD,
     Trivial
 )
 
+if TYPE_CHECKING:
+    from pdr import Data
 
-def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
+
+def image_lib_dispatch(pointer: str, data: Data) -> Optional[Loader]:
     """
     check file extensions to see if we want to toss a file to an external
     library rather than using our internal raster handling. current cases are:
@@ -40,16 +48,16 @@ def image_lib_dispatch(pointer: str, data: "Data") -> Optional[Callable]:
     return None
 
 
-# noinspection PyTypeChecker
-def pointer_to_loader(pointer: str, data: "Data") -> Callable:
+def pointer_to_loader(pointer: str, data: Data) -> Loader:
     """
-    attempt to select an appropriate loading function based on a PDS3 pointer
-    name. checks for special cases and then falls back to generic loading
-    methods of pdr.Data.
+    Attempt to select an appropriate Loader subclass based on a PDS3 object
+    name (and sometimes the file extension).
+
+    The apparently-redundant sequence of conditionals is not in fact redundant;
+    it is based on our knowledge of the most frequently used but sometimes
+    redundant object names in the PDS3 corpus.
     """
-    if check_trivial_case(
-        pointer, data.identifiers, data.filename
-    ):
+    if check_trivial_case(pointer, data.identifiers, data.filename):
         return Trivial()
     if pointer == "LABEL":
         return ReadLabel()
@@ -95,14 +103,14 @@ def pointer_to_loader(pointer: str, data: "Data") -> Callable:
         return ReadImage()
     if "FILE_NAME" in pointer:
         return file_extension_to_loader(pointer)
-    # TODO: sloppy pt. 2
     return TBD()
 
 
-def file_extension_to_loader(fn: str) -> Callable:
+def file_extension_to_loader(fn: str) -> Loader:
     """
-    attempt to select the correct method of pdr.Data for objects only
-    specified by a PDS3 FILE_NAME pointer (or by filename otherwise).
+    Attempt to select the correct Loader subclass for an object based solely on
+    its file extension. Used primarily for objects only specified by a PDS3
+    FILE_NAME pointer or similar.
     """
     if looks_like_this_kind_of_file(fn, FITS_EXTENSIONS):
         return ReadFits()
@@ -119,10 +127,13 @@ def file_extension_to_loader(fn: str) -> Callable:
     return TBD()
 
 
-# pointers we do not automatically load even when loading greedily --
-# generally these are reference files, usually throwaway ones, that are not
-# archived in the same place as the data products and add little, if any,
-# context to individual products
-
-objects_to_ignore = ["DATA_SET_MAP_PROJECT.*", ".*_DESC$", ".*DESCRIPTION$"]
-OBJECTS_IGNORED_BY_DEFAULT = re.compile("|".join(objects_to_ignore))
+OBJECTS_TO_IGNORE = ["DATA_SET_MAP_PROJECT.*", ".*_DESC$", ".*DESCRIPTION$"]
+"""
+PDS3 objects we do not automatically load, even when loading greedily.
+These are reference files, usually throwaway ones, that are usually not
+archived in the same place as the data products and add little, if any, context 
+to individual products (they are the same across an entire 'product type').
+This means that in almost all cases, attempting to greedily load them has no
+purpose but to throw irrelevant warnings at the user. 
+"""
+OBJECTS_IGNORED_BY_DEFAULT = re.compile("|".join(OBJECTS_TO_IGNORE))
