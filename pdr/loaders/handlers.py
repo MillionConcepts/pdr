@@ -1,12 +1,21 @@
+from __future__ import annotations
+
+from numbers import Number
+from typing import Any, Optional, TYPE_CHECKING, Union
 import warnings
-from typing import Optional, Mapping, Any
-import Levenshtein as lev
+
 from cytoolz import groupby
+import Levenshtein as lev
 from multidict import MultiDict
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from astropy.io.fits.hdu import BinTableHDU, HDUList
+    import numpy as np
 
 
 def handle_fits_file(
-    fn, name="", hdu_id="", hdulist: Optional["HDUList"] = None
+    fn, name="", hdu_id="", hdulist: Optional[HDUList] = None
 ):
     """
     This function attempts to read all FITS files, compressed or
@@ -18,10 +27,10 @@ def handle_fits_file(
     or index.
     """
 
-    #TODO, maybe: dispatch to decompress() for weirdo compression
-    # formats, but possibly not right here? hopefully we shouldn't need
-    # to handle compressed FITS files too often anyway, and astropy can deal
-    # with gzip without special help (although inline igzip is faster)
+    # TODO, maybe: dispatch to decompress() for weirdo compression
+    #  formats, but possibly not right here? hopefully we shouldn't need
+    #  to handle compressed FITS files too often anyway, and astropy can deal
+    #  with gzip without special help (although inline igzip is faster)
 
     from astropy.io import fits
 
@@ -88,7 +97,7 @@ def handle_fits_file(
     return output | {name: body}
 
 
-def reindex_dupe_names(hdu: "astropy.io.fits.BinTableHDU"):
+def reindex_dupe_names(hdu: BinTableHDU):
     """
     rename duplicate column names in a fits binary table -- astropy will not
     be able to construct the .data attribute otherwise
@@ -101,8 +110,12 @@ def reindex_dupe_names(hdu: "astropy.io.fits.BinTableHDU"):
             hdu.columns[ix].name += f"_{i}"
 
 
-def handle_compressed_image(fn):
-    """"""
+def handle_compressed_image(fn: Union[str, Path]) -> np.ndarray:
+    """
+    Open an image in a standard 'desktop' format (GIF, standard TIFF, GeoTIFF,
+    classic JPEG, JPEG2000, PNG, etc.) using pillow. "Compressed" is slightly
+    misleading, because this will work fine on uncompressed GeoTIFF etc.
+    """
     import numpy as np
     from PIL import Image
 
@@ -149,13 +162,21 @@ def handle_fits_header(hdulist, hdu_id="", skip_bad_cards=False):
     return output_hdr
 
 
-def pointer_to_fits_key(pointer, hdulist):
+def pointer_to_fits_key(pointer: Union[str, Number], hdulist: HDUList) -> int:
     """
-    In some datasets with FITS, the PDS3 object names and FITS object
-    names are not identical. This function attempts to use Levenshtein
-    "fuzzy matching" to identify the correlation between the two. It is not
-    guaranteed to be correct! And special case handling might be required in
-    the future.
+    Attempt to relate an object name to an HDU index.
+
+    If we're pretty sure about it already based on position information in the
+    label, `pointer` will be a number of some kind, and we just open it. If we
+    haven't, but the PDS3 object name exactly matches an HDU name (meaning
+    value of EXTNAME/HDUNAME), open that one. If it doesn't, and it's named
+    IMAGE/TABLE, this usually means "it's the PRIMARY HDU", so open that. If
+    neither of those are true -- which is quite common -- use Levenshtein
+    "fuzzy matching" to match the PDS3 object name to an HDU name. This is not
+    guaranteed to be correct!
+
+    Products for which none of these methods work consistently (e.g. PEPSSI
+    RDRs) require special cases.
     """
     if isinstance(pointer, int):  # permit explicit specification of HDU number
         return pointer
@@ -195,9 +216,15 @@ def add_bit_column_info(
 
 
 def unpack_fits_headers(
-    filename, hdulist=None
+    filename: Union[str, Path], hdulist: Optional[HDUList] = None
 ) -> tuple[MultiDict, list[str], dict[str, int]]:
-    """"""
+    """
+    Unpack all headers in a FITS file into a MultiDict and flattened list of
+    keys suitable for constructing a `pdr.Metadata` object, along with a
+    mapping between HDU names and indices. Used when opening a FITS file in
+    "primary" mode (i.e., directly from its own headers, without a supporting
+    PDS3 or PDS4 label).
+    """
     from astropy.io import fits
 
     hdumap = {}
