@@ -14,7 +14,8 @@
 - Assorted linting and minor improvements
 
 ### Fixed
-- A bug in PDS4 label handling that sometimes dropped repeated child elements 
+- A bug in PDS4 label handling that sometimes dropped repeated child elements
+- Updated an accidentally-skipped out-of-date unit test 
 
 ### Removed
 -

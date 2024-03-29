@@ -27,5 +27,5 @@ def test_simple_dsv_table():
         np.dtype('float64'), np.dtype('O'), np.dtype('int64')
     ]
     assert np.isclose(data.SPREADSHEET.loc[0, 'X_0'], 5.5)
-    assert data.SPREADSHEET.loc[5, 'Y'] == ' cat'
+    assert data.SPREADSHEET.loc[5, 'Y'] == 'cat'
     assert data.SPREADSHEET.loc[9, "X_1"] == -12
