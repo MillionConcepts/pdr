@@ -9,6 +9,8 @@ from dustgoggles.func import constant
 from dustgoggles.structures import dig_and_edit
 from multidict import MultiDict
 
+from pdr.parselabel.pds3 import multidict_dig_and_edit
+
 
 def log_and_pass(sequence: MutableSequence, key: Hashable, value: Any) -> Any:
     """
@@ -24,7 +26,9 @@ def unpack_to_multidict(packed, mtypes=(dict,)):
     """
     Produce a MultiDict from any Mapping, with every element of `packed` that
     is a list/tuple of `mtypes` converted into a seperate key of the
-    `MultiDict`, and other values unchanged. For instance:
+    `MultiDict`, and other values unchanged.
+
+    For instance:
     ```
     >>> unpack_to_multidict({'a': 1, 'b': [{'c': 2}, {'d': 3}]})
     MultiDict({'a': 1, 'b': {'c': 2}, 'b': {'d': 3})
@@ -44,14 +48,14 @@ def unpack_to_multidict(packed, mtypes=(dict,)):
 def unpack_if_mapping(possibly_packed, mtypes=(dict,)):
     """"""
     if isinstance(possibly_packed, mtypes):
-        return unpack_to_multidict(possibly_packed)
+        return unpack_to_multidict(MultiDict(possibly_packed))
     return possibly_packed
 
 
 # noinspection PyTypeChecker
 def reformat_pds4_tools_label(label):
     """"""
-    result = dig_and_edit(
+    result = multidict_dig_and_edit(
         label.to_dict(),
         constant(True),
         lambda _, v: unpack_if_mapping(v, (OrderedDict, MultiDict)),

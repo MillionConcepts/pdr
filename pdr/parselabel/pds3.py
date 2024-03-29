@@ -1,4 +1,4 @@
-"""simple parsing utilities for PDS3 labels."""
+"""Parsing utilities for PDS3 labels."""
 from ast import literal_eval
 import re
 from numbers import Number
@@ -172,9 +172,8 @@ def parse_pvl_quantity_statement(statement: str) -> Any:
     """
     parse pvl statements including quantities. returns quantities as mappings.
     this will also handle statements that do not consist entirely of
-    quantities, notably including tuples of the form
-    ("SOMETHING.DAT", 1000 <BYTES>) that are commonly used to specify offsets
-    within files for data objects
+    quantities, notably including tuples of the form '("A5.DAT", 1000 <BYTES>)'
+    that are commonly used to specify start byte offsets for data objects.
     """
     objects = statement.strip("()").split(",")
     output = []
@@ -195,17 +194,21 @@ def parse_pvl_quantity_statement(statement: str) -> Any:
 
 def multidict_dig_and_edit(
     input_multidict: MultiDict,
-    target: Hashable,
+    target: Any,
     input_object: Any = None,
     predicate: Callable[[Any, Any], bool] = eq,
     setter_function: Callable = None,
     key_editor: bool = False,
     keep_values: bool = True,
+    mtypes: tuple[type, ...] = (MultiDict,)
 ) -> MultiDict:
     """
-    This function searches through a multidict's items, recursively continuing
-    into any children that are themselves multidicts, looking for keys that
-    match "target".
+    This function produces a modified copy of a MultiDict (or other mapping,
+    but may produce unintended results). It searches through
+    a MultiDict's items, recursively continuing into any children that are
+    an instance of mtypes, and checking for keys for which
+    `predicate(key, target)` (by default meaning `key == target`) is `True`.
+
     If "key_editor" is False, the function changes the values associated with
     those keys. if it is True, the function changes the key names themselves.
 
@@ -214,14 +217,14 @@ def multidict_dig_and_edit(
     key/value as arguments. If it is None, it will simply replace them with
     "input_object".
 
-    If "keep_values" is not True, the output_multidict will contain _only_
+    If "keep_values" is not True, the returned MultiDict will contain _only_
     edited values, causing this to also act as a filtering function.
     """
     output_multidict = MultiDict()
     if setter_function is None:
         setter_function = constant(input_object)
     for key, value in input_multidict.items():
-        if isinstance(value, MultiDict):
+        if isinstance(value, mtypes):
             edited_multidict = multidict_dig_and_edit(
                 value,
                 target,
@@ -334,10 +337,13 @@ def literalize_pvl_block(block: MultiDict) -> MultiDict:
 
 def get_pds3_pointers(
     label: Optional[MultiDict] = None,
-) -> tuple:
+) -> tuple[str]:
     """
     attempt to get all PDS3 "pointers" -- PVL parameters starting with "^" --
-    from a MultiDict generated from a PDS3 label
+    from a MultiDict generated from a PDS3 label. These typically specify
+    physical data locations, and in most cases correspond to data object
+    definitions later in the label (common exceptions include "^STRUCTURE" and
+    "^DATA_SET_MAP_PROJECTION").
     """
     return dig_for_keys(
         label, lambda k, _: k.startswith("^"), mtypes=(dict, MultiDict)
@@ -354,8 +360,19 @@ def depointerize(string: str) -> str:
     return string[1:] if string.startswith("^") else string
 
 
-def index_duplicate_pointers(pointers, mapping, params):
-    """"""
+def index_duplicate_pointers(
+    pointers: Collection[str], mapping: MultiDict, params: list[str]
+) -> tuple[MultiDict, list[str]]:
+    """
+    Although technically illegal, some PDS3 objects have multiple data objects
+    with the same name. This produces counterintuitive results. This function
+    appends ascending integers to any duplicate members of a specified set of
+    "pointer" keys of a MultiDict, and also their "depointerized" versions,
+    in order to distinguish data objects. This _can_ potentially fail if
+    duplicate-named object pointers and their corresponding object definitions
+    are not given in the same order in a label, but we have not yet
+    encountered that case.
+    """
     if pointers is None:
         return mapping, params
     # noinspection PyTypeChecker
@@ -397,8 +414,11 @@ def index_duplicate_pointers(pointers, mapping, params):
     return mapping, params
 
 
-def set_key_index(pointer_range: list, key: str) -> str:
-    """"""
+def set_key_index(pointer_range: list[int], key: str) -> str:
+    """
+    utility setter function for `multidict_dig_and_edit()` as called by
+    `index_duplicate_pointers()`; appends a number from a list to a string
+    """
     indexed_key = f"{key}_{pointer_range[0]}"
     pointer_range.pop(0)
     return indexed_key
