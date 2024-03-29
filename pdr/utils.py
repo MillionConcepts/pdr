@@ -13,13 +13,17 @@ from typing import (
     MutableSequence,
     IO,
     Collection,
-    Optional,
+    Optional, Any,
 )
 import warnings
 from zipfile import ZipFile
 
 from dustgoggles.structures import listify
 from multidict import MultiDict
+
+
+SUPPORTED_COMPRESSION_EXTENSIONS = (".gz", ".bz2", ".zip")
+"""compression 'types' we support"""
 
 
 def read_hex(hex_string: str, fmt: str = ">I") -> Number:
@@ -50,16 +54,13 @@ def head_file(
     return head_buffer
 
 
-# compression 'types' we support
-SUPPORTED_COMPRESSION_EXTENSIONS = (".gz", ".bz2", ".zip")
-
-
 def stem_path(path: Path):
     """
     convert a Path to lowercase and remove any compression extensions
     from it to stem for loose matching
     """
     lowercase = path.stem.lower()
+    # noinspection PyTypeChecker
     exts = tuple(map(str.lower, path.suffixes))
     if len(exts) == 0:
         return lowercase
@@ -112,18 +113,29 @@ def check_cases(
 
 
 def append_repeated_object(
-    obj: Union[Sequence[Mapping], Mapping],
-    fields: MutableSequence[Mapping],
-    repeat_count: int,
-) -> Sequence[Mapping]:
-    """"""
-    # sum lists (from containers) together and add to fields
+    obj: Union[Sequence, Mapping], fields: MutableSequence, repeat_count: int,
+) -> MutableSequence:
+    """
+    Polymorphic function to append `obj` `repeat_count` times to `fields`.
+    If `obj` is a non-string sequence, it instead concatenates and adds it.
+    For instance:
+    ```
+    >>> append_repeated_object([1, 2], [4], 3)
+    [4, 1, 2, 1, 2, 1, 2]
+    >>> append_repeated_object({"a": "b"}, ["a"], 3)
+    ["a", {"a": "b"}, {"a": "b"}, {"a": "b"}]
+    ```
+    NOTE: This function treats `repeat_count` values < 1 as 1.
+    WARNING: this function does not copy `obj` or any of its elements, even if
+    they are mutable. This is not a bug, but can cause unexpected behavior, so
+    take care (and in particular, always go depth-first if you are using this
+    function in a recursive operation).
+    """
     if hasattr(obj, "__add__"):
         if repeat_count > 1:
             fields += chain.from_iterable([obj for _ in range(repeat_count)])
         else:
             fields += obj
-    # put dictionaries in a repeated list and add to fields
     else:
         if repeat_count > 1:
             fields += [obj for _ in range(repeat_count)]

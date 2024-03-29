@@ -1,5 +1,5 @@
-import re
 from pathlib import Path
+import re
 from typing import Union, IO
 
 from pdr.utils import head_file
