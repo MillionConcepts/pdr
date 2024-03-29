@@ -7,13 +7,13 @@ from pathlib import Path
 import struct
 import textwrap
 from typing import (
-    Union,
-    Sequence,
+    Collection,
+    IO,
     Mapping,
     MutableSequence,
-    IO,
-    Collection,
-    Optional, Any,
+    Optional,
+    Sequence,
+    Union,
 )
 import warnings
 from zipfile import ZipFile
@@ -106,14 +106,16 @@ def check_cases(
                 f"{matches[0].name}."
             )
         return str(matches[0])
-    filelist = ';'.join([str(f) for f in filenames])
+    filelist = ";".join([str(f) for f in filenames])
     raise FileNotFoundError(
         f"No candidate paths for required file exist. Checked:{filelist}"
     )
 
 
 def append_repeated_object(
-    obj: Union[Sequence, Mapping], fields: MutableSequence, repeat_count: int,
+    obj: Union[Sequence, Mapping],
+    fields: MutableSequence,
+    repeat_count: int,
 ) -> MutableSequence:
     """
     Polymorphic function to append `obj` `repeat_count` times to `fields`.
@@ -220,6 +222,7 @@ def associate_label_file(
 ) -> Optional[str]:
     """"""
     from pdr.loaders.utility import LABEL_EXTENSIONS
+
     if label_filename is not None:
         return check_cases(Path(label_filename).absolute(), skip_check)
     elif data_filename.lower().endswith(LABEL_EXTENSIONS):
