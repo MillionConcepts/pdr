@@ -1,17 +1,20 @@
 ## [X.X.X] - 202X-XX-XX
 ### Added
+
 #### Features
 - 
 
 #### Dataset Support
-- 
 - see [supported_datasets.md](docs/supported_datasets.md) for details
 
+#### Other
+- Various docstrings, type hinting, and other in-code documentation
+
 ### Changed
-- 
+- Assorted linting and minor improvements
 
 ### Fixed
-- 
+- A bug in PDS4 label handling that sometimes dropped repeated child elements 
 
 ### Removed
 -
