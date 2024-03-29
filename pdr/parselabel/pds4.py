@@ -3,13 +3,16 @@ Simple utilities for preprocessing pds4_tools-produced label objects for the
 pdr.Metadata constructor.
 """
 from collections import OrderedDict
-from typing import Hashable, MutableSequence, Any
+from typing import Any, Hashable, Mapping, MutableSequence, TYPE_CHECKING
 
 from dustgoggles.func import constant
 from dustgoggles.structures import dig_and_edit
 from multidict import MultiDict
 
 from pdr.parselabel.pds3 import multidict_dig_and_edit
+
+if TYPE_CHECKING:
+    from pds4_tools.reader.label_objects import Label
 
 
 def log_and_pass(sequence: MutableSequence, key: Hashable, value: Any) -> Any:
@@ -22,7 +25,7 @@ def log_and_pass(sequence: MutableSequence, key: Hashable, value: Any) -> Any:
     return value
 
 
-def unpack_to_multidict(packed, mtypes=(dict,)):
+def unpack_to_multidict(packed: Mapping, mtypes=(dict,)) -> MultiDict:
     """
     Produce a MultiDict from any Mapping, with every element of `packed` that
     is a list/tuple of `mtypes` converted into a seperate key of the
@@ -45,16 +48,28 @@ def unpack_to_multidict(packed, mtypes=(dict,)):
     return unpacked
 
 
-def unpack_if_mapping(possibly_packed, mtypes=(dict,)):
-    """"""
+def unpack_if_mapping(
+    possibly_packed: Any, mtypes: tuple[type, ...] = (dict,)
+) -> Any:
+    """
+    Setter function for `multidict_dig_and_edit()`. Converts any element of
+    `mtypes` into a MultiDict with mapping array values 'unpacked' as
+    described above.
+    """
     if isinstance(possibly_packed, mtypes):
         return unpack_to_multidict(MultiDict(possibly_packed))
     return possibly_packed
 
 
 # noinspection PyTypeChecker
-def reformat_pds4_tools_label(label):
-    """"""
+def reformat_pds4_tools_label(label: "Label") -> tuple[MultiDict, list[str]]:
+    """
+    Convert a pds4_tools Label object into a MultiDict and a list of parameters
+    suitable for constructing a pdr.Metadata object. This is not just a type
+    conversion; it also rearranges some nested data structures (in particular,
+    repeated child elements become multiple keys of a MultiDict rather than
+    a list of OrderedDicts).
+    """
     result = multidict_dig_and_edit(
         label.to_dict(),
         constant(True),
