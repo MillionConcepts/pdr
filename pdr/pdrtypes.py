@@ -1,24 +1,28 @@
-from typing import Callable, Literal, Union, TypedDict, Optional
+from typing import Callable, Literal, Optional, TypedDict, Union, TYPE_CHECKING
 
-from pdr.pdr import Data, Metadata
+if TYPE_CHECKING:
+    from multidict import MultiDict
+    import numpy as np
+    import pandas as pd
+    from pdr import Data, Metadata
 
-ByteOrder = Literal["<", ">"]
+type ByteOrder = Literal["<", ">"]
 """Most significant/least significant byteorder codes"""
 
-PDRLike = Union[Data, Metadata]
+type PDRLike = Union[Data, Metadata]
 """Something with a pdr-style metadata-getting interface"""
 
-LoaderFunction = Callable[
-    ..., Union[str, "MultiDict", "pd.DataFrame", "np.ndarray"]
+type LoaderFunction = Callable[
+    ..., Union[str, MultiDict, pd.DataFrame, np.ndarray]
 ]
 """Signature of a Loader's load function"""
 
-PhysicalTarget = Union[
+type PhysicalTarget = Union[
     list[str, int], tuple[str, int], int, str, dict[str, Union[str, int]]
 ]
 """Expected formats of 'pointer' parameters, i.e. ^WHATEVER = PhysicalTarget"""
 
-BandStorageType = Literal[
+type BandStorageType = Literal[
     "BAND_SEQUENTIAL", "LINE_INTERLEAVED", "SAMPLE_INTERLEAVED", None
 ]
 """

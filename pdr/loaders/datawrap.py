@@ -1,4 +1,5 @@
-from typing import Union
+"""Classes to wrap and manage complex data-loading workflows."""
+from typing import Any
 
 from dustgoggles.dynamic import exc_report
 
@@ -35,11 +36,13 @@ class Loader:
     delays imports, etc.
     """
 
-    def __init__(self, loader_function: Union[LoaderFunction, str]):
+    def __init__(self, loader_function: LoaderFunction):
         self.loader_function = loader_function
         self.argnames = get_argnames(loader_function)
 
-    def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
+    def __call__(
+        self, pdrlike: PDRLike, name: str, **kwargs
+    ) -> dict[str, Any]:
         kwargdict = {"data": pdrlike, "name": depointerize(name)} | kwargs
         kwargdict["tracker"].set_metadata(loader=self.__class__.__name__)
         record_exc = {"status": "query_ok"}
