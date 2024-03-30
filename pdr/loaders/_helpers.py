@@ -1,14 +1,15 @@
 """Simple utility functions for assorted loaders and queries."""
-
+from __future__ import annotations
 from functools import partial
 from operator import contains
 import os
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional, Union, TYPE_CHECKING
 
 from multidict import MultiDict
 
-from pdr.pdrtypes import PhysicalTarget
+if TYPE_CHECKING:
+    from pdr.pdrtypes import DataIdentifiers, PhysicalTarget
 
 
 def looks_like_ascii(block: MultiDict, name: str) -> bool:
@@ -57,7 +58,7 @@ def count_from_bottom_of_file(
 
 
 def _check_delimiter_stream(
-    identifiers: dict, name: str, target: PhysicalTarget
+    identifiers: DataIdentifiers, name: str, target: PhysicalTarget
 ) -> bool:
     """
     Does it look like this object is a delimiter-separated table without an

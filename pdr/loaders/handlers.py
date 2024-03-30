@@ -227,7 +227,7 @@ def pointer_to_fits_key(pointer: Union[str, Number], hdulist: HDUList) -> int:
 def add_bit_column_info(
     obj: dict,
     definition: MultiDict,
-    identifiers: dict[str, Any]
+    identifiers: DataIdentifiers
 ) -> dict:
     """
     Parse the bit column description (if any) from a `dict` created from a

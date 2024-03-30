@@ -35,7 +35,7 @@ from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import (
-        BandStorageType, ImageProps, PDRLike, PhysicalTarget
+        BandStorageType, DataIdentifiers, ImageProps, PDRLike, PhysicalTarget
     )
 
 
@@ -292,7 +292,7 @@ def get_target(data: PDRLike, name: str) -> PhysicalTarget:
     return target
 
 
-def data_start_byte(identifiers: dict, block: Mapping, target, fn) -> int:
+def data_start_byte(identifiers: DataIdentifiers, block: Mapping, target, fn) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
     """
@@ -385,7 +385,7 @@ def _table_length(block, identifiers, length, n_records):
 
 
 def table_position(
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     block: MultiDict,
     target: PhysicalTarget,
     name: str,
@@ -461,7 +461,7 @@ def parse_table_structure(
     block: MultiDict,
     fn: str,
     data: PDRLike,
-    identifiers: dict
+    identifiers: DataIdentifiers
 ) -> tuple[pd.DataFrame, Optional[np.dtype]]:
     """
     Parse a TABLE or SPREADSHEET's format specification as a pd.DataFrame
@@ -506,7 +506,7 @@ def read_table_structure(
     name: str,
     fn: str,
     data: PDRLike,
-    identifiers: dict[str, Any]
+    identifiers: DataIdentifiers
 ) -> pd.DataFrame:
     """
     Try to turn a TABLE/SPREADSHEET/ARRAY/HISTOGRAM definition into a
@@ -540,7 +540,7 @@ def parse_array_structure(
     block: MultiDict,
     fn: str,
     data: PDRLike,
-    identifiers: dict
+    identifiers: DataIdentifiers
 ) -> tuple[Optional[pd.DataFrame], Optional[str]]:
     """
     Modification of `parse_table_structure()` for the special needs of ARRAYs.
@@ -565,7 +565,7 @@ def read_format_block(
     object_name: str,
     fn: str,
     data: PDRLike,
-    identifiers: dict[str, Any],
+    identifiers: DataIdentifiers,
     within_container: bool = False
 ) -> tuple[list[dict], bool]:
     """
@@ -741,7 +741,7 @@ def get_none() -> None:
 #  Did we find them consistently unreliable?
 def get_fits_id(
     data: PDRLike,
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     fn: Union[str, Path],
     name: str,
     other_stubs: Union[None, Collection[str]]

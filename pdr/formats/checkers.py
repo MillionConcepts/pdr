@@ -52,11 +52,11 @@ from pdr.loaders.utility import is_trivial
 if TYPE_CHECKING:
     import pandas as pd
     import numpy as np
-    from pdr.pdrtypes import PDRLike, PhysicalTarget
+    from pdr.pdrtypes import DataIdentifiers, PDRLike, PhysicalTarget
 
 
 def check_special_offset(
-    name: str, data: PDRLike, identifiers: dict, fn: str
+    name: str, data: PDRLike, identifiers: DataIdentifiers, fn: str
 ) -> tuple[bool, Optional[int]]:
     """
     Preempt generic inference of an object's byte offset within a file. Wraps
@@ -97,7 +97,7 @@ def check_special_offset(
 
 
 def check_special_table_reader(
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     name: str,
     fn: str,
     fmtdef_dt: tuple[pd.DataFrame, np.dtype],
@@ -247,7 +247,7 @@ def check_special_structure(
     block: MultiDict,
     fn: str,
     data: PDRLike,
-    identifiers: dict
+    identifiers: DataIdentifiers
 ) -> tuple[bool, Optional[tuple[pd.DataFrame, Optional[np.dtype]]]]:
     """
     Preempt generic ARRAY/TABLE/SPREADSHEET format definition parsing. Wraps
@@ -375,7 +375,7 @@ def check_special_structure(
 
 
 def check_special_position(
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     block: MultiDict,
     target: PhysicalTarget,
     name: str,
@@ -428,7 +428,7 @@ def check_special_position(
 
 
 def check_special_sample_type(
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     base_samp_info: dict,
 ) -> tuple[bool, Optional[str]]:
     """
@@ -616,7 +616,7 @@ def check_special_block(
     return False, None
 
 
-def check_trivial_case(pointer: str, identifiers: dict, fn: str) -> bool:
+def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> bool:
     """
     Supplement generic definition of 'trivial' pointers. Intended primarily to
     preempt attempts to load known-unsupported data objects associated with
@@ -671,7 +671,7 @@ def check_trivial_case(pointer: str, identifiers: dict, fn: str) -> bool:
     return False
 
 
-def special_image_constants(identifiers: dict) -> dict[str, int]:
+def special_image_constants(identifiers: DataIdentifiers) -> dict[str, int]:
     """
     Defines 'secret' special constants for a dataset or product type. Called
     inline by `Data.find_special_constants()`.
@@ -683,7 +683,7 @@ def special_image_constants(identifiers: dict) -> dict[str, int]:
 
 
 def check_special_fn(
-    data: PDRLike, object_name: str, identifiers: dict
+    data: PDRLike, object_name: str, identifiers: DataIdentifiers
 ) -> tuple[bool, Optional[str]]:
     """
     Preempts generic filename specification. Called inline by
@@ -721,7 +721,7 @@ def check_special_fn(
     return False, None
 
 
-def check_special_qube_band_storage(identifiers: dict):
+def check_special_qube_band_storage(identifiers: DataIdentifiers):
     """
     Defines band storage types for QUBE procuts whose labels do not correctly
     specify them. Wraps `get_qube_band_storage_type()`.
@@ -732,7 +732,7 @@ def check_special_qube_band_storage(identifiers: dict):
 
 
 def check_special_hdu_name(
-    data: PDRLike, identifiers: dict, fn: Union[str, Path], name: str
+    data: PDRLike, identifiers: DataIdentifiers, fn: Union[str, Path], name: str
 ) -> tuple[bool, Optional[int]]:
     """
     Preempts generic PDS3 data object -> FITS HDU index mapping. Wraps

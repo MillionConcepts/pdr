@@ -2,9 +2,9 @@
 Functions for the nitty-gritty byte-juggling parts of
 TABLE/SPREADSHEET/ARRAY/HISTOGRAM loading.
 """
-
+from __future__ import annotations
 from io import StringIO
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -21,6 +21,9 @@ from pdr.pd_utils import (
     booleanize_booleans, compute_offsets, convert_ebcdic, convert_ibm_reals
 )
 from pdr.utils import decompress, head_file
+
+if TYPE_CHECKING:
+    from pdr.pdrtypes import DataIdentifiers
 
 
 PAD_CHARACTERS = ' \t",'
@@ -129,7 +132,7 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
 
 def _read_as_delimited(
     fn: str,
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     sep: str,
     string_buffer: StringIO,
     fmtdef: pd.DataFrame
@@ -191,7 +194,7 @@ def _read_fwf_with_colspecs(
 def _read_table_from_stringio(
     fmtdef: pd.DataFrame,
     fn: str,
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     block: MultiDict,
     string_buffer: StringIO
 ) -> pd.DataFrame:
@@ -218,7 +221,7 @@ def _read_table_from_stringio(
 
 
 def _interpret_as_ascii(
-    identifiers: dict,
+    identifiers: DataIdentifiers,
     fn: str,
     fmtdef: pd.DataFrame,
     block: MultiDict,

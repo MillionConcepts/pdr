@@ -1,7 +1,8 @@
 """utilities for parsing BIT_COLUMN objects in tables."""
+from __future__ import annotations
 from functools import partial, reduce
 from operator import add
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Mapping, Sequence, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,8 @@ from pdr.formats import (
 )
 import warnings
 
-from pdr.pdrtypes import ByteOrder
+if TYPE_CHECKING:
+    from pdr.pdrtypes import ByteOrder, DataIdentifiers
 
 
 def expand_bit_strings(
@@ -186,7 +188,7 @@ def set_bit_string_data_type(
 
 
 def get_bit_start_and_size(
-    obj: dict, definition: MultiDict, identifiers: dict[str, Any]
+    obj: dict, definition: MultiDict, identifiers: DataIdentifiers
 ) -> dict:
     """
     Parse the BIT_COLUMN information from a MultiDict that represents a COLUMN
