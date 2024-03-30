@@ -1,3 +1,8 @@
+"""
+Functions used as part of Loader subclasses' softquery()-backed
+metadata-processing workflows.
+"""
+
 from __future__ import annotations
 
 from _operator import mul
@@ -6,35 +11,37 @@ from itertools import chain, product
 from numbers import Number
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Mapping, Optional, Sequence, TYPE_CHECKING, Callable, \
-    Literal, Union, Collection
+from typing import (
+    Any, Collection, Mapping, Optional, Sequence, TYPE_CHECKING, Union
+)
 import warnings
 
+from multidict import MultiDict
 import numpy as np
 import pandas as pd
-from multidict import MultiDict
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_block, check_special_offset
 from pdr.func import specialize
 from pdr.loaders._helpers import (
-    quantity_start_byte,
     count_from_bottom_of_file,
     looks_like_ascii,
+    quantity_start_byte,
     _check_delimiter_stream,
 )
 from pdr.loaders.handlers import add_bit_column_info
-from pdr.parselabel.pds3 import pointerize, read_pvl, literalize_pvl
-from pdr.utils import append_repeated_object, find_repository_root, check_cases
-
+from pdr.parselabel.pds3 import literalize_pvl, pointerize, read_pvl
+from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
-    from pdr.pdrtypes import BandStorageType, PDRLike, PhysicalTarget
+    from pdr.pdrtypes import (
+        BandStorageType, ImageProps, PDRLike, PhysicalTarget
+    )
 
 
 def generic_qube_properties(
     block: MultiDict, band_storage_type: BandStorageType
-) -> dict:
+) -> ImageProps:
     """Parse metadata from an ISIS2-style QUBE definition"""
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
@@ -66,12 +73,10 @@ def generic_qube_properties(
             }[tuple(reversed(props["axnames"]))]
         else:
             props["band_storage_type"] = "ISIS2_QUBE"
-    # noinspection PyTypeChecker
     props |= extract_axplane_metadata(block, props)
-    # noinspection PyTypeChecker
-    props |= extract_linefix_metadata(block, props)
     # TODO: unclear whether lower-level linefixes ever appear on qubes
-    return props
+    props |= extract_linefix_metadata(block, props)
+    return props  # not type-complete, 'pixels' added in get_image_properties()
 
 
 def extract_axplane_metadata(block: MultiDict, props: dict) -> dict:
@@ -126,8 +131,8 @@ def gt0f(seq: Collection[Number]) -> tuple[Number]:
     return tuple(filter(lambda x: x > 0, seq))
 
 
-def check_fix_validity(props: dict) -> None:
-    """"Integrity checker for """
+def check_fix_validity(props: ImageProps) -> None:
+    """"Integrity checker for 'conventional' line pre/suffix definitions."""
     if (props["linepad"] > 0) and (
         (props["rowpad"] + props["colpad"] + props["bandpad"]) > 0
     ):
@@ -165,7 +170,7 @@ def check_if_qube(
         return False, None
 
 
-def get_image_properties(gen_props: dict) -> dict:
+def get_image_properties(gen_props: ImageProps) -> ImageProps:
     """
     Second-step cleaning/formatting function for an image properties dict,
     typically derived from `generic_image_properties()`,
@@ -199,7 +204,7 @@ def base_sample_info(block: MultiDict) -> dict:
     }
 
 
-def generic_image_properties(block: MultiDict, sample_type: str) -> dict:
+def generic_image_properties(block: MultiDict, sample_type: str) -> ImageProps:
     """
     Construct a dict of image properties later used in the image-loading
     workflow.
@@ -226,7 +231,8 @@ def generic_image_properties(block: MultiDict, sample_type: str) -> dict:
         props["band_storage_type"] = None
     props |= extract_axplane_metadata(block, props)
     props |= extract_linefix_metadata(block, props)
-    return props
+    # noinspection PyTypeChecker
+    return props  # not type-complete, 'pixels' added in get_image_properties()
 
 
 def get_qube_band_storage_type(block: MultiDict) -> Optional[BandStorageType]:
@@ -251,6 +257,7 @@ def check_array_for_subobject(block: MultiDict) -> bool:
     return True
 
 
+# TODO: this should probably be in loaders.table
 def get_array_num_items(block: MultiDict) -> int:
     """How many total array elements does an ARRAY definition imply?"""
     items = block["AXIS_ITEMS"]

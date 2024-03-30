@@ -1,15 +1,22 @@
-import re
+"""
+Functions for the nitty-gritty byte-juggling parts of
+TABLE/SPREADSHEET/ARRAY/HISTOGRAM loading.
+"""
+
+from io import StringIO
 import numpy as np
 import pandas as pd
-from io import StringIO
 from pandas.errors import ParserError
+import re
 
-from pdr.loaders._helpers import check_explicit_delimiter
-from pdr.loaders.queries import get_array_num_items
 from pdr import bit_handling
 from pdr.datatypes import sample_types
+from pdr.loaders._helpers import check_explicit_delimiter
+from pdr.loaders.queries import get_array_num_items
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
-from pdr.pd_utils import booleanize_booleans, convert_ebcdic, convert_ibm_reals, compute_offsets
+from pdr.pd_utils import (
+    booleanize_booleans, compute_offsets, convert_ebcdic, convert_ibm_reals
+)
 from pdr.utils import decompress, head_file
 
 

@@ -10,11 +10,12 @@ import numpy as np
 from pdr import vax
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import make_c_contiguous, np_from_buffered_io
+from pdr.pdrtypes import ImageProps
 from pdr.utils import decompress
 
 
 def read_image(
-    name: str, gen_props: dict, fn: str, start_byte: int
+    name: str, gen_props: ImageProps, fn: str, start_byte: int
 ) -> np.ndarray:
     """Read an IMAGE object and return it as a numpy array."""
     # TODO: Check for and apply BIT_MASK.
@@ -38,7 +39,7 @@ def read_image(
     return image
 
 
-def make_format_specifications(props: dict) -> tuple[str, np.dtype]:
+def make_format_specifications(props: ImageProps) -> tuple[str, np.dtype]:
     """
     Given an image properties dict, construct a struct format string and a
     numpy dtype that could be used to interpret the described image using,
@@ -52,7 +53,7 @@ def make_format_specifications(props: dict) -> tuple[str, np.dtype]:
 
 
 def extract_single_band_linefix(
-    image: np.ndarray, props: dict
+    image: np.ndarray, props: ImageProps
 ) -> tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
     """
     If they exist, extract line prefixes and/or suffixes from a single-band
@@ -80,7 +81,7 @@ def convert_if_vax(image: np.ndarray, props: dict) -> np.ndarray:
 
 
 def process_single_band_image(
-    f: BufferedIOBase, props: dict
+    f: BufferedIOBase, props: ImageProps
 ) -> tuple[
     np.ndarray,
     dict[str, np.ndarray],
@@ -107,7 +108,7 @@ def process_single_band_image(
 
 
 def extract_bil_linefix(
-    image: np.ndarray, props: dict
+    image: np.ndarray, props: ImageProps
 ) -> tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
     """
     If they exist, extract line prefixes and/or suffixes from a raveled BIL
@@ -127,7 +128,7 @@ def extract_bil_linefix(
     return image, prefix, suffix
 
 
-def process_multiband_image(f: BufferedIOBase, props: dict) -> tuple[
+def process_multiband_image(f: BufferedIOBase, props: ImageProps) -> tuple[
     np.ndarray,
     dict[str, np.ndarray],
     Optional[np.ndarray],
@@ -175,11 +176,12 @@ def process_multiband_image(f: BufferedIOBase, props: dict) -> tuple[
 
 
 def extract_axplanes(
-    image: np.ndarray, props: dict
+    image: np.ndarray, props: ImageProps
 ) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     """extract ISIS-style side/bottom/top/backplanes from an array"""
     axplanes = {}
     for side, ax in product(("prefix", "suffix"), ("row", "col", "band")):
+        # noinspection PyTypedDict
         if (count := props.get(f"{side}_{ax}s")) is None:
             continue
         axn, axname = {

@@ -1,4 +1,4 @@
-from typing import Callable, Literal, Union
+from typing import Callable, Literal, Union, TypedDict, Optional
 
 from pdr.pdr import Data, Metadata
 
@@ -27,3 +27,44 @@ sequential, BIL/band interleaved by line, BIP/band interleaved by pixel.
 None implies either that the storage layout is unknown or that the array is
 not 3-D.
 """
+
+Axname = Literal["BAND", "LINE", "SAMPLE"]
+"""Conventional names for image axes."""
+
+
+class ImageProps(TypedDict):
+    # Number of bytes per pixel (eventually redundant with sample_type but
+    # populated much earlier)
+    BYTES_PER_PIXEL: Literal[1, 2, 4, 8]
+    # Do the elements of the array, when loaded, represent VAX reals?
+    is_vax_real: bool
+    # numpy dtype string
+    sample_type: str
+    # total number of elements
+    pixels: int
+    # number of elements along each dimension
+    nrows: int
+    ncols: int
+    nbands: int
+    # physical storage layout of 3D arrays (None for 2D arrays)
+    band_storage_type: BandStorageType
+    # total row/column/band pad elements due to ISIS-style axplanes
+    rowpad: int
+    colpad: int
+    bandpad: int
+    # number of pad elements for left/right sideplanes
+    prefix_rows: Optional[int]
+    suffix_rows: Optional[int]
+    # number of pad elements for bottom/topplanes
+    prefix_cols: Optional[int]
+    suffix_cols: Optional[int]
+    # number of pad elements for front/backplanes
+    prefix_bands: Optional[int]
+    suffix_bands: Optional[int]
+    # total pad elements due to line prefixes/suffixes
+    linepad: int
+    # number of elements in line prefix and suffix
+    line_prefix_pix: Optional[int]
+    line_suffix_pix: Optional[int]
+    # Order of axes expressed as a tuple of axis names, only used by ISIS qubes
+    axnames: Optional[tuple[Axname]]
