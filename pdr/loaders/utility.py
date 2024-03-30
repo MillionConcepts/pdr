@@ -21,10 +21,18 @@ def trivial(*_, **__):
     """
     This is a trivial loader. It does not load. The purpose is to use
     for any pointers we don't want to load and instead simply want ignored.
-    It has been superseded by loaders.datawrap.Trivial, and is retained for
-    merely sentimental reasons.
     """
     pass
+
+
+def tbd(name: str, block: MultiDict, *_, **__):
+    """
+    This is a placeholder function for objects that are not explicitly
+    supported elsewhere. It throws a warning and
+    passes just the value of the pointer.
+    """
+    warnings.warn(f"The {name} pointer is not yet fully supported.")
+    return block
 
 
 def looks_like_this_kind_of_file(

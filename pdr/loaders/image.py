@@ -1,18 +1,20 @@
-import warnings
+from io import BufferedIOBase
 from itertools import product
+from typing import Optional
+import warnings
 
 import numpy as np
 
+from pdr import vax
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import np_from_buffered_io
 from pdr.utils import decompress
-from pdr import vax
 
 
-def read_image(name, gen_props, fn, start_byte):
-    """
-    Read an image object from this product and return it as a numpy array.
-    """
+def read_image(
+    name: str, gen_props: dict, fn: str, start_byte: int
+) -> np.ndarray:
+    """Read an IMAGE object and return it as a numpy array."""
     # TODO: Check for and apply BIT_MASK.
     props = get_image_properties(gen_props)
     f = decompress(fn)  # seamlessly deal with compression
@@ -34,8 +36,12 @@ def read_image(name, gen_props, fn, start_byte):
     return image
 
 
-def make_format_specifications(props):
-    """"""
+def make_format_specifications(props: dict) -> tuple[str, np.dtype]:
+    """
+    Given an image properties dict, construct a struct format string and a
+    numpy dtype that could be used to interpret the described image using,
+    respectively, struct or numpy.
+    """
     endian, ctype = props["sample_type"][0], props["sample_type"][-1]
     struct_fmt = f"{endian}{props['pixels']}{ctype}"
     np_type = props["sample_type"][1:]
@@ -43,8 +49,14 @@ def make_format_specifications(props):
     return struct_fmt, dtype
 
 
-def extract_single_band_linefix(image, props):
-    """"""
+def extract_single_band_linefix(
+    image: np.ndarray, props: dict
+) -> tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    """
+    If they exist, extract line prefixes and/or suffixes from a single-band
+    image (i.e., a 2D ndarray). Return the image shorn of pre/suffixes, the
+    prefixes (if any), and the suffixes (if any).
+    """
     if props["linepad"] == 0:
         return image, None, None
     prefix, suffix = None, None
@@ -58,15 +70,26 @@ def extract_single_band_linefix(image, props):
     return image, prefix, suffix
 
 
-def convert_if_vax(image, props):
-    """"""
+def convert_if_vax(image: np.ndarray, props: dict) -> np.ndarray:
+    """If an array is in 32-bit VAX real format, convert it to 32-bit float."""
     if props.get('is_vax_real') is True:
         return vax.from_vax32(image)
     return image
 
 
-def process_single_band_image(f, props):
-    """"""
+def process_single_band_image(
+    f: BufferedIOBase, props: dict
+) -> tuple[
+    np.ndarray,
+    dict[str, np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray]
+]:
+    """
+    Load a single-band image from an open file stream,
+    perform any cleanup / segmentation operations implied by the `props` dict,
+    and return it, along with any side/bottom/topplanes or line pre/suffixes.
+    """
     _, numpy_dtype = make_format_specifications(props)
     # TODO: added this 'count' parameter to handle a case in which the image
     #  was not the last object in the file. We might want to add it to
@@ -81,8 +104,14 @@ def process_single_band_image(f, props):
     return make_c_contiguous(image), axplanes, prefix, suffix
 
 
-def extract_bil_linefix(image, props):
-    """"""
+def extract_bil_linefix(
+    image: np.ndarray, props: dict
+) -> tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    """
+    If they exist, extract line prefixes and/or suffixes from a raveled BIL
+    (LINE_INTERLEAVED) image. Return the image shorn of pre/suffixes, the
+    prefixes (if any), and the suffixes (if any).
+    """
     if props["linepad"] == 0:
         return image, None, None
     prefix, suffix = None, None
@@ -96,10 +125,22 @@ def extract_bil_linefix(image, props):
     return image, prefix, suffix
 
 
-def process_multiband_image(f, props):
-    """"""
+def process_multiband_image(f: BufferedIOBase, props: dict) -> tuple[
+    np.ndarray,
+    dict[str, np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray]
+]:
+    """
+    Load the elements of a multiband image from an open file stream, reshape
+    the resulting array as appropriate for the image's band storage type,
+    perform any cleanup / segmentation operations implied by the `props` dict,
+    and return it, along with any side/bottom/topplanes or line pre/suffixes.
+    """
     bst = props["band_storage_type"]
-    if bst not in ("BAND_SEQUENTIAL", "LINE_INTERLEAVED", "SAMPLE_INTERLEAVED"):
+    if bst not in (
+        "BAND_SEQUENTIAL", "LINE_INTERLEAVED", "SAMPLE_INTERLEAVED"
+    ):
         warnings.warn(
             f"Unsupported BAND_STORAGE_TYPE={bst}. Guessing BAND_SEQUENTIAL."
         )
@@ -119,6 +160,11 @@ def process_multiband_image(f, props):
         image = image.reshape(lines, samples, bands)
         image = np.moveaxis(image, 2, 0)
     elif bst == "LINE_INTERLEAVED":
+        # NOTE: we haven't implemented linefix extraction for non-BIL images
+        # because we haven't yet found any non-BIL multiband images in the PDS
+        # with linefixes. queries.check_fix_validity() will throw a
+        # NotImplementedError should it ever encounter them, at which point
+        # we can implement support for them.
         image, prefix, suffix = extract_bil_linefix(image, props)
         image = image.reshape(lines, bands, samples)
         image = np.moveaxis(image, 0, 1)
@@ -126,8 +172,10 @@ def process_multiband_image(f, props):
     return make_c_contiguous(image), axplanes, prefix, suffix
 
 
-def extract_axplanes(image, props):
-    """extract ISIS-style side/bottom/backplanes from an array"""
+def extract_axplanes(
+    image: np.ndarray, props: dict
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """extract ISIS-style side/bottom/top/backplanes from an array"""
     axplanes = {}
     for side, ax in product(("prefix", "suffix"), ("row", "col", "band")):
         if (count := props.get(f"{side}_{ax}s")) is None:
@@ -155,7 +203,10 @@ def extract_axplanes(image, props):
 
 
 def make_c_contiguous(image: np.ndarray) -> np.ndarray:
-    """"""
+    """
+    If an ndarray isn't C-contiguous, reorder it as C-contiguous. If it is,
+    don't mess with it.
+    """
     if image.flags["C_CONTIGUOUS"] is False:
         return np.ascontiguousarray(image)
     return image
