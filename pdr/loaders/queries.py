@@ -17,8 +17,6 @@ from typing import (
 import warnings
 
 from multidict import MultiDict
-import numpy as np
-import pandas as pd
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_block, check_special_offset
@@ -34,6 +32,9 @@ from pdr.parselabel.pds3 import literalize_pvl, pointerize, read_pvl
 from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
     from pdr.pdrtypes import (
         BandStorageType, DataIdentifiers, ImageProps, PDRLike, PhysicalTarget
     )

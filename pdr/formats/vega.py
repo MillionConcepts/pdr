@@ -1,6 +1,5 @@
 from pdr.datatypes import sample_types
 from pdr.loaders.queries import read_table_structure, check_array_for_subobject
-from pdr.pd_utils import compute_offsets
 
 
 def get_structure(block, name, filename, data, identifiers):
@@ -34,5 +33,6 @@ def fix_array_structure(name, block, fn, data, identifiers):
     # Sometimes arrays define start_byte, sometimes their elements do
     if "START_BYTE" in fmtdef.columns:
         fmtdef['START_BYTE'] = fmtdef['START_BYTE'].fillna(1)
-    from pdr.pd_utils import insert_sample_types_into_df
+    from pdr.pd_utils import compute_offsets, insert_sample_types_into_df
+
     return insert_sample_types_into_df(compute_offsets(fmtdef), identifiers)

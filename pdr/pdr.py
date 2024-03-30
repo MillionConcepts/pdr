@@ -26,10 +26,7 @@ from dustgoggles.tracker import Tracker, TrivialTracker
 from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
-from pdr.formats import (
-    check_special_fn,
-    special_image_constants,
-)
+from pdr.formats import check_special_fn, special_image_constants
 from pdr.parselabel.pds3 import (
     depointerize,
     get_pds3_pointers,
@@ -534,9 +531,10 @@ class Data:
         Data._init_pds4(). In that case, simply preprocess it for
         Metadata.__init__.
         Otherwise, if it has a detached PDS3/PVL label, ingest it with
-        pdr.parselabel.pds3.read_pvl_label.
-        Finally, if we have found no detached label, look for an attached PVL
-        label (also using read_pvl_label).
+        pdr.parselabel.pds3.read_pvl.
+        Finally, if we found no detached label, look for an attached PVL
+        label (also using read_pvl).
+        Then, construct a Metadata object from whatever we loaded.
         """
         if self.standard == "FITS":
             from pdr.loaders.handlers import unpack_fits_headers
@@ -590,8 +588,8 @@ class Data:
         self,
         object_name: str,
         inplace: bool = False,
-        float_dtype: Optional["np.dtype"] = None
-    ) -> "np.ndarray":
+        float_dtype: Optional[np.dtype] = None
+    ) -> np.ndarray:
         """
         fetches copy of data object corresponding to key, masks special
         constants, then applies any scale and offset specified in the label.

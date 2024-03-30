@@ -1,10 +1,13 @@
 from pdr.loaders.queries import read_table_structure
-from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
 
 
 def elec_em6_structure(block, name, filename, data, identifiers):
-    """ELEC EDR em6/TBL tables: All the START_BYTEs in TBL_0_STATE_DATA.FMT
-    are off by 36 bytes."""
+    """
+    ELEC EDR em6/TBL tables: All the START_BYTEs in TBL_0_STATE_DATA.FMT
+    are off by 36 bytes.
+    """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )

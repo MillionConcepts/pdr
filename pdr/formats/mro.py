@@ -1,8 +1,7 @@
-from pdr.loaders.queries import read_table_structure
 from io import StringIO
+
+from pdr.loaders.queries import read_table_structure
 from pdr.utils import head_file
-from pdr.pd_utils import compute_offsets
-import pandas as pd
 
 
 def get_structure(block, name, filename, data, identifiers):
@@ -28,6 +27,8 @@ def mcs_ddr_table_loader(fmtdef_dt, block, filename, start_byte):
             bytes_ = f.read(block["ROW_BYTES"])
             newlines_removed += bytes_.replace(b"\n", b"") + b"\n"
     string_buffer = StringIO(newlines_removed.decode())
+    import pandas as pd
+    from pdr.pd_utils import compute_offsets
 
     # Adapted from _interpret_as_ascii()
     fmtdef, dt = fmtdef_dt

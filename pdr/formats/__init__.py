@@ -1,8 +1,11 @@
-"""This module contains special case formats for nonconforming or malformatted data
-types organized by mission and/or instrument. The `checkers` module consists of functions
-that are called by `pdr.func.specialize` to determine if a given file meets the stated criteria.
-If a file meets the criteria in the checker, a file from the respective special case formats
-module is returned. If not, the base pdr workflow is continued."""
+"""
+This module implements a wide variety of special-case behaviors for
+nonconforming or malformatted data products. It implements these behaviors as
+functions in distinct submodules organized by 'dataset' (mission, instrument,
+etc.); the `checkers` submodule contains dispatch functions that preempt
+generic behaviors and redirect them to functions from one of the dataset
+submodules. See the documentation for `checkers` for details on this behavior.
+"""
 
 from .checkers import *
 import pdr.formats.cassini as cassini

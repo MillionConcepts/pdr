@@ -1,7 +1,5 @@
 import re
 
-import numpy as np
-
 import pdr.loaders.queries
 
 
@@ -22,6 +20,7 @@ def get_structure(block, name, filename, data, identifiers):
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )
+    import numpy as np
     import pandas as pd
 
     fmtdef = pd.concat([fmtdef, fmtdef], ignore_index=True)
