@@ -1,3 +1,5 @@
+"""Functions to select appropriate Loader subclasses for data objects."""
+
 from __future__ import annotations
 
 import re

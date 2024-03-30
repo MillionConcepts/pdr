@@ -1,3 +1,9 @@
+"""
+Pointy-end functions used by Loaders that primarily work by calling external
+libraries that provide high-level support for specific file formats, including
+`pillow` and `astropy.io.fits`.
+"""
+
 from __future__ import annotations
 
 from numbers import Number
@@ -15,16 +21,20 @@ if TYPE_CHECKING:
 
 
 def handle_fits_file(
-    fn, name="", hdu_id="", hdulist: Optional[HDUList] = None
+    fn: str,
+    name: str = "",
+    hdu_id: Union[str, int, tuple[int, int]] = "",
+    hdulist: Optional[HDUList] = None
 ):
     """
-    This function attempts to read all FITS files, compressed or
-    uncompressed, with astropy.io.fits. Files with 'HEADER' pointer
-    return the header, all others return data.
+    Read a data object from an HDU of a FITS file using `astropy.io.fits`. If
+    `name` (the PDS3 data object name / `pdr.Data` key) contains the string
+    'HEADER' but is not the actual name (EXTNAME / HDUNAME) of an HDU in the
+    file, return the HDU's header; otherwise return the HDU's data.
 
-    we distinguish name and hdu_name as a slightly hacky way to facilitate
-    special cases in which we explicitly map a PDS pointer to a FITS HDU name
-    or index.
+    We distinguish `name` and `hdu_id` as a slightly hacky way to facilitate
+    cases in which we explicitly map a PDS pointer to a FITS HDU name or index
+    (because PDS data object names _very often_ do not match FITS HDU names).
     """
 
     # TODO, maybe: dispatch to decompress() for weirdo compression
@@ -73,16 +83,20 @@ def handle_fits_file(
     else:
         return {name: hdr_val}
     hdu = hdulist[pointer_to_fits_key(hdu_id, hdulist)]
-    # binary table HDUs with repeated column names break astropy
+    # binary table HDUs with repeated column names break astropy -- it will not
+    # actually afford the data unless we manipulate it first.
     if isinstance(hdu, fits.BinTableHDU):
         reindex_dupe_names(hdu)
     body = hdu.data
     if body is None:
+        # This case is typically a 'stub' PRIMARY HDU. For type consistency,
+        # we prefer to return an empty array rather than None.
         import numpy as np
 
         body = np.array([])
-    # i.e., it's a FITS table, binary or ascii
-    if isinstance(body, fits.fitsrec.FITS_rec):
+    elif isinstance(body, fits.fitsrec.FITS_rec):
+        # This case is a FITS table, binary or ASCII. For type consistency, we
+        # want to return a pandas DataFrame, not a FITS_rec.
         import pandas as pd
         from pdr.pd_utils import structured_array_to_df
         try:
@@ -90,17 +104,24 @@ def handle_fits_file(
         except ValueError:
             import numpy as np
 
-            # nested arrays, generally -- we don't do this by default because
-            # it requires us to 'reassemble' the array twice, so is inefficient
-            body = structured_array_to_df(np.rec.fromarrays([body[k] for k in
-                                          body.dtype.names], dtype=body.dtype))
+            # These are generally nested arrays. We don't do this by default,
+            # because it requires us to 'reassemble' the array twice, and
+            # because pd.DataFrame.from_records() fails very quickly on nested
+            # dtypes, it's much more efficient to just try it first.
+            body = structured_array_to_df(
+                np.rec.fromarrays(
+                    [body[k] for k in body.dtype.names], dtype=body.dtype
+                )
+            )
     return output | {name: body}
 
 
 def reindex_dupe_names(hdu: BinTableHDU):
     """
-    rename duplicate column names in a fits binary table -- astropy will not
-    be able to construct the .data attribute otherwise
+    Astropy cannot construct the .data attribute of a BinTableHDU if the table
+    has duplicate column names. This changes any duplicate column names in
+    place following the same convention we use for PDS binary tables (appending
+    incrementing integers).
     """
     names = [c.name for c in hdu.columns]
     repeats = {n for n in names if names.count(n) > 1}
@@ -134,8 +155,16 @@ def handle_compressed_image(fn: Union[str, Path]) -> np.ndarray:
     return image
 
 
-def handle_fits_header(hdulist, hdu_id="", skip_bad_cards=False):
-    """"""
+def handle_fits_header(
+    hdulist: HDUList,
+    hdu_id: Union[str, int] = "",
+    skip_bad_cards: bool = False
+) -> MultiDict:
+    """
+    Load the header of a specified HDU as a MultiDict, engaging in various
+    sorts of gymnastics to stymie the attempts of astropy.io.fits to keep us
+    safe from illegally-formatted headers.
+    """
     if isinstance(hdu_id, int):
         astro_hdr = hdulist[hdu_id].header
     else:
@@ -164,7 +193,7 @@ def handle_fits_header(hdulist, hdu_id="", skip_bad_cards=False):
 
 def pointer_to_fits_key(pointer: Union[str, Number], hdulist: HDUList) -> int:
     """
-    Attempt to relate an object name to an HDU index.
+    Attempt to map a PDS data object name to an HDU of a FITS file.
 
     If we're pretty sure about it already based on position information in the
     label, `pointer` will be a number of some kind, and we just open it. If we
@@ -194,6 +223,7 @@ def pointer_to_fits_key(pointer: Union[str, Number], hdulist: HDUList) -> int:
     return levratio.index(max(levratio))
 
 
+# TODO: shouldn't be in this module
 def add_bit_column_info(
     obj: dict,
     definition: MultiDict,
