@@ -74,7 +74,7 @@ def check_special_offset(
         return formats.clementine.get_offset(data, name)
     if identifiers["INSTRUMENT_ID"] == "THEMIS" and name == "QUBE":
         return formats.themis.get_qube_offset(data)
-    disrsubs = re.compile(r"STRIP|VISIBL|IMAGE|IR_|TIME|SUB|SOLAR")
+    disrsubs = re.compile(r"STRIP|VISIBL|IMAGE|IR_|TIME|SUN|SOLAR")
     if (
         identifiers["INSTRUMENT_NAME"] == "DESCENT IMAGER SPECTRAL RADIOMETER"
         and identifiers["PRODUCT_TYPE"] == "RDR"
@@ -152,7 +152,7 @@ def check_special_table_reader(
     ):
         return True, formats.mgn.geom_table_loader(fn, fmtdef_dt)
     if (
-        str(identifiers["DATA_SET_ID"]).startswith("MGN-V-RSS-5-OCC-PROF")
+        identifiers["DATA_SET_ID"].startswith("MGN-V-RSS-5-OCC-PROF")
         and name == "TABLE"
     ):
         return True, formats.mgn.occultation_loader(
@@ -298,7 +298,9 @@ def check_special_structure(
             block, name, fn, data, identifiers
         )
     if (
-        re.match(r"GP-J-(NMS|ASI)-3-ENTRY-V1.0", identifiers["DATA_SET_ID"])
+        re.match(
+            r"GP-J-(NMS|ASI)-3-ENTRY-V1.0", identifiers["DATA_SET_ID"]
+        )
         and name == "TABLE"
     ):
         return True, formats.galileo.probe_structure(
@@ -322,7 +324,7 @@ def check_special_structure(
         )
     if (
         "GIO-C-PIA-3-RDR-HALLEY-V1.0" == identifiers["DATA_SET_ID"]
-        or re.match(r"VEGA.-C-PUMA.*", str(identifiers["DATA_SET_ID"]))
+        or re.match(r"VEGA.-C-PUMA.*", identifiers["DATA_SET_ID"])
     ) and name == "ARRAY":
         return True, formats.vega.fix_array_structure(
             name, block, fn, data, identifiers
@@ -509,7 +511,7 @@ def check_special_block(
     if name == "CHMN_HSK_HEADER_TABLE":
         return True, formats.msl_cmn.fix_mangled_name(data)
     if (
-        str(identifiers["DATA_SET_ID"]).startswith("JNO-E/J/SS")
+        identifiers["DATA_SET_ID"].startswith("JNO-E/J/SS")
         and "BSTFULL" in identifiers["DATA_SET_ID"]
         and "FREQ_OFFSET_TABLE" in data.keys()
         and name in ("FREQ_OFFSET_TABLE", "DATA_TABLE")
@@ -639,12 +641,12 @@ def check_trivial_case(pointer: str, identifiers: dict, fn: str) -> bool:
         and pointer == "IMAGE_REPLY_TABLE"
     ):
         return formats.msl_ccam.image_reply_table_loader()
-    if str(identifiers["DATA_SET_ID"]).startswith("ODY-M-THM-5") and (
+    if identifiers["DATA_SET_ID"].startswith("ODY-M-THM-5") and (
         pointer in ("HEADER", "HISTORY")
     ):
         return formats.themis.trivial_themis_geo_loader(pointer)
     if re.match(
-        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", str(identifiers["DATA_SET_ID"])
+        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
     ):
         if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
             return formats.cassini.trivial_loader(pointer)
@@ -699,7 +701,7 @@ def check_special_fn(
     ):
         return formats.mgn.get_fn(data)
     # filenames are frequently misspecified
-    if str(identifiers["DATA_SET_ID"]).startswith("CO-D-CDA") and (
+    if identifiers["DATA_SET_ID"].startswith("CO-D-CDA") and (
         object_name == "TABLE"
     ):
         return formats.cassini.cda_table_filename(data)

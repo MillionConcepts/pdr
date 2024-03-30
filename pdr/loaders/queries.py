@@ -537,7 +537,7 @@ def parse_array_structure(
     block: MultiDict,
     fn: str,
     data: PDRLike,
-    identifiers: dict[str, Any]
+    identifiers: dict
 ) -> tuple[Optional[pd.DataFrame], Optional[str]]:
     """
     Modification of `parse_table_structure()` for the special needs of ARRAYs.

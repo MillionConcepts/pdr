@@ -42,7 +42,6 @@ def test_count_from_bottom_of_file():
         Path(fn[0]).unlink(missing_ok=True)
 
 
-
 def test_check_delimiter_stream():
     byte_target = {"units": "BYTES", "value": 19200}
     rec_target = {"units": "RECORDS", "value": 1200}

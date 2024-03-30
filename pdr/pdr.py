@@ -1,16 +1,20 @@
-import warnings
+from __future__ import annotations
 from functools import partial, cache
 from itertools import chain, product
 from numbers import Number
 from pathlib import Path
 from typing import (
+    Any,
+    Callable,
+    Collection,
+    Literal,
     Mapping,
     Optional,
-    Union,
     Sequence,
-    Collection,
-    Literal, Any, Callable,
+    TYPE_CHECKING,
+    Union,
 )
+import warnings
 
 import Levenshtein as lev
 from cytoolz import countby, identity
@@ -26,11 +30,11 @@ from pdr.formats import (
     special_image_constants,
 )
 from pdr.parselabel.pds3 import (
-    get_pds3_pointers,
-    pointerize,
     depointerize,
-    read_pvl,
+    get_pds3_pointers,
     literalize_pvl,
+    pointerize,
+    read_pvl,
 )
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
@@ -41,6 +45,11 @@ from pdr.utils import (
     check_primary_fmt,
     prettify_multidict,
 )
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+    from PIL.Image import Image
 
 
 ID_FIELDS = (
@@ -311,6 +320,11 @@ class Data:
         self.identifiers = {
             field: self.metaget_(field, "") for field in ID_FIELDS
         }
+        # it never does us any favors to have tuples or sets in here
+        for k, v in self.identifiers.items():
+            if isinstance(v, (tuple, set)):
+                self.identifiers[k] = str(v)
+
 
     def _init_pds4(self):
         """use pds4_tools to open pds4 files, but in our interface idiom."""
@@ -440,7 +454,9 @@ class Data:
             if obj is None:
                 return
             if not isinstance(obj, dict):
-                raise TypeError(f"loader returned non-dict object of type ({type(obj)}")
+                raise TypeError(
+                    f"loader returned non-dict object of type ({type(obj)}"
+                )
             self._add_loaded_objects(obj)
             return
         except DebugExceptionPreempted:
@@ -489,7 +505,7 @@ class Data:
 
     def _load_primary_fits(
         self, object_name: str
-    ) -> Union["np.ndarray", "pd.DataFrame", None]:
+    ) -> Union[np.ndarray, pd.DataFrame, None]:
         """"""
         from pdr.loaders.handlers import handle_fits_file
 
@@ -668,7 +684,7 @@ class Data:
         return self.metadata.metaget(text, default, evaluate, warn)
 
     def metaget_(
-        self, text: str, default: bool = None, evaluate: bool = True
+        self, text: str, default: Any = None, evaluate: bool = True
     ) -> Any:
         """quiet-by-default version of metaget"""
         return self.metadata.metaget(text, default, evaluate, False)
@@ -709,7 +725,7 @@ class Data:
         object_name: str = None,
         scaled: bool = True,
         **browse_kwargs: Any
-    ) -> "PIL.Image.Image":
+    ) -> Image:
         """"""
         if object_name is None:
             raise ValueError(
@@ -755,7 +771,10 @@ class Data:
 
             dump_it = partial(browsify, purge=purge, **browse_kwargs)
             fdt = browse_kwargs.get("float_dtype")
-            if self[obj].__class__.__name__ == "ndarray" and len(self[obj].shape) != 1:
+            if (
+                self[obj].__class__.__name__ == "ndarray"
+                and len(self[obj].shape) != 1
+            ):
                 if scaled == "both":
                     dump_it(
                         self.get_scaled(obj, float_dtype=fdt),
