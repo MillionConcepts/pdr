@@ -5,6 +5,7 @@ argument.
 """
 import re
 import warnings
+from itertools import chain
 from typing import Hashable
 
 import numpy as np
@@ -72,7 +73,9 @@ def compute_offsets(fmtdef):
     fmtdef["SB_OFFSET"] = fmtdef["START_BYTE"].astype(int) - 1
     if "ROW_PREFIX_BYTES" in fmtdef.columns:
         fmtdef["SB_OFFSET"] += fmtdef["ROW_PREFIX_BYTES"]
-    block_names = fmtdef.loc[fmtdef['NAME'] != "PLACEHOLDER_0", "BLOCK_NAME"].unique()
+    block_names = fmtdef.loc[
+        fmtdef['NAME'] != "PLACEHOLDER_0", "BLOCK_NAME"
+    ].unique()
     # calculate offsets for formats loaded in by reference
     for block_name in block_names[1:]:
         if block_name in ("PLACEHOLDER_None", f"PLACEHOLDER_{block_names[0]}"):
@@ -86,11 +89,11 @@ def compute_offsets(fmtdef):
             prior["SB_OFFSET"] + prior["BYTES"]
         )
         count = fmt_block["BLOCK_REPETITIONS"].iloc[0]
-        if prior["BLOCK_REPETITIONS"]:
+        if (reps := prior["BLOCK_REPETITIONS"]) > 1:
             if "PLACEHOLDER" in block_name:
-                fmtdef.loc[fmt_block.index, "BLOCK_REPETITIONS"] *= prior["BLOCK_REPETITIONS"]
+                fmtdef.loc[fmt_block.index, "BLOCK_REPETITIONS"] *= reps
             else:
-                count = count * prior["BLOCK_REPETITIONS"]
+                count *= reps
         if count == 1:
             continue
         chunks = tuple(map(list, divide(count, fmt_block.index)))
@@ -98,17 +101,23 @@ def compute_offsets(fmtdef):
         if block_size != int(block_size):
             raise NotImplementedError("irregular repeated container size.")
         block_size = int(block_size)
-        for repetition, indices in enumerate(chunks):
-            fmtdef.loc[indices, "SB_OFFSET"] += int(repetition * block_size)
+        offset_chain = chain(
+            *[[i for _ in c] for (i, c) in enumerate(chunks)]
+        )
+        fmtdef.loc[
+            fmt_block.index, "SB_OFFSET"
+        ] += np.array(list(offset_chain)) * block_size
     # correctly compute offsets within columns w/multiple items
-    # TODO: ITEM_BYTES will _always_ be in fmtdef because we filled it with NaN earlier
-    if "ITEM_BYTES" in fmtdef:
+    if "ITEM_BYTES" in fmtdef.columns:
         fmtdef["ITEM_SIZE"] = _apply_item_offsets(fmtdef)
         column_groups = fmtdef.loc[fmtdef["ITEM_SIZE"].notna()]
-        for _, group in column_groups.groupby("SB_OFFSET"):
-            fmtdef.loc[group.index, "SB_OFFSET"] = group["SB_OFFSET"] + int(
-                group["ITEM_SIZE"].iloc[0]
-            ) * np.arange(len(group))
+        group_offs = column_groups['SB_OFFSET'].value_counts().sort_index()
+        gix_list, position = [], 0
+        for off, gl in zip(group_offs.index, group_offs.values):
+            itemsize = int(column_groups['ITEM_SIZE'].iloc[position])
+            gix_list += [(i * itemsize) + off for i in range(gl)]
+            position += gl
+        fmtdef.loc[column_groups.index, 'SB_OFFSET'] = gix_list
     pad_length = 0
     end_byte = fmtdef["SB_OFFSET"].iloc[-1] + fmtdef["BYTES"].iloc[-1]
     if "ROW_BYTES" in fmtdef.columns:
@@ -126,6 +135,7 @@ def compute_offsets(fmtdef):
         fmtdef = pd.concat(
             [fmtdef, pd.DataFrame([placeholder_rec])]
         ).reset_index(drop=True)
+    # lp.print_stats()
     return fmtdef
 
 

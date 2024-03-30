@@ -13,6 +13,7 @@
 
 ### Changed
 - Assorted code refactoring, linting, and minor improvements
+- Substantial performance increases for wide tables with many repeated items
 
 ### Fixed
 - A bug in PDS4 label handling that sometimes dropped repeated child elements
