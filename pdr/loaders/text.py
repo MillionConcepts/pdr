@@ -1,13 +1,14 @@
+"""Pointy-end functions for text-handling Loader subclasses."""
+from typing import Optional, Union
 import warnings
-from typing import Optional
 
 from pdr.loaders.utility import looks_like_this_kind_of_file
 from pdr.parselabel.utils import trim_label
 from pdr.utils import check_cases, decompress
 
 
-def read_text(target, fn):
-    """"""
+def read_text(target: str, fn: Union[list[str], str]) -> Union[list[str], str]:
+    """Read text from a file or list of files."""
     try:
         if isinstance(fn, str):
             return ignore_if_pdf(check_cases(fn))
@@ -19,12 +20,10 @@ def read_text(target, fn):
     except FileNotFoundError or UnicodeDecodeError:
         warnings.warn(f"couldn't find {target}")
         raise
-    except Exception:
-        raise
 
 
-def read_header(fn, table_props, name="HEADER"):
-    """Attempt to read a file header."""
+def read_header(fn: str, table_props: dict, name: str = "HEADER") -> str:
+    """Read a text header from a file."""
     return skeptically_load_header(fn, table_props, name)
 
 
@@ -40,11 +39,8 @@ def read_label(fn, fmt: Optional[str] = "text"):
 
 
 def skeptically_load_header(
-    fn,
-    table_props,
-    name="header",
-    fmt: Optional[str] = "text",
-):
+    fn: str, table_props: dict, name="header", fmt: Optional[str] = "text",
+) -> str:
     """"""
     # TODO: all these check_cases calls are probably unnecessary w/new file
     #  mapping workflow
@@ -77,9 +73,11 @@ def skeptically_load_header(
         warnings.warn(f"unable to parse {name}: {ex}")
 
 
-def ignore_if_pdf(fn):
-    """"""
+# TODO: misleading name. Primarily a file _reader_.
+def ignore_if_pdf(fn: str) -> Optional[str]:
+    """Read text from a file if it's not a pdf."""
     if looks_like_this_kind_of_file(fn, [".pdf"]):
         warnings.warn(f"Cannot open {fn}; PDF files are not supported.")
         return
+    # TODO: should use a context manager to avoid dangling file handles
     return open(check_cases(fn)).read()
