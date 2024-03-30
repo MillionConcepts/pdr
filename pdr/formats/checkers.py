@@ -1,7 +1,8 @@
 """
 This module contains functions that preempt generic metadata- or data-parsing
 behaviors. They are intended to manage idiosyncracies common to all products
-of a particular type, including but not limited to:
+of a particular type (or even all products in a whole dataset), including but
+not limited to:
 
 * Malformatted labels
 * Incorrect metadata
@@ -9,17 +10,19 @@ of a particular type, including but not limited to:
 * Technically correct but extremely unusual data formatting
 
 To put this another way, they facilitate single-dispatch polymorphism on the
-semantic level of data product types.
+semantic level of data product type.
 
 Most functions in this file are intended to be applied by `func.specialize`
-as wrappers for functions in `loaders.queries`. Others are called inline as
-part of complex workflows downstream from the primary metadata-parsing phase.
+as wrappers to other functions, typically a query function in `loaders.queries`
+or the `loader_function` attribute of a `loaders.queries.Loader` subclass.
+However, this is not strict; they may also wrap functions in other
+modules, and functions may call them inline rather than use them as wrappers.
 
 Every function in this module should be named `check_special_{something}`,
 where 'something' clearly designates the metadata-parsing or data-loading
 behavior it may sometimes preempt.
 
-Every function in this module should return a tuple whose first element is a
+Most functions in this module should return a tuple whose first element is a
 `bool` and whose second element is the "special" value. If the first element
 is `True`, it means that there is a relevant special case, so the caller
 should use the "special" value instead of engaging in its normal behavior; if
@@ -27,12 +30,13 @@ it is `False`, there is no relevant special case and the caller should continue
 with its normal behavior. The second element of the tuple should always be
 `None` if the first element is `False`.
 
-If the function is intended to wrap a generic function (generally via
-`func.specialize`), the second element of this tuple, when not None, must
-always share the return type of that generic function.
+If the function is intended to wrap a generic function, the second element of
+this tuple, when not None, must always share the return type of that generic
+function. Also, if it is intended for the `func.softquery()` workflow, it
+should follow that workflow's argument naming and type annotation conventions.
 
-Exceptions to these naming and signature conventions can be made for very
-simple checkers designed to be called inline of a specific handler function.
+Exceptions to these naming and signature conventions can be made for checkers
+designed specifically to be called inline of a specific handler function.
 """
 
 from __future__ import annotations
@@ -45,13 +49,18 @@ from pdr import formats
 from pdr.loaders.utility import is_trivial
 
 if TYPE_CHECKING:
-    from pdr.pdrtypes import PDRLike
+    import pandas as pd
+    import numpy as np
+    from pdr.pdrtypes import PDRLike, PhysicalTarget
 
 
 def check_special_offset(
-    name: str, data: PDRLike, identifiers: dict, fn
+    name: str, data: PDRLike, identifiers: dict, fn: str
 ) -> tuple[bool, Optional[int]]:
-    """"""
+    """
+    Preempt generic inference of an object's byte offset within a file. Wraps
+    `loaders.queries.data_start_byte()`.
+    """
     # these incorrectly specify object length rather than
     # object offset in the ^HISTOGRAM pointer target
     if identifiers["INSTRUMENT_ID"] == "CHEMIN":
@@ -98,9 +107,14 @@ def check_special_offset(
 
 
 def check_special_table_reader(
-    identifiers, name, fn, fmtdef_dt, block, start_byte
+    identifiers: dict,
+    name: str,
+    fn: str,
+    fmtdef_dt: tuple[pd.DataFrame, np.dtype],
+    block: MultiDict,
+    start_byte: int
 ):
-    """"""
+    """Preempt loaders.datawrap.ReadTable's dispatch to `read_table()`."""
     if identifiers["DATA_SET_ID"] in (
         "CO-S-MIMI-4-CHEMS-CALIB-V1.0",
         "CO-S-MIMI-4-LEMMS-CALIB-V1.0",
@@ -237,8 +251,17 @@ def check_special_table_reader(
     return False, None
 
 
-def check_special_structure(block, name, fn, identifiers, data):
-    """"""
+def check_special_structure(
+    block: MultiDict,
+    name: str,
+    fn: str,
+    identifiers: dict,
+    data: PDRLike
+) -> tuple[bool, Optional[tuple[pd.DataFrame, Optional[np.dtype]]]]:
+    """
+    Preempt generic ARRAY/TABLE/SPREADSHEET format definition parsing. Wraps
+    `parse_array_structure()` and `parse_table_structure()`.
+    """
     if (
         identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
         and name == "DATA_TABLE"
@@ -361,8 +384,20 @@ def check_special_structure(block, name, fn, identifiers, data):
     return False, None
 
 
-def check_special_position(identifiers, block, target, name, fn, start_byte):
-    """"""
+def check_special_position(
+    identifiers: dict,
+    block: MultiDict,
+    target: PhysicalTarget,
+    name: str,
+    fn: str,
+    start_byte: int
+) -> tuple[bool, Optional[int]]:
+    """
+    Preempt generic detection of a table's row or byte offset within a file.
+    Wraps `table_position()`. Used for table-specific cases that are partially
+    but not wholly handled by `data_start_byte()`, so should not be defined
+    in `check_special_offset()`.
+    """
     if (
         identifiers["INSTRUMENT_ID"] == "MARSIS"
         and " TEC " in identifiers["DATA_SET_NAME"]
@@ -417,7 +452,10 @@ def check_special_sample_type(
     identifiers: dict,
     base_samp_info: dict,
 ) -> tuple[bool, Optional[str]]:
-    """"""
+    """
+    Preempt generic mapping of PDS3 data types to numpy dtype strings. Wraps
+    `image_sample_type()`; called inline by `insert_sample_types_into_df()`.
+    """
     if (
         identifiers["DATA_SET_ID"] == "JNO-J-JIRAM-3-RDR-V1.0"
         and identifiers.get("PRODUCT_TYPE", "") == "RDR"
@@ -603,8 +641,12 @@ def check_special_block(
     return False, None
 
 
-def check_trivial_case(pointer, identifiers, fn) -> bool:
-    """"""
+def check_trivial_case(pointer: str, identifiers: dict, fn: str) -> bool:
+    """
+    Supplement generic definition of 'trivial' pointers. Intended primarily to
+    preempt attempts to load known-unsupported data objects associated with
+    otherwise-supported products. Called inline by `pointer_to_loader()`.
+    """
     if is_trivial(pointer):
         return True
     if (
@@ -657,8 +699,11 @@ def check_trivial_case(pointer, identifiers, fn) -> bool:
     return False
 
 
-def special_image_constants(identifiers):
-    """"""
+def special_image_constants(identifiers: dict) -> dict[str, int]:
+    """
+    Defines 'secret' special constants for a dataset or product type. Called
+    inline by `Data.find_special_constants()`.
+    """
     consts = {}
     if identifiers["INSTRUMENT_ID"] == "CRISM":
         consts["NULL"] = 65535
@@ -666,10 +711,13 @@ def special_image_constants(identifiers):
 
 
 def check_special_fn(
-    data, object_name, identifiers
+    data: PDRLike,
+    object_name: str,
+        identifiers: dict
 ) -> tuple[bool, Optional[str]]:
     """
-    special-case handling for labels with nonstandard filename specifications
+    Preempts generic filename specification. Called inline by
+    `Data._object_to_filename()`.
     """
     if (identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0") and (
         object_name in ("HEADER_TABLE", "DATA_TABLE")
@@ -700,20 +748,26 @@ def check_special_fn(
     return False, None
 
 
-def check_special_qube_band_storage(identifiers):
-    """"""
-    if (
-        identifiers["INSTRUMENT_HOST_NAME"]
-        == "CASSINI_ORBITER"
-        # and object_name == "QUBE" #should be repetitive because it's only called
-        # inside a QUBE reading function.
-    ):
+def check_special_qube_band_storage(identifiers: dict):
+    """
+    Defines band storage types for QUBE procuts whose labels do not correctly
+    specify them. Wraps `get_qube_band_storage_type()`.
+    """
+    if identifiers["INSTRUMENT_HOST_NAME"] == "CASSINI_ORBITER":
         return formats.cassini.get_special_qube_band_storage()
     return False, None
 
 
-def check_special_hdu_name(data, identifiers, fn, name):
-    """"""
+def check_special_hdu_name(
+    data: PDRLike,
+    identifiers: dict,
+    fn: str,
+    name: str
+) -> tuple[bool, Optional[int]]:
+    """
+    Preempts generic PDS3 data object -> FITS HDU index mapping. Wraps
+    `get_fits_id()`.
+    """
     if (
         identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
         and 'FC2' in identifiers['DATA_SET_ID']
