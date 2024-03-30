@@ -1,27 +1,31 @@
 """
-methods for working with pandas objects, primarily intended as components of
-pdr.Data's processing pipelines. some may require a Data object as an
-argument.
+Methods for working with pandas objects, primarily intended for use in
+TABLE/ARRAY/SPREADSHEET/HISTOGRAM-loading workflows.
 """
-import re
-import warnings
+from __future__ import annotations
 from itertools import chain
-from typing import Hashable
+import re
+from typing import Hashable, TYPE_CHECKING
+import warnings
 
+from more_itertools import divide
 import numpy as np
-import pandas.api.types
 import pandas as pd
-from more_itertools import chunked, divide
+import pandas.api.types
 from pandas.errors import SettingWithCopyWarning
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_sample_type
-from pdr.np_utils import enforce_order_and_object, ibm32_to_np_f32, \
-    ibm64_to_np_f64
+from pdr.np_utils import (
+    enforce_order_and_object, ibm32_to_np_f32, ibm64_to_np_f64
+)
+
+if TYPE_CHECKING:
+    from pdr.pdrtypes import DataIdentifiers
 
 
 def numeric_columns(df: pd.DataFrame) -> list[Hashable]:
-    """"""
+    """Return names of all 'numeric' columns in a DataFrame."""
     return [
         col
         for col, dtype in df.dtypes.iteritems()
@@ -41,6 +45,7 @@ def reindex_df_values(df: pd.DataFrame, column="NAME") -> pd.DataFrame:
     for name, field_group in namegroups:
         if len(field_group) == 1:
             continue
+        # TODO: check what this is hitting.
         if name == "RESERVED":
             name = f"RESERVED_{field_group['START_BYTE'].iloc[0]}"
         names = [f"{name}_{ix}" for ix in range(len(field_group))]
@@ -48,8 +53,12 @@ def reindex_df_values(df: pd.DataFrame, column="NAME") -> pd.DataFrame:
     return df
 
 
-def _apply_item_offsets(fmtdef):
-    """"""
+def _apply_item_offsets(fmtdef: pd.DataFrame) -> pd.Series:
+    """
+    Select item offsets (for a column or container with multiple items). If
+    the specification didn't give item offsets, just assume they're equal to
+    the byte width (i.e. there's no variable padding between fields).
+    """
     item_offsets = fmtdef["ITEM_BYTES"].copy()
     if "ITEM_OFFSET" not in fmtdef.columns:
         return item_offsets
@@ -62,11 +71,16 @@ def _apply_item_offsets(fmtdef):
     return item_offsets
 
 
-def compute_offsets(fmtdef):
+def compute_offsets(fmtdef: pd.DataFrame) -> pd.DataFrame:
     """
-    given a DataFrame containing PDS3 binary table structure specifications,
-    including a START_BYTE column, add an SB_OFFSET column, unpacking objects
-    if necessary
+    PDS3 TABLE/SPREADSHEET/ARRAY specifications do not explicitly give the
+    correct byte offsets for CONTAINERs, COLLECTIONs, anything loaded in by
+    reference from a STRUCTURE, or repeated elements of a COLUMN. Byte offsets
+    in these cases always refer to their parent containers, which can repeat,
+    have children with their own repetitions, etc., etc. This function
+    'unpacks' a format definition as necessary and adds an SB_OFFSET column
+    giving the correct byte offsets (from record start) for each field of the
+    data table/array.
     """
     # START_BYTE is 1-indexed, but we're preparing these offsets for
     # numpy, which 0-indexes
@@ -138,12 +152,13 @@ def compute_offsets(fmtdef):
     return fmtdef
 
 
-def insert_sample_types_into_df(fmtdef, identifiers):
+def insert_sample_types_into_df(
+    fmtdef: pd.DataFrame, identifiers: DataIdentifiers
+) -> tuple[pd.DataFrame, np.dtype]:
     """
-    given a DataFrame containing PDS3 binary table structure specifications,
-    insert numpy-compatible data type strings into that DataFrame;
-    return that DataFrame along with a numpy dtype object generated from it.
-    used in the Data.read_table pipeline.
+    Insert numpy-compatible data type strings into a TABLE/ARRAY format
+    definition DataFrame. Also generate a numpy dtype object from that
+    DataFrame.
     """
     fmtdef["dt"] = None
     if "ITEM_BYTES" not in fmtdef.columns:
@@ -170,47 +185,61 @@ def insert_sample_types_into_df(fmtdef, identifiers):
                 f"{data_type} is not a currently-supported data type."
             )
     if "BLOCK_NAME" in fmtdef.columns:
-        fmtdef = create_nested_array_dtypes(fmtdef)
-    dt = get_dtype(fmtdef)
+        fmtdef = construct_nested_array_format(fmtdef)
+    dt = fmtdef_to_dtype(fmtdef)
     return fmtdef, dt
 
 
-def get_dtype(fmtdef: pd.DataFrame):
-    """"""
+def fmtdef_to_dtype(fmtdef: pd.DataFrame) -> np.dtype:
+    """
+    Construct a structured (but ideally never nested, see
+    `construct_nested_array_format()` below) dtype from a format definition.
+    """
     dtype_spec = fmtdef[
-        [c for c in ("NAME", "dt", "SB_OFFSET") if c in fmtdef.columns]].to_dict("list")
+        [c for c in ("NAME", "dt", "SB_OFFSET") if c in fmtdef.columns]
+    ].to_dict("list")
     spec_keys = ("names", "formats", "offsets")[: len(dtype_spec)]
     return np.dtype({k: v for k, v in zip(spec_keys, dtype_spec.values())})
 
 
-def create_nested_array_dtypes(fmtdef: pd.DataFrame):
-    """"""
-    block_names_df = fmtdef.drop(fmtdef[fmtdef["NAME"] == "PLACEHOLDER_0"].index)
-    block_names = block_names_df["BLOCK_NAME"].unique()
-    for block_name in block_names[1:]:
+def construct_nested_array_format(fmtdef: pd.DataFrame) -> pd.DataFrame:
+    """
+    ARRAY objects can be deeply nested. This function computes the correct
+    byte offsets and dtypes (including array shape) for any nested subelements.
+    """
+    for block_name in fmtdef.loc[
+        fmtdef["NAME"] != "PLACEHOLDER_0", "BLOCK_NAME"
+    ].unique()[1:]:
         if block_name == "":
             continue
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
         prior = fmtdef.loc[fmt_block.index[0] - 1]
-        if "AXIS_ITEMS" in prior.keys():
-            axis_items = prior["AXIS_ITEMS"]
-            if not np.isnan(axis_items):
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
-                    fmt_block["SB_OFFSET"] = fmt_block["SB_OFFSET"]-prior["SB_OFFSET"]
-                dt = get_dtype(fmt_block)
-                if isinstance(axis_items, float):
-                    axis_items = int(axis_items)
-                dt = (dt, axis_items)
-                fmtdef.at[fmt_block.index[0] - 1, "dt"] = dt
-                fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
+        if "AXIS_ITEMS" not in prior.keys():
+            continue
+        if np.isnan(axis_items := prior["AXIS_ITEMS"]):
+            continue
+        with warnings.catch_warnings():
+            # TODO: We are intentionally setting with copy here. However, it
+            #  will start hard-failing in pandas 3.x and needs to be changed.
+            warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
+            fmt_block[
+                "SB_OFFSET"
+            ] = fmt_block["SB_OFFSET"] - prior["SB_OFFSET"]
+        if isinstance(axis_items, float):
+            axis_items = int(axis_items)
+        dt = fmtdef_to_dtype(fmt_block)
+        fmtdef.at[fmt_block.index[0] - 1, "dt"] = (dt, axis_items)
+        fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
     return fmtdef
 
 
 def booleanize_booleans(
     table: pd.DataFrame, fmtdef: pd.DataFrame
 ) -> pd.DataFrame:
-    """"""
+    """
+    We generally load boolean columns from binary tables as uint8 of value 0
+    or 1. This converts all such columns of a DataFrame to np.bool.
+    """
     boolean_columns = fmtdef.loc[fmtdef["DATA_TYPE"] == "BOOLEAN", "NAME"]
     table[boolean_columns] = table[boolean_columns].astype(bool)
     return table
@@ -219,14 +248,26 @@ def booleanize_booleans(
 def convert_ebcdic(
     table: pd.DataFrame, fmtdef: pd.DataFrame
 ) -> pd.DataFrame:
-    ebcdic_columns = fmtdef.loc[fmtdef["DATA_TYPE"].str.contains("EBCDIC"), "NAME"]
+    """
+    Decode any columns of a DataFrame that contain bytestrings constructed from
+    IBM S/360-style EBCDIC-encoded text to Python strings.
+    """
+    ebcdic_columns = fmtdef.loc[
+        fmtdef["DATA_TYPE"].str.contains("EBCDIC"), "NAME"
+    ]
     for col in ebcdic_columns:
+        # TODO: why do we copy table[col] twice?
         series = pd.Series(table[col])
         table[col] = series.str.decode('cp500')
     return table
 
 
 def rectified_rec_df(array: np.ndarray) -> pd.DataFrame:
+    """
+    Attempt to 'flatten' a 1- or 2D ndarray, possibly with a structured dtype
+    but with no nested arrays, into a DataFrame, typecasting as necessary for
+    pandas compatibility.
+    """
     if len(array.shape) == 3:
         # it's possible to pack 2D arrays into individual records. this
         # obviously does not work for pandas. if we encounter > 2D elements,
@@ -243,6 +284,13 @@ def rectified_rec_df(array: np.ndarray) -> pd.DataFrame:
 
 
 def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
+    """
+    Attempt to convert an ndarray with a structured dtype to a DataFrame,
+    flattening any nested 1- or 2-D arrays into blocks of columns and
+    typecasting as necessary for pandas compatibility. This does not attempt
+    to flatten nested elements with dimensionality > 2, and will raise a
+    NotImplementedError if it encounters them.
+    """
     sub_dfs = []
     name_buffer = []
     for field in array.dtype.descr:
@@ -266,8 +314,8 @@ def structured_array_to_df(array: np.ndarray) -> pd.DataFrame:
 
 def convert_ibm_reals(df: pd.DataFrame, fmtdef: pd.DataFrame) -> pd.DataFrame:
     """
-    converts all IBM reals in a dataframe from packed 16- or 32-bit integer
-    form to floating-point
+    Converts all IBM reals in a dataframe from packed 32- or 64-bit integer
+    form to np.float32 or np.float64.
     """
     if not fmtdef['DATA_TYPE'].str.contains('IBM').any():
         return df
@@ -278,7 +326,8 @@ def convert_ibm_reals(df: pd.DataFrame, fmtdef: pd.DataFrame) -> pd.DataFrame:
         func = ibm32_to_np_f32 if field['BYTES'] == 4 else ibm64_to_np_f64
         converted = func(df[field['NAME']].values)
         if field['BYTES'] == 4:
-            # IBM shorts are wider-range than IEEE shorts
+            # IBM shorts are wider-range than IEEE shorts; check if we can
+            # safely cast them back down to float32
             absolute = abs(converted)
             big = absolute.max() > np.finfo(np.float32).max
             nonzero = absolute[absolute > 0]

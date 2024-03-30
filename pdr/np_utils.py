@@ -114,7 +114,6 @@ def ibm_to_np(ibm: np.ndarray, sreg: int, ereg: int, mmask: int) -> np.ndarray:
     mantissa = ibm_mantissa / (2 ** ereg)
     exponent = 16 ** (ibm_exponent - 64)
     sign = 1 - (2 * ibm_sign).astype('int8')
-    # TODO: should be safe to cast 32-bit IBM real back to numpy float32, check
     return sign * mantissa * exponent
 
 
