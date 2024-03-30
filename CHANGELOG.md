@@ -8,10 +8,11 @@
 - see [supported_datasets.md](docs/supported_datasets.md) for details
 
 #### Other
-- Various docstrings, type hinting, and other in-code documentation
+- Lots of docstrings, type hinting, and other in-code documentation
+- Additional shared types to support static analysis and code readability
 
 ### Changed
-- Assorted linting and minor improvements
+- Assorted code refactoring, linting, and minor improvements
 
 ### Fixed
 - A bug in PDS4 label handling that sometimes dropped repeated child elements
