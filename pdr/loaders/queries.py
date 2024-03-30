@@ -458,7 +458,7 @@ def parse_table_structure(
     block: MultiDict,
     fn: str,
     data: PDRLike,
-    identifiers: dict[str, Any]
+    identifiers: dict
 ) -> tuple[pd.DataFrame, Optional[np.dtype]]:
     """
     Parse a TABLE or SPREADSHEET's format specification as a pd.DataFrame

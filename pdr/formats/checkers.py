@@ -40,8 +40,9 @@ designed specifically to be called inline of a specific handler function.
 """
 
 from __future__ import annotations
+from pathlib import Path
 import re
-from typing import Any, Mapping, Optional, TYPE_CHECKING
+from typing import Any, Mapping, Optional, TYPE_CHECKING, Union
 
 from multidict import MultiDict
 
@@ -242,7 +243,11 @@ def check_special_table_reader(
 
 
 def check_special_structure(
-    block: MultiDict, name: str, fn: str, identifiers: dict, data: PDRLike
+    name: str,
+    block: MultiDict,
+    fn: str,
+    data: PDRLike,
+    identifiers: dict
 ) -> tuple[bool, Optional[tuple[pd.DataFrame, Optional[np.dtype]]]]:
     """
     Preempt generic ARRAY/TABLE/SPREADSHEET format definition parsing. Wraps
@@ -725,7 +730,7 @@ def check_special_qube_band_storage(identifiers: dict):
 
 
 def check_special_hdu_name(
-    data: PDRLike, identifiers: dict, fn: str, name: str
+    data: PDRLike, identifiers: dict, fn: Union[str, Path], name: str
 ) -> tuple[bool, Optional[int]]:
     """
     Preempts generic PDS3 data object -> FITS HDU index mapping. Wraps
