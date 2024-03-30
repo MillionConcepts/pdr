@@ -600,7 +600,7 @@ def check_special_block(
         return formats.voyager.pra_special_block(data, name, identifiers)
     if (
         identifiers["DATA_SET_ID"] == "PHX-M-MECA-2-NIEDR-V1.0"
-        and re.match(r"MECA-EM1[123]", identifiers["PRODUCT_TYPE"])
+        and re.match(r"MECA-EM1[012]", identifiers["PRODUCT_TYPE"])
         and name == "WCHEM_TABLE"
     ):
         return True, formats.phoenix.wcl_edr_special_block(data, name)

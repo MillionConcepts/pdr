@@ -6,7 +6,6 @@ from typing import Any, Mapping, Sequence, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from multidict import MultiDict
 
 from pdr.datatypes import determine_byte_order, sample_types
 from pdr.formats import (
@@ -15,6 +14,7 @@ from pdr.formats import (
 import warnings
 
 if TYPE_CHECKING:
+    from multidict import MultiDict
     from pdr.pdrtypes import ByteOrder, DataIdentifiers
 
 
