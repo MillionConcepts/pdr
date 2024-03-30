@@ -14,6 +14,7 @@
 ### Changed
 - Assorted code refactoring, linting, and minor improvements
 - Substantial performance increases for wide tables with many repeated items
+- Modified some special cases for pandas 2.2.x compatibility
 
 ### Fixed
 - A bug in PDS4 label handling that sometimes dropped repeated child elements

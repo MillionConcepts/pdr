@@ -4,7 +4,7 @@ from pdr.pd_utils import compute_offsets
 
 
 def get_structure(block, name, filename, data, identifiers):
-    """The "encounter data" tables miscount the last column's START_BYTE by 1"""
+    """"Encounter data" tables miscount the last column's START_BYTE by 1"""
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -23,13 +23,16 @@ def fix_array_structure(name, block, fn, data, identifiers):
         dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
         return None, dt
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
-    fmtdef.loc[fmtdef['NAME'] == 'PLACEHOLDER_SPECTRUM', "AXIS_ITEMS"] = \
-        (block.get("COLLECTION").get("BYTES") -
-            (fmtdef[fmtdef['NAME'] == 'PLACEHOLDER_SPECTRUM']["START_BYTE"].values[0] - 1)) / \
-        len(fmtdef.loc[fmtdef['BLOCK_NAME'].str.contains('SPECTRUM')].index)
+    specbytes = block.get("COLLECTION").get("BYTES")
+    specstart = fmtdef.loc[
+        fmtdef['NAME'] == 'PLACEHOLDER_SPECTRUM', "START_BYTE"
+    ].iloc[0]
+    fmtdef.loc[fmtdef['NAME'] == 'PLACEHOLDER_SPECTRUM', "AXIS_ITEMS"] = (
+        (specbytes - specstart + 1)
+        / len(fmtdef.loc[fmtdef['BLOCK_NAME'].str.contains('SPECTRUM')])
+    )
     # Sometimes arrays define start_byte, sometimes their elements do
     if "START_BYTE" in fmtdef.columns:
-        fmtdef['START_BYTE'].fillna(1, inplace=True)
-
+        fmtdef['START_BYTE'] = fmtdef['START_BYTE'].fillna(1)
     from pdr.pd_utils import insert_sample_types_into_df
     return insert_sample_types_into_df(compute_offsets(fmtdef), identifiers)

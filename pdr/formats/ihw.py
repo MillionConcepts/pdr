@@ -1,28 +1,28 @@
 def curve_table_loader(filename, fmtdef_dt):
-    """ The labels do not always count column bytes correctly. """
+    """The labels do not always count column bytes correctly."""
     import pandas as pd
     names = [c for c in fmtdef_dt[0].NAME if "PLACEHOLDER" not in c]
-    table = pd.read_csv(filename, header=None, delim_whitespace=True)
+    table = pd.read_csv(filename, header=None, sep=r"\s+")
     assert len(table.columns) == len(names), "mismatched column count"
     table.columns = names
     return table
 
-# TODO: this appears to add a spurious extra column to one file (msnrdr04)
-#  that prevents correct column matching -- maybe it should be excluded from this
+
 def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
-    """ Some Halley V1.0 tables (MSN, PPN, and IRSN datasets) are missing 
-    newline characters between rows. """
+    """
+    Some Halley V1.0 tables (MSN, PPN, and IRSN datasets) are missing
+    newline characters between rows.
+    """
     from io import StringIO
-    from pdr.utils import head_file
-    from pdr.pd_utils import compute_offsets
     import pandas as pd
-    
+    from pdr.utils import head_file
+
     with head_file(filename) as f:
         f.read(start_byte)
         newlines_added = bytearray()
         for row in range(0, block["ROWS"]):
             bytes_ = f.read(block["ROW_BYTES"])
-            newlines_added += bytes_ + b"\n" #Adds a newline at the end of the row
+            newlines_added += bytes_ + b"\n" # Add a newline to each row
     string_buffer = StringIO(newlines_added.decode())
 
     # Adapted from _interpret_as_ascii()
@@ -38,10 +38,13 @@ def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     table = table.drop([k for k in table.keys() if "PLACEHOLDER" in k], axis=1)
     return table
 
+
 def get_special_block(data, name):
-    """A handful of MSN Radar tables have column names that were not reading 
+    """
+    A handful of MSN Radar tables have column names that were not reading
     correctly and were ending up as "NaN". Which also caused an AttributeError 
-    when running ix check."""
+    when running ix check.
+    """
     block = data.metablock_(name)
     for item in iter(block.items()):
         if "COLUMN" in item:
@@ -50,6 +53,7 @@ def get_special_block(data, name):
             if item[1]["START_BYTE"] == 21 and "NAME" not in item[1]:
                 item[1].add("NAME", ">=8SEC")
     return block
+
 
 def get_structure(block, name, filename, data, identifiers):
     """SSN products with a SPECTRUM pointer were opening with an incorrect
