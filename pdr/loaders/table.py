@@ -127,31 +127,6 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     return table
 
 
-# TODO: are we ever actually using this at this point? note
-#  that it will never work for compressed files.
-def _read_with_np_loadtxt(
-    fn: str, identifiers: dict, sep: str
-) -> pd.DataFrame:
-    """
-    Attempt to load text from a file and parse it as a delimited table using
-    `np.loadtxt()`.
-    """
-    return pd.DataFrame(
-        np.loadtxt(
-            fn,
-            delimiter=sep,
-            # TODO, maybe: this currently fails -- perhaps
-            #  correctly -- when there is no LABEL_RECORDS key.
-            #  but perhaps it is better to set a default of 0
-            #  and avoid use of read_fwf. Update: Now has the possibility of
-            #  the key being "". Unsure how this will affect the behavior.
-            skiprows=identifiers["LABEL_RECORDS"],
-        )
-        .copy()
-        .newbyteorder("=")
-    )
-
-
 def _read_as_delimited(
     fn: str,
     identifiers: dict,
@@ -163,10 +138,7 @@ def _read_as_delimited(
     Attempt to read an ASCII table as a delimiter-separated file. We always
     try this first before moving to a fixed-width parser.
     """
-    try:
-        table = pd.read_csv(string_buffer, sep=sep, header=None)
-    except (UnicodeError, AttributeError, ParserError):
-        table = _read_with_np_loadtxt(fn, identifiers, sep)
+    table = pd.read_csv(string_buffer, sep=sep, header=None)
     # TODO: adding this 'PLACEHOLDER' check has allowed many tables to use
     #  read_csv() instead of read_fwf(), which is generally preferable
     #  because read_fwf() is very slow. This may also be able to invalidate
@@ -232,9 +204,8 @@ def _read_table_from_stringio(
     try:
         sep = check_explicit_delimiter(block)
         return _read_as_delimited(fn, identifiers, sep, string_buffer, fmtdef)
-    except (TypeError, KeyError, IndexError, ValueError):  # ☹️
-        pass
-    string_buffer.seek(0)
+    except (IndexError, UnicodeError, AttributeError, ParserError):
+        string_buffer.seek(0)
     if "BYTES" in fmtdef.columns:
         try:
             return _read_fwf_with_colspecs(fmtdef, string_buffer)
