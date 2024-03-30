@@ -21,7 +21,7 @@
 - Updated an accidentally-skipped out-of-date unit test 
 
 ### Removed
-- Unused numpy-based ASCII-table parser  
+- Unused numpy-based ASCII table parser  
 
 ## [1.0.6] - 2024-03-28
 ### Added
