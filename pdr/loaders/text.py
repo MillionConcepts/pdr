@@ -1,4 +1,5 @@
 """Pointy-end functions for text-handling Loader subclasses."""
+from pathlib import Path
 from typing import Optional, Union
 import warnings
 
@@ -22,13 +23,26 @@ def read_text(target: str, fn: Union[list[str], str]) -> Union[list[str], str]:
         raise
 
 
-def read_header(fn: str, table_props: dict, name: str = "HEADER") -> str:
+def read_header(
+    fn: Union[str, Path],
+    table_props: dict,
+    name: str = "HEADER"
+) -> str:
     """Read a text header from a file."""
     return skeptically_load_header(fn, table_props, name)
 
 
-def read_label(fn, fmt: Optional[str] = "text"):
-    """"""
+def read_label(
+    fn: Union[str, Path],
+    fmt: Optional[str] = "text"
+) -> Union[str, "PVLModule"]:
+    """
+    Read the entirety of a PDS3 label, optionally using `pvl` to parse it as
+    completely as possible into Python objects. This is not intended for use
+    in the primary `pdr.Metadata` initialization workflow, but rather to
+    handle cases when the user explicitly requests the entirety of the label
+    (typically by accessing the "LABEL" key of a `pdr.Data` object).
+    """
     if fmt == "text":
         return trim_label(decompress(fn)).decode("utf-8")
     elif fmt == "pvl":
@@ -39,9 +53,34 @@ def read_label(fn, fmt: Optional[str] = "text"):
 
 
 def skeptically_load_header(
-    fn: str, table_props: dict, name="header", fmt: Optional[str] = "text",
-) -> str:
-    """"""
+    fn: Union[Path, str],
+    table_props: dict,
+    name: str = "header",  # TODO: what's with this default value?
+    fmt: Optional[str] = "text",
+) -> Union[str, "PVLModule", None]:
+    """
+    Attempt to read a text HEADER object from a file. PDS3 does not give a
+    strict definition of the HEADER object, so there is no way to
+    _consistently_ load HEADERs in a coherent, well-formatted fashion. However,
+    providers generally use HEADER to denote either attached file/product-level
+    metadata, column headers for an ASCII table, or object-level
+    contextualizing metadata for ASCII tables.
+
+    By default, simply read the designated byte range as unicode text. If
+    `as_pvl` is True, also attempt to parse this text as PVL. (This will fail
+    on most products, because most HEADER objects are not PVL, but is useful
+    for some ancillary attached labels, especially ISIS labels.)
+
+    NOTE: HEADERs defined in labels very often do not actually exist and are
+    never essential for loading primary data objects, so this function is
+    _always_ "optional", even in debug mode. If it fails, it will simply raise
+    a UserWarning and return None.
+
+    WARNING: this function is not intended to load metadata of standard file
+    formats (such as TIFF tags or FITS headers). These headers should always
+    be handled by a format-specific parser. More generally, it will never work
+    on binary files.
+    """
     # TODO: all these check_cases calls are probably unnecessary w/new file
     #  mapping workflow
     try:
@@ -74,7 +113,7 @@ def skeptically_load_header(
 
 
 # TODO: misleading name. Primarily a file _reader_.
-def ignore_if_pdf(fn: str) -> Optional[str]:
+def ignore_if_pdf(fn: Union[str, Path]) -> Optional[str]:
     """Read text from a file if it's not a pdf."""
     if looks_like_this_kind_of_file(fn, [".pdf"]):
         warnings.warn(f"Cannot open {fn}; PDF files are not supported.")

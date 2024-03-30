@@ -135,7 +135,6 @@ def compute_offsets(fmtdef):
         fmtdef = pd.concat(
             [fmtdef, pd.DataFrame([placeholder_rec])]
         ).reset_index(drop=True)
-    # lp.print_stats()
     return fmtdef
 
 
