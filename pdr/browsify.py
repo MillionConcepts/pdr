@@ -1,7 +1,8 @@
 """functions for producing browse versions of products"""
+from numbers import Number
 from pathlib import Path
 import pickle
-from typing import Any, Sequence, Union, Optional
+from typing import Any, Optional, Sequence, Union
 import warnings
 
 from dustgoggles.func import naturals
@@ -10,7 +11,9 @@ import pandas as pd
 from PIL import Image
 
 
-def find_masked_bounds(image, cheat_low, cheat_high):
+def find_masked_bounds(
+    image: np.ma.MaskedArray, cheat_low: int, cheat_high: int
+) -> tuple[Optional[Number], Optional[Number]]:
     """
     relatively memory-efficient way to perform bound calculations for
     normalize_range on a masked array.
@@ -39,7 +42,9 @@ def find_masked_bounds(image, cheat_low, cheat_high):
 
 
 # noinspection PyArgumentList
-def find_unmasked_bounds(image, cheat_low, cheat_high):
+def find_unmasked_bounds(
+    image: np.ndarray, cheat_low: int, cheat_high: int
+) -> tuple[Number, Number]:
     """straightforward way to find unmasked array bounds for normalize_range"""
     if cheat_low != 0:
         minimum = np.percentile(image, cheat_low).astype(image.dtype)
@@ -52,6 +57,8 @@ def find_unmasked_bounds(image, cheat_low, cheat_high):
     return minimum, maximum
 
 
+# NOTE: the following two functions are sort-of-vendored from
+# marslab.imgops.imgutils.
 def normalize_range(
     image: np.ndarray,
     bounds: Sequence[int] = (0, 1),
@@ -118,7 +125,7 @@ def eightbit(
 def colorfill_maskedarray(
     masked_array: np.ma.MaskedArray,
     color: Union[int, tuple[int, int, int]] = (0, 255, 255),
-):
+) -> np.ndarray
     """
     masked_array: 2-D masked array or a 3-D masked array with last axis of
     length 3. for likely uses, this should probably be 8-bit unsigned integer.
@@ -136,7 +143,7 @@ def colorfill_maskedarray(
     )
 
 
-def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs):
+def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs) -> None:
     """
     attempts to dump a browse version of a data object, writing it into a file
     type that can be opened with desktop software: .jpg for most arrays, .csv
@@ -179,9 +186,14 @@ def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs):
             stream.write(str(obj))
 
 
+# TODO: this needs to be like 'browsify_structured_array' to handle some
+#  nested dtypes that aren't recarrays.
 def _browsify_recarray(obj: np.recarray, outbase: str, **_):
-    """some tabular data with column groups ends up as numpy recarray, which is
-    challenging to turn into a useful .csv file in some cases"""
+    """
+    Some tabular data with column groups ends up as numpy recarray, which is
+    challenging to turn into a useful .csv file in some cases. This _tries_ to
+    save it as a CSV file, and if it fails, punts and pickles it.
+    """
     try:
         obj = pd.DataFrame.from_records(obj)
         # noinspection PyTypeChecker
@@ -201,19 +213,20 @@ def _browsify_array(
     override_rgba: bool = False,
     image_format: str = "jpg",
     **_,
-):
+) -> list[Optional[Image]]:
     """
-    attempt to save array as one or more images
+    Attempt to render (and optionally save) an ndarray as one or more
+    images.
     """
     if len(obj.shape) == 3:
         obj = _format_multiband_image(obj, band_ix, override_rgba)
     if not isinstance(obj, tuple):
-        return _render_and_save(
+        return _render_array(
             obj, outbase, purge, image_clip, mask_color, save, image_format
         )
     results = []
     for ix, band in enumerate(obj):
-        result = _render_and_save(
+        result = _render_array(
             band,
             f"{outbase}_{ix}",
             purge,
@@ -226,10 +239,21 @@ def _browsify_array(
     return results
 
 
-def _render_and_save(
-    obj, outbase, purge, image_clip, mask_color, save, image_format
-):
-    """"""
+def _render_array(
+    obj: np.ndarray,
+    outbase: str,
+    purge: bool,
+    image_clip: Union[float, tuple[float, float]],
+    mask_color: Union[int, tuple[int, int, int]],
+    save: bool,
+    image_format: str
+) -> Optional[Image]:
+    """
+    Handler function for array-rendering pipeline, used by `browsify()` on
+    most ndarrays and by `show()` always. Render an ndarray as a PIL Image,
+    optionally clipping and masking it. If `save` is True, save it to disk;
+    if False, return it.
+    """
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
     if (obj.dtype.char in np.typecodes["AllInteger"]) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
@@ -311,11 +335,14 @@ def _format_as_single_band(band_ix, obj):
 
 def save_sparklines(
     df: pd.DataFrame,
-    outbase,
+    outbase: str,
     sparkline_column_key=lambda c: "spectrum" in c.lower(),
     orientation="rows",
 ):
-    """"""
+    """
+    Experimental function to render a DataFrame that represents time-series
+    samples as sparklines. Mostly doesn't work.
+    """
     from matplotlib import pyplot as plt
 
     sparkframe = (
