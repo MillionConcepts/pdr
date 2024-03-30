@@ -1,6 +1,43 @@
+"""
+This module contains functions that preempt generic metadata- or data-parsing
+behaviors. They are intended to manage idiosyncracies common to all products
+of a particular type, including but not limited to:
+
+* Malformatted labels
+* Incorrect metadata
+* Malformatted data
+* Technically correct but extremely unusual data formatting
+
+To put this another way, they facilitate single-dispatch polymorphism on the
+semantic level of data product types.
+
+Most functions in this file are intended to be applied by `func.specialize`
+as wrappers for functions in `loaders.queries`. Others are called inline as
+part of complex workflows downstream from the primary metadata-parsing phase.
+
+Every function in this module should be named `check_special_{something}`,
+where 'something' clearly designates the metadata-parsing or data-loading
+behavior it may sometimes preempt.
+
+Every function in this module should return a tuple whose first element is a
+`bool` and whose second element is the "special" value. If the first element
+is `True`, it means that there is a relevant special case, so the caller
+should use the "special" value instead of engaging in its normal behavior; if
+it is `False`, there is no relevant special case and the caller should continue
+with its normal behavior. The second element of the tuple should always be
+`None` if the first element is `False`.
+
+If the function is intended to wrap a generic function (generally via
+`func.specialize`), the second element of this tuple, when not None, must
+always share the return type of that generic function.
+
+Exceptions to these naming and signature conventions can be made for very
+simple checkers designed to be called inline of a specific handler function.
+"""
+
 from __future__ import annotations
 import re
-from typing import TYPE_CHECKING, Optional, Mapping, Any
+from typing import Any, Mapping, Optional, TYPE_CHECKING
 
 from multidict import MultiDict
 
