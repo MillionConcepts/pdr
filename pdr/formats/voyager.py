@@ -66,14 +66,17 @@ def pra_special_block(data, name, identifiers):
                     item[1]["START_BYTE"] = 5
     return True, block
 
+
 def lecp_table_loader(filename, fmtdef_dt):
-    """VG1 LECP Jupiter SUMM Sector tables reference a format file with
-    incorrect START_BYTEs for columns within a CONTAINER. Columns are
-    consistently separated by whitespace."""
+    """
+    VG1 LECP Jupiter SUMM Sector tables reference a format file with incorrect
+    START_BYTEs for columns within a CONTAINER. Columns are consistently
+    separated by whitespace.
+    """
     import pandas as pd
 
     fmtdef, dt = fmtdef_dt
-    table = pd.read_csv(filename, header=None, delim_whitespace=True)
+    table = pd.read_csv(filename, header=None, sep=r"\s+")
     assert len(table.columns) == len(fmtdef.NAME.tolist())
     table.columns = fmtdef.NAME.tolist()
     return table
