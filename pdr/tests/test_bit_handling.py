@@ -1,11 +1,12 @@
+from inspect import get_annotations
 import random
 
 import pandas as pd
 
 from pdr.bit_handling import expand_bit_strings
 from pdr.loaders.queries import read_table_structure
-from pdr.parselabel.pds3 import parse_pvl, literalize_pvl_block
-from pdr.pdr import ID_FIELDS
+from pdr.parselabel.pds3 import literalize_pvl_block, parse_pvl
+from pdr.pdrtypes import DataIdentifiers
 
 BIT_STUB = """
 OBJECT                  = COLUMN
@@ -40,7 +41,7 @@ OBJECT                  = COLUMN
 END_OBJECT              = COLUMN
 """
 
-NULL_IDENTIFIERS = {field: "" for field in ID_FIELDS}
+NULL_IDENTIFIERS = {field: "" for field in get_annotations(DataIdentifiers)}
 
 
 def test_bit_handling():

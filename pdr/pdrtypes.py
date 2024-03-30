@@ -37,6 +37,7 @@ Axname = Literal["BAND", "LINE", "SAMPLE"]
 
 
 class ImageProps(TypedDict):
+    """Standard image properties dict used in image-processing workflows."""
     # Number of bytes per pixel (eventually redundant with sample_type but
     # populated much earlier)
     BYTES_PER_PIXEL: Literal[1, 2, 4, 8]
@@ -72,3 +73,30 @@ class ImageProps(TypedDict):
     line_suffix_pix: Optional[int]
     # Order of axes expressed as a tuple of axis names, only used by ISIS qubes
     axnames: Optional[tuple[Axname]]
+
+
+class DataIdentifiers(TypedDict):
+    """
+    Standard PDS3 'identifiers' Data checks its Metadata for on initialization
+    (if it's made from a PDS3 product). Used primarily to make special case
+    checks more compact. These are taken directly from the label, then
+    stringified if they're sets or tuples. All keys are always present, but
+    may be None if a parameter's not actually in the label.
+    """
+    DATA_SET_ID: Union[str, None]
+    DATA_SET_NAME: Union[str, None]
+    FILE_NAME: Union[str, None]
+    FILE_RECORDS: Union[int, None]
+    INSTRUMENT_ID: Union[str, None]
+    INSTRUMENT_HOST_NAME: Union[str, None]
+    INSTRUMENT_NAME: Union[str, None]
+    LABEL_RECORDS: Union[int, None]
+    NOTE: Union[str, None]
+    PRODUCT_ID: Union[str, None]
+    PRODUCT_TYPE: Union[str, None]
+    RECORD_BYTES: Union[int, None]
+    RECORD_TYPE: Union[str, None]
+    ROW_BYTES: Union[int, None]
+    ROWS: Union[int, None]
+    SPACECRAFT_NAME: Union[str, None]
+    STANDARD_DATA_PRODUCT_ID: Union[str, None]

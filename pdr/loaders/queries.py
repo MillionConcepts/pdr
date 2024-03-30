@@ -371,6 +371,9 @@ def _table_length(block, identifiers, length, n_records):
                 record_length = block["ROW_BYTES"]
                 record_length += block.get("ROW_SUFFIX_BYTES", 0)
             elif identifiers["RECORD_BYTES"] is not None:
+                # TODO, probably, and applicable many more places than here:
+                #  ideally we don't use identifiers for anything but special
+                #  case checks.
                 record_length = identifiers["RECORD_BYTES"]
             else:
                 record_length = None

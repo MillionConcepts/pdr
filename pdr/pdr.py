@@ -1,5 +1,6 @@
 from __future__ import annotations
 from functools import partial, cache
+from inspect import get_annotations
 from itertools import chain, product
 from numbers import Number
 from pathlib import Path
@@ -38,6 +39,7 @@ from pdr.parselabel.pds3 import (
 )
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
+from pdr.pdrtypes import DataIdentifiers
 from pdr.utils import (
     associate_label_file,
     catch_return_default,
@@ -50,32 +52,6 @@ if TYPE_CHECKING:
     import numpy as np
     import pandas as pd
     from PIL.Image import Image
-
-
-ID_FIELDS = (
-    "INSTRUMENT_ID",
-    "INSTRUMENT_NAME",
-    "SPACECRAFT_NAME",
-    "PRODUCT_TYPE",
-    "DATA_SET_NAME",
-    "DATA_SET_ID",
-    "STANDARD_DATA_PRODUCT_ID",
-    "FILE_NAME",
-    "INSTRUMENT_HOST_NAME",
-    "PRODUCT_TYPE",
-    "PRODUCT_ID",
-    "RECORD_BYTES",
-    "RECORD_TYPE",
-    "ROW_BYTES",
-    "ROWS",
-    "FILE_RECORDS",
-    "LABEL_RECORDS",
-    "NOTE",
-)
-"""
-Standard 'identifier' fields for PDS3 products. Used to make special case 
-checks more compact.
-"""
 
 
 class Metadata(MultiDict):
@@ -318,13 +294,13 @@ class Data:
         if self.pointers is not None:
             self._find_objects()
         self.identifiers = {
-            field: self.metaget_(field, "") for field in ID_FIELDS
+            field: self.metaget_(field, "")
+            for field in get_annotations(DataIdentifiers)
         }
         # it never does us any favors to have tuples or sets in here
         for k, v in self.identifiers.items():
             if isinstance(v, (tuple, set)):
                 self.identifiers[k] = str(v)
-
 
     def _init_pds4(self):
         """use pds4_tools to open pds4 files, but in our interface idiom."""
