@@ -1,3 +1,5 @@
+"""Functions for the nitty-gritty array-shaping parts of image loading."""
+
 from io import BufferedIOBase
 from itertools import product
 from typing import Optional
@@ -7,7 +9,7 @@ import numpy as np
 
 from pdr import vax
 from pdr.loaders.queries import get_image_properties
-from pdr.np_utils import np_from_buffered_io
+from pdr.np_utils import make_c_contiguous, np_from_buffered_io
 from pdr.utils import decompress
 
 
@@ -200,13 +202,3 @@ def extract_axplanes(
         axplanes[f"{side}_{ax}s"] = image[tuple(pslice)]
         image = image[tuple(aslice)]
     return image, axplanes
-
-
-def make_c_contiguous(image: np.ndarray) -> np.ndarray:
-    """
-    If an ndarray isn't C-contiguous, reorder it as C-contiguous. If it is,
-    don't mess with it.
-    """
-    if image.flags["C_CONTIGUOUS"] is False:
-        return np.ascontiguousarray(image)
-    return image

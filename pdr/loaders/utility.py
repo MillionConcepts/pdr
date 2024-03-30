@@ -1,3 +1,5 @@
+"""Support objects for 'utility' Loader subclasses."""
+
 from functools import partial
 from operator import contains
 from pathlib import Path
