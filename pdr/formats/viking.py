@@ -11,7 +11,7 @@ def seis_table_loader(filepath, fmtdef_dt):
     # separated by whitespace, so can be read by read_csv() instead.
     # Both labels define a SEISMIC_TIME_SOLS column that doesn't exist in the data.
     if "summary" in filename.lower():
-        table = pd.read_csv(filepath, header=None, delim_whitespace=True)
+        table = pd.read_csv(filepath, header=None, sep=r"\s+")
         col_names.remove("SEISMIC_TIME_SOLS")
         if "event_wind_summary" in filename.lower():
             # event_wind_summary.tab has a column not included in the label. It
