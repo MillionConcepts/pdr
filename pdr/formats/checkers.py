@@ -65,29 +65,19 @@ def check_special_offset(
     # object offset in the ^HISTOGRAM pointer target
     if identifiers["INSTRUMENT_ID"] == "CHEMIN":
         return formats.msl_cmn.get_offset(name)
-    if identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0" and name in (
-        "HEADER_TABLE",
-        "DATA_TABLE",
+    if (
+        identifiers["DATA_SET_ID"] == "CLEM1-L-RSS-5-BSR-V1.0"
+        and re.match("(HEADER|DATA)_TABLE", name)
     ):
         # sequence wrapped as string for object names
         return formats.clementine.get_offset(data, name)
     if identifiers["INSTRUMENT_ID"] == "THEMIS" and name == "QUBE":
         return formats.themis.get_qube_offset(data)
+    disrsubs = re.compile(r"STRIP|VISIBL|IMAGE|IR_|TIME|SUB|SOLAR")
     if (
         identifiers["INSTRUMENT_NAME"] == "DESCENT IMAGER SPECTRAL RADIOMETER"
-        and (identifiers["PRODUCT_TYPE"] == "RDR")
-        or any(
-            sub in identifiers["FILE_NAME"]
-            for sub in [
-                "STRIP",
-                "VISIBL",
-                "IMAGE",
-                "IR_",
-                "TIME",
-                "SUN",
-                "SOLAR",
-            ]
-        )
+        and identifiers["PRODUCT_TYPE"] == "RDR"
+        or disrsubs.search(identifiers["FILE_NAME"])
     ):
         return formats.cassini.get_offset(fn, identifiers)
     if (
@@ -98,9 +88,8 @@ def check_special_offset(
         return formats.lro.get_crater_offset()
     if (
         identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
-         and identifiers["PRODUCT_TYPE"] in ("MECA_WCL_CP",
-                                             "MECA_WCL_CV")
-         and "TABLE" in name
+        and identifiers["PRODUCT_TYPE"] in ("MECA_WCL_CP", "MECA_WCL_CV")
+        and "TABLE" in name
     ):
         return formats.phoenix.wcl_rdr_offset(data, name)
     return False, None
@@ -112,7 +101,7 @@ def check_special_table_reader(
     fn: str,
     fmtdef_dt: tuple[pd.DataFrame, np.dtype],
     block: MultiDict,
-    start_byte: int
+    start_byte: int,
 ):
     """Preempt loaders.datawrap.ReadTable's dispatch to `read_table()`."""
     if identifiers["DATA_SET_ID"] in (
@@ -203,7 +192,8 @@ def check_special_table_reader(
     ):
         return True, formats.ihw.curve_table_loader(fn, fmtdef_dt)
     if (
-        identifiers["DATA_SET_ID"] in (
+        identifiers["DATA_SET_ID"]
+        in (
             "IHW-C-PPFLX-3-RDR-HALLEY-V1.0",
             "IHW-C-PPOL-3-RDR-HALLEY-V1.0",
             "IHW-C-PPSTOKE-3-RDR-HALLEY-V1.0",
@@ -215,7 +205,8 @@ def check_special_table_reader(
             "IHW-C-IRFTAB-3-RDR-HALLEY-V1.0",
             "IHW-C-IRPOL-3-RDR-HALLEY-V1.0",
             "IHW-C-IRPHOT-3-RDR-HALLEY-V1.0",
-        ) and name == "TABLE"
+        )
+        and name == "TABLE"
     ):
         return True, formats.ihw.add_newlines_table_loader(
             fmtdef_dt, block, fn, start_byte
@@ -225,9 +216,9 @@ def check_special_table_reader(
         and name == "TABLE"
     ):
         return True, formats.voyager.lecp_table_loader(fn, fmtdef_dt)
-    if (
-        identifiers["DATA_SET_ID"] == "VL2-M-SEIS-5-RDR-V1.0"
-        and name in ("TABLE", "SPREADSHEET")
+    if identifiers["DATA_SET_ID"] == "VL2-M-SEIS-5-RDR-V1.0" and name in (
+        "TABLE",
+        "SPREADSHEET",
     ):
         return True, formats.viking.seis_table_loader(fn, fmtdef_dt)
     if (
@@ -236,8 +227,7 @@ def check_special_table_reader(
     ):
         return True, formats.mex.aspera_table_loader(fn, fmtdef_dt)
     if (
-        identifiers["DATA_SET_ID"] in ("MER1-M-RSS-1-EDR-V1.0",
-                                       "MER2-M-RSS-1-EDR-V1.0",)
+        re.match(r"MER[12]-M-RSS-1-EDR-V1.0", identifiers["DATA_SET_ID"])
         and identifiers["PRODUCT_TYPE"] == "UHFD"
         and name == "SPREADSHEET"
     ):
@@ -252,11 +242,7 @@ def check_special_table_reader(
 
 
 def check_special_structure(
-    block: MultiDict,
-    name: str,
-    fn: str,
-    identifiers: dict,
-    data: PDRLike
+    block: MultiDict, name: str, fn: str, identifiers: dict, data: PDRLike
 ) -> tuple[bool, Optional[tuple[pd.DataFrame, Optional[np.dtype]]]]:
     """
     Preempt generic ARRAY/TABLE/SPREADSHEET format definition parsing. Wraps
@@ -288,6 +274,7 @@ def check_special_structure(
         return True, formats.mgs.get_ecs_structure(
             block, name, fn, data, identifiers
         )
+    # TODO: yikes
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "CASSINI ORBITER"
         and identifiers["INSTRUMENT_ID"] == "RPWS"
@@ -306,9 +293,9 @@ def check_special_structure(
             block, name, fn, data, identifiers
         )
     if (
-        identifiers["DATA_SET_ID"] == "GP-J-NMS-3-ENTRY-V1.0"
-        or identifiers["DATA_SET_ID"] == "GP-J-ASI-3-ENTRY-V1.0"
-    ) and name == "TABLE":
+        re.match(r"GP-J-(NMS|ASI)-3-ENTRY-V1.0", identifiers["DATA_SET_ID"])
+        and name == "TABLE"
+    ):
         return True, formats.galileo.probe_structure(
             block, name, fn, data, identifiers
         )
@@ -336,8 +323,7 @@ def check_special_structure(
             name, block, fn, data, identifiers
         )
     if (
-        (identifiers["DATA_SET_ID"] == "MRO-M-MCS-4-RDR-V1.0"
-        or identifiers["DATA_SET_ID"] == "MRO-M-MCS-2-EDR-V1.0")
+        re.match(r"MRO-M-MCS-(4-RDR|2-EDR)-V1.0", identifiers["DATA_SET_ID"])
         and name == "TABLE"
     ):
         return True, formats.mro.get_structure(
@@ -351,10 +337,7 @@ def check_special_structure(
         return True, formats.voyager.get_structure(
             block, name, fn, data, identifiers
         )
-    if (
-        "IHW-C-SPEC-" in identifiers["DATA_SET_ID"]
-        and name == "SPECTRUM"
-    ):
+    if "IHW-C-SPEC-" in identifiers["DATA_SET_ID"] and name == "SPECTRUM":
         return True, formats.ihw.get_structure(
             block, name, fn, data, identifiers
         )
@@ -390,7 +373,7 @@ def check_special_position(
     target: PhysicalTarget,
     name: str,
     fn: str,
-    start_byte: int
+    start_byte: int,
 ) -> tuple[bool, Optional[int]]:
     """
     Preempt generic detection of a table's row or byte offset within a file.
@@ -405,27 +388,16 @@ def check_special_position(
         return True, formats.mex.marsis_get_position(
             identifiers, block, target, name, start_byte
         )
+    huysubs = re.compile(r"DARK|STRIP|VIS_EX|SUN|VISIBL|TIME|SOLAR|IMAGE")
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "HUYGENS PROBE"
-        and any(
-            sub in identifiers["FILE_NAME"]
-            for sub in [
-                "DARK",
-                "STRIP",
-                "VIS_EX",
-                "SUN",
-                "VISIBL",
-                "TIME",
-                "SOLAR",
-                "IMAGE",
-            ]
-        )
+        and huysubs.search(identifiers["FILE_NAME"])
         or (
             identifiers["INSTRUMENT_NAME"]
             == "DESCENT IMAGER SPECTRAL RADIOMETER"
             and identifiers["PRODUCT_TYPE"] == "RDR"
         )
-        and (name in ("TABLE", "HEADER"))
+        and name in ("TABLE", "HEADER")
     ):
         return True, formats.cassini.get_position(
             identifiers, block, target, name, fn, start_byte
@@ -444,7 +416,7 @@ def check_special_position(
     ):
         return True, formats.epoxi.cart_model_get_position(
             identifiers, block, target, name, start_byte
-            )
+        )
     return False, None
 
 
@@ -576,10 +548,7 @@ def check_special_block(
         and (name == "TIME_SERIES" or name == "TABLE")
     ):
         return True, formats.galileo.pws_special_block(data, name)
-    if (
-        "ULY-J-EPAC-4-SUMM" in identifiers["DATA_SET_ID"]
-        and name == "TABLE"
-    ):
+    if "ULY-J-EPAC-4-SUMM" in identifiers["DATA_SET_ID"] and name == "TABLE":
         return True, formats.ulysses.get_special_block(data, name, identifiers)
     if (
         "VG2-N-MAG-4-RDR-HGCOORDS" in identifiers["DATA_SET_ID"]
@@ -603,18 +572,17 @@ def check_special_block(
         and name == "TIME_SERIES"
     ):
         return formats.voyager.pls_ionbr_special_block(data, name)
-    if (
-        identifiers["DATA_SET_ID"] == "M9-M-IRIS-3-RDR-V1.0"
-        and (name == "SPECTRAL_SERIES"  # the data product
-             or "SPECTRUM" in name  # the calibration data
-             )
+    if identifiers["DATA_SET_ID"] == "M9-M-IRIS-3-RDR-V1.0" and (
+        name == "SPECTRAL_SERIES"  # the data product
+        or "SPECTRUM" in name  # the calibration data
     ):
         return True, formats.mariner.get_special_block(data, name)
     if (
-        identifiers["DATA_SET_ID"] in (
-            "IHW-C-MSNRDR-3-RDR-HALLEY-ETA-AQUAR-V1.0",
-            "IHW-C-MSNRDR-3-RDR-HALLEY-ORIONID-V1.0",
-        ) and name == "TABLE"
+        re.match(
+            r"IHW-C-MSNRDR-3-RDR-HALLEY-(ETA-AQUAR|ORIONID)-V1.0",
+            identifiers["DATA_SET_ID"],
+        )
+        and name == "TABLE"
     ):
         return True, formats.ihw.get_special_block(data, name)
     if (
@@ -624,18 +592,18 @@ def check_special_block(
     ):
         return formats.voyager.pra_special_block(data, name, identifiers)
     if (
-         identifiers["DATA_SET_ID"] == "PHX-M-MECA-2-NIEDR-V1.0"
-         and identifiers["PRODUCT_TYPE"] in ("MECA-EM10",
-                                             "MECA-EM11",
-                                             "MECA-EM12",)
-         and name == "WCHEM_TABLE"
+        identifiers["DATA_SET_ID"] == "PHX-M-MECA-2-NIEDR-V1.0"
+        and re.match(r"MECA-EM1[123]", identifiers["PRODUCT_TYPE"])
+        and name == "WCHEM_TABLE"
     ):
         return True, formats.phoenix.wcl_edr_special_block(data, name)
     if (
-         "MEX-M-PFS-2-EDR-" in identifiers["DATA_SET_ID"]
-         and ("RAW" in identifiers["PRODUCT_ID"]
-              or "HK" in identifiers["PRODUCT_ID"])
-         and name == "TABLE"
+        "MEX-M-PFS-2-EDR-" in identifiers["DATA_SET_ID"]
+        and (
+            "RAW" in identifiers["PRODUCT_ID"]
+            or "HK" in identifiers["PRODUCT_ID"]
+        )
+        and name == "TABLE"
     ):
         return formats.mex.pfs_edr_special_block(data, name)
     return False, None
@@ -690,10 +658,7 @@ def check_trivial_case(pointer: str, identifiers: dict, fn: str) -> bool:
         return formats.galileo.ssi_cubes_header_loader()
     if identifiers["INSTRUMENT_ID"] == "CHEMIN" and (pointer == "HEADER"):
         return formats.msl_cmn.trivial_header_loader()
-    if (
-        "MSL-M-SAM-" in identifiers["DATA_SET_ID"]
-        and "FILE" in pointer
-    ):
+    if "MSL-M-SAM-" in identifiers["DATA_SET_ID"] and "FILE" in pointer:
         # reusing the msl_cmn special case for msl_sam 'FILE' pointers
         return formats.msl_cmn.trivial_header_loader()
     return False
@@ -711,9 +676,7 @@ def special_image_constants(identifiers: dict) -> dict[str, int]:
 
 
 def check_special_fn(
-    data: PDRLike,
-    object_name: str,
-        identifiers: dict
+    data: PDRLike, object_name: str, identifiers: dict
 ) -> tuple[bool, Optional[str]]:
     """
     Preempts generic filename specification. Called inline by
@@ -739,9 +702,12 @@ def check_special_fn(
     if identifiers["INSTRUMENT_ID"] == "THEMIS":
         return formats.themis.check_gzip_fn(data, object_name)
     if (
-        identifiers["DATA_SET_ID"] in ["NH-P-PEPSSI-4-PLASMA-V1.0",
-                                       "NH-X-SWAP-5-DERIVED-SOLARWIND-V1.0",
-                                       "NH-P/PSA-LORRI/ALICE/REX-5-ATMOS-V1.0"]
+        identifiers["DATA_SET_ID"]
+        in (
+            "NH-P-PEPSSI-4-PLASMA-V1.0",
+            "NH-X-SWAP-5-DERIVED-SOLARWIND-V1.0",
+            "NH-P/PSA-LORRI/ALICE/REX-5-ATMOS-V1.0",
+        )
         and object_name == "SPREADSHEET"
     ):
         return formats.nh.get_fn(data)
@@ -759,43 +725,38 @@ def check_special_qube_band_storage(identifiers: dict):
 
 
 def check_special_hdu_name(
-    data: PDRLike,
-    identifiers: dict,
-    fn: str,
-    name: str
+    data: PDRLike, identifiers: dict, fn: str, name: str
 ) -> tuple[bool, Optional[int]]:
     """
     Preempts generic PDS3 data object -> FITS HDU index mapping. Wraps
     `get_fits_id()`.
     """
     if (
-        identifiers['INSTRUMENT_HOST_NAME'] == 'DAWN'
-        and 'FC2' in identifiers['DATA_SET_ID']
+        identifiers["INSTRUMENT_HOST_NAME"] == "DAWN"
+        and "FC2" in identifiers["DATA_SET_ID"]
     ):
         return True, formats.dawn.dawn_hdu_name(name)
-    if identifiers['DATA_SET_ID'].startswith('MSGR-H-MDIS-6-CAL'):
+    if identifiers["DATA_SET_ID"].startswith("MSGR-H-MDIS-6-CAL"):
         return True, formats.galileo.mdis_hdu_name(name)
     if (
         identifiers["INSTRUMENT_NAME"] == "STUDENT DUST COUNTER"
-        and '-SDC-' in identifiers["DATA_SET_ID"]
-        and identifiers['PRODUCT_TYPE'] == 'EDR'
+        and "-SDC-" in identifiers["DATA_SET_ID"]
+        and identifiers["PRODUCT_TYPE"] == "EDR"
     ):
         return True, formats.nh.sdc_edr_hdu_name(name)
-    if re.match(r"NH-\w-REX-[23]", identifiers['DATA_SET_ID']):
+    if re.match(r"NH-\w-REX-[23]", identifiers["DATA_SET_ID"]):
         return True, formats.nh.rex_hdu_name(name)
-    if identifiers['INSTRUMENT_ID'] == 'PEPSSI':
-        if re.search(
-            r"(JUPITER|LAUNCH|CRUISE)", identifiers['DATA_SET_ID']
-        ):
+    if identifiers["INSTRUMENT_ID"] == "PEPSSI":
+        if re.search(r"(JUPITER|LAUNCH|CRUISE)", identifiers["DATA_SET_ID"]):
             return False, None  # these seem ok
-        elif identifiers['PRODUCT_TYPE'] == 'EDR':
+        elif identifiers["PRODUCT_TYPE"] == "EDR":
             return True, formats.nh.pepssi_edr_hdu_name(name)
-        elif "PLUTO" in identifiers['DATA_SET_ID']:
+        elif "PLUTO" in identifiers["DATA_SET_ID"]:
             return True, formats.nh.pepssi_pluto_rdr_hdu_name(name)
         else:
             return True, formats.nh.pepssi_rdr_hdu_name(name)
     if re.match(r"NH.*SWAP", identifiers["DATA_SET_ID"]):
         return True, formats.nh.swap_hdu_stubs(data, identifiers, fn, name)
-    if identifiers['DATA_SET_ID'].startswith('HST-S-WFPC2-3-RPX'):
+    if identifiers["DATA_SET_ID"].startswith("HST-S-WFPC2-3-RPX"):
         return True, formats.saturn_rpx.hst_hdu_name(name)
     return False, None
