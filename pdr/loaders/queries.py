@@ -482,7 +482,7 @@ def parse_table_structure(
             # this is either a nonstandard fixed-width table or a DSV table.
             # don't bother trying to calculate explicit byte offsets.
             return fmtdef, None
-        fmtdef["BYTES"] = np.nan
+        fmtdef["BYTES"] = float('nan')
     if fmtdef['BYTES'].isna().any():
         try:
             fmtdef = _fill_empty_byte_rows(fmtdef)
