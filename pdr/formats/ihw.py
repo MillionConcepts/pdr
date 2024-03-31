@@ -1,5 +1,11 @@
 def curve_table_loader(filename, fmtdef_dt):
-    """The labels do not always count column bytes correctly."""
+    """
+    The labels do not always count column bytes correctly.
+
+    HITS
+    * ihw_isrn
+        * curve
+    """
     import pandas as pd
     names = [c for c in fmtdef_dt[0].NAME if "PLACEHOLDER" not in c]
     table = pd.read_csv(filename, header=None, sep=r"\s+")
@@ -12,6 +18,11 @@ def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     """
     Some Halley V1.0 tables (MSN, PPN, and IRSN datasets) are missing
     newline characters between rows.
+
+    HITS
+    * ihw
+        * ms_radar
+        * ms_vis
     """
     from io import StringIO
     import pandas as pd
@@ -44,6 +55,10 @@ def get_special_block(data, name):
     A handful of MSN Radar tables have column names that were not reading
     correctly and were ending up as "NaN". Which also caused an AttributeError 
     when running ix check.
+
+    HITS
+    * ihw
+        * ms_radar
     """
     block = data.metablock_(name)
     for item in iter(block.items()):
@@ -56,8 +71,14 @@ def get_special_block(data, name):
 
 
 def get_structure(block, name, filename, data, identifiers):
-    """SSN products with a SPECTRUM pointer were opening with an incorrect
-    column name."""
+    """
+    SSN products with a SPECTRUM pointer were opening with an incorrect
+    column name.
+
+    HITS
+    * ihw
+        * spec_hal_cal
+    """
     from pdr.loaders.queries import read_table_structure
     from pdr.pd_utils import insert_sample_types_into_df
     

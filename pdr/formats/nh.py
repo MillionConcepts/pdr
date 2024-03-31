@@ -8,6 +8,15 @@ def sdc_edr_hdu_name(name):
     pointer names do not correspond to HDU names in some SDC raw FITS files,
     and some labels fail to mention some HDUs, preventing the use of normal
     HDU indexing.
+
+    HITS
+    * nh_sdc
+        * launch_raw
+        * jupiter_raw
+        * cruise_raw
+        * pluto_raw
+        * kem_cruise_raw
+        * arrokoth_raw
     """
     return {
         "HEADER": 0,
@@ -21,7 +30,24 @@ def sdc_edr_hdu_name(name):
 
 
 def rex_hdu_name(name):
-    """same issue."""
+    """
+    same issue.
+
+    HITS
+    * nh_rex
+        * launch_raw
+        * launch_cal
+        * jupiter_raw
+        * jupiter_cal
+        * cruise_raw
+        * cruise_cal
+        * pluto_raw
+        * pluto_cal
+        * kem_cruise_raw
+        * kem_cruise_cal
+        * arrokoth_raw
+        * arrokoth_cal
+    """
     return {
         "HEADER": 0,
         "ARRAY": 0,
@@ -37,7 +63,14 @@ def rex_hdu_name(name):
 
 
 def pepssi_edr_hdu_name(name):
-    """same issue."""
+    """
+    same issue.
+
+    HITS
+    * nh_pepssi
+        * arrokoth_raw
+        * pluto_raw
+    """
     return {
         "HEADER": 0,
         "EXTENSION_N1": 1,
@@ -50,7 +83,13 @@ def pepssi_edr_hdu_name(name):
 
 
 def pepssi_pluto_rdr_hdu_name(name):
-    """things are different on pluto."""
+    """
+    same basic issue, but things are different on pluto.
+
+    HITS
+    * nh_pepssi
+        * pluto_cal
+    """
     return {
         "HEADER": 0,
         "IMAGE": 0,
@@ -68,7 +107,13 @@ def pepssi_pluto_rdr_hdu_name(name):
 
 
 def pepssi_rdr_hdu_name(name):
-    """same issue."""
+    """
+    same issue.
+
+    HITS
+    * nh_pepssi
+        * arrokoth_cal
+    """
     return {
         "HEADER": 0,
         "IMAGE": 0,
@@ -90,6 +135,12 @@ def get_fn(data):
     """
     The PEPSSI DDRs have an extra space at the start of the SPREADSHEET
     pointer's filename that causes 'file not found' errors.
+
+    HITS
+    * nh_derived
+        * atmos_comp
+    * nh_pepssi
+        * flux_resampled
     """
     from pathlib import Path
 
@@ -98,14 +149,48 @@ def get_fn(data):
 
 
 def swap_hdu_stubs(data, identifiers, fn, name):
-    """repairs mismatched fits headers and keys due to _HEADER in some fits extensions"""
-    headers = [key for key in data.keys() if key.startswith("EXTENSION") and key.endswith("_HEADER")]
-    noheaders = [key for key in data.keys() if key.startswith("EXTENSION") and not key.endswith("_HEADER")]
+    """
+    repairs mismatched fits headers and keys due to _HEADER in some fits
+    extensions
+
+    HITS
+    * nh_swap
+        * launch_raw
+        * launch_cal
+        * jupiter_raw
+        * jupiter_cal
+        * cruise_raw
+        * cruise_cal
+        * pluto_raw
+        * pluto_cal
+        * kem_cruise_raw
+        * kem_cruise_cal
+        * arrokoth_raw
+        * arrokoth_cal
+    """
+    headers = [
+        key for key in data.keys()
+        if key.startswith("EXTENSION")
+        and key.endswith("_HEADER")
+    ]
+    noheaders = [
+        key for key in data.keys()
+        if key.startswith("EXTENSION")
+        and not key.endswith("_HEADER")
+    ]
     if len(headers) != len(noheaders):
         headers_stripped = [n.split('_'+n.split('_')[-1])[0] for n in headers]
-        noheaders_stripped = [n.split('_'+n.split('_')[-1])[0] for n in noheaders]
-        stubs = [val+"_HEADER" for val in headers_stripped if val not in noheaders_stripped+noheaders]
-        if "EXTENSION_HISTOGRAM32_HEADER" in stubs and "EXTENSION_HISTOGRAM32_IMAGE_HISTOGRAM" in noheaders:
+        noheaders_stripped = [
+            n.split('_'+n.split('_')[-1])[0] for n in noheaders
+        ]
+        stubs = [
+            val + "_HEADER" for val in headers_stripped
+            if val not in noheaders_stripped + noheaders
+        ]
+        if (
+            "EXTENSION_HISTOGRAM32_HEADER" in stubs
+            and "EXTENSION_HISTOGRAM32_IMAGE_HISTOGRAM" in noheaders
+        ):
             stubs.remove('EXTENSION_HISTOGRAM32_HEADER')
         return get_fits_id(data, identifiers, fn, name, other_stubs=stubs)
     else:

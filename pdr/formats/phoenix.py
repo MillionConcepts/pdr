@@ -5,6 +5,10 @@ def elec_em6_structure(block, name, filename, data, identifiers):
     """
     ELEC EDR em6/TBL tables: All the START_BYTEs in TBL_0_STATE_DATA.FMT
     are off by 36 bytes.
+
+    HITS
+    * phoenix
+        * elec_edr (partial)
     """
     from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
 
@@ -19,24 +23,38 @@ def elec_em6_structure(block, name, filename, data, identifiers):
 
 
 def afm_rdr_structure(block, name, filename, data, identifiers):
-    """AFM RDR header tables: Several columns' NAME fields start with lowercase
+    """
+    AFM RDR header tables: Several columns' NAME fields start with lowercase
     letters, which is_an_assignment_line() in /parselabel/pds3.py evaluates as
-    NOT an assignment statement."""
-    fmtdef = read_table_structure(
-        block, name, filename, data, identifiers
-    )
+    NOT an assignment statement.
+
+    HITS
+    * phoenix
+        * afm_rdr
+    """
+    fmtdef = read_table_structure(block, name, filename, data, identifiers)
     fmtdef.insert(1, 'NAME', fmtdef.pop('NAME'))
     for line in range(0, len(fmtdef)):
         col_number_text = fmtdef.at[line, "COLUMN_NUMBER"]
-        if (type(col_number_text) == str
-            and "NAME" in col_number_text):
-            fmtdef.at[line, "COLUMN_NUMBER"] = col_number_text.split("NAME = ")[0]
+        if (
+            isinstance(col_number_text, str)
+            and "NAME" in col_number_text
+        ):
+            fmtdef.at[
+                line, "COLUMN_NUMBER"
+            ] = col_number_text.split("NAME = ")[0]
             fmtdef.at[line, "NAME"] = col_number_text.split("NAME = ")[1]
     return fmtdef, None
 
 
 def afm_table_loader(filename, fmtdef_dt, name):
-    """AFM RDR tables: Several labels miscount bytes somewhere in the tables"""
+    """
+    AFM RDR tables: Several labels miscount bytes somewhere in the tables
+
+    HITS
+    * phoenix
+        * afm_rdr
+    """
     import pandas as pd
     
     if "HEADER_TABLE" in name:
@@ -67,8 +85,14 @@ def afm_table_loader(filename, fmtdef_dt, name):
 
 
 def wcl_edr_special_block(data, name):
-    """WCL EDR ema/emb/emc tables: the START_BYTE for columns 13 and 14 are
-    off by 1 and 2 bytes respectively. (The em8/em9/emf tables are fine.)"""
+    """
+    WCL EDR ema/emb/emc tables: the START_BYTE for columns 13 and 14 are
+    off by 1 and 2 bytes respectively. (The em8/em9/emf tables are fine.)
+
+    HITS
+    * phoenix
+        * wcl_edr (partial)
+    """
     block = data.metablock_(name)
     
     for item in iter(block.items()):

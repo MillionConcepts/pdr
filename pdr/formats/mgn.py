@@ -6,6 +6,12 @@ from pdr.utils import head_file
 def geom_table_loader(filename, fmtdef_dt):
     """
     The Magellan radar system geometry tables include null bytes between rows.
+
+    HITS
+    * gal_nims
+        * impact
+    * mgn_image
+        * midr_tables
     """
     import pandas as pd
     from pdr.utils import head_file
@@ -24,19 +30,36 @@ def geom_table_loader(filename, fmtdef_dt):
 
 
 def orbit_table_in_img_loader():
-    """"""
+    """
+    HITS
+    * mgn_post_mission
+        * fmap
+        * fmap_browse
+    """
     return True
 
 
 def get_fn(data):
-    """"""
+    """
+    HITS
+    * mgn_post_mission
+        * fmap
+        * fmap_browse
+    """
     target = data.filename
     return True, target
 
 
 def occultation_loader(identifiers, fmtdef_dt, block, filename):
-    """Checks end of each row for newline character. If missing, removes extraneous
-    newline from middle of the row and adjusts for the extra byte. Adapted from _interpret_as_ascii()"""
+    """
+    Checks end of each row for newline character. If missing, removes
+    extraneous newline from middle of the row and adjusts for the extra byte.
+    Adapted from _interpret_as_ascii()
+
+    HITS
+    * mgn_occult
+        * ddr
+    """
     import pandas as pd
 
     fmtdef, dt = fmtdef_dt

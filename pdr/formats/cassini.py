@@ -10,7 +10,21 @@ from pdr.loaders.queries import table_position
 
 
 def spreadsheet_loader(filename, fmtdef_dt, data_set_id):
-    """"""
+    """
+    HITS:
+    * cassini_mimi
+        * edr_lemms (partial)
+        * rdr_chems_avg
+        * rdr_chems_fullres
+        * rdr_inca
+        * rdr_lemms_avg
+        * rdr_lemms_fullres
+    * cassini_radar
+        * asum
+    * cassini_rpws
+        * refdr_wbr
+        * refdr_wfr
+    """
     import pandas as pd
 
     if "UNCALIB" in data_set_id:
@@ -35,10 +49,21 @@ def spreadsheet_loader(filename, fmtdef_dt, data_set_id):
 
 
 def get_structure(block, name, filename, data, identifiers):
-    """"""
-    # the data type that goes here double defines the 32 byte prefix/offset.
-    # By skipping the parse_table_structure we never add the prefix bytes so
-    # it works as is. (added HASI/HUY if block after this comment)
+    """
+    the data type that goes here double defines the 32 byte prefix/offset.
+    By skipping the parse_table_structure we never add the prefix bytes so
+    it works as is.
+
+    HITS:
+    * cassini_hp
+        * hasi_acc
+        * hasi_ppi
+        * hasi_pwa
+        * hasi_tem
+        * hasi_dpu
+        * hasi_prof
+    """
+    # (added HASI/HUY if block after this comment)
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -68,6 +93,20 @@ def looks_like_ascii(data, pointer):
 
 
 def get_position(identifiers, block, target, name, filename, start_byte):
+    """
+    HITS:
+    * cassini_hp
+        * dark
+        * ddr
+        * misc_img_text
+        * img_table
+        * strip
+        * solar
+        * sun
+        * time
+        * vis_extra
+        * vis
+    """
     if "IR_" in filename:
         tbd(name, block)
     table_props = table_position(identifiers, block, target, name, start_byte)
@@ -91,7 +130,17 @@ def get_position(identifiers, block, target, name, filename, start_byte):
 
 
 def get_offset(filename, identifiers):
-    """"""
+    """
+    HITS:
+    * cassini_hp
+        * ddr
+        * img_table
+        * strip
+        * solar
+        * sun
+        * time
+        * vis
+    """
     if any(sub in filename for sub in ["ULVS_DDP", "DLIS_AZ_DDP", "DLV_DDP"]):
         row_bytes = identifiers["ROW_BYTES"]
     else:
@@ -104,7 +153,13 @@ def get_offset(filename, identifiers):
 
 
 def trivial_loader(pointer):
-    """"""
+    """
+    HITS
+    * cassini_iss
+        * calib
+        * edr_evj
+        * edr_sat
+    """
     warnings.warn(
         f"The Cassini ISS EDR/calibration {pointer} tables are not currently "
         f"supported."
@@ -113,7 +168,17 @@ def trivial_loader(pointer):
 
 
 def cda_table_filename(data):
-    """"""
+    """
+    HITS:
+    * cassini_cda
+        * cda_area
+        * cda_stat
+        * cda_events
+        * cda_spectra
+        * cda_settings
+        * cda_counter
+        * cda_signals
+    """
     label = Path(data.labelname)
     return True, Path(label.parent, f"{label.stem}.TAB")
 
@@ -121,13 +186,22 @@ def cda_table_filename(data):
 # TODO: find a way to point find_special_constants at this so we can write
 #  scaled versions of these images
 def xdr_redirect_to_image_block(data):
-    """"""
+    """
+    HITS:
+    * cassini_hp
+        * img_xdr
+    """
     object_name = "IMAGE"
     block = data.metablock_(object_name)
     return block
 
 
 def get_special_qube_band_storage():
-    """"""
+    """
+    HITS:
+    * cassini_uvis
+        * fuv
+        * euv
+    """
     band_storage_type = "BAND_SEQUENTIAL"
     return True, band_storage_type

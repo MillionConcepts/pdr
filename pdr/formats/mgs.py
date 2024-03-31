@@ -15,7 +15,11 @@ def get_odf_structure(block, name, filename, data, identifiers):
 
 
 def get_ecs_structure(block, name, filename, data, identifiers):
-    """"""
+    """
+    HITS
+    * mgs_rss_raw
+        * ecs
+    """
     fmtdef = pdr.loaders.queries.read_table_structure(
         block, name, filename, data, identifiers
     )

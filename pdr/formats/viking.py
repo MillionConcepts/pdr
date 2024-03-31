@@ -3,13 +3,19 @@ def seis_table_loader(filepath, fmtdef_dt):
     The Viking 2 seismometer tables have mangled labels. The raw data tables
     are variable length CSVs, and labels for the summary tables count column
     bytes wrong. Half the labels define columns that do not match the data.
+
+    HITS
+    * viking
+        * seis_raw
+        * seis_summary
     """
     import pandas as pd
+
     col_names = [c for c in fmtdef_dt[0].NAME if "PLACEHOLDER" not in c]
     filename = filepath.split("/")[-1]
     # The summary tables have miscounted bytes in their labels. The columns are
-    # separated by whitespace, so can be read by read_csv() instead.
-    # Both labels define a SEISMIC_TIME_SOLS column that doesn't exist in the data.
+    # separated by whitespace, so can be read by read_csv() instead. Also, both
+    # labels define a SEISMIC_TIME_SOLS column that doesn't exist in the data.
     if "summary" in filename.lower():
         table = pd.read_csv(filepath, header=None, sep=r"\s+")
         col_names.remove("SEISMIC_TIME_SOLS")
@@ -26,6 +32,8 @@ def seis_table_loader(filepath, fmtdef_dt):
     # correct number of columns.
     elif "high" in filename.lower():
         table = pd.read_csv(filepath, header=None, sep=",")
+    else:
+        raise ValueError("Unknown Viking 2 SEIS table format.")
     assert len(table.columns) == len(col_names), "mismatched column count"
     table.columns = col_names
     return table

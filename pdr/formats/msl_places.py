@@ -1,5 +1,9 @@
 def spreadsheet_loader(filename, fmtdef_dt):
-    """"""
+    """
+    HITS
+    * msl_places
+        * localizations
+    """
     import pandas as pd
 
     fmtdef, dt = fmtdef_dt
