@@ -2,6 +2,7 @@
 definitions of sample types / data types / dtypes / ctypes, file formats
 and extensions, associated special constants, and so on.
 """
+from __future__ import annotations
 from itertools import product
 import re
 from types import MappingProxyType
