@@ -237,7 +237,7 @@ class Data:
         self._scaleflags = {}
         # where can we look for files containing data objects?
         # not yet fully implemented; only uses first (automatic) one.
-        self.search_paths = [self._init_search_paths()] + listify(search_paths)
+        self.search_paths = [self._init_search_path()] + listify(search_paths)
         self.standard = None
         # cache for pds4_tools.reader.general_objects.Structure objects.
         self._pds4_structures = None
@@ -318,8 +318,11 @@ class Data:
         self._pds4_structures["label"] = structure_list.label
         self.index.append("label")
 
-    def _init_search_paths(self):
-        """Set initial path(s) this object will check for files."""
+    def _init_search_path(self) -> str:
+        """
+        Set initial path this object will check for additional files (just the
+        directory that contains its "primary" file).
+        """
         for target in ("labelname", "filename"):
             if (target in dir(self)) and (target is not None):
                 return str(Path(self.getattr(target)).absolute().parent)
@@ -328,7 +331,7 @@ class Data:
     def _find_objects(self):
         """
         Add all top-level data objects mentioned in the label to this object's
-        index, except for 'trivial' ones.
+        index, except for 'trivial' one (see `loaders.utility.is_trivial()`).
         """
         from pdr.loaders.utility import is_trivial
 
@@ -342,7 +345,8 @@ class Data:
     def _object_to_filename(self, object_name: str) -> Union[str, list[str]]:
         """
         Construct one or more on-disk search paths for the file that contains
-        a named data object. Does not check if files exist at those paths.
+        a named data object. Does not actually check if files exist at those
+        paths (typically performed by calls to `utils.check_cases()).
         """
         is_special, special_target = check_special_fn(
             self, object_name, self.identifiers
@@ -361,8 +365,21 @@ class Data:
         else:
             return self.filename
 
-    def _check_compressed_file_pointer(self, object_name):
-        """"""
+    def _check_compressed_file_pointer(
+        self, object_name: str
+    ) -> tuple[bool, Optional[tuple[Path, ...]]]:
+        """
+        When PDS3 labels describe data objects in compressed files, they often
+        give the names that the compressed files _would_ have, were someone to
+        decompress them, as the physical locations of those objects. This can
+        be confusing, because you cannot load an object from a merely
+        hypothetical file.
+
+        However, this is by no means a strict convention, so we can't just
+        assume that it's the case -- we have to check all the file names
+        mentioned for that object in the label, including those not given as
+        top-level pointers.
+        """
         compkeys = {"COMPRESSED_FILE", "UNCOMPRESSED_FILE"}
         if (
             len(compkeys.intersection(self.metadata.keys())) == 2
@@ -375,10 +392,20 @@ class Data:
             )
         return False, None
 
-    def _target_path(self, object_name, cached=True, raise_missing=False):
+    def _target_path(
+        self,
+        object_name: str,
+        cached: bool = True,
+        raise_missing: bool = False
+    ) -> Optional[Union[Path, list[Path], str]]:
         """
-        find the path on the local filesystem to the file containing a named
-        data object. autopopulate the file_mapping
+        Considering all known search paths and treating filenames as
+        case-insensitive, attempt to find a filesystem path to a
+        file or files in which a particular named data object might exist.
+        This autopopulates self.file_mapping[object_name] if it finds one or
+        more files, and by default treats this value as cached on subsequent
+        calls (which can improve performance significantly, especially on
+        networked filesystems).
         """
         if cached is True and (self.file_mapping.get(object_name) is not None):
             return self.file_mapping[object_name]
@@ -395,12 +422,18 @@ class Data:
                 raise
             return None
 
-    def unloaded(self):
-        """"""
+    def unloaded(self) -> tuple[str]:
+        """Return names of all identified but unloaded data objects."""
         return tuple(filter(lambda k: k not in dir(self), self.index))
 
     def load(self, name: str, reload: bool = False, **load_kwargs: Any):
-        """"""
+        """
+        Explicitly load an identified data object by name; alternatively
+        `name="all"` means "load every identified object". Does not return the
+        object; just assigns it to the `name` attribute of `self`. The
+        `Data.__getitem__()` interface lazy-loads by calling this function
+        with default arguments in response to `data['NOTYETLOADED']` etc.
+        """
         # prelude: don't try to load nonexistent keys; facilitate
         # load-everything behavior; don't reload by default
         if (name != "all") and (name not in self.index):
@@ -445,7 +478,7 @@ class Data:
         setattr(self, name, self.metaget_(name))
 
     def _add_loaded_objects(self, obj: Mapping[str, Any]):
-        """"""
+        """Helper for `load()`. Ingests objects returned by a `Loader`."""
         for k, v in obj.items():
             if v is not None:
                 setattr(self, k, v)
@@ -453,7 +486,7 @@ class Data:
                     self.index.append(k)
 
     def load_all(self):
-        """"""
+        """Handler (and alias) for `Data.load("all")`."""
         from pdr.loaders.dispatch import OBJECTS_IGNORED_BY_DEFAULT
 
         for name in self.keys():
@@ -465,7 +498,7 @@ class Data:
                 continue
 
     def _file_not_found(self, object_name: str):
-        """"""
+        """Implements default file-not-found behavior."""
         warnings.warn(
             f"{object_name} file {self._object_to_filename(object_name)} "
             f"not found in path."
@@ -479,7 +512,7 @@ class Data:
     def _load_primary_fits(
         self, object_name: str
     ) -> Union[np.ndarray, pd.DataFrame, None]:
-        """"""
+        """Handle loading an HDU from a FITS file in "primary" FITS mode."""
         from pdr.loaders.handlers import handle_fits_file
 
         obj = handle_fits_file(
@@ -493,7 +526,11 @@ class Data:
         return obj
 
     def _init_primary_format(self):
-        """"""
+        """
+        Initialization handler for "primary" format modes (cases in which
+        `Data` offers an interface to a file or files in a standard format).
+        Currently only supports FITS.
+        """
         if self.standard == "FITS":
             for k in self.metadata.keys():
                 self.index.append(k)
@@ -502,9 +539,9 @@ class Data:
 
     def _load_pds4(self, object_name: str):
         """
-        load this object however pds4_tools wants to load this object, then
-        reformat to df or expose the array handle in accordance with our type
-        conventions.
+        Load this object however pds4_tools wants to load this object, then
+        reformat to DataFrame, expose the array handle in accordance with our
+        type conventions, et..
         """
         structure = self._pds4_structures[object_name]
         from pds4_tools.reader.label_objects import Label
@@ -532,9 +569,12 @@ class Data:
         Metadata.__init__.
         Otherwise, if it has a detached PDS3/PVL label, ingest it with
         pdr.parselabel.pds3.read_pvl.
-        Finally, if we found no detached label, look for an attached PVL
+        Then, if we found no detached label, look for an attached PVL
         label (also using read_pvl).
-        Then, construct a Metadata object from whatever we loaded.
+        If we are in a "primary" mode, ignore all that and ingest the product's
+        metadata with the appropriate format-specific functions.
+        Then, construct a Metadata object from whatever we loaded and add all
+        the objects it implies to our index.
         """
         if self.standard == "FITS":
             from pdr.loaders.handlers import unpack_fits_headers
@@ -557,8 +597,16 @@ class Data:
         self.index.append("LABEL")
         return metadata
 
-    def load_from_pointer(self, pointer: str, **load_kwargs: Any) -> Any:
-        """"""
+    def load_from_pointer(
+        self, pointer: str, **load_kwargs: Any
+    ) -> dict[
+        str, Union[pd.DataFrame, np.ndarray, str, MultiDict, "PVLModule"]
+    ]:
+        """
+        PDS3 data object-loading handler. Set up the appropriate `Loader` for
+        the object, set up load flow tracking, call the loader, and perform
+        basic cleanup.
+        """
         from pdr.loaders.dispatch import pointer_to_loader
 
         loader = pointer_to_loader(pointer, self)
@@ -572,6 +620,8 @@ class Data:
             self, pointer, tracker=self.tracker, **load_kwargs
         )
         # FITS arrays are scaled by default
+        # TODO: obj should never be an ndarray; it should always be a dict.
+        #  Fix this.
         if (
             (loader.__class__.__name__ == "ReadFits")
             and (obj.__class__.__name__ == "ndarray")
@@ -685,7 +735,10 @@ class Data:
         return self.metadata.metablock(text, evaluate, False)
 
     def get_absolute_paths(self, filename: Union[str, Path]) -> list[str]:
-        """"""
+        """
+        Construct `Path`s for a filename in all our search paths. (These are
+        places we can look for that file).
+        """
         return gmap(
             lambda sf: Path(*sf).absolute(),
             product(self.search_paths, listify(filename)),
@@ -700,7 +753,10 @@ class Data:
         scaled: bool = True,
         **browse_kwargs: Any
     ) -> Image:
-        """"""
+        """
+        Produce an Image from a data object associated with this product. A
+        convenient way to quickly look at data.
+        """
         if object_name is None:
             raise ValueError(
                 f"please specify the name of an image object. "
@@ -810,6 +866,7 @@ class Data:
 
     # make it possible to get data objects with slice notation, like a dict
     def __getitem__(self, item):
+        """"""
         return self.__getattribute__(item)
 
     def __repr__(self):
