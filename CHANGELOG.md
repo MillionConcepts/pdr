@@ -250,8 +250,8 @@ This release represents a major refactoring effort to reduce technical debt and 
 - m3 special case module (deprecated by new image-loading flow)
 - messenger special case module (deprecated by new data loading workflow)
 - rasterio loading options for image data
-- `check_special_case` has been removed and the special cases have been moved to functions
-  that more specifically targeted to the issues of the particular dataset rather
+- `check_special_case` has been removed; special cases have been moved to 
+  functions that specifically target the issues of the particular dataset rather
   than overriding the entire workflow.
 
 ## [0.7.5] - 2023-03-16
