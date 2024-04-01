@@ -177,7 +177,7 @@ def get_image_properties(gen_props: ImageProps) -> ImageProps:
     typically derived from `generic_image_properties()`,
     `qube_image_properties()`, or a special case.
     """
-    props = gen_props
+    props = gen_props  # TODO: what is this variable assignment for?
     check_fix_validity(props)
     props["pixels"] = (
         (props["nrows"] + props["rowpad"])
