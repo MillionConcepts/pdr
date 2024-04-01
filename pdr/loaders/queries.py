@@ -600,6 +600,9 @@ def read_format_block(
             if "^STRUCTURE" in definition:
                 definition_l = list(definition.items())
                 definition_l = inject_format_files(definition_l, object_name, fn, data)
+                # TODO: this smells bad. why are we scrupulously calling MultiDict.add()
+                #  and then immediately casting definition back to dict (which would 
+                #  discard any of the duplicate keys we so carefully added)?
                 definition = MultiDict()
                 for key, val in definition_l:
                     definition.add(key, val)
