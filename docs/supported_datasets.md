@@ -31,13 +31,13 @@ products, allowing the `pds4_tools` developers to make very broad support
 claims that we consider trustworthy. All currently-known exceptions are due 
 to data QA problems rather than deficiencies in `pds4_tools`. 
 
-As a general note, our confidence is generally lower about products that
-contain raw telemetry (or other forms of unprocessed data) or that use 
-bespoke compression schemes. Fully validating our outputs for these products 
-would require recreating portions of ground processing pipelines, which is 
-outside the scope of this project. "Support" for these types means that they 
-load correctly into expected data structures and that interpretable portions 
-of their metadata appear to match other sources.
+As a general note, we are less confident about products that contain raw 
+telemetry (or other forms of unprocessed data) or that use bespoke compression 
+schemes. Fully validating our outputs for these products would require 
+recreating portions of ground processing pipelines, which is outside the scope 
+of this project. "Support" for these types means that they load correctly into 
+expected data structures and that interpretable portions of their data
+(like timestamps) appear to match other sources.
 
 
 ## Officially Supported Datasets:
