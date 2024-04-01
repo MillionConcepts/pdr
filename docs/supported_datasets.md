@@ -65,7 +65,8 @@ of their metadata appear to match other sources.
   - MIMI EDRs and RDRs
   - RADAR ABDR, ASUM, BIDR, LBDR, SBDR, and STDR
   - RPWS REFDRs, RDRs, and DDRs
-    - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which uses an illegal data type and could not be parsed.*
+    - *Note: The RDR LRFULL tables include a MINI_PACKET_HEADER column which 
+       uses an illegal data type and cannot be parsed.*
   - RSS gravity, occultation, solar, and bistatic experiments
   - RSS ancillary products: ODF, TDF, TLM, 158, and 515
   - Saturn rings occultation profiles derived from RSS, UVIS, and VIMS data
