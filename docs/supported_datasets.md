@@ -55,7 +55,8 @@ of their metadata appear to match other sources.
   - CAPS EDRs, RDRs, and DDRs
   - CDA
     - DA area, counter, events, settings, signal, spectra peaks, and status history tables
-      - *Note: Many of the spectra products are placeholder tables composed of missing data constants. These placeholders are not supported.* 
+      - *Note: Many of the spectra products are placeholder tables composed of
+        missing data constants. These placeholders are not supported.* 
     - HRD raw and processed data
   - CIRS navigation and housekeeping data
   - CIRS reformatted products at the RMS node (calibrated spectra)
@@ -83,7 +84,8 @@ of their metadata appear to match other sources.
   - Gravity and topography derived products
   - LWIR RDRs
   - RSS bistatic radar RDRs
-  - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, but it can be opened with `pdr`*
+  - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, 
+    but it can be opened with `pdr`*
 #### Dawn
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
   - VIR: mosaics, EDR and RDR cube products
@@ -105,7 +107,8 @@ of their metadata appear to match other sources.
   - HRI-IR raw and calibrated spectra
   - HRI-VIS raw and calibrated images
   - MRI-VIS raw and calibrated images
-  - Derived products: shape models, HRI-VIS deconvolved images, photometry data, and stellar PSFs
+  - Derived products: shape models, HRI-VIS deconvolved images, photometry 
+    data, and stellar PSFs
   - In-flight calibration images
   - Spacecraft instrument temperature data
 #### Galileo 
@@ -113,7 +116,8 @@ of their metadata appear to match other sources.
   - GDDS tables 
   - HIC tables *note: Only the PDS4 versions have been tested here*
   - MAG tables (except summary tables)
-  - NIMS: Pre-Jupiter EDRs, SL-9 fragment impact tables, and Ida/Gaspra specific data products at SBN
+  - NIMS: Pre-Jupiter EDRs, SL-9 fragment impact tables, and Ida/Gaspra-specific
+    data products at SBN
   - PLS: calibrated/derived Jupiter data (PDS4) and pre-Jupiter products (PDS3)
   - PPR: EDRs and RDRs
   - PWS: REDRs (ASCII versions), DDRs, and SUMM products
@@ -123,7 +127,8 @@ of their metadata appear to match other sources.
     - Calibration images
     - REDRs (images only)
     - Ida/Gaspra specific data products at SBN
-  - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the PDS3 labels are currently unsupported.*
+  - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the 
+    PDS3 labels are currently unsupported.*
   - Probe datasets: ASI, EPI, HAD, LRD, NEP, NFR, and most DWE and NMS products
   - Trajectory data
 #### Giotto
@@ -141,7 +146,9 @@ of their metadata appear to match other sources.
   - RSS: BOF, ODF, OLF, and RSR
 #### GRSFE
   - Airborne datasets: ASAS, AVIRIS, and TIMS images
-  - Ground-based datasets: GPS profiles, helicopter stereo profiles, spectral hygrometer, PARABOLA, PFES, reagan radiometer, wind experiment, and weather station data
+  - Ground-based datasets: GPS profiles, helicopter stereo profiles, spectral 
+    hygrometer, PARABOLA, PFES, reagan radiometer, wind experiment, and weather 
+    station data
 #### ICE
   - EPAS, MAG, PLAWAV, RADWAV, and SWPLAS
   - ICI text files
@@ -157,7 +164,10 @@ of their metadata appear to match other sources.
     - Halley calibrated 1D spectra, and raw and calibrated 2D spectral images
     - Giacobini-Zinner raw 2D spectral images
   - RSN Halley continuum, occultation, OH, radar, and spectral line data
-  - *Note: most of the Halley datasets listed above are available at the SBN in 2 versions. Version 2.0 tends to open better with `pdr` and in a more user friendly format. When V2.0 is available, V1.0 should be considered notionally supported.*
+  - *Note: most of the Halley datasets listed above are available at the SBN 
+    in 2 versions. Version 2.0 tends to open better with `pdr` and in a more 
+    user-friendly format. When V2.0 is available, V1.0 should be considered 
+    notionally supported.*
 #### IUE
   - Raw and extracted spectra
   - Most image products
@@ -169,9 +179,9 @@ of their metadata appear to match other sources.
   - JIRAM EDRs and RDRs *note: RDRs may not read correctly from their PDS4
   labels. We recommend opening them from their PDS3 labels.*
   - JunoCam EDRs, RDRs, and maps
-  - MWR EDRs and RDRs *note: performance is better if read from the PDS3 labels. this
-  requires .FMT (format) files, available in the root directories of the MWR
-  volumes.*
+  - MWR EDRs and RDRs *Note: performance is better if read from the PDS3 labels. 
+    This requires .FMT (format) files, available in the root directories of the 
+    MWR volumes.*
   - Waves RDR 'Burst' tables
 #### LOIRP
   - Lunar Orbiter 1-5 EDRs 
@@ -191,10 +201,12 @@ of their metadata appear to match other sources.
     - L2 and L3 GDR images/backplanes
     - L4 tables
   - LAMP 
-    - EDR and RDR (except acquisition list tables and spectral image 'door open' headers)
+    - EDR and RDR (except acquisition list tables and spectral image 'door open' 
+      headers)
     - GDR
   - LEND EDR and RDR
-  - LOLA RDR (*note: other LOLA datasets have been migrated to PDS4 and are notionally supported*)
+  - LOLA RDR (*note: other LOLA datasets have been migrated to PDS4 and are 
+    notionally supported*)
   - LROC
     - WAC EDR and CDR
     - NAC EDR, CDR, and raw image data (NACR and NACL in image name)
@@ -214,7 +226,9 @@ of their metadata appear to match other sources.
 #### Magellan
   - FMAPs
   - Stereo-Derived Topography
-  - C-BIDR images *note: `pdr` reads these correctly as the labels are written, but there are unaccounted for offsets in the images.*
+  - C-BIDR images *note: `pdr` reads these correctly according to the 
+    specifications in the labels, but there are unaccounted-for offsets in the
+    images.*
   - F-MIDR and C-MIDR
   - GxDR: GTDR, GEDR, GSDR, and GREDR
   - GVDR
@@ -255,7 +269,8 @@ of their metadata appear to match other sources.
   - RVRCAM EDRs and MIDRs
   - APXS EDRs and DDRs
   - Stereo-derived 3D position data
-  - Radio science ODFs, TDFs, reduced tracking data, and estimated Mars rotation parameters
+  - Radio science ODFs, TDFs, reduced tracking data, and estimated Mars rotation 
+    parameters
   - Engineering EDRs and RDRs
 #### MER 1 and 2
   - Hazcam operations EDRs, RDRs, and mosaics
@@ -273,24 +288,31 @@ of their metadata appear to match other sources.
     - VIRS EDR, CDR, DDR, and DAP
   - MLA EDR, RDR, RADR, CDR, and GDR
   - XRS EDR, RDR, and CDR
-    - *note: RDR maps are defined differently in their PDS3 and PDS4 labels. We recommend opening them from their PDS4 labels.*
+    - *note: RDR maps are defined differently in their PDS3 and PDS4 labels.
+      We recommend opening them from their PDS4 labels.*
   - RSS EDR and RDR
-    - *note: some EDR products (DDOR and TNF) have UNDEFINED record types in their PDS3 labels. We recommend opening them from their PDS4 labels.*
+    - *note: some EDR products (DDOR and TNF) have UNDEFINED record types in 
+      their PDS3 labels. We recommend opening them from their PDS4 labels.*
   - Space Weathering maps
-  - MEAP electron events tables, thermal neutron map, enhanced gamma ray spectrometry data, and image cubes
+  - MEAP electron events tables, thermal neutron map, enhanced gamma ray 
+    spectrometry data, and image cubes
   - Ground calibration data (aside from NS and MASCS)
 #### MGS
   - TES-TSDR ATM, BOL, GEO, OBS, POS, TLM, IFG and RAD (fixed-length tables only)
   - TES Thermal Inertia and Albedo maps
   - MOLA PRDR, IEGDR (v1 and v2), MEGDR, and SHADR
-  - RSS most Raw Data and Science Data Products (see Known Unsupported Datasets below for excluded products)
+  - RSS most Raw Data and Science Data Products (see Known Unsupported Datasets 
+    below for excluded products)
   - RSS electron density profiles
   - MOC decompressed standard data products
-  - MAG/ER fullword and high-res MAG data, omnidirectional and angular ER flux data, and the derived magnetic field map
+  - MAG/ER fullword and high-res MAG data, omnidirectional and angular ER flux 
+    data, and the derived magnetic field map
 #### MRO
   - CRISM EDR, CDR, DDR, LDR, TER, TRDR, MRDR, and MTRDR
   - CRISM speclib and typespec tables
-  - SHARAD EDR and RDR (*note: EDR science telemetry tables will only open the "science data" column(s) and does not output the columns described in the science_ancillary.fmt)
+  - SHARAD EDR and RDR (*Note: PDR will only read the "science data" column(s) 
+    of the EDR science telemetry tables, not the columns described in 
+    science_ancillary.fmt, which may or may not actually exist.*)
   - SHARAD rgram and geom files
   - RSS ODF, RSR, RSDMAP, SHADR, SHBDR, and TPS
   - HiRISE EDRs and DTMs (*note: only the .img DTMs are officially supported*)
@@ -330,16 +352,19 @@ of their metadata appear to match other sources.
   - REX EDRs and RDRs
   - SDC EDRs and RDRs
   - SWAP EDRs and RDRs
-  - Pluto encounter derived products: surface composition maps, most atmosphere data, and geology/geophysical maps
+  - Pluto encounter derived products: surface composition maps, most atmosphere 
+    data, and geology/geophysical maps
 #### Pioneer 10 and 11
   - GTT RDRs
 #### Pioneer Venus Orbiter
   - OEFD HIRES data and 24 second averages
-  - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and solar EUV data
+  - OETP HIRES and LORES electron data, bow shock and ionopause crossings, and 
+    solar EUV data
   - OIMS HIRES data and 12 second averages
   - OMAG
     - P-sensor HIRES data and 24 second averages
-    - Spacecraft coordinates HIRES data and 24 second averages (*note: only the binary versions have been extensively tested*)
+    - Spacecraft coordinates HIRES data and 24 second averages (*note: only 
+      the binary versions have been extensively tested*)
   - ONMS HIRES data and 12 second averages
   - ORPA processed data
   - OUVS IMIDR images
@@ -370,7 +395,10 @@ of their metadata appear to match other sources.
     - MIRO EDRs and RDRs
     - NAVCAM EDRs and RDRs
     - OSIRIS EDRs, RDRs, DDRs, and shape models
-      - *note: Images are archived in both .img and .fit file formats. The .img products have attached labels, while the .fit products have detached labels. When downloading the data, make sure to store these in separate directories or pdr will try to open the .img products using the detached labels.*
+      - *note: Images are archived in both .img and .fit file formats. The 
+        .img products have attached labels, while the .fit products have detached 
+        labels. When downloading the data, make sure to store these in separate 
+        directories or pdr will try to open the .img products using the detached labels.*
     - ROSINA EDRs, RDRs, and DDRs
     - Rosetta Orbiter Plasma Consortium Instruments:
       - RPCICA EDRs, RDRs, REFDRs, and DDRs
@@ -478,8 +506,10 @@ of their metadata appear to match other sources.
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
 #### IHW
-  - Version 1.0 of Halley data from ASTR, IRSN (except filter curves and spectroscopy data), LSPN (subsampled images only), NNSN, and PPN
-  - NNSN Halley images version 1.0 and 2.0 (excluding the V1.0 addenda dataset, which is officially supported)
+  - Version 1.0 of Halley data from ASTR, IRSN (except filter curves and 
+    spectroscopy data), LSPN (subsampled images only), NNSN, and PPN
+  - NNSN Halley images version 1.0 and 2.0 (excluding the V1.0 addenda dataset, 
+    which is officially supported)
 #### LROC
   - Anaglyphs
   - NAC DTM without labels (under EXTRAS folder at LROC mission node)
@@ -503,7 +533,10 @@ of their metadata appear to match other sources.
   - Orbiter:
     - VIRTIS EDRs
   - Lander:
-    - ROMAP calibrated housekeeping data *note: There are multiple format files for these products that share a name but handle the data differently. If there are unexpected offsets in a table, confirm you are using the correct 'romap_calhk.fmt' file.*
+    - ROMAP calibrated housekeeping data *Note: There are multiple format files 
+      for these products that share a name but handle the data differently. If 
+      there are unexpected offsets in a table, confirm you are using the correct 
+      'romap_calhk.fmt' file.*
 
 ## Known Unsupported Datasets
 #### Apollo
@@ -524,7 +557,8 @@ of their metadata appear to match other sources.
 #### Dawn
   - Framing camera: a handful of calibration images
 #### Deep Impact
-  - Movies of 9P/Tempel 1 approach and encounter (support not planned; not an archive compliant format)
+  - Movies of 9P/Tempel 1 approach and encounter (support not planned; not an 
+    archive-compliant format)
 #### Galileo
   - MAG summary tables (other tables supported, support not planned)
   - NIMS Jupiter EDRs and cubes (support planned)
@@ -547,7 +581,8 @@ of their metadata appear to match other sources.
 #### ICE
   - ULECA tables (support planned)
 #### IHW
-  - Most Giacobini-Zinner products have incomplete PDS3 labels. Text files and most images will still open, but tables do not. (support not planned)
+  - Most Giacobini-Zinner products have incomplete PDS3 labels. Text files and 
+    most images will still open, but tables do not. (support not planned)
   - ASTR Halley v2.0 tables with observations from the 1980's (support planned)
   - IRSN Halley v1.0 spectroscopy and filter response curve tables (support planned)
   - LSPN compressed images in the Halley V1.0 and Giacobini-Zinner datasets (support not planned)
@@ -555,7 +590,8 @@ of their metadata appear to match other sources.
   - SSN 2D spectral products with typos in their filenames (support not planned)
   - RSN UV visibility products (support planned)
 #### IUE
-  - A handful of the image products do not open because of a typo in their labels. The QUALITY_IMAGE object is written as QUALITY_QUALITY_IMAGE. (support planned)
+  - A handful of the image products do not open because of a typo in their 
+    labels. The QUALITY_IMAGE object is written as QUALITY_QUALITY_IMAGE. (support planned)
 #### Juno
   - JADE Ion sensor housekeeping data prior to arrival at Jupiter (support not planned)
   - UVS (support planned)
@@ -597,9 +633,13 @@ of their metadata appear to match other sources.
   - TES-TSDR PCT (support not planned)
   - TES-TSDR variable-length '.VAR' tables (support not planned)
   - MOLA AEDR and PEDR (support planned)
-  - RSS Raw Data products with a "stream" or undefined RECORD_TYPE (support not planned)
-  - RSS PostScript files from both Raw Data and Science Data Products (support not planned)
-  - MOC Compressed Standard Data Products (*Note: similar to the MSL MSSS Camera EDRs below, software for converting these files to uncompressed PDS3-style files exists in the archive.*)
+  - RSS Raw Data products with a "stream" or undefined RECORD_TYPE (support 
+    not planned)
+  - RSS PostScript files from both Raw Data and Science Data Products (support 
+    not planned)
+  - MOC Compressed Standard Data Products (*Note: much like the MSL MSSS Camera 
+    EDRs discussed below, software for converting these files to uncompressed 
+    PDS3-style files exists in the archive.*)
 #### MRO
   - RSS .tnf (support not planned)
   - MCS DDRs (support not planned)
@@ -609,9 +649,11 @@ of their metadata appear to match other sources.
     Mars Science Laboratory's MSSS-produced cameras (Mastcam, MAHLI, and
     MARDI), are archived in a bespoke compressed format. These images carry
     the extension '.DAT'. Software for converting these files to PDS3-style
-    uncompressed raster .IMG files exists in the archive. We plan to either include / compile this code with the installation of this package or (much better) to port `dat2img` to pure
-    Python. Help is welcomed with either of these efforts! The MSL
-    "calibrated" (RDR) files for these cameras are not compressed in this way.
+    uncompressed raster .IMG files exists in the archive. We plan to either 
+    include / compile this code with the installation of this package or (much 
+    better) to port `dat2img` to pure Python. Help is welcomed with either of
+    these efforts! The MSL "calibrated" (RDR) files for these cameras are not 
+    compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
 #### New Horizons
   - Pluto encounter derived data: ALICE stellar occultation data
@@ -649,6 +691,7 @@ of their metadata appear to match other sources.
   - PLS binary versions of VG2-N-PLS-5-RDR-ELEMAGSPHERE-96SEC-V1.0 data (support not planned)
   - PRA Uranus SUMM products (support not planned)
   - RSS ODRs (support not planned)
-  - Ring Profile tables with the VAX_REAL data type (support planned; 8-byte VAX_REALs of unknown type)
+  - Ring Profile tables with the VAX_REAL data type (support planned; 8-byte 
+    VAX_REALs of unknown type)
 #### WFF/ATM
   - DEM derived raster images (support planned)
