@@ -2,7 +2,10 @@
 ### Added
 
 #### Features
-- 
+- `pdr.open_attached()`, a convenience function for opening a product without
+  checking for a detached label. This function only works if you point it at 
+  the file that contains the product's label (attached or detached). Improves 
+  speed on slow filesystems or for large numbers of products.
 
 #### Dataset Support
 - see [supported_datasets.md](docs/supported_datasets.md) for details
