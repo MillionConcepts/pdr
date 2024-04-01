@@ -10,15 +10,17 @@
 #### Other
 - Lots of docstrings, type hinting, and other in-code documentation
 - Additional shared types to support static analysis and code readability
+- `pdr-tests`-compatible annotations for special cases
 
 ### Changed
-- Assorted code refactoring, linting, and minor improvements
+- Assorted code refactoring, linting, and minor backend improvements
 - Substantial performance increases for wide tables with many repeated items
 - Modified some special cases for pandas 2.2.x compatibility
 
 ### Fixed
 - A bug in PDS4 label handling that sometimes dropped repeated child elements
-- Updated an accidentally-skipped out-of-date unit test 
+- An accidentally-skipped out-of-date unit test for DSV tables 
+- Slow imports are again delayed until needed
 
 ### Removed
 - Unused numpy-based ASCII table parser  
