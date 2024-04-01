@@ -67,8 +67,8 @@
 ## [1.0.5] - 2023-12-07
 ### Added
 #### Features
-- doc strings for API on readthedocs
-- Error tracking features that were accidentally deleted from the last version were re-added
+- API docstrings for readthedocs
+- Added back error tracking features accidentally deleted in the last version
 #### Dataset Support
 - most Voyager 1 and 2 datasets
 - additional MGS datasets (MAG/ER, RSS EDS, MOC)
@@ -79,8 +79,10 @@
 - see [supported_datasets.md](https://github.com/MillionConcepts/pdr/blob/main/supported_datasets.md) for details.
 
 ### Fixed
-- Tables with containers with REPETITIONS in them were reading the same data each repetition, this has been fixed
-- Exponential notation in pvl quantity objects are now properly handled ([Fixes issue #53]((https://github.com/MillionConcepts/pdr/issues/53)))
+- Tables with containers with REPETITIONS in them were reading the same data 
+  each repetition, this has been fixed
+- Exponential notation in pvl quantity objects are now properly handled 
+  ([Fixes issue #53]((https://github.com/MillionConcepts/pdr/issues/53)))
 
 ### Removed
 - MRO MCS DDR data is not supported due to formatting issues
@@ -112,18 +114,21 @@ to be removed following `pds4-tools` 1.4 release
   
    as a metadata item with key "SAMPLE_BIT_MASK" and value 65535.
 
-    Please note that the bit masks are not applied programmatically because we don't believe 
-    their meanings are consistent across the corpus of planetary data. However, users are 
-    encouraged to explore their use within their own work and enjoy the glories of the Python `&` operator.
+    Please note that the bit masks are not applied programmatically, because 
+    we don't believe their meanings are consistent across the corpus of 
+    planetary data. However, users are encouraged to explore their use within 
+    their own work and enjoy the glories of the Python `&` operator.
 
     An example for how to apply a bit mask using the `&` bitwise operator:
     ``` 
         data = pdr.read('/path/to/file.img')
         masked = data.IMAGE & data.metaget('SAMPLE_BIT_MASK')
     ```
-    Alternatively, if you're using this value for something for which you'd prefer to have the original PVL 
-    value, use the `bin`, `oct`, or `hex` packages for base 2, 8, or 16 respectively to convert the value
-    back from an integer.
+    Alternatively, if you're using this value for something for which you'd 
+    prefer to have the original PVL value, use the Python built-in `bin`, 
+   `oct`, or `hex` functions (for base  2, 8, or 16 respectively) to convert 
+   the value back from a Python base-10 `int` into a string representation of 
+   an integer in your desired base.
 
   ([Resolves issue #51](https://github.com/MillionConcepts/pdr/issues/51))
 - correctly interpret PVL Sequences and Sets of Unquoted Strings as 
@@ -161,7 +166,8 @@ intended to complement our [comprehensive regression test framework](https://git
 
 ### Fixed
 - Fixed incorrect PDS3 object -> FITS HDU mapping for several data types
-- scaling/offset defined in FITS tables (BSCALE/BZERO) is now applied correctly to output `DataFrames`  
+- scaling/offset defined in FITS tables (BSCALE/BZERO) is now applied correctly
+  to output `DataFrames`  
 - 8-byte integers found in some nonstandard binary files are now handled correctly
 - more consistent handling of long / malformatted PVL comments
 - improved handling of 'stub' primary FITS HDUs
@@ -180,7 +186,8 @@ intended to complement our [comprehensive regression test framework](https://git
   - DAWN VIR EDR and RDR cube products
   - Rosetta VIRTIS EDRs
 - Deep Space 1, NEAR, Stardust, and Stardust-NExT datasets
-- various image products stored as VAX floats, including Pioneer Venus radar and IMIDR images
+- various image products stored as VAX floats, including Pioneer Venus radar 
+  and IMIDR images
 - IBM_REAL and EBCIDC data types, including Pioneer Venus SEDR
 - LRO CRaTER EDR secondary science and housekeeping tables
 - several Mars Odyssey datasets
@@ -203,15 +210,17 @@ intended to complement our [comprehensive regression test framework](https://git
 - re-enabled the ability to import `pdr.Data` by adding it back to `__init__.py`
 
 ## [1.0.0] - 2023-06-03
-This release represents a major refactoring effort to reduce technical debt and decrease workflow complexity. 
+This release represents a major refactoring effort to reduce technical debt 
+and decrease workflow complexity. 
+
 **The user-facing `pdr.read()` interface has not changed.**
 ###  Added
 #### FEATURES
-- `pdr.Data`  initialized with `debug=True`
+- When `pdr.Data` is initialized with `debug=True`:
   - Errors can be inspected at runtime by accessing `Data.loaders["OBJECT_NAME"].errors`.
-  - Tracking logs are also saved to the `pdr/.tracker_logs` folder.  
-  directory of the installation folder. They show which functions `Data` objects
-  used during loading processes -- and if those functions were successful.
+  - Tracking logs are also saved to the `pdr/.tracker_logs` subdirectory of the 
+    installation folder. They show which functions `Data` objects
+    used during loading processes -- and if those functions were successful.
 - handling for a wider array of ISIS-style "qube" data and metadata, 
   including side/back/bottom/topplanes (as long as they are along only one
   image axis)
@@ -231,11 +240,13 @@ This release represents a major refactoring effort to reduce technical debt and 
   Kaguya/Selene, and Earth-based radar and spectroscopy data.
 
 ### Changed
-- reworked fundamental data loading workflow. `Data` class no longer contains 
-  all the loader functions, they've been refactored in the `loaders` module.
-- `formats.core.py` now only contains special case checking functions and is renamed to `formats.checkers.py`.
-  Other functions that were previously in it (like `pointer_to_loader` and `generic_image_properties`) have 
-  moved to the `loaders` module
+- Reworked fundamental data loading workflow. Loader functions are no longer 
+  methods of the `pdr.Data` class. They now live in the `loaders` module, and
+  are executed by subclasses of `loaders.datawrap.Loader`.
+- `formats.core.py` now only contains special case checking functions and has
+  been renamed `formats.checkers.py`. Other functions that were previously in 
+  it (like `pointer_to_loader` and `generic_image_properties`) have moved to 
+  the `loaders` module.
 - changes to various special cases based on the data loading workflow refactor
 - reworked image-loading flow for better handling of various band storage
   types and pre/suffixes
@@ -355,12 +366,13 @@ This release represents a major refactoring effort to reduce technical debt and 
  - Accelerated bit handling (files with bit columns will now be processed faster).
 
 ### Fixed
- - Improvements for the position of column breaks in ASCII tables. Tables that were previously
-   breaking the columns incorrectly will now behave correctly.
+ - Improvements for the position of column breaks in ASCII tables. Tables that 
+   were previously breaking the columns incorrectly will now behave correctly.
 
 ### Removed
- - `.jp2` files will not open with this release (full support planned for next release; small
- `.jp2` files will open with prior releases, but larger ones were not supported)
+ - `.jp2` files will not open with this release (full support planned for next 
+  release; small `.jp2` files will open with prior releases, but larger ones 
+  were not supported)
 
 ## [0.7.1] - 2022-09-28
 ### Added
