@@ -44,5 +44,21 @@ def read(
         return Data(check_cases(fp), **kwargs)
 
 
+def open_attached(
+    fp: Union[str, Path],
+    debug: bool = False,
+    search_paths: Union[Collection[str], str] = (),
+    **kwargs
+) -> Data:
+    """
+    Read a file with PDR, with the assumption that the label is either
+    attached to `fp` or that `fp` is itself a detached label file, and ignoring
+    the usual double-check for `fp`'s actual existence in the filesystem.
+    Intended for cases when you want to read a file very quickly and you know
+    exactly where its label is.
+    """
+    return read(fp, debug, fp, search_paths, True, **kwargs)
+
+
 # pdr.open() is an alias for pdr.read()
 setattr(sys.modules[__name__], 'open', read)
