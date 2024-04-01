@@ -435,9 +435,11 @@ def _fill_empty_byte_rows(fmtdef: pd.DataFrame) -> pd.DataFrame:
     """
     nobytes = fmtdef["BYTES"].isna()
     with warnings.catch_warnings():
-        # we do not care that loc will set items inplace later. at all.
+        # TODO: although we do not care that .loc will set items inplace later, 
+        #  at all, this will hard-fail in pandas 3.x and needs to be changed.
         warnings.simplefilter("ignore", category=FutureWarning)
         fmtdef.loc[nobytes, "BYTES"] = (
+            # TODO: I think the subsequent TODO is out of date?
             # TODO, maybe: update with ITEM_OFFSET should we implement that
             fmtdef.loc[nobytes, "ITEMS"]
             * fmtdef.loc[nobytes, "ITEM_BYTES"]
