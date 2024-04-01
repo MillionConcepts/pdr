@@ -119,7 +119,7 @@ to be removed following `pds4-tools` 1.4 release
     planetary data. However, users are encouraged to explore their use within 
     their own work and enjoy the glories of the Python `&` operator.
 
-    An example for how to apply a bit mask using the `&` bitwise operator:
+    An example of how to apply a bit mask using the `&` bitwise operator:
     ``` 
         data = pdr.read('/path/to/file.img')
         masked = data.IMAGE & data.metaget('SAMPLE_BIT_MASK')
