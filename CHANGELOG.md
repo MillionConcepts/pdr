@@ -295,7 +295,7 @@ This release represents a major refactoring effort to reduce technical debt and 
 ### Fixed
  - label comments that are left unclosed by the data providers no longer prevent 
    reading in the data
- - group offset computations by offset not start byte (allows opening of Juno Jane V04 
+ - group offset computations by offset not start byte (allows opening of Juno Jade V04 
    products, closes [issue 43](https://github.com/MillionConcepts/pdr/issues/43))
  - bit columns are now split based on both start_bit and number of bits rather than
    simply start_bit (this fixed a number of previously incorrectly read files, 
