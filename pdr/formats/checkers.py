@@ -766,4 +766,9 @@ def check_special_hdu_name(
         return True, formats.nh.swap_hdu_stubs(data, identifiers, fn, name)
     if identifiers["DATA_SET_ID"].startswith("HST-S-WFPC2-3-RPX"):
         return True, formats.saturn_rpx.hst_hdu_name(name)
+    if (
+        "MEX-M-SPI-2-IRRDR-CLEANED" in identifiers['DATA_SET_ID']
+        or "MEX-M-SPI-2-UVRDR-CLEANED" in identifiers['DATA_SET_ID']
+    ):
+        return True, formats.mex.spicam_rdr_hdu_name(data, identifiers, fn, name)
     return False, None

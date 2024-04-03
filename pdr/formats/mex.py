@@ -87,3 +87,20 @@ def pfs_edr_special_block(data, name):
                     item[1]["DATA_TYPE"] = "PC_UNSIGNED_INTEGER"
         return True, block
     return False, block
+
+def spicam_rdr_hdu_name(data, identifiers, fn, name):
+    """
+    The SPICAM RDRs have multiple fits HDUs per product. The HDU indexing is
+    off by 1 because the first QUBE pointer shares the '0' HDU index with the
+    HEADER pointer.
+    
+    HITS
+    * mex_spicam
+        * ir_rdr
+        * uv_rdr
+    """
+    from pdr.loaders.queries import get_fits_id
+    
+    if name == "HEADER":
+        return 0
+    return get_fits_id(data, identifiers, fn, name, other_stubs=None)[0] - 1
