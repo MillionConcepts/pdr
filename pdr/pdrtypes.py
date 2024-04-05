@@ -1,4 +1,8 @@
-from typing import Callable, Literal, Optional, TypedDict, Union, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import (
+    Callable, Literal, Optional, TypeAlias, TypedDict, TYPE_CHECKING, Union
+)
 
 if TYPE_CHECKING:
     from multidict import MultiDict
@@ -6,23 +10,23 @@ if TYPE_CHECKING:
     import pandas as pd
     from pdr import Data, Metadata
 
-type ByteOrder = Literal["<", ">"]
+ByteOrder: TypeAlias = Literal["<", ">"]
 """Most significant/least significant byteorder codes"""
 
-type PDRLike = Union[Data, Metadata]
+PDRLike: TypeAlias = Union["Data", "Metadata"]
 """Something with a pdr-style metadata-getting interface"""
 
-type LoaderFunction = Callable[
-    ..., Union[str, MultiDict, pd.DataFrame, np.ndarray]
+LoaderFunction: TypeAlias = Callable[
+    ..., Union[str, "MultiDict", "pd.DataFrame", "np.ndarray"]
 ]
 """Signature of a Loader's load function"""
 
-type PhysicalTarget = Union[
+PhysicalTarget: TypeAlias = Union[
     list[str, int], tuple[str, int], int, str, dict[str, Union[str, int]]
 ]
 """Expected formats of 'pointer' parameters, i.e. ^WHATEVER = PhysicalTarget"""
 
-type BandStorageType = Literal[
+BandStorageType: TypeAlias = Literal[
     "BAND_SEQUENTIAL", "LINE_INTERLEAVED", "SAMPLE_INTERLEAVED", None
 ]
 """
@@ -32,7 +36,7 @@ None implies either that the storage layout is unknown or that the array is
 not 3-D.
 """
 
-Axname = Literal["BAND", "LINE", "SAMPLE"]
+Axname: TypeAlias = Literal["BAND", "LINE", "SAMPLE"]
 """Conventional names for image axes."""
 
 
