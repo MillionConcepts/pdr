@@ -424,6 +424,13 @@ def check_special_position(
         return True, formats.epoxi.cart_model_get_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        "MEX-M-MRS-5-OCC" in identifiers["DATA_SET_ID"]
+        and name == "ATM_TABLE"
+    ):
+        return True, formats.mex.mrs_ddr_atmo_position(
+            identifiers, block, target, name, start_byte
+        )
     return False, None
 
 

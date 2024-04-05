@@ -104,3 +104,18 @@ def spicam_rdr_hdu_name(data, identifiers, fn, name):
     if name == "HEADER":
         return 0
     return get_fits_id(data, identifiers, fn, name, other_stubs=None)[0] - 1
+
+def mrs_ddr_atmo_position(identifiers, block, target, name, start_byte):
+    """
+    The MRS derived atmosphere profiles were opening with data cut off at the
+    ends of the tables. Recalculating the table length with ROW_BYTES = 278
+    instead of 276 fixes it.
+
+    HITS
+    * mex_mrs
+        * occ_atmo
+    """
+    table_props = table_position(identifiers, block, target, name, start_byte)
+    row_bytes = 278
+    table_props["length"] = row_bytes * block["ROWS"]
+    return table_props
