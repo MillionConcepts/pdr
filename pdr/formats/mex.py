@@ -119,3 +119,48 @@ def mrs_ddr_atmo_position(identifiers, block, target, name, start_byte):
     row_bytes = 278
     table_props["length"] = row_bytes * block["ROWS"]
     return table_props
+
+def mrs_l1b_icl_position(identifiers, block, target, name, start_byte):
+    """
+    MRS ICL level 1b doppler tables undercount ROW_BYTES by 1.
+
+    HITS
+    * mex_mrs
+        * lvl_1b_icl (partial)
+    """
+    table_props = table_position(identifiers, block, target, name, start_byte)
+    row_bytes = block["ROW_BYTES"] + 1
+    table_props["length"] = row_bytes * block["ROWS"]
+    return table_props
+
+def mrs_l1b_odf_table_loader(filename, fmtdef_dt):
+    """
+    MRS level 1b ODF labels have variable and sometimes incorrect ROW_BYTES
+    values.
+
+    HITS
+    * mex_mrs
+        * lvl_1b_odf
+    """
+    import pandas as pd
+
+    fmtdef, dt = fmtdef_dt
+    table = pd.read_csv(filename, header=None, sep=r"\s+")
+    table.columns = [
+        f for f in fmtdef['NAME'] if not f.startswith('PLACEHOLDER')
+    ]
+    return table
+
+def mrs_l1b_odf_rmp_redirect(data):
+    """
+    RMP tables are a subset of MRS level 1b ODFs that were not opening because
+    their pointer and object names do not match.
+    
+    HITS:
+    * mex_mrs
+        * lvl_1b_odf (partial)
+    """
+    object_name = "RAMP_TABLE"
+    block = data.metablock_(object_name)
+    return block
+

@@ -239,6 +239,13 @@ def check_special_table_reader(
         and "TABLE" in name
     ):
         return True, formats.phoenix.afm_table_loader(fn, fmtdef_dt, name)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
+        and identifiers["INSTRUMENT_ID"] == "MRS"
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF","L1B"])
+        and "TABLE" in name
+    ):
+        return True, formats.mex.mrs_l1b_odf_table_loader(fn, fmtdef_dt)
     return False, None
 
 
@@ -431,6 +438,15 @@ def check_special_position(
         return True, formats.mex.mrs_ddr_atmo_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
+        and identifiers["INSTRUMENT_ID"] == "MRS"
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ICL","L1B"])
+        and name == "DOPPLER_TABLE"
+    ):
+        return True, formats.mex.mrs_l1b_icl_position(
+            identifiers, block, target, name, start_byte
+        )
     return False, None
 
 
@@ -620,6 +636,13 @@ def check_special_block(
         and name == "TABLE"
     ):
         return formats.mex.pfs_edr_special_block(data, name)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
+        and identifiers["INSTRUMENT_ID"] == "MRS"
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF","L1B","RMP"]) 
+        and "TABLE" in name
+    ):
+        return True, formats.mex.mrs_l1b_odf_rmp_redirect(data)
     return False, None
 
 
