@@ -120,13 +120,15 @@ def mrs_ddr_atmo_position(identifiers, block, target, name, start_byte):
     table_props["length"] = row_bytes * block["ROWS"]
     return table_props
 
-def mrs_l1b_icl_position(identifiers, block, target, name, start_byte):
+def mrs_get_position(identifiers, block, target, name, start_byte):
     """
-    MRS ICL level 1b doppler tables undercount ROW_BYTES by 1.
+    MRS ICL level 1b DOPPLER_TABLEs and ODF level 2 RANGING_TABLEs undercount
+    ROW_BYTES by 1.
 
     HITS
     * mex_mrs
         * lvl_1b_icl (partial)
+        * lvl_2_odf (partial)
     """
     table_props = table_position(identifiers, block, target, name, start_byte)
     row_bytes = block["ROW_BYTES"] + 1

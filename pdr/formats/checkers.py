@@ -444,7 +444,16 @@ def check_special_position(
         and all(x in identifiers["PRODUCT_ID"] for x in ["ICL","L1B"])
         and name == "DOPPLER_TABLE"
     ):
-        return True, formats.mex.mrs_l1b_icl_position(
+        return True, formats.mex.mrs_get_position(
+            identifiers, block, target, name, start_byte
+        )
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
+        and identifiers["INSTRUMENT_ID"] == "MRS"
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF","L02"])
+        and name == "RANGING_TABLE"
+    ):
+        return True, formats.mex.mrs_get_position(
             identifiers, block, target, name, start_byte
         )
     return False, None
