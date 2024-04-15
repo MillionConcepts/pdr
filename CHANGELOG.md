@@ -10,6 +10,7 @@
   to load from them are small.
 
 #### Dataset Support
+- MEX SPICAM and MRS data
 - see [supported_datasets.md](docs/supported_datasets.md) for details
 
 #### Other

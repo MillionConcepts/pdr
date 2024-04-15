@@ -247,6 +247,9 @@ expected data structures and that interpretable portions of their data
   - ASPERA EDRs, RDRs, and DDRs
   - HRSC REFDRs, and SRC RDRs
   - PFS raw interferograms, and housekeeping tables
+  - SPICAM UV and IR RDRs
+  - MRS L1B and L2 products, and derived profiles
+  - MRS L1A RSR tables (except the "SAMPLE WORDS" field) and most ODF tables
 #### Mars Odyssey
   - THEMIS 
     - spectral qubes: VIS and IR v2 geoprojected images, VIS EDR and RDR,
@@ -616,7 +619,9 @@ expected data structures and that interpretable portions of their data
   - SAR EDR ('safed' dataset)
 #### Mars Express
   - HRSC RDRs (support planned)
-  - HRSC calibrated radiance spectra
+  - PFS calibrated radiance spectra (support not planned)
+  - SPICAM UV and IR EDRs (support planned)
+  - MRS most L1A closed loop products: ICL, TCL, TNF, and some ODF products with incomplete labels (support not planned)
 #### Mars Odyssey
   - THEMIS
     - IR RDRs (support planned)
