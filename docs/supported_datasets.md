@@ -86,6 +86,23 @@ expected data structures and that interpretable portions of their data
   - RSS bistatic radar RDRs
   - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, 
     but it can be opened with `pdr`*
+#### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
+  - GIC ground-based observations
+  - Photometry of Io and Europa during SL9 flashes
+  - ESO
+    - EMMI images
+    - IR spectra
+    - SUSI images
+  - IRTF NSFCAM images
+  - MSSSO CASPIR standard star images
+  - OAO OASIS IR images
+  - HST images
+  - IUE spectra
+  - Galileo Orbiter
+    - NIMS tables
+    - PPR EDRs
+    - SSI REDRs (images only)
+    - UVS EDRs and RDRs
 #### Dawn
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
   - VIR: mosaics, EDR and RDR cube products
@@ -505,6 +522,8 @@ expected data structures and that interpretable portions of their data
     which contains corrections and additional data, instead
 #### Cassini
   - CIRS spectral cubes
+#### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
+  - MSSSO CASPIR impact images
 #### Juno
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
@@ -557,6 +576,8 @@ expected data structures and that interpretable portions of their data
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
   - LWIR EDRs (support not planned)
   - RSS EDRs (support not planned)
+#### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
+  - Galileo SSI REDR telemetry and line-prefix tables (support planned)
 #### Dawn
   - Framing camera: a handful of calibration images
 #### Deep Impact

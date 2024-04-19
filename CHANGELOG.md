@@ -10,7 +10,8 @@
   to load from them are small.
 
 #### Dataset Support
-- MEX SPICAM and MRS data
+- MEX SPICAM and MRS datasets
+- Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign datasets
 - see [supported_datasets.md](docs/supported_datasets.md) for details
 
 #### Other
