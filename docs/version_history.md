@@ -1,4 +1,38 @@
 # Version History
+## [1.0.7] - 2024-04-23
+### Added
+
+#### Features
+- `pdr.fastread()`, a convenience function for opening a product without
+  checking for a detached label. This function only works if you point it at 
+  the file that contains the product's label (attached or detached). Improves 
+  speed on slow filesystems or for large numbers of products, particularly 
+  when you are only interested in their metadata or the data objects you want
+  to load from them are small.
+
+#### Dataset Support
+- MEX SPICAM and MRS datasets
+- Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign datasets
+- see [supported_datasets.md](docs/supported_datasets.md) for details
+
+#### Other
+- Lots of docstrings, type hinting, and other in-code documentation
+- Additional shared types to support static analysis and code readability
+- `pdr-tests`-compatible annotations for special cases
+
+### Changed
+- Assorted code refactoring, linting, and minor backend improvements
+- Substantial performance increases for wide tables with many repeated items
+- Modified some special cases for pandas 2.2.x compatibility
+
+### Fixed
+- A bug in PDS4 label handling that sometimes dropped repeated child elements
+- An accidentally-skipped out-of-date unit test for DSV tables 
+- Slow imports are again delayed until needed
+
+### Removed
+- Unused numpy-based ASCII table parser  
+
 ## [1.0.6] - 2024-03-28
 ### Added
 #### Features

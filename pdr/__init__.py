@@ -8,7 +8,7 @@ from pdr.pdr import Data, Metadata
 if TYPE_CHECKING:
     from pathlib import Path
 
-__version__ = "1.0.6"
+__version__ = "1.0.7"
 
 pkg_dir = _osp.abspath(_osp.dirname(__file__))
 
