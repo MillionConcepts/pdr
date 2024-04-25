@@ -167,7 +167,7 @@ expected data structures and that interpretable portions of their data
     hygrometer, PARABOLA, PFES, reagan radiometer, wind experiment, and weather 
     station data
 #### ICE
-  - EPAS, MAG, PLAWAV, RADWAV, and SWPLAS
+  - EPAS, MAG, PLAWAV, RADWAV, ULECA, and SWPLAS
   - ICI text files
 #### IHW
   - AMSN Halley visual data
@@ -602,8 +602,6 @@ expected data structures and that interpretable portions of their data
   - Daedalus spectra (support not planned)
   - Directional emissivity experiment (support not planned)
   - SIRIS spectra (support not planned)
-#### ICE
-  - ULECA tables (support planned)
 #### IHW
   - Most Giacobini-Zinner products have incomplete PDS3 labels. Text files and 
     most images will still open, but tables do not. (support not planned)
@@ -689,9 +687,7 @@ expected data structures and that interpretable portions of their data
 #### Phoenix
   - TEGA RDRs (support planned)
   - MECA
-    - WCL EDRs (support planned)
     - WCL CP/CV-mode RDRs (support not planned)
-    - AFM RDRs (support planned)
 #### Rosetta
   - Orbiter:
     - MIDAS RDRs with .dat file extension (support planned)
