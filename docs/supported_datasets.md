@@ -88,6 +88,7 @@ expected data structures and that interpretable portions of their data
     but it can be opened with `pdr`*
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
   - GIC ground-based observations
+  - AAO image cubes
   - Photometry of Io and Europa during SL9 flashes
   - ESO
     - EMMI images
@@ -524,6 +525,7 @@ expected data structures and that interpretable portions of their data
   - CIRS spectral cubes
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
   - MSSSO CASPIR impact images
+  - Volume sl9_0007 ground-based observations archived at ATM
 #### Juno
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
   efficiently from PDS3 labels*
