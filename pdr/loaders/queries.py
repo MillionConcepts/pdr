@@ -475,10 +475,6 @@ def parse_table_structure(
     or for one of several ASCII parsers.
     """
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
-    if fmtdef['DATA_TYPE'].str.contains('VAX_REAL').any():
-        raise NotImplementedError(
-            "VAX reals are not currently supported in tables."
-        )
     if "BYTES" not in fmtdef.columns:
         if _probably_ascii(block, fmtdef, name):
             # this is either a nonstandard fixed-width table or a DSV table.

@@ -129,3 +129,8 @@ def to_vax32(array):
         return output[0]
     else:
         return output.reshape(array.shape)
+
+
+# TODO: VAX_REAL_CONVERTERS = {4: vax32_to_np_float32, 8: vax64_to_np_float64}
+#  def vax_real_to_np(bytestream, bytewidth):
+#     return VAX_REAL_CONVERTERS[bytewidth](bytestream)

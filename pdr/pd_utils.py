@@ -19,6 +19,7 @@ from pdr.formats import check_special_sample_type
 from pdr.np_utils import (
     enforce_order_and_object, ibm32_to_np_f32, ibm64_to_np_f64
 )
+from pdr import vax
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import DataIdentifiers
@@ -343,3 +344,20 @@ def convert_ibm_reals(df: pd.DataFrame, fmtdef: pd.DataFrame) -> pd.DataFrame:
     for k, v in reals.items():
         df[k] = v
     return df
+
+
+def convert_vax_reals(data: pd.DataFrame, properties: pd.DataFrame) -> pd.DataFrame:
+    """If any columns in a DataFrame are in 32-bit VAX real format,
+    convert them to 32-bit float."""
+    if not properties['DATA_TYPE'].str.contains('VAX').any():
+        return data
+    reals = {}
+    for _, field in properties.iterrows():
+        if not re.match(r'VAX.*REAL', field['DATA_TYPE']):
+            continue
+        func = vax.from_vax32  # TODO: if field['BYTES'] == 4 else vax.from_vax64
+        converted = func(data[field['NAME']].values)
+        reals[field['NAME']] = converted
+    for k, v in reals.items():
+        data[k] = v
+    return data

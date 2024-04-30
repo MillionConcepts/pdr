@@ -18,7 +18,8 @@ from pdr.loaders._helpers import check_explicit_delimiter
 from pdr.loaders.queries import get_array_num_items
 from pdr.np_utils import np_from_buffered_io, enforce_order_and_object
 from pdr.pd_utils import (
-    booleanize_booleans, compute_offsets, convert_ebcdic, convert_ibm_reals
+    booleanize_booleans, compute_offsets, convert_ebcdic, convert_ibm_reals,
+    convert_vax_reals
 )
 from pdr.utils import decompress, head_file
 
@@ -123,6 +124,7 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     table = enforce_order_and_object(table)
     table = pd.DataFrame(table)
     table = convert_ibm_reals(table, fmtdef)
+    table = convert_vax_reals(table, fmtdef)
     table.columns = fmtdef.NAME.tolist()
     table = convert_ebcdic(table, fmtdef)
     table = booleanize_booleans(table, fmtdef)
