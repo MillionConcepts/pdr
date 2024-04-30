@@ -72,7 +72,7 @@ expected data structures and that interpretable portions of their data
   - RSS ancillary products: ODF, TDF, TLM, 158, and 515
   - Saturn rings occultation profiles derived from RSS, UVIS, and VIMS data
   - Saturn small moon and Gaskell shape models
-  - UVIS HDAC products
+  - UVIS EUV, FUV, and HDAC products
   - VIMS EDR cubes (PDS4 labels only)
   - All Huygens Probe data except DISR IR tables
 #### Chandrayaan-1
@@ -570,7 +570,6 @@ expected data structures and that interpretable portions of their data
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
   - VIMS EDR cubes (PDS3 labels; support not planned--open with PDS4 labels)
-  - UVIS EUV/FUV products (support planned)
   - Huygens Probe DISR IR tables (support planned; low priority )
 #### Clementine
   - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
