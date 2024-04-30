@@ -526,7 +526,7 @@ def read_table_structure(
     if "HISTOGRAM" in name:
         fields = get_histogram_fields(block)
     else:
-        fields, _ = read_format_block(block, name, fn, data, identifiers)
+        fields = read_format_block(block, name, fn, data, identifiers)
     # give columns unique names so that none of our table handling explodes
     import pandas as pd
 
@@ -563,14 +563,28 @@ def parse_array_structure(
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
+def make_dummy_column(block_info, definition):
+    dummy_column = {
+        'NAME': f'PLACEHOLDER_{definition["NAME"]}',
+        'DATA_TYPE': 'VOID',
+        'START_BYTE': definition['START_BYTE'],
+        'BYTES': 0,
+        'BLOCK_REPETITIONS': definition.get("REPETITIONS", 1),
+        'BLOCK_BYTES': definition.get("BYTES"),
+        'BLOCK_NAME': f'PLACEHOLDER_{block_info["BLOCK_NAME"]}'
+    }
+    if definition.get("AXIS_ITEMS"):
+        dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
+    return dummy_column
+
+
 def read_format_block(
     block: MultiDict,
     object_name: str,
     fn: str,
     data: PDRLike,
     identifiers: DataIdentifiers,
-    within_container: bool = False
-) -> tuple[list[dict], bool]:
+) -> list[dict]:
     """
     Parse a TABLE, ARRAY, SPREADSHEET, CONTAINER, or COLLECTION definition,
     recursing into ARRAY, CONTAINER, or COLLECTION subcomponents of that
@@ -598,61 +612,47 @@ def read_format_block(
                 item_type = "PRIMITIVE_ARRAY"
         if item_type in ("COLUMN", "FIELD", "ELEMENT", "PRIMITIVE_ARRAY"):
             if "^STRUCTURE" in definition:
-                definition_l = list(definition.items())
-                definition_l = inject_format_files(definition_l, object_name, fn, data)
-                # TODO: this smells bad. why are we scrupulously calling MultiDict.add()
-                #  and then immediately casting definition back to dict (which would 
-                #  discard any of the duplicate keys we so carefully added)?
+                definition_l = inject_format_files(
+                    list(definition.items()), object_name, fn, data
+                )
+                # TODO: this smells bad. why are we scrupulously calling
+                #  MultiDict.add() and then immediately casting definition
+                #  back to dict (which would discard any of the duplicate keys
+                #  we so carefully added)?
                 definition = MultiDict()
                 for key, val in definition_l:
                     definition.add(key, val)
             obj = dict(definition) | block_info
             repeat_count = definition.get("ITEMS")
             if "BIT_ELEMENT" in obj.keys():
-                raise NotImplementedError("BIT_ELEMENTS in ARRAYS not yet supported")
+                raise NotImplementedError(
+                    "BIT_ELEMENTS in ARRAYS not yet supported"
+                )
             obj = add_bit_column_info(obj, definition, identifiers)
-            add_placeholder = False
         elif item_type in ("CONTAINER", "COLLECTION", "ARRAY"):
-            if within_container is True and len(fields) == 0:
-                needs_placeholder = True
-            obj, add_placeholder = read_format_block(
-                definition, object_name, fn, data, identifiers, True
+            obj = read_format_block(
+                definition, object_name, fn, data, identifiers
             )
-            if item_type == "ARRAY":
-                add_placeholder = True
-            else:
+            if item_type != "ARRAY":
                 repeat_count = definition.get("REPETITIONS")
+            fields.append(make_dummy_column(block_info, definition))
         else:
-            continue
-        if add_placeholder is True:
-            dummy_column = {
-                'NAME': f'PLACEHOLDER_{definition["NAME"]}',
-                'DATA_TYPE': 'VOID',
-                'START_BYTE': definition['START_BYTE'],
-                'BYTES': 0,
-                'BLOCK_REPETITIONS': definition.get("REPETITIONS", 1),
-                'BLOCK_BYTES': definition.get("BYTES"),
-                'BLOCK_NAME': f'PLACEHOLDER_{block_info["BLOCK_NAME"]}'
-            }
-            if definition.get("AXIS_ITEMS"):
-                dummy_column = dummy_column | {'AXIS_ITEMS': definition['AXIS_ITEMS']}
-            fields.append(dummy_column)
+            continue  # non-syntactic parameters like physical units
         # containers can have REPETITIONS,
         # and some "columns" contain a lot of columns (ITEMS)
         # repeat the definition, renaming duplicates, for these cases
         if repeat_count is not None:
             fields = append_repeated_object(obj, fields, repeat_count)
+        elif isinstance(obj, list) and object_name in ("COLLECTION", "ARRAY"):
+            # note that list obj should only happen in COLLECTIONs and ARRAYs
+            fields.extend(obj)
         else:
-            if type(obj) == list and object_name in ("COLLECTION", "ARRAY"):
-                # list obj should only happen in COLLECTIONs and ARRAYs; extra guard
-                fields.extend(obj)
-            else:
-                fields.append(obj)
+            fields.append(obj)
     # semi-legal top-level containers not wrapped in other objects
     if object_name == "CONTAINER":
         if (repeat_count := block.get("REPETITIONS")) is not None:
             fields = list(chain(*[fields for _ in range(repeat_count)]))
-    return fields, needs_placeholder
+    return fields
 
 
 def get_histogram_fields(block: MultiDict) -> list[dict]:

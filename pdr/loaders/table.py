@@ -155,6 +155,29 @@ def _read_as_delimited(
     return table
 
 
+def read_strictly_fixed(string_buffer, specs, padchars=PAD_CHARACTERS):
+    from collections import defaultdict
+    from more_itertools import windowed
+    startwidth = specs[0][1] - specs[0][0]
+    midwidths = {i0 + 1: b - a for i0, (a, b) in enumerate(specs[1:-1])}
+    lastwidth = specs[-1][1] - specs[-1][0]
+    skips = {
+        i1: (c - b) for i1, ((_a, b), (c, _d)) in enumerate(windowed(specs, 2))
+    }
+    cols = defaultdict(list)
+    while True:
+        firstfield = string_buffer.read(startwidth)
+        if firstfield == '':
+            break
+        cols[0].append(firstfield.strip(padchars))
+        string_buffer.read(skips[0])
+        for i0, width in midwidths.items():
+            cols[i0].append(string_buffer.read(width).strip(padchars))
+            string_buffer.read(skips[i0])
+        cols[len(specs)].append(string_buffer.read(lastwidth).strip(padchars))
+    return pd.DataFrame(cols)
+
+
 def _read_fwf_with_colspecs(
     fmtdef: pd.DataFrame, string_buffer: StringIO
 ) -> pd.DataFrame:
@@ -182,6 +205,7 @@ def _read_fwf_with_colspecs(
     # NOTE: the 'delimiter' argument to read_fwf() does _not_ specify
     # an actual delimiter. It defines characters the read_fwf parser
     # will treat as 'padding' and strip from each table element.
+    # return read_strictly_fixed(string_buffer, colspecs, PAD_CHARACTERS)
     table = pd.read_fwf(
         string_buffer,
         header=None,
