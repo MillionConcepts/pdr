@@ -503,6 +503,7 @@ expected data structures and that interpretable portions of their data
 #### Voyager 1 and 2
   - CRS RDR and SUMM products
   - IRIS derived maps and the expanded collection of full-res Jupiter/Saturn data
+  - IRIS full-res spectral observations
   - ISS uncompressed images, and ascii ancillary tables
   - LECP RDR and SUMM products (except a few 'original binary' products)
   - MAG RDR and SUMM products
@@ -706,7 +707,6 @@ expected data structures and that interpretable portions of their data
     - IRTM 1989 version (support planned)
     - IRTM 1994 version (support not planned)
 #### Voyager 1 and 2
-  - IRIS full-res spectral observations (support planned; 8-byte VAX_REALs of unknown type)
   - ISS ancillary binary tables (support planned; 8-byte VAX_REALs of unknown type)
   - ISS compressed raw images (support not planned)
   - LECP some Jupiter and Saturn SUMM Sector products (support planned; low priority)
