@@ -16,6 +16,7 @@ from typing import (
 )
 import warnings
 
+from dustgoggles.func import gmap
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types
@@ -815,7 +816,7 @@ def get_fits_id(
         )
         for m in matches
     }
-    ordered = map(str.lower, sorted(matches, key=lambda m: start_bytes[m]))
+    ordered = gmap(str.lower, sorted(matches, key=lambda m: start_bytes[m]))
     if other_stubs is not None:
         noheader = filter(
             lambda n: (not n.endswith('header') or n.upper() in other_stubs),
