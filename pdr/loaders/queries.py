@@ -293,7 +293,9 @@ def get_target(data: PDRLike, name: str) -> PhysicalTarget:
     return target
 
 
-def data_start_byte(identifiers: DataIdentifiers, block: Mapping, target, fn) -> int:
+def data_start_byte(
+    identifiers: DataIdentifiers, block: Mapping, target, fn
+) -> int:
     """
     Determine the first byte of the data in a file from its pointer.
     """
@@ -526,15 +528,14 @@ def read_table_structure(
     if "HISTOGRAM" in name:
         fields = get_histogram_fields(block)
     else:
-        fields = read_format_block(block, name, fn, data, identifiers)
-    # give columns unique names so that none of our table handling explodes
+        fields, _ = read_format_block(block, name, fn, data, identifiers)
     import pandas as pd
+    from pdr.pd_utils import reindex_df_values
 
     fmtdef = pd.DataFrame.from_records(fields)
     if "NAME" not in fmtdef.columns:
         fmtdef["NAME"] = name
-
-    from pdr.pd_utils import reindex_df_values
+    # give columns unique names so that none of our table handling explodes
     return reindex_df_values(fmtdef)
 
 
@@ -544,10 +545,8 @@ def parse_array_structure(
     fn: str,
     data: PDRLike,
     identifiers: DataIdentifiers
-) -> tuple[Optional[pd.DataFrame], Optional[str]]:
-    """
-    Modification of `parse_table_structure()` for the special needs of ARRAYs.
-    """
+) -> tuple[Optional[pd.DataFrame], Optional[Union[str, np.dtype]]]:
+    """`parse_table_structure()` modified for the special needs of ARRAYs."""
     if not block.get("INTERCHANGE_FORMAT") == "BINARY":
         return None, None
     has_sub = check_array_for_subobject(block)
@@ -555,7 +554,9 @@ def parse_array_structure(
         dt = sample_types(block["DATA_TYPE"], block["BYTES"], True)
         return None, dt
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
-    # Sometimes arrays define start_byte, sometimes their elements do
+    # Sometimes ARRAYS give START_BYTE at top level; sometimes only their
+    # elements do. We want to defer responsibility for figuring this out to
+    # compute_offsets(). This satisfies its type expectations.
     if "START_BYTE" in fmtdef.columns:
         fmtdef['START_BYTE'].fillna(1, inplace=True)
 
@@ -563,7 +564,7 @@ def parse_array_structure(
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 
-def make_dummy_column(block_info, definition):
+def create_placeholder_field(block_info, definition):
     dummy_column = {
         'NAME': f'PLACEHOLDER_{definition["NAME"]}',
         'DATA_TYPE': 'VOID',
@@ -578,13 +579,26 @@ def make_dummy_column(block_info, definition):
     return dummy_column
 
 
+PDS3_STRUCTURED_DATA_PARAMETERS = (
+    "ARRAY",
+    "COLLECTION",
+    "COLUMN",
+    'CONTAINER',
+    "ELEMENT",
+    "FIELD",
+    "PRIMITIVE_ARRAY",
+    "STRUCTURE",
+)
+
+
 def read_format_block(
     block: MultiDict,
     object_name: str,
     fn: str,
     data: PDRLike,
     identifiers: DataIdentifiers,
-) -> list[dict]:
+    within_container: bool = False
+) -> tuple[list[dict], bool]:
     """
     Parse a TABLE, ARRAY, SPREADSHEET, CONTAINER, or COLLECTION definition,
     recursing into ARRAY, CONTAINER, or COLLECTION subcomponents of that
@@ -605,46 +619,71 @@ def read_format_block(
     }
     while "^STRUCTURE" in [obj[0] for obj in format_block]:
         format_block = inject_format_files(format_block, object_name, fn, data)
-    fields, needs_placeholder, add_placeholder = [], False, False
+    fields, needs_placeholder, add_placeholder, reps = [], False, False, None
     for item_type, definition in format_block:
+        if item_type not in PDS3_STRUCTURED_DATA_PARAMETERS:
+            # things formally unrelated to data structure (e.g. physical units)
+            continue
         if item_type == "ARRAY":
             if not check_array_for_subobject(definition):
                 item_type = "PRIMITIVE_ARRAY"
         if item_type in ("COLUMN", "FIELD", "ELEMENT", "PRIMITIVE_ARRAY"):
+            # TODO: this `if "^STRUCTURE"...` block smells incredibly bad. Why
+            #  is it guarded by the COLUMN/FIELD/ELEMENT/PRIMITIVE_ARRAY
+            #  contitional? Why are we scrupulously calling MultiDict.add()
+            #  and then immediately casting `definition` back to `dict`,
+            #  discarding any duplicate keys we took such care to retain? What
+            #  nightmarish class of cases does this catch?
             if "^STRUCTURE" in definition:
                 definition_l = inject_format_files(
                     list(definition.items()), object_name, fn, data
                 )
-                # TODO: this smells bad. why are we scrupulously calling
-                #  MultiDict.add() and then immediately casting definition
-                #  back to dict (which would discard any of the duplicate keys
-                #  we so carefully added)?
                 definition = MultiDict()
                 for key, val in definition_l:
                     definition.add(key, val)
             obj = dict(definition) | block_info
             repeat_count = definition.get("ITEMS")
+            # TODO: also smells very bad. Why is this inside a branch that
+            #  matches many things that are not ARRAYS (but does not match
+            #  every ARRAY)?
             if "BIT_ELEMENT" in obj.keys():
                 raise NotImplementedError(
                     "BIT_ELEMENTS in ARRAYS not yet supported"
                 )
             obj = add_bit_column_info(obj, definition, identifiers)
         elif item_type in ("CONTAINER", "COLLECTION", "ARRAY"):
-            obj = read_format_block(
+            # This is a somewhat convoluted way to tell the caller to place a
+            # PLACEHOLDER pseudo-field between a running sequence of fields
+            # and the fields this function returns.
+            if within_container is False or len(fields) == 0:
+                needs_placeholder = True
+            obj, add_placeholder = read_format_block(
                 definition, object_name, fn, data, identifiers
             )
             if item_type != "ARRAY":
-                repeat_count = definition.get("REPETITIONS")
-            fields.append(make_dummy_column(block_info, definition))
+                add_placeholder = True
+            else:
+                reps = definition.get("REPETITIONS")
         else:
-            continue  # non-syntactic parameters like physical units
-        # containers can have REPETITIONS,
-        # and some "columns" contain a lot of columns (ITEMS)
-        # repeat the definition, renaming duplicates, for these cases
-        if repeat_count is not None:
-            fields = append_repeated_object(obj, fields, repeat_count)
-        elif isinstance(obj, list) and object_name in ("COLLECTION", "ARRAY"):
-            # note that list obj should only happen in COLLECTIONs and ARRAYs
+            # this suggests we made a typo
+            raise NotImplementedError(f"No defined behavior for {item_type}.")
+        # Format-level data structures like CONTAINERs should not be exposed
+        # to the parser; we only care about the things they contain. However,
+        # because START_BYTE is always expressed relative to the parent data
+        # structure in PDS3 table format specifications, we still need to
+        # account for cases in which these structures are separated from
+        # preceding elements by pad bytes / whitespace. These PLACEHOLDER
+        # pseudo-fields inform downstream code about spacing while also
+        # signaling that bytes / characters within that interval should be
+        # ignored by the parser.
+        if add_placeholder is True:
+            fields.append(create_placeholder_field(block_info, definition))
+        # CONTAINERs can have REPETITIONS, and some so-called COLUMNS contain
+        # a lot of "columns" (ITEMS) as the term is generally used. We express
+        # these cases by simply repeating the definition, renaming duplicates.
+        if reps is not None:
+            fields = append_repeated_object(obj, fields, reps)
+        elif isinstance(obj, list):
             fields.extend(obj)
         else:
             fields.append(obj)
@@ -652,7 +691,7 @@ def read_format_block(
     if object_name == "CONTAINER":
         if (repeat_count := block.get("REPETITIONS")) is not None:
             fields = list(chain(*[fields for _ in range(repeat_count)]))
-    return fields
+    return fields, needs_placeholder
 
 
 def get_histogram_fields(block: MultiDict) -> list[dict]:
@@ -680,9 +719,9 @@ def inject_format_files(
     data: PDRLike
 ) -> list[tuple[str, Any]]:
     """
-    Load format files (recursively, if necessary) referenced by a
-    TABLE/SPREADSHEET/CONTAINER/COLLECTION definition and insert them into
-    that definition.
+    Load format files referenced by a TABLE/SPREADSHEET/CONTAINER/COLLECTION
+    definition (or recursively referenced by a referenced format file), parse
+    them, and insert them into the referencing definition.
     """
     format_fns = {
         ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
@@ -777,14 +816,17 @@ def get_fits_id(
         )
         for m in matches
     }
-    ordered = sorted(matches, key=lambda m: start_bytes[m])
-    ordered = tuple(map(str.lower, ordered))
+    ordered = map(str.lower, sorted(matches, key=lambda m: start_bytes[m]))
     if other_stubs is not None:
-        noheader = tuple(filter(lambda n: (not n.endswith('header') or n.upper() in other_stubs), ordered))
+        noheader = filter(
+            lambda n: (not n.endswith('header') or n.upper() in other_stubs),
+            ordered
+        )
         num_other_stubs = len(other_stubs)
     else:
-        noheader = tuple(filter(lambda n: not n.endswith('header'), ordered))
+        noheader = filter(lambda n: not n.endswith('header'), ordered)
         num_other_stubs = 0
+    noheader = tuple(noheader)
     # this condition typically implies a "stub" primary hdu whose header but
     # not body is mentioned in the PDS label
     has_stub_primary = (
