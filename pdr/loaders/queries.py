@@ -641,7 +641,6 @@ def read_format_block(
                 for key, val in definition_l:
                     definition.add(key, val)
             obj = dict(definition) | block_info
-            repeat_count = definition.get("ITEMS")
             # TODO: also smells very bad. Why is this inside a branch that
             #  matches many things that are not ARRAYS (but does not match
             #  every ARRAY)?
@@ -649,6 +648,7 @@ def read_format_block(
                 raise NotImplementedError(
                     "BIT_ELEMENTS in ARRAYS not yet supported"
                 )
+            reps = definition.get("ITEMS")
             obj = add_bit_column_info(obj, definition, identifiers)
         elif item_type in ("CONTAINER", "COLLECTION", "ARRAY"):
             # This is a somewhat convoluted way to tell the caller to place a
