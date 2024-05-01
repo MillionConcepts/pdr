@@ -497,7 +497,6 @@ def parse_table_structure(
         if length is not None:
             fmtdef[f"ROW{end}_BYTES"] = length
     from pdr.pd_utils import compute_offsets, insert_sample_types_into_df
-
     if "START_BYTE" in fmtdef.columns:
         fmtdef = compute_offsets(fmtdef)
     if _probably_ascii(block, fmtdef, name):
@@ -660,7 +659,7 @@ def read_format_block(
             obj, add_placeholder = read_format_block(
                 definition, object_name, fn, data, identifiers
             )
-            if item_type != "ARRAY":
+            if item_type == "ARRAY":
                 add_placeholder = True
             else:
                 reps = definition.get("REPETITIONS")
