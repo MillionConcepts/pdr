@@ -7,6 +7,9 @@
 #### Dataset Support
 - Cassini UVIS EUV, FUV
 - Voyager IRIS full-res spectral observations
+- GRSFE AVIRIS and TIMS tables
+- all GRSFE TABLE_HEADER and SPECTRUM_HEADER pointers
+  - Affected datasets: AVIRIS and TIMS tables, PARABOLA, and wind experiment
 
 #### Other
 - 

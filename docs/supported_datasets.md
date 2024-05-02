@@ -163,7 +163,7 @@ expected data structures and that interpretable portions of their data
   - LGRS RDR: SHADR, SHBDR, and RSDMAP
   - RSS: BOF, ODF, OLF, and RSR
 #### GRSFE
-  - Airborne datasets: ASAS, AVIRIS, and TIMS images
+  - Airborne datasets: ASAS, AVIRIS, and TIMS images; AVIRIS and TIMS tables
   - Ground-based datasets: GPS profiles, helicopter stereo profiles, spectral 
     hygrometer, PARABOLA, PFES, reagan radiometer, wind experiment, and weather 
     station data
@@ -597,9 +597,6 @@ expected data structures and that interpretable portions of their data
   - LGRS: EDR and CDR (support not planned)
   - RSS: BTM, TDM, TNF, XRF, and ancillary products (support not planned)
 #### GRSFE
-  - AVIRIS and TIMS tables (support planned; VAX_REAL)
-  - all TABLE_HEADER and SPECTRUM_HEADER pointers (support planned; low priority)
-    - Affected datasets: AVIRIS and TIMS tables, PARABOLA, and wind experiment
   - AIRSAR compressed images (support not planned)
   - Daedalus spectra (support not planned)
   - Directional emissivity experiment (support not planned)
