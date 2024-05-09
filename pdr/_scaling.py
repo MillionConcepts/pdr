@@ -112,4 +112,4 @@ def scale_pds4_tools_struct(struct: object) -> np.ndarray:
     array = apply_scaling_and_value_offset(
         array, special_constants=special_constants, **scale_kwargs
     )
-    return array
+    return np.asarray(array)

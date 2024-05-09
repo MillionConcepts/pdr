@@ -549,7 +549,9 @@ class Data:
         if isinstance(structure, Label):
             setattr(self, "label", structure)
         elif structure.is_array():
-            setattr(self, object_name, structure.data)
+            import numpy as np
+
+            setattr(self, object_name, np.asarray(structure.data))
         elif structure.is_table():
             from pdr.pd_utils import structured_array_to_df
 
