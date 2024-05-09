@@ -112,4 +112,6 @@ def scale_pds4_tools_struct(struct: object) -> np.ndarray:
     array = apply_scaling_and_value_offset(
         array, special_constants=special_constants, **scale_kwargs
     )
+    if hasattr(array, "mask"):
+        return np.ma.masked_array(np.asarray(array.data), array.mask)
     return np.asarray(array)
