@@ -20,6 +20,8 @@
 ### Fixed
 - Bug which prevented reading of single band images with an interleave key if 
 the interleave was BIL and the image had prefix/suffix
+- Bug in which some pds4 data objects were not being successfully cast from 
+PDS4tools arrays to numpy arrays
 
 ### Removed
 - 
