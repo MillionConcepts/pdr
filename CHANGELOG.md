@@ -2,7 +2,7 @@
 ### Added
 
 #### Features
-- 
+- Support for 4 bit VAX_REAL Tables
 
 #### Dataset Support
 - Cassini UVIS EUV, FUV
