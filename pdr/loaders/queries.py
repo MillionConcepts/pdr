@@ -148,7 +148,7 @@ def check_fix_validity(props: ImageProps) -> None:
     if (props["linepad"] > 0) and props["band_storage_type"] not in (
         None,
         "LINE_INTERLEAVED",
-    ):
+    ) and props['nbands'] > 1:
         raise NotImplementedError(
             "'Conventional' line pre/suffixes are not supported for non-BIL "
             "multiband images."
