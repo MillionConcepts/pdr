@@ -18,7 +18,8 @@
 - 
 
 ### Fixed
-- 
+- Bug which prevented reading of single band images with an interleave key if 
+the interleave was BIL and the image had prefix/suffix
 
 ### Removed
 - 
