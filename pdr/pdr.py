@@ -13,7 +13,7 @@ from typing import (
     Optional,
     Sequence,
     TYPE_CHECKING,
-    Union,
+    Union
 )
 import warnings
 
@@ -30,7 +30,6 @@ from pdr.formats import check_special_fn, special_image_constants
 from pdr.parselabel.pds3 import (
     depointerize,
     get_pds3_pointers,
-    literalize_pvl,
     pointerize,
     read_pvl,
 )
@@ -69,41 +68,18 @@ class Metadata(MultiDict):
         super().__init__(mapping, **kwargs)
         self.fieldcounts = countby(identity, params)
         self.standard = standard
-        if self.standard == "PDS3":
-            self.formatter = literalize_pvl
-        elif self.standard in ("PDS4", "FITS"):
-            # we're trusting that pds4_tools and/or our astropy wrapper
-            # stringified everything correctly.
-            # also note that this has no
-            # default capacity to describe PDS4 units -- you have to
-            # explicitly check the 'attrib' attribute of the XML node,
-            # which is not preserved by Label.to_dict().
-            # TODO: replace pds4_tools' Label.to_dict() with our own
-            #  literalizer function.
-            self.formatter = identity
-        else:
-            raise NotImplementedError(
-                "Syntaxes other than PDS3-style PVL, preprocessed PDS4 XML,"
-                "and preprocessed FITS headers are not yet implemented."
-            )
-        # note that 'directly' caching these methods can result in recursive
-        # reference chains behind the lru_cache API that can prevent the
-        # Metadata object from being garbage-collected, which is why they are
-        # hidden behind these wrappers. there may be a cleaner way to do this.
+        self.refresh_cache()
+
+    # note that 'directly' caching these methods can result in recursive
+    # reference chains behind the lru_cache API that can prevent the
+    # Metadata object from being garbage-collected, which is why they are
+    # hidden behind these wrappers. there may be a cleaner way to do this.
+    def refresh_cache(self):
         self._metaget_interior = _metaget_factory(self)
         self._metablock_interior = _metablock_factory(self)
 
-    def __getitem__(self, key):
-        """"""
-        value = super().__getitem__(key)
-        return self.formatter(value)
-
     def metaget(
-        self,
-        text: str,
-        default: Any = None,
-        evaluate: bool = True,
-        warn: bool = True
+        self, text: str, default: Any = None, warn: bool = True
     ) -> Any:
         """
         get the first value from this object whose key exactly matches `text`,
@@ -126,15 +102,13 @@ class Metadata(MultiDict):
                 f"Returning only the first.",
                 DuplicateKeyWarning,
             )
-        return self._metaget_interior(text, default, evaluate)
+        return self._metaget_interior(text, default)
 
-    def metaget_(
-        self, text: str, default: Any = None, evaluate: bool = True
-    ) -> Any:
+    def metaget_(self, text: str, default: Any = None) -> Any:
         """quiet-by-default version of metaget"""
-        return self.metaget(text, default, evaluate, False)
+        return self.metaget(text, default, False)
 
-    def metaget_fuzzy(self, text: str, evaluate: bool = True) -> Any:
+    def metaget_fuzzy(self, text: str) -> Any:
         """Like `metaget()`, but fuzzy-matches key names."""
         levratio = {
             key: lev.ratio(key, text) for key in set(self.fieldcounts.keys())
@@ -142,13 +116,10 @@ class Metadata(MultiDict):
         if levratio == {}:
             return None
         peak = max(levratio.values())
-        for k, v in levratio.items():
-            if v == peak:
-                return self.metaget(k, None, evaluate)
+        for k, v in filter(lambda kv: kv[1] == peak, levratio.items()):
+            return self.metaget(k)
 
-    def metablock(
-        self, text: str, evaluate: bool = True, warn: bool = True
-    ) -> Optional[Mapping]:
+    def metablock(self, text: str, warn: bool = True) -> Optional[Mapping]:
         """
         get the first value from this object whose key exactly
         matches `text`, even if it is nested inside a mapping, if the value
@@ -173,13 +144,11 @@ class Metadata(MultiDict):
                 f"Returning only the first.",
                 DuplicateKeyWarning,
             )
-        return self._metablock_interior(text, evaluate)
+        return self._metablock_interior(text)
 
-    def metablock_(
-        self, text: str, evaluate: bool = True
-    ) -> Optional[Mapping]:
+    def metablock_(self, text: str) -> Optional[Mapping]:
         """quiet-by-default version of metablock"""
-        return self.metablock(text, evaluate, False)
+        return self.metablock(text, False)
 
     def __str__(self):
         """"""
@@ -188,6 +157,9 @@ class Metadata(MultiDict):
     def __repr__(self):
         """"""
         return f"Metadata({prettify_multidict(self)})"
+
+    _metaget_interior: Callable[[str, Any], Any]
+    _metablock_interior: Callable[[str], Mapping]
 
 
 class DebugExceptionPreempted(Exception):
@@ -276,8 +248,7 @@ class Data:
             raise ValueError(
                 f"Can't load this product's metadata: {ex}, {type(ex)}"
             )
-        self._metaget_interior = _metaget_factory(self.metadata)
-        self._metablock_interior = _metablock_factory(self.metadata)
+        self.load_metadata_changes()
         if self.standard == "PDS4":
             return
         if primary_format is not None:
@@ -298,6 +269,13 @@ class Data:
         for k, v in self.identifiers.items():
             if isinstance(v, (tuple, set)):
                 self.identifiers[k] = str(v)
+
+    # noinspection PyProtectedMember
+    def load_metadata_changes(self):
+        if "_metaget_interior" in dir(self):
+            self.metadata.refresh_cache()
+        self._metaget_interior = self.metadata._metaget_interior
+        self._metablock_interior = self.metadata._metablock_interior
 
     def _init_pds4(self):
         """use pds4_tools to open pds4 files, but in our interface idiom."""
@@ -342,7 +320,9 @@ class Data:
                 continue
             self.index.append(object_name)
 
-    def _object_to_filename(self, object_name: str) -> Union[str, list[str]]:
+    def _object_to_filename(
+        self, object_name: str
+    ) -> Union[str, list[str], Optional[tuple[Path, ...]]]:
         """
         Construct one or more on-disk search paths for the file that contains
         a named data object. Does not actually check if files exist at those
@@ -691,11 +671,7 @@ class Data:
         )
 
     def metaget(
-        self,
-        text: str,
-        default: Any = None,
-        evaluate: bool = True,
-        warn: bool = True
+        self, text: str, default: Any = None, warn: bool = True
     ) -> Any:
         """
         get the first value from this object's metadata whose key exactly
@@ -707,17 +683,13 @@ class Data:
             updating elements of self.metadata that have already been accessed
             with this function will not update future calls to this function.
         """
-        return self.metadata.metaget(text, default, evaluate, warn)
+        return self.metadata.metaget(text, default, warn)
 
-    def metaget_(
-        self, text: str, default: Any = None, evaluate: bool = True
-    ) -> Any:
+    def metaget_(self, text: str, default: Any = None) -> Any:
         """quiet-by-default version of metaget"""
-        return self.metadata.metaget(text, default, evaluate, False)
+        return self.metadata.metaget(text, default, False)
 
-    def metablock(
-        self, text: str, evaluate: bool = True, warn: bool = True
-    ) -> Optional[Mapping]:
+    def metablock(self, text: str, warn: bool = True) -> Optional[Mapping]:
         """
         get the first value from this object's metadata whose key exactly
         matches `text`, even if it is nested inside a mapping, if the value
@@ -728,13 +700,11 @@ class Data:
         updating elements of self.metadata that have already been accessed
         with this function will not update future calls to this function.
         """
-        return self.metadata.metablock(text, evaluate, warn)
+        return self.metadata.metablock(text, warn)
 
-    def metablock_(
-        self, text: str, evaluate: bool = True
-    ) -> Optional[Mapping]:
+    def metablock_(self, text: str) -> Optional[Mapping]:
         """quiet-by-default version of metablock"""
-        return self.metadata.metablock(text, evaluate, False)
+        return self.metadata.metablock(text, False)
 
     def get_absolute_paths(self, filename: Union[str, Path]) -> list[str]:
         """
@@ -891,40 +861,30 @@ class Data:
         for key in self.keys():
             yield self[key]
 
+    _metaget_interior: Callable[[str, Any], Any]
+    _metablock_interior: Callable[[str], Mapping]
 
-def _metaget_factory(
-    metadata: Metadata, cached: bool = True
-) -> Callable[[str, bool, bool], Any]:
-    """
-    Factory function for an internal component of `metaget()`. Reduces the risk
-    that the metadata access cache will create reference cycles.
-    """
-    def metaget_interior(text, default, evaluate):
+
+def _metaget_factory(metadata: Metadata) -> Callable[[str, Any], Any]:
+
+    def metaget_interior(text, default):
         """"""
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
-        if value is not None:
-            return metadata.formatter(value) if evaluate is True else value
-        return default
+        return default if value is None else value
 
-    if cached is True:
-        return cache(metaget_interior)
-    return metaget_interior
+    return cache(metaget_interior)
 
 
-def _metablock_factory(
-    metadata: Metadata, cached: bool = True
-) -> Callable[[str, bool], Mapping]:
+def _metablock_factory(metadata: Metadata) -> Callable[[str], Mapping]:
     """
     Factory function for an internal component of `metablock()`. Reduces the
     risk that the metadata access cache will create reference cycles.
     """
-    def metablock_interior(text, evaluate):
+    def metablock_interior(text):
         """"""
         value = dig_for_value(metadata, text, mtypes=(dict, MultiDict))
         if not isinstance(value, Mapping):
-            value = metadata
-        return metadata.formatter(value) if evaluate is True else value
+            return metadata
+        return value
 
-    if cached is True:
-        return cache(metablock_interior)
-    return metablock_interior
+    return cache(metablock_interior)
