@@ -2,7 +2,7 @@
 ### Added
 
 #### Features
-- 
+- Support for 4 bit VAX_REAL Tables
 
 #### Dataset Support
 - Cassini UVIS EUV, FUV
@@ -18,7 +18,8 @@
 - 
 
 ### Fixed
-- 
+- Bug which prevented reading of single band images with an interleave key if 
+the interleave was BIL and the image had prefix/suffix
 
 ### Removed
 - 

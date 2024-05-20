@@ -9,7 +9,7 @@ def get_offset(data, pointer):
     * clem_GEO
         * bsr_rdr_data
     """
-    start_row = int(re.split(r",|[(|)]", data.metaget[f"^{pointer}"])[2])
+    start_row = int(re.split(r",|[(|)]", data.metaget(f"^{pointer}"))[2])
     return True, (start_row - 1) * data.metaget("RECORD_BYTES")
 
 
