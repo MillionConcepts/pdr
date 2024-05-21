@@ -17,7 +17,7 @@ def basesamp():
 
 
 def test_generic_properties():
-    block = literalize_pvl(parse_pvl(BLOCK_TEXT)[0]["IMAGE"])
+    block = parse_pvl(BLOCK_TEXT)[0]["IMAGE"]
     props = generic_image_properties(block, ">f")
     assert props == {
         "BYTES_PER_PIXEL": 4,
@@ -36,7 +36,7 @@ def test_generic_properties():
 
 def test_qube_props():
     params, _ = parse_pvl(QUBE_BLOCK_TEXT)
-    qube_block = literalize_pvl(params["SPECTRAL_QUBE"])
+    qube_block = params["SPECTRAL_QUBE"]
     band_storage_type = get_qube_band_storage_type(qube_block)
     props = generic_qube_properties(qube_block, band_storage_type)
     assert props == {
