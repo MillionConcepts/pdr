@@ -1,4 +1,4 @@
-## [1.X.X] - 202X-XX-XX
+## [1.1.0] - 2024-05-21
 ### Added
 
 #### Features
@@ -29,11 +29,8 @@ Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/5
 - all GRSFE TABLE_HEADER and SPECTRUM_HEADER pointers
   - Affected datasets: AVIRIS and TIMS tables, PARABOLA, and wind experiment
 
-#### Other
-- 
-
 ### Changed
-- Updated several unit tests based on the metadata changes
+- Updated several unit tests based on the Metadata changes
 
 ### Fixed
 - Bug which prevented reading of single band images with an interleave key if 
@@ -48,9 +45,6 @@ description of this type of label writing practice.
   michael: yeah. the problem is that this isn't actually wrong, it's just depraved.
   it violates only the spirit of the law
   ```
-
-### Removed
-- 
 
 ## [1.0.7] - 2024-04-23
 ### Added
