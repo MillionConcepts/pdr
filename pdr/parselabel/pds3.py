@@ -1,12 +1,13 @@
 """Parsing utilities for PDS3 labels."""
-from ast import literal_eval
 import re
+import warnings
+from ast import literal_eval
 from numbers import Number
 from operator import eq
 from pathlib import Path
-from typing import Iterable, Mapping, Optional, Type, Union, Collection, Any, \
-    Hashable, Callable
-import warnings
+from typing import (
+    Iterable, Optional, Type, Union, Collection, Any, Callable
+)
 
 from cytoolz import groupby, identity
 from dustgoggles.func import constant
@@ -16,7 +17,6 @@ from multidict import MultiDict
 
 from pdr.parselabel.utils import trim_label, DEFAULT_PVL_LIMIT
 from pdr.utils import decompress
-
 
 PVL_BLOCK_INITIALS = ("OBJECT", "GROUP", "BEGIN_OBJECT", "BEGIN_GROUP")
 PVL_BLOCK_TERMINAL = re.compile(r"END(_OBJECT|$)")
@@ -141,7 +141,7 @@ def parse_pvl(
     if deduplicate_pointers:
         pointers = get_pds3_pointers(mapping)
         mapping, params = index_duplicate_pointers(pointers, mapping, params)
-    return mapping, params
+    return literalize_pvl(mapping), params
 
 
 def read_pvl(
@@ -161,9 +161,7 @@ def parse_pvl_quantity_object(obj: str) -> dict[str, Union[str, Number]]:
     Parse a PVL quantity string into a dict like {'value': 2, 'units': 'km'}.
     """
     return {
-        "value": literalize_pvl(
-            re.search(PVL_QUANTITY_VALUE, obj).group()
-        ),
+        "value": literalize_pvl(re.search(PVL_QUANTITY_VALUE, obj).group()),
         "units": literalize_pvl(re.search(PVL_QUANTITY_UNITS, obj).group(1)),
     }
 
@@ -194,7 +192,7 @@ def parse_pvl_quantity_statement(statement: str) -> Any:
 
 def multidict_dig_and_edit(
     input_multidict: MultiDict,
-    target: Any,
+    target: Any = None,
     input_object: Any = None,
     predicate: Callable[[Any, Any], bool] = eq,
     setter_function: Callable = None,
@@ -321,7 +319,7 @@ def literalize_pvl(
     return obj
 
 
-def literalize_pvl_block(block: MultiDict) -> MultiDict:
+def literalize_pvl_block(block: MultiDict[str, Any]) -> MultiDict[str, Any]:
     """
     Parse the values of an entire (possibly-nested) MultiDict whose values are
     PVL strings into Python objects.
@@ -332,6 +330,7 @@ def literalize_pvl_block(block: MultiDict) -> MultiDict:
         predicate=lambda x, y: True,
         setter_function=lambda _, obj: literalize_pvl(obj),
     )
+    # noinspection PyTypeChecker
     return literalized
 
 
@@ -397,7 +396,6 @@ def index_duplicate_pointers(
                     input_object=list(range(len(group))),
                     setter_function=set_key_index,
                     key_editor=True,
-                    keep_values=True,
                 )
                 mapping = multidict_dig_and_edit(
                     input_multidict=mapping,
@@ -405,7 +403,6 @@ def index_duplicate_pointers(
                     input_object=list(range(len(group))),
                     setter_function=set_key_index,
                     key_editor=True,
-                    keep_values=True,
                 )
                 params.append(indexed_pointer)
                 params.append(indexed_depointer)

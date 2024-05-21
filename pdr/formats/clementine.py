@@ -9,8 +9,8 @@ def get_offset(data, pointer):
     * clem_GEO
         * bsr_rdr_data
     """
-    start_row = int(re.split(r",|[(|)]", data.metadata[f"^{pointer}"])[2])
-    return True, (start_row - 1) * data.metadata["RECORD_BYTES"]
+    start_row = int(re.split(r",|[(|)]", data.metaget(f"^{pointer}"))[2])
+    return True, (start_row - 1) * data.metaget("RECORD_BYTES")
 
 
 def get_fn(data, object_name):
@@ -19,7 +19,7 @@ def get_fn(data, object_name):
     * clem_GEO
         * bsr_rdr_data
     """
-    target = re.split(r",|[(|)]", data.metadata[f"^{object_name}"])[1]
+    target = re.split(r",|[(|)]", data.metaget(f"^{object_name}"))[1]
     return True, target
 
 

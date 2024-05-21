@@ -146,9 +146,10 @@ def check_fix_validity(props: ImageProps) -> None:
         raise NotImplementedError(
             "ISIS-style axplanes along multiple axes are not supported."
         )
-    if (props["linepad"] > 0) and props["band_storage_type"] not in (
-        None,
-        "LINE_INTERLEAVED",
+    if (
+        (props["linepad"] > 0)
+        and props["band_storage_type"] not in (None, "LINE_INTERLEAVED")
+        and props["nbands"] > 1
     ):
         raise NotImplementedError(
             "'Conventional' line pre/suffixes are not supported for non-BIL "
@@ -478,10 +479,6 @@ def parse_table_structure(
     or for one of several ASCII parsers.
     """
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
-    if fmtdef['DATA_TYPE'].str.contains('VAX_REAL').any():
-        raise NotImplementedError(
-            "VAX reals are not currently supported in tables."
-        )
     if "BYTES" not in fmtdef.columns:
         if _probably_ascii(block, fmtdef, name):
             # this is either a nonstandard fixed-width table or a DSV table.
@@ -760,9 +757,7 @@ def load_format_file(
     except (ValueError, IndexError):
         pass
     try:
-        fmtpath = check_cases(label_fns)
-        aggregations, _ = read_pvl(fmtpath)
-        return literalize_pvl(aggregations)
+        return read_pvl(check_cases(label_fns))[0]
     except FileNotFoundError:
         warnings.warn(
             f"Unable to locate external table format file:\n\t {format_file}. "

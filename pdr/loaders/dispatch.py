@@ -77,13 +77,11 @@ def pointer_to_loader(pointer: str, data: Data) -> Loader:
         return ReadArray()
     if "LINE_PREFIX_TABLE" in pointer:
         return TBD()
+    table_words = ["TABLE", "SPREADSHEET", "CONTAINER",
+                   "SERIES", "SPECTRUM", "HISTOGRAM"]
     if (
-        ("TABLE" in pointer)
-        or ("SPREADSHEET" in pointer)
-        or ("CONTAINER" in pointer)
-        or ("TIME_SERIES" in pointer)
-        or ("SERIES" in pointer)
-        or ("SPECTRUM" in pointer)
+        any(val in pointer for val in table_words)
+        and not any(val+"_HEADER" in pointer for val in table_words)
     ):
         return ReadTable()
     if "HEADER" in pointer:
@@ -92,8 +90,6 @@ def pointer_to_loader(pointer: str, data: Data) -> Loader:
         ):
             return ReadFits()
         return ReadHeader()
-    if "HISTOGRAM" in pointer:
-        return ReadTable()
     # I have moved this below "table" due to the presence of a number of
     # binary tables named things like "Image Time Table". If there are pictures
     # of tables, we will need to do something more sophisticated.
