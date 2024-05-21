@@ -6,7 +6,7 @@
 - Ability to modify Metadata objects and have changes propagate to pdr objects.
 Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/55)
 
-
+```
     Example Usage:
     Display an BSQ RGB image as a vertical image with 
     each channel split into a column
@@ -18,9 +18,9 @@ Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/5
     data.load_metadata_changes()
     data.load('IMAGE', reload=True)
     data.show('IMAGE')
-
-    If the image was not loaded before the metadata change, the `reload=True` 
-    argument is unnecessary. 
+```
+If the image was not loaded before the metadata change, the `reload=True` 
+argument is unnecessary. 
 
 #### Dataset Support
 - Cassini UVIS EUV, FUV
