@@ -180,13 +180,7 @@ def read_strictly_fixed(string_buffer, specs, padchars=PAD_CHARACTERS):
     return pd.DataFrame(cols)
 
 
-def _read_fwf_with_colspecs(
-    fmtdef: pd.DataFrame, string_buffer: StringIO
-) -> pd.DataFrame:
-    """
-    Attempt to read an ASCII table as a fixed-width file using column
-    boundaries specified by or inferred from its format definition.
-    """
+def _make_colspecs(fmtdef):
     colspecs = []
     # TODO: this if clause is a 'general special' statement, intended to handle
     #  instances in which special cases call read_table_structure() but do not
@@ -204,6 +198,17 @@ def _read_fwf_with_colspecs(
         colspecs.append(
             (record["SB_OFFSET"], record["SB_OFFSET"] + col_length)
         )
+    return colspecs
+
+
+def _read_fwf_with_colspecs(
+    fmtdef: pd.DataFrame, string_buffer: StringIO
+) -> pd.DataFrame:
+    """
+    Attempt to read an ASCII table as a fixed-width file using column
+    boundaries specified by or inferred from its format definition.
+    """
+    colspecs = _make_colspecs(fmtdef)
     # NOTE: the 'delimiter' argument to read_fwf() does _not_ specify
     # an actual delimiter. It defines characters the read_fwf parser
     # will treat as 'padding' and strip from each table element.
@@ -237,7 +242,8 @@ def _read_table_from_stringio(
         string_buffer.seek(0)
     if "BYTES" in fmtdef.columns:
         try:
-            return _read_fwf_with_colspecs(fmtdef, string_buffer)
+            # return _read_fwf_with_colspecs(fmtdef, string_buffer)
+            return read_strictly_fixed(string_buffer, _make_colspecs(fmtdef))
         except (pd.errors.EmptyDataError, pd.errors.ParserError):
             string_buffer.seek(0)
     # last-ditch fallback if we don't have column specifications or using the
