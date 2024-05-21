@@ -1,3 +1,24 @@
+## [X.X.X] - 202X-XX-XX
+### Added
+
+#### Features
+- 
+
+#### Dataset Support
+- 
+
+#### Other
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+### Removed
+- 
+
 ## [1.1.0] - 2024-05-21
 ### Added
 
