@@ -45,7 +45,7 @@ NULL_IDENTIFIERS = {field: "" for field in get_annotations(DataIdentifiers)}
 
 
 def test_bit_handling():
-    block = literalize_pvl_block(parse_pvl(BIT_STUB)[0])
+    block = parse_pvl(BIT_STUB)[0]
     fmtdef = read_table_structure(block, 'TABLE', None, None, NULL_IDENTIFIERS)
     bits = random.choices((0, 1), k=16)
     table = pd.DataFrame(
