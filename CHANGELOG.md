@@ -41,6 +41,13 @@ the interleave was BIL and the image had prefix/suffix. Resolves issue
 [#55](https://github.com/MillionConcepts/pdr/issues/55)
 - Bug in which some pds4 data objects were not being successfully cast from 
 PDS4tools arrays to numpy arrays
+- Bug in which padding bytes before top level containers in ASCII tables not 
+described by a column in the label were not being respected. See below for 
+description of this type of label writing practice.
+  ```
+  michael: yeah. the problem is that this isn't actually wrong, it's just depraved.
+  it violates only the spirit of the law
+  ```
 
 ### Removed
 - 
