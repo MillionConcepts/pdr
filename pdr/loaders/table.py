@@ -85,7 +85,7 @@ def read_table(
     fmtdef, dt = fmtdef_dt
     if dt is None:  # we believe object is an ascii file
         table = _interpret_as_ascii(
-            identifiers, fn, fmtdef, block, table_props
+            fn, fmtdef, block, table_props
         )
         if len(table.columns) != len(fmtdef):
             table.columns = [
@@ -133,8 +133,6 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
 
 
 def _read_as_delimited(
-    fn: str,
-    identifiers: DataIdentifiers,
     sep: str,
     string_buffer: StringIO,
     fmtdef: pd.DataFrame
@@ -219,8 +217,6 @@ def _read_fwf_with_colspecs(
 
 def _read_table_from_stringio(
     fmtdef: pd.DataFrame,
-    fn: str,
-    identifiers: DataIdentifiers,
     block: MultiDict,
     string_buffer: StringIO
 ) -> pd.DataFrame:
@@ -232,7 +228,7 @@ def _read_table_from_stringio(
     # TODO, maybe: add better delimiter detection & dispatch
     try:
         sep = check_explicit_delimiter(block)
-        return _read_as_delimited(fn, identifiers, sep, string_buffer, fmtdef)
+        return _read_as_delimited(sep, string_buffer, fmtdef)
     except (IndexError, UnicodeError, AttributeError, ParserError):
         string_buffer.seek(0)
     if "BYTES" in fmtdef.columns:
@@ -247,7 +243,6 @@ def _read_table_from_stringio(
 
 
 def _interpret_as_ascii(
-    identifiers: DataIdentifiers,
     fn: str,
     fmtdef: pd.DataFrame,
     block: MultiDict,
@@ -272,4 +267,4 @@ def _interpret_as_ascii(
                 lines = [next(f) for _ in range(table_props["length"])]
             stringbuf = StringIO("\r\n".join(map(bytes.decode, lines)))
     stringbuf.seek(0)
-    return _read_table_from_stringio(fmtdef, fn, identifiers, block, stringbuf)
+    return _read_table_from_stringio(fmtdef, block, stringbuf)
