@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 PAD_CHARACTERS = ' \t",'
 """
-Characters we want to strip from the beginning/end of every element of an 
+Characters we want to strip from the beginning/end of every element of an
 ASCII table.
 """
 
