@@ -799,28 +799,23 @@ class Data:
             if purge is True:
                 self.__delattr__(obj)
 
-    def __getattribute__(self, attr):
-        """"""
-        # provide a way to sidestep special behavior
-        if attr == "getattr":
-            return super().__getattribute__
-        # do not infinitely check if the index is in itself
-        if attr == "index":
-            return self.getattr("index")
-        # do not attempt to lazy-load attributes that are not data objects
-        if attr not in self.getattr("index"):
-            return self.getattr(attr)
+    def __getattribute__(self, attr: str) -> Any:
+        """
+        Get an attribute of self; known data objects can be referred to
+        using attribute notation.
+        """
         try:
-            return self.getattr(attr)
+            return super().__getattribute__(attr)
         except AttributeError:
-            # if an attribute name corresponds to the name of a known data
-            # object and that attribute hasn't been assigned, load and return
-            # the data object
-            self.load(attr)
-            return self.getattr(attr)
+            if attr not in self.index:
+                raise
+        self.load(attr)
+        return super().__getattribute__(attr)
 
-    # this is redundant with __getattribute__. it is repeated here for
-    # clarity and to help enable static analysis.
+    # This method exists as a bypass for the special behavior of
+    # __getattribute__.  All code reachable from load() must take
+    # care when accessing attributes of self in order to avoid an
+    # infinite lazy-load loop; this makes that more convenient.
     def getattr(self, attr):
         """
         get an attribute of self without either lazy-loading on failure or
