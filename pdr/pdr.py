@@ -8,6 +8,7 @@ from typing import (
     Any,
     Callable,
     Collection,
+    Iterator,
     Literal,
     Mapping,
     Optional,
@@ -827,7 +828,7 @@ class Data:
         """
         return super().__getattribute__(attr)
 
-    # The following two functions make this object act sort of dict-like
+    # The following three functions make this object act sort of dict-like
     #  in useful ways for data exploration.
     def keys(self) -> list[str]:
         """
@@ -836,10 +837,20 @@ class Data:
         """
         return self.index
 
+    def __contains__(self, name: str) -> bool:
+        """True if self contains a data object with the name 'name'."""
+        return name in self.index
+
     # make it possible to get data objects with slice notation, like a dict
-    def __getitem__(self, item):
-        """"""
-        return self.__getattribute__(item)
+    def __getitem__(self, name: str) -> Any:
+        """
+        Return the contained data object with the name 'name'.
+        """
+        if name not in self.index:
+            warnings.warn("in a future release Data[name] will accept only"
+                          " names of data objects, not other properties",
+                          DeprecationWarning, stacklevel=1)
+        return self.__getattribute__(name)
 
     def __repr__(self):
         """"""
@@ -853,11 +864,22 @@ class Data:
         return self.__repr__()
 
     def __len__(self):
-        """"""
+        """
+        Return the number of data objects contained in self.
+        """
         return len(self.index)
 
-    def __iter__(self):
-        """"""
+    def __iter__(self) -> Iterator[Any]:
+        """
+        Iterate over all the data objects contained in self.
+        Iteration all the way to the end will cause all of the data
+        objects to be loaded, which may run your computer out of memory.
+        For this reason, iteration over Data objects is deprecated
+        and will be removed in six months.
+        """
+        warnings.warn("iteration over Data objects is deprecated"
+                      " as it can crash your computer",
+                      DeprecationWarning, stacklevel=1)
         for key in self.keys():
             yield self[key]
 
