@@ -88,6 +88,11 @@ def check_special_offset(
     ):
         return formats.lro.get_crater_offset()
     if (
+        identifiers["DATA_SET_ID"] == "PHX-M-SSI-5-ATMOS-OPACITY-V1.0"
+        and "TABLE" in name
+    ):
+        return formats.phoenix.phxao_table_offset(fn, identifiers)
+    if (
         identifiers["DATA_SET_ID"] == "PHX-M-MECA-4-NIRDR-V1.0"
         and identifiers["PRODUCT_TYPE"] in ("MECA_WCL_CP", "MECA_WCL_CV")
         and "TABLE" in name
@@ -442,6 +447,13 @@ def check_special_position(
         and name == "ATM_TABLE"
     ):
         return True, formats.mex.mrs_ddr_atmo_position(
+            identifiers, block, target, name, start_byte
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-SSI-5-ATMOS-OPACITY-V1.0"
+        and "HEADER" in name
+    ):
+        return True, formats.phoenix.phxao_header_position(
             identifiers, block, target, name, start_byte
         )
     if (

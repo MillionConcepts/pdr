@@ -1,4 +1,5 @@
 """Pointy-end functions for text-handling Loader subclasses."""
+from io import TextIOWrapper
 from pathlib import Path
 from typing import Optional, Union
 import warnings
@@ -67,7 +68,7 @@ def skeptically_load_header(
     contextualizing metadata for ASCII tables.
 
     By default, simply read the designated byte range as unicode text. If
-    `as_pvl` is True, also attempt to parse this text as PVL. (This will fail
+    `fmt` is "pvl", also attempt to parse this text as PVL. (This will fail
     on most products, because most HEADER objects are not PVL, but is useful
     for some ancillary attached labels, especially ISIS labels.)
 
@@ -83,6 +84,8 @@ def skeptically_load_header(
     """
     # TODO: all these check_cases calls are probably unnecessary w/new file
     #  mapping workflow
+    # FIXME: PVL mode ignores the table_props
+    # FIXME: Character encoding should be controlled separately from as_rows
     try:
         if fmt == "pvl":
             try:
@@ -92,15 +95,23 @@ def skeptically_load_header(
             except ValueError:
                 pass
         if table_props["as_rows"] is True:
-            with decompress(check_cases(fn)) as file:
-                if table_props["start"] > 0:
-                    file.readlines(table_props["start"])
-                text = "\r\n".join(
-                    map(
-                        lambda l: l.decode("utf-8"),
-                        file.readlines(table_props["length"]),
-                    )
-                )
+            # In order to take advantage of Python's universal newline
+            # handling, we need to decode the file and _then_ split it.
+            # Tolerate encoding errors mainly because we might have a
+            # textual header preceded or followed by binary data, and
+            # the decoder is going to process more of the file than
+            # the part we actually use.
+            lines = []
+            start = table_props["start"]
+            end = start + table_props["length"]
+            with decompress(check_cases(fn)) as f:
+                decoded_f = TextIOWrapper(f, encoding="UTF-8", errors="replace")
+                for i, line in enumerate(decoded_f):
+                    if i >= end:
+                        break
+                    if i >= start:
+                        lines.append(line.replace("\n", "\r\n"))
+            text = "".join(lines)
         else:
             with decompress(check_cases(fn)) as file:
                 file.seek(table_props["start"])

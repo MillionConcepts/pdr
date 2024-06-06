@@ -1,4 +1,5 @@
-from pdr.loaders.queries import read_table_structure
+from pdr.loaders.queries import read_table_structure, _extract_table_records
+from pdr.loaders._helpers import count_from_bottom_of_file
 
 
 def elec_em6_structure(block, name, filename, data, identifiers):
@@ -82,6 +83,43 @@ def afm_table_loader(filename, fmtdef_dt, name):
     assert len(table.columns) == len(names), "mismatched column count"
     table.columns = names
     return table
+
+
+def phxao_header_position(identifiers, block, target, name, start_byte):
+    """
+    PHXAO tables: Some table headers have lost trailing whitespace
+    assumed to be present by the label.  Treat as newline-delimited
+    instead; the record count is correct.
+
+    HITS
+    * phoenix
+       * atm_phxao
+    """
+    
+    return {
+        "as_rows": True,
+        "start": 0,
+        "length": _extract_table_records(block),
+    }
+
+
+def phxao_table_offset(filename, identifiers):
+    """
+    PHXAO tables: Some table headers have lost trailing whitespace
+    assumed to be present by the label.  Recalculate the table offset
+    assuming that the table itself is still fixed-width.
+
+    HITS
+    * phoenix
+       * atm_phxao
+    """
+    
+    rows = identifiers["ROWS"]
+    row_bytes = identifiers["ROW_BYTES"]
+    start_byte = count_from_bottom_of_file(
+        filename, rows, row_bytes=row_bytes
+    )
+    return True, start_byte
 
 
 def wcl_edr_special_block(data, name):
