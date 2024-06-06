@@ -1,4 +1,52 @@
 # Version History
+## [1.1.0] - 2024-05-21
+### Added
+
+#### Features
+- Support for 4 bit VAX_REAL Tables
+- Ability to modify Metadata objects and have changes propagate to pdr objects.
+Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/55)
+
+
+    Example Usage:
+    Display an BSQ RGB image as a vertical image with 
+    each channel split into a column
+    
+    data.metadata['IMAGE']['LINES'] = (
+    data.metadata['IMAGE']['BANDS'] * data.metadata['IMAGE']['LINES']
+    )
+    data.metadata['IMAGE']['BANDS'] = 1
+    data.load_metadata_changes()
+    data.load('IMAGE', reload=True)
+    data.show('IMAGE')
+
+    If the image was not loaded before the metadata change, the `reload=True` 
+    argument is unnecessary. 
+
+#### Dataset Support
+- Cassini UVIS EUV, FUV
+- Voyager IRIS full-res spectral observations
+- GRSFE AVIRIS and TIMS tables
+- all GRSFE TABLE_HEADER and SPECTRUM_HEADER pointers
+  - Affected datasets: AVIRIS and TIMS tables, PARABOLA, and wind experiment
+
+### Changed
+- Updated several unit tests based on the Metadata changes
+
+### Fixed
+- Bug which prevented reading of single band images with an interleave key if 
+the interleave was BIL and the image had prefix/suffix. Resolves issue 
+[#55](https://github.com/MillionConcepts/pdr/issues/55)
+- Bug in which some pds4 data objects were not being successfully cast from 
+PDS4tools arrays to numpy arrays
+- Bug in which padding bytes before top level containers in ASCII tables not 
+described by a column in the label were not being respected. See below for 
+description of this type of label writing practice.
+  ```
+  michael: yeah. the problem is that this isn't actually wrong, it's just depraved.
+  it violates only the spirit of the law
+  ```
+
 ## [1.0.7] - 2024-04-23
 ### Added
 

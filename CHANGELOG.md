@@ -1,26 +1,45 @@
-## [1.X.X] - 202X-XX-XX
+## [X.X.X] - 202X-XX-XX
 ### Added
 
 #### Features
-- Support for 4 bit VAX_REAL Tables
-- Ability to modify Metadata objects and have changes propagate to pdr objects.
-Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/55)
+- 
 
+#### Dataset Support
+- 
 
-    Example Usage:
-    Display an BSQ RGB image as a vertical image with 
-    each channel split into a column
-    
+#### Other
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+### Removed
+- 
+
+## [1.1.0] - 2024-05-21
+### Added
+
+#### Features
+- Support for 4-byte VAX_REAL Tables
+- Ability to modify Metadata objects and have changes propagate to loaded data
+objects. Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/55) This can be used either as a bandaid 
+for incorrect labels or to modify behavior. 
+    - Example use case: Display an BSQ RGB image as a "long" grayscale image, 
+      with the red, green, and blue channels on separate "rows":
+    ```
     data.metadata['IMAGE']['LINES'] = (
-    data.metadata['IMAGE']['BANDS'] * data.metadata['IMAGE']['LINES']
+        data.metadata['IMAGE']['BANDS'] * data.metadata['IMAGE']['LINES']
     )
     data.metadata['IMAGE']['BANDS'] = 1
     data.load_metadata_changes()
     data.load('IMAGE', reload=True)
     data.show('IMAGE')
-
-    If the image was not loaded before the metadata change, the `reload=True` 
-    argument is unnecessary. 
+   ```
+  - *Note that if the image had not been loaded before the metadata change, the 
+    explicit `data.load('IMAGE', reload=True)` call would be unnecessary.*
 
 #### Dataset Support
 - Cassini UVIS EUV, FUV
@@ -29,28 +48,22 @@ Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/5
 - all GRSFE TABLE_HEADER and SPECTRUM_HEADER pointers
   - Affected datasets: AVIRIS and TIMS tables, PARABOLA, and wind experiment
 
-#### Other
-- 
-
 ### Changed
-- Updated several unit tests based on the metadata changes
+- Updated several unit tests based on the Metadata changes
 
 ### Fixed
-- Bug which prevented reading of single band images with an interleave key if 
-the interleave was BIL and the image had prefix/suffix. Resolves issue 
-[#55](https://github.com/MillionConcepts/pdr/issues/55)
-- Bug in which some pds4 data objects were not being successfully cast from 
-PDS4tools arrays to numpy arrays
-- Bug in which padding bytes before top level containers in ASCII tables not 
+- Bug which prevented reading single-band images with line pre/suffixes 
+in cases when their labels unnecessarily specified a band storage type
+and that band storage type was BIL. Resolves issue [#55](https://github.com/MillionConcepts/pdr/issues/55)
+- Bug in which some PDS4 data objects were not being successfully cast from 
+`pds4_tools` `ndarray` subclasses to vanilla `numpy` classes.
+- Bug in which padding bytes before top-level containers in ASCII tables not 
 described by a column in the label were not being respected. See below for 
 description of this type of label writing practice.
   ```
   michael: yeah. the problem is that this isn't actually wrong, it's just depraved.
   it violates only the spirit of the law
   ```
-
-### Removed
-- 
 
 ## [1.0.7] - 2024-04-23
 ### Added

@@ -246,6 +246,12 @@ def check_special_table_reader(
         and "TABLE" in name
     ):
         return True, formats.mex.mrs_l1b_odf_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "LRO-L-MRFLRO-1-PDR-V1.0"
+        and "HK_" in identifiers["PRODUCT_ID"]
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.lro.mini_rf_spreadsheet_loader(fn, fmtdef_dt)
     return False, None
 
 

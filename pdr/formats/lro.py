@@ -84,3 +84,23 @@ def mini_rf_image_loader(data, name):
     block["LINES"] = 5760
     block["LINE_SAMPLES"] = 11520
     return block
+
+def mini_rf_spreadsheet_loader(filename, fmtdef_dt):
+    """
+    Mini-RF housekeeping CSVs have variable-width columns but the labels treat 
+    them as fixed-width. 
+
+    HITS
+    * lro_mini_rf
+        * housekeeping
+    """
+    import pandas as pd
+
+    fmtdef, dt = fmtdef_dt
+    # The names argument is used here to explicitly set the number of columns
+    # to 3. Otherwise the first row (which only has 1 column) confuses read_csv
+    table = pd.read_csv(filename, header=None, sep=",",
+                        names = ("POINT_NAME", "VALUE", "UNITS"))
+    assert len(table.columns) == len(fmtdef.NAME.tolist())
+    table.columns = fmtdef.NAME.tolist()
+    return table
