@@ -51,19 +51,23 @@ def test_check_delimiter_stream():
         "ETC": ...,
         'RECORD_TYPE': 'BINARY'
     }
+    empty_block = {}
+    bytes_block = {"BYTES", 100}
     # should never say a stream with a byte quantity is delimited
-    assert _check_delimiter_stream(identifiers, "TABLE", byte_target) is False
-    assert _check_delimiter_stream(identifiers, "TABLE", ("", byte_target)) is False
+    assert _check_delimiter_stream(identifiers, "TABLE", byte_target, empty_block) is False
+    assert _check_delimiter_stream(identifiers, "TABLE", ("", byte_target), empty_block) is False
     # should never say a stream with specified record bytes is delimited
-    assert _check_delimiter_stream(identifiers, "TABLE", rec_target) is False
+    assert _check_delimiter_stream(identifiers, "TABLE", rec_target, empty_block) is False
     identifiers['RECORD_BYTES'] = None
     # should never say a non-STREAM stream is delimited
-    assert _check_delimiter_stream(identifiers, "TABLE", rec_target) is False
+    assert _check_delimiter_stream(identifiers, "TABLE", rec_target, empty_block) is False
     # should never say something that isn't ASCII/SPREADSHEET/HEADER is delimited
     identifiers['RECORD_TYPE'] = 'STREAM'
-    assert _check_delimiter_stream(identifiers, "TABLE", rec_target) is False
+    assert _check_delimiter_stream(identifiers, "TABLE", rec_target, empty_block) is False
+    # should never say something whose length is declared at the block level in bytes is delimited
+    assert _check_delimiter_stream(identifiers, "SPREADSHEET", rec_target, bytes_block) is False
     # if all the above conditions aren't satisfied, should say it's delimited
-    assert _check_delimiter_stream(identifiers, "SPREADSHEET", rec_target) is True
+    assert _check_delimiter_stream(identifiers, "SPREADSHEET", rec_target, empty_block) is True
 
 
 def test_check_explicit_delimiter():

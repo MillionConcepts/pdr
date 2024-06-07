@@ -314,12 +314,14 @@ def data_start_byte(
         else:
             rows = identifiers["ROWS"]
             row_bytes = identifiers["ROW_BYTES"]
-            return count_from_bottom_of_file(fn, rows, row_bytes)
+            start_byte = max(0, count_from_bottom_of_file(fn, rows, row_bytes))
     elif isinstance(target, dict):
         start_byte = quantity_start_byte(target, record_bytes)
     elif isinstance(target, str):
         start_byte = 0
     if start_byte is not None:
+        if start_byte < 0:
+            raise ValueError(f"BUG: start_byte={start_byte} < 0")
         return start_byte
     raise ValueError(f"Unknown data pointer format: {target}")
 
@@ -338,7 +340,7 @@ def _extract_table_records(block):
 
 
 def _table_row_position(
-    length: Optional[int], n_records, target: PhysicalTarget
+    n_records, target: PhysicalTarget
 ) -> tuple[Optional[int], int]:
     """
     Get physical start row and number of rows for a delimited ASCII table with
@@ -359,12 +361,10 @@ def _table_row_position(
             # meaning that it specifies only a filename, which implies that the
             # table starts at the beginning of the file.
             start = 0
-    if n_records is not None:
-        length = n_records
-    return length, start
+    return n_records, start
 
 
-def _table_length(block, identifiers, length, n_records):
+def _table_length(block, identifiers, n_records):
     """"""
     try:
         if "BYTES" in block.keys():
@@ -406,16 +406,19 @@ def table_position(
     and "length" should be interpreted as bytes. If length is None, the table
     occupies the entirety of the file including and after "start".
     """
+    if start_byte < 0:
+        raise ValueError(f"bad start byte {start_byte}")
     try:
         n_records = _extract_table_records(block)
     except AttributeError:
         n_records = None
-    length = None
-    if (as_rows := _check_delimiter_stream(identifiers, name, target)) is True:
-        length, start = _table_row_position(length, n_records, target)
+    if (as_rows := _check_delimiter_stream(identifiers, name, target, block)):
+        length, start = _table_row_position(n_records, target)
     else:
         start = start_byte
-        length = _table_length(block, identifiers, length, n_records)
+        length = _table_length(block, identifiers, n_records)
+    if length is None and "HEADER" in name:
+        raise NotImplementedError("header with unknown length")
     return {"start": start, "length": length, "as_rows": as_rows}
 
 

@@ -1,7 +1,5 @@
 """Simple utility functions for assorted loaders and queries."""
 from __future__ import annotations
-from functools import partial
-from operator import contains
 import os
 from pathlib import Path
 from typing import Optional, Union, TYPE_CHECKING
@@ -58,7 +56,10 @@ def count_from_bottom_of_file(
 
 
 def _check_delimiter_stream(
-    identifiers: DataIdentifiers, name: str, target: PhysicalTarget
+    identifiers: DataIdentifiers,
+    name: str,
+    target: PhysicalTarget,
+    block: MultiDict,
 ) -> bool:
     """
     Does it look like this object is a delimiter-separated table without an
@@ -74,6 +75,9 @@ def _check_delimiter_stream(
         if isinstance(target[-1], dict):
             if target[-1].get("units") == "BYTES":
                 return False
+    # TODO: Other criteria that could appear in the block?
+    if "BYTES" in block:
+        return False
     # TODO: not sure this is a good assumption -- it is a bad assumption
     #  for the CHEMIN RDRs, but those labels are just wrong
     if identifiers["RECORD_BYTES"] not in (None, ""):
@@ -81,8 +85,9 @@ def _check_delimiter_stream(
     # TODO: not sure this is a good assumption
     if not identifiers["RECORD_TYPE"] == "STREAM":
         return False
-    textish = map(partial(contains, name), ("ASCII", "SPREADSHEET", "HEADER"))
-    if any(textish):
+    # Well-known object types that imply textuality, if we have nothing
+    # else to go on
+    if any(label in name for label in ("ASCII", "SPREADSHEET", "HEADER")):
         return True
     return False
 
