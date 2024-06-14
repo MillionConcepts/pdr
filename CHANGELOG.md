@@ -5,6 +5,18 @@
 - 
 
 #### Dataset Support
+- Rosetta
+  - CONSERT ancillary products
+  - ALICE supplementary tables
+  - additional COSIMA tables
+- Misc additional products from:
+  - Cassini RPWS and MIMI
+  - Galileo Probe
+  - IHW
+  - ground-based datasets at SBN
+  - Stardust
+  - LRO Mini-RF
+  - NEAR NLR
 - 
 
 #### Other
