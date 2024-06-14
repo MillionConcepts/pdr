@@ -24,11 +24,13 @@
 
 #### Features
 - Support for 4-byte VAX_REAL Tables
-- Ability to modify Metadata objects and have changes propagate to loaded data
-objects. Suggested feature in issue [#55](https://github.com/MillionConcepts/pdr/issues/55) This can be used either as a bandaid 
-for incorrect labels or to modify behavior. 
-    - Example use case: Display an BSQ RGB image as a "long" grayscale image, 
-      with the red, green, and blue channels on separate "rows":
+
+- Ability to modify Metadata objects and have changes propagate to
+  loaded data objects. Suggested feature in issue
+  [#55](https://github.com/MillionConcepts/pdr/issues/55) This can be
+  used either as a bandaid for incorrect labels or to modify behavior.
+  - Example use case: Display an BSQ RGB image as a "long" grayscale
+    image, with the red, green, and blue channels on separate "rows":
     ```
     data.metadata['IMAGE']['LINES'] = (
         data.metadata['IMAGE']['BANDS'] * data.metadata['IMAGE']['LINES']
@@ -38,8 +40,9 @@ for incorrect labels or to modify behavior.
     data.load('IMAGE', reload=True)
     data.show('IMAGE')
    ```
-  - *Note that if the image had not been loaded before the metadata change, the 
-    explicit `data.load('IMAGE', reload=True)` call would be unnecessary.*
+  - *Note that if the image had not been loaded before the metadata
+    change, the explicit `data.load('IMAGE', reload=True)` call would
+    be unnecessary.*
 
 #### Dataset Support
 - Cassini UVIS EUV, FUV
