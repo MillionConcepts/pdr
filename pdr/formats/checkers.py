@@ -93,6 +93,14 @@ def check_special_offset(
         and "TABLE" in name
     ):
         return formats.phoenix.wcl_rdr_offset(data, name)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+        and identifiers["INSTRUMENT_ID"] == "REMS"
+        and name == "REMS_REPORT_TABLE"
+        and ("HSDEF__" in identifiers["PRODUCT_ID"] or 
+             "HSREG__" in identifiers["PRODUCT_ID"])
+    ):
+        return formats.msl_rems.edr_offset(data, name)
     return False, None
 
 
@@ -252,6 +260,15 @@ def check_special_table_reader(
         and name == "SPREADSHEET"
     ):
         return True, formats.lro.mini_rf_spreadsheet_loader(fn, fmtdef_dt)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+        and identifiers["INSTRUMENT_ID"] == "REMS"
+        and "TABLE" in name
+        and "SP_____" in identifiers["PRODUCT_ID"]
+    ):
+        return True, formats.msl_rems.edr_table_loader(
+            fn, fmtdef_dt, block, start_byte
+        )
     return False, None
 
 

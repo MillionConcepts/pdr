@@ -28,6 +28,7 @@ import pdr.formats.msl_apxs as msl_apxs
 import pdr.formats.msl_cmn as msl_cmn
 import pdr.formats.msl_ccam as msl_ccam
 import pdr.formats.msl_places as msl_places
+import pdr.formats.msl_rems as msl_rems
 import pdr.formats.nh as nh
 import pdr.formats.odyssey as odyssey
 import pdr.formats.phoenix as phoenix
