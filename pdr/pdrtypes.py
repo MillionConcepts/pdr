@@ -1,8 +1,16 @@
 from __future__ import annotations
 
 from typing import (
-    Callable, Literal, Optional, TypeAlias, TypedDict, TYPE_CHECKING, Union
+    Callable, Literal, Optional, TypedDict, TYPE_CHECKING, Union
 )
+# TypeAlias is new in 3.10
+# this is exactly how it's defined in python3.11/typing.py
+try:
+    from typing import TypeAlias
+except ImportError:
+    def TypeAlias(self, parameters):
+        raise TypeError(f"{self} is not subscriptable")
+
 
 if TYPE_CHECKING:
     from multidict import MultiDict

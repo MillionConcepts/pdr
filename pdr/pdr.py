@@ -1,6 +1,5 @@
 from __future__ import annotations
 from functools import partial, cache
-from inspect import get_annotations
 from itertools import chain, product
 from numbers import Number
 from pathlib import Path
@@ -16,6 +15,25 @@ from typing import (
     Union
 )
 import warnings
+
+# get_annotations is new in 3.10.  this polyfill handles only
+# the specific case we care about.
+try:
+    from inspect import get_annotations
+except ImportError:
+    def get_annotations(o):
+        if isinstance(o, type):
+            ann = o.__dict__.get('__annotations__', None)
+        else:
+            ann = getattr(o, '__annotations__', None)
+        if ann is None:
+            return {}
+        if not isinstance(ann, dict):
+            raise ValueError(
+                f"{obj!r}.__annotations__ is neither a dict nor None"
+            )
+        # copy the dict to match the behavior of the official get_annotations
+        return { key: value for key, value in ann.items() }
 
 import Levenshtein as lev
 from cytoolz import countby, identity
