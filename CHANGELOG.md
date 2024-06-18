@@ -31,7 +31,12 @@
 ### Removed
 - 
 
-## [1.1.1] - 2025-06-14
+## [1.1.2] - 2024-06-18
+### Changed
+- Pinned numpy version to less than 2.0 until compatibility issues with new
+release are resolved.
+
+## [1.1.1] - 2024-06-14
 ### Fixed
 - Bugfix for compatibility for Python 3.9 by adding two features of Python 3.10.
   - pdr.py: if inspect.get_annotations is not available, use a fallback
