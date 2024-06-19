@@ -96,7 +96,9 @@ class BlockParser:
         self.aggregations[-1].add(parameter, value)
         self.parameters.append(parameter)
 
-    def parse_statements(self, statements) -> tuple[MultiDict, list[str]]:
+    def parse_statements(
+        self, statements
+    ) -> tuple[MultiDict[str, Any], list[str]]:
         """
         Parse a series of PVL statements into a (possibly nested) MultiDict
         and a flattened list of all keys at all levels of that MultiDict.
@@ -358,7 +360,7 @@ def depointerize(string: str) -> str:
 
 
 def index_duplicate_pointers(
-    pointers: Collection[str], mapping: MultiDict, params: list[str]
+    pointers: Collection[str], mapping: MultiDict[str, Any], params: list[str]
 ) -> tuple[MultiDict[str, Any], list[str]]:
     """
     Although technically illegal, some PDS3 objects have multiple data objects
