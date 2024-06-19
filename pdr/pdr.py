@@ -621,11 +621,9 @@ class Data:
             self, pointer, tracker=self.tracker, **load_kwargs
         )
         # FITS arrays are scaled by default
-        # TODO: obj should never be an ndarray; it should always be a dict.
-        #  Fix this.
         if (
             (loader.__class__.__name__ == "ReadFits")
-            and (obj.__class__.__name__ == "ndarray")
+            and (obj[pointer].__class__.__name__ == "ndarray")
         ):
             self._scaleflags[pointer] = True
         if self.debug is True and len(loader.errors) > 0:
