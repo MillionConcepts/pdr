@@ -70,11 +70,12 @@ def reformat_pds4_tools_label(label: "Label") -> tuple[MultiDict, list[str]]:
     repeated child elements become multiple keys of a MultiDict rather than
     a list of OrderedDicts).
     """
+    mtypes = (OrderedDict, MultiDict)
     result = multidict_dig_and_edit(
         label.to_dict(),
-        constant(True),
-        lambda _, v: unpack_if_mapping(v, (OrderedDict, MultiDict)),
-        mtypes=(OrderedDict, MultiDict),
+        predicate=lambda _, __, ___: True,
+        setter_function=lambda _, v: unpack_if_mapping(v, mtypes),
+        mtypes=mtypes,
     )
     params = []
     # collect all keys to populate pdr.Metadata's fieldcounts attribute
