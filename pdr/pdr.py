@@ -31,7 +31,7 @@ except ImportError:
             return {}
         if not isinstance(ann, dict):
             raise ValueError(
-                f"{obj!r}.__annotations__ is neither a dict nor None"
+                f"{o!r}.__annotations__ is neither a dict nor None"
             )
         # copy the dict to match the behavior of the official get_annotations
         return { key: value for key, value in ann.items() }
