@@ -37,7 +37,7 @@ except ImportError:
         return { key: value for key, value in ann.items() }
 
 import Levenshtein as lev
-from cytoolz import countby, identity
+from cytoolz import countby, identity, first
 from dustgoggles.dynamic import Dynamic
 from dustgoggles.func import gmap
 from dustgoggles.structures import dig_for_value, listify
@@ -540,13 +540,36 @@ class Data:
         """
         Load this object however pds4_tools wants to load this object, then
         reformat to DataFrame, expose the array handle in accordance with our
-        type conventions, et..
+        type conventions, etc.
+
+        If the object is from a FITS file, preempt all that behavior and send
+        it to our internal FITS-loading workflow.
         """
         structure = self._pds4_structures[object_name]
         from pds4_tools.reader.label_objects import Label
 
         if isinstance(structure, Label):
             setattr(self, "label", structure)
+        elif check_primary_fmt(structure.parent_filename) == "FITS":
+            from pdr.loaders.handlers import handle_fits_file
+            offset = structure.meta_data['offset']
+            result = handle_fits_file(
+                structure.parent_filename, object_name, offset
+            )
+            # TODO, maybe: possibly too convoluted.
+            if structure.is_header:
+                setattr(self, object_name, result[object_name])
+                return
+            for k, v in self._pds4_structures.items():
+                if (
+                    v.meta_data['offset']
+                    + v.meta_data['object_length']
+                ) == offset:
+                    setattr(
+                        self,
+                        v.meta_data['name'].replace(' ', '_'),
+                        result[f"{object_name}_HEADER"]
+                    )
         elif structure.is_array():
             import numpy as np
 
