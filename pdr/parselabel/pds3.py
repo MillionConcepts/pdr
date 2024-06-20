@@ -207,7 +207,8 @@ def multidict_dig_and_edit(
     but may produce unintended results). It searches through
     a MultiDict's items, recursively continuing into any children that are
     an instance of mtypes, and checking for keys for which
-    `predicate(key, target)` (by default meaning `key == target`) is `True`.
+    `predicate(key, value, target)` is `True`. If `predicate` is `None`,
+    the behavior reverts to `predicate == key`.
 
     If "key_editor" is False, the function changes the values associated with
     those keys. if it is True, the function changes the key names themselves.
@@ -236,7 +237,7 @@ def multidict_dig_and_edit(
                 mtypes
             )
         if predicate is None:
-            match = predicate == target
+            match = key == target
         else:
             match = predicate(key, value, target)
         if match is False:
@@ -380,6 +381,7 @@ def index_duplicate_pointers(
         if (len(group) > 1) and (
             pointer not in ("^STRUCTURE", "^DESCRIPTION", "^PDS_OBJECT")
         ):
+            print('HIIIIIII!!!!!')
             # don't waste anyone's time mentioning, that the label
             # references both ODL.TXT and VICAR2.TXT, etc.
             warnings.warn(
