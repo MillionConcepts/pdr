@@ -204,6 +204,10 @@ def handle_fits_header(
             if len(key) > 0:
                 if isinstance(val, (str, float, int)):
                     output_hdr.add(key, val)
+                # We do not want to represent not-filled-out cards with weird
+                # special astropy objects.
+                elif val.__class__.__name__ == 'Undefined':
+                    output_hdr.add(key, None)
                 else:
                     output_hdr.add(key, str(val))
                 if len(com) > 0:
@@ -297,9 +301,7 @@ def unpack_fits_headers(
             continue
         for ix, hdu in enumerate(group):
             hdu_ix, hdu_name = hdu[0], f'{name}_{ix}'
-            headerdict.add(
-                hdu_name, handle_fits_header(hdulist, hdu_ix)
-            )
+            headerdict.add(hdu_name, handle_fits_header(hdulist, hdu_ix))
             hdumap[hdu_name] = hdu_ix
     params = []
     for hdu_name in headerdict.keys():
