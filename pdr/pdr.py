@@ -536,6 +536,26 @@ class Data:
             return
         raise NotImplementedError
 
+    # TODO, maybe: this can result in multiple keys of self referring to
+    #  duplicate header objects, one like "object_name_HEADER" and one like
+    #  "HEADER_0", etc. This is not really a big deal and is annoying to
+    #  special-case, but may also be annoying to users.
+    def _find_fits_header_pds4_id(self, start_byte: int) -> Optional[str]:
+        """
+        Given start byte for an HDU's data segment, check to see if the
+        PDS4 product associated with self includes that HDU's header as a
+        distinct data object with a local identifier. If it is, return the
+        PDS4 local identifier of that object. If not, return None.
+        """
+        for k, v in self._pds4_structures.items():
+            meta = v.meta_data
+            if meta['offset'] + meta['object_length'] == start_byte:
+                if 'name' not in meta.keys():
+                    return None
+                return meta['name'].replace(' ', '_')
+
+        return None
+
     def _load_pds4(self, object_name: str):
         """
         Load this object however pds4_tools wants to load this object, then
@@ -552,24 +572,22 @@ class Data:
             setattr(self, "label", structure)
         elif check_primary_fmt(structure.parent_filename) == "FITS":
             from pdr.loaders.handlers import handle_fits_file
+
             offset = structure.meta_data['offset']
             result = handle_fits_file(
-                structure.parent_filename, object_name, offset
+                structure.parent_filename,
+                object_name,
+                offset,
+                id_as_offset=True
             )
-            # TODO, maybe: possibly too convoluted.
-            if structure.is_header:
-                setattr(self, object_name, result[object_name])
-                return
-            for k, v in self._pds4_structures.items():
-                if (
-                    v.meta_data['offset']
-                    + v.meta_data['object_length']
-                ) == offset:
-                    setattr(
-                        self,
-                        v.meta_data['name'].replace(' ', '_'),
-                        result[f"{object_name}_HEADER"]
-                    )
+            if structure.is_header() is True:
+                return self._add_loaded_objects(result)
+            if f"{object_name}_HEADER" not in self.index:
+                hid = self._find_fits_header_pds4_id(offset)
+                result[hid] = result.pop(f"{object_name}_HEADER")
+            if structure.is_array() is True:
+                self._scaleflags[object_name] = True
+            self._add_loaded_objects(result)
         elif structure.is_array():
             import numpy as np
 
