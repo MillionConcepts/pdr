@@ -37,7 +37,7 @@ except ImportError:
         return { key: value for key, value in ann.items() }
 
 import Levenshtein as lev
-from cytoolz import countby, identity, first
+from cytoolz import countby, identity
 from dustgoggles.dynamic import Dynamic
 from dustgoggles.func import gmap
 from dustgoggles.structures import dig_for_value, listify
