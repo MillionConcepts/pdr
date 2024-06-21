@@ -142,7 +142,15 @@ class ReadLabel(Loader):
 
 class ReadFits(Loader):
     """wrapper for handle_fits_file"""
-    from pdr.loaders.queries import get_fits_id, get_none
+    from dustgoggles.func import constant
+    from pdr.loaders.queries import (
+        get_fits_id,
+        get_none,
+        get_block,
+        get_target,
+        get_fits_start_byte,
+        get_hdulist
+    )
 
     def __init__(self):
         from pdr.loaders.handlers import handle_fits_file
@@ -154,10 +162,14 @@ class ReadFits(Loader):
         return tuple(super().__call__(pdrlike, name, **kwargs).values())[0]
 
     queries = {
-        'identifiers': get_identifiers,
         "fn": get_file_mapping,
-        'other_stubs': get_none,
-        'hdu_id': specialize(get_fits_id, check_special_hdu_name),
+        'target': get_target,
+        'hdulist': get_hdulist,
+        "hdu_id": get_fits_start_byte,
+        'id_as_offset': constant(True)
+        # ****** BASE *********
+        # 'other_stubs': get_none,
+        # 'hdu_id': specialize(get_fits_id, check_special_hdu_name),
     }
 
 

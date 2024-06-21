@@ -295,6 +295,54 @@ def get_target(data: PDRLike, name: str) -> PhysicalTarget:
     return target
 
 
+def _agnostic_fits_index(is_header, target, hdulist):
+    from pdr.loaders.handlers import hdu_index
+
+    hix = hdu_index(hdulist)
+    # check both byte and FITS record specification, attempting to weed out
+    # the ambiguous edge case where data/header are separated by one record.
+    # this will not _always_ work.
+    for factor in (1, 2880):
+        matches = [
+            t for t in ((target - 1) * factor, target * factor)
+            if t in hix.keys()
+            and (hix[t]['part'] == 'header') == is_header
+        ]
+        if len(matches) == 0:
+            continue
+        # TODO: we could do more complicated things, but for now, just always
+        #  assume that if there are two matches, it's 1-indexed.
+        return matches[0]
+    raise ValueError("Specified target does not match an HDU.")
+
+
+def get_fits_start_byte(name, target, fn, hdulist):
+    # TODO, maybe: this feels a bit redundant with data_start_byte(), but the
+    #  logic _is_ legitimately different.
+    if isinstance(target, str):
+        if target.lower() == Path(fn).name.lower():
+            target = 0
+        else:
+            # this should never happen!
+            raise ValueError("This appears to point to the wrong file.")
+    elif isinstance(target, (list, tuple)):
+        target = target[1]
+    if isinstance(target, dict):
+        if target['units'] == 'BYTES':
+            target = target['value']
+        else:
+            target = target['value'] * 2880
+    return _agnostic_fits_index('HEADER' in name, target, hdulist)
+
+
+def get_hdulist(fn):
+    from astropy.io import fits
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", module="astropy.io.fits.card")
+        return fits.open(fn)
+
+
 def data_start_byte(
     identifiers: DataIdentifiers, block: Mapping, target, fn
 ) -> int:

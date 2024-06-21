@@ -44,7 +44,7 @@ def handle_fits_file(
     name: str = "",
     hdu_id: Union[str, int, tuple[int, int]] = "",
     hdulist: Optional[HDUList] = None,
-    id_as_offset: Optional[bool] = False,
+    id_as_offset: bool = True,
 ):
     """
     Read a data object from an HDU of a FITS file using `astropy.io.fits`. If
@@ -103,12 +103,9 @@ def handle_fits_file(
             hdr_val = handle_fits_header(hdulist, hdu_id)
         except (fits.VerifyError, ValueError):  # real messed up
             hdr_val = handle_fits_header(hdulist, hdu_id, skip_bad_cards=True)
-    if is_header is False:
-        output = {f"{name}_HEADER": hdr_val}
-    else:
-        output = {name: hdr_val}
     if is_header is True:
-        return output
+        return {name: hdr_val}
+    output = {f"{name}_HEADER": hdr_val}
     hdu = hdulist[pointer_to_fits_key(hdu_id, hdulist)]
     # binary table HDUs with repeated column names break astropy -- it will not
     # actually afford the data unless we manipulate it first.
