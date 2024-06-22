@@ -806,6 +806,12 @@ def check_special_fits_start_byte(
         and name == "HISTORY"
     ):
         return True, formats.dawn.dawn_history_hdu_exception()
+    if (
+        identifiers["INSTRUMENT_ID"] == "HRIV"
+        and identifiers["PRODUCT_TYPE"] == "RADIANCE_DECONVOLVED"
+        and name.startswith("EXT_MASK")
+    ):
+        return True, formats.epoxi.hriv_deconv_mask_start_byte(name, hdulist)
     if identifiers["DATA_SET_ID"].startswith("MSGR-H-MDIS-6-CAL"):
         return True, formats.galileo.mdis_fits_start_byte(name, hdulist)
     return False, None

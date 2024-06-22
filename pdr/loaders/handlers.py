@@ -59,9 +59,9 @@ def handle_fits_file(
     or data section; `hdu_id_is_index=True` means that it's the HDU's index.
     If it's a start byte, and it's the start byte of the HDU's header section,
     return just the header; otherwise return the data and the header. If it's
-    an index and "HEADER" is in "name" but "name" is not an exact match for
-    any EXTNAME keyword values, return just the header; otherwise return the
-    data and the header.
+    an index, always return the data and the header (currently this is only
+    used for primary FITS files, which by construction never have headers
+    labeled as independent objects).
     """
     from astropy.io import fits
 
