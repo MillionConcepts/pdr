@@ -80,7 +80,7 @@ def handle_fits_file(
         is_header = (
             "HEADER" in name
             # cases where HDUs are named things like "IMAGE HEADER"
-            and hdu_id not in [h[1] for h in hdulist.info(False)]
+            and name not in [h[1] for h in hdulist.info(False)]
         )
     try:
         hdr_val = handle_fits_header(hdulist, hdu_ix)
@@ -95,9 +95,9 @@ def handle_fits_file(
     except fits.VerifyError:
         try:
             hdulist.verify('silentfix')
-            hdr_val = handle_fits_header(hdulist, hdu_id)
+            hdr_val = handle_fits_header(hdulist, hdu_ix)
         except (fits.VerifyError, ValueError):  # real messed up
-            hdr_val = handle_fits_header(hdulist, hdu_id, skip_bad_cards=True)
+            hdr_val = handle_fits_header(hdulist, hdu_ix, skip_bad_cards=True)
     if is_header is True:
         return {name: hdr_val}
     output, hdu = {f"{name}_HEADER": hdr_val}, hdulist[hdu_ix]
