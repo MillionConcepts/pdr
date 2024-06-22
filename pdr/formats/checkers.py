@@ -807,6 +807,11 @@ def check_special_fits_start_byte(
     ):
         return True, formats.dawn.dawn_history_hdu_exception()
     if (
+        identifiers["DATA_SET_ID"].startswith("HST-S-WFPC2-3-RPX")
+        and "IMAGE" in name
+    ):
+        return True, formats.saturn_rpx.rpx_img_hdu_start_byte(name, hdulist)
+    if (
         identifiers["INSTRUMENT_ID"] == "HRIV"
         and identifiers["PRODUCT_TYPE"] == "RADIANCE_DECONVOLVED"
         and name.startswith("EXT_MASK")

@@ -1,7 +1,7 @@
-def hst_hdu_name(name):
+def rpx_img_hdu_start_byte(name, hdulist):
     """
-    The image pointers all point at the same FITS HDU; each pointer is one band
-    of the image.
+    The multiple *_IMAGE pointers in these files all point at the same FITS
+    HDU (each pointer illegally represents one band of the image).
 
     HITS
     * saturn_rpx
@@ -12,7 +12,6 @@ def hst_hdu_name(name):
         * hst_eng_data
         * hst_eng_mask
     """
-    if "EXTENSION" in name:
-        return 1
-    else:
-        return 0  # The images and their FITS header.
+    if 'HEADER' in name:
+        return 0
+    return hdulist.fileinfo(0)['datLoc']
