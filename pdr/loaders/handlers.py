@@ -6,19 +6,17 @@ libraries that provide high-level support for specific file formats, including
 
 from __future__ import annotations
 
-from numbers import Number
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 import warnings
 
-import pandas as pd
 from cytoolz import groupby
-import Levenshtein as lev
 from multidict import MultiDict
 
 if TYPE_CHECKING:
     from pathlib import Path
     from astropy.io.fits.hdu import BinTableHDU, HDUList
     import numpy as np
+    import pandas as pd
     from pdr.pdrtypes import DataIdentifiers
 
 
