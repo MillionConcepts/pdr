@@ -518,7 +518,8 @@ class Data:
             self.filename,
             object_name,
             self._hdumap[object_name],
-            self._hdulist
+            self._hdulist,
+            hdu_id_is_index=True
         )
         if obj.__class__.__name__ == "ndarray":
             self._scaleflags[object_name] = True

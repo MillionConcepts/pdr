@@ -31,8 +31,9 @@ def aspera_table_loader(filename, fmtdef_dt):
     import pandas as pd
     
     fmtdef, dt = fmtdef_dt
-    table = pd.read_csv(filename, header=None,
-                        usecols=range(len(fmtdef.NAME.tolist())))
+    table = pd.read_csv(
+        filename, header=None, usecols=range(len(fmtdef.NAME.tolist()))
+    )
     assert len(table.columns) == len(fmtdef.NAME.tolist())
     table.columns = fmtdef.NAME.tolist()
     return table
@@ -88,22 +89,6 @@ def pfs_edr_special_block(data, name):
         return True, block
     return False, block
 
-def spicam_rdr_hdu_name(data, identifiers, fn, name):
-    """
-    The SPICAM RDRs have multiple fits HDUs per product. The HDU indexing is
-    off by 1 because the first QUBE pointer shares the '0' HDU index with the
-    HEADER pointer.
-    
-    HITS
-    * mex_spicam
-        * ir_rdr
-        * uv_rdr
-    """
-    from pdr.loaders.queries import get_fits_id
-    
-    if name == "HEADER":
-        return 0
-    return get_fits_id(data, identifiers, fn, name, other_stubs=None)[0] - 1
 
 def mrs_ddr_atmo_position(identifiers, block, target, name, start_byte):
     """
@@ -120,6 +105,7 @@ def mrs_ddr_atmo_position(identifiers, block, target, name, start_byte):
     table_props["length"] = row_bytes * block["ROWS"]
     return table_props
 
+
 def mrs_get_position(identifiers, block, target, name, start_byte):
     """
     MRS ICL level 1b DOPPLER_TABLEs and ODF level 2 RANGING_TABLEs undercount
@@ -134,6 +120,7 @@ def mrs_get_position(identifiers, block, target, name, start_byte):
     row_bytes = block["ROW_BYTES"] + 1
     table_props["length"] = row_bytes * block["ROWS"]
     return table_props
+
 
 def mrs_l1b_odf_table_loader(filename, fmtdef_dt):
     """
@@ -152,6 +139,7 @@ def mrs_l1b_odf_table_loader(filename, fmtdef_dt):
         f for f in fmtdef['NAME'] if not f.startswith('PLACEHOLDER')
     ]
     return table
+
 
 def mrs_l1b_odf_rmp_redirect(data):
     """

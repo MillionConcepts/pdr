@@ -2,6 +2,7 @@
 from typing import Any
 
 from dustgoggles.dynamic import exc_report
+from dustgoggles.func import constant
 
 from pdr.formats import (
     check_special_sample_type,
@@ -9,13 +10,18 @@ from pdr.formats import (
     check_special_position,
     check_special_structure,
     check_special_table_reader,
-    check_special_hdu_name
+    check_special_fits_start_byte
 )
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.parselabel.pds3 import depointerize
 from pdr.pdrtypes import LoaderFunction, PDRLike
 from pdr.loaders.queries import (
-    DEFAULT_DATA_QUERIES, get_identifiers, get_file_mapping,
+    DEFAULT_DATA_QUERIES,
+    get_identifiers,
+    get_file_mapping,
+    get_fits_start_byte,
+    get_hdulist,
+    get_target
 )
 
 
@@ -142,19 +148,12 @@ class ReadLabel(Loader):
 
 class ReadFits(Loader):
     """wrapper for handle_fits_file"""
-    from dustgoggles.func import constant
-    from pdr.loaders.queries import (
-        get_fits_id,
-        get_none,
-        get_block,
-        get_target,
-        get_fits_start_byte,
-        get_hdulist
-    )
+
 
     def __init__(self):
         from pdr.loaders.handlers import handle_fits_file
 
+        # noinspection PyTypeChecker
         super().__init__(handle_fits_file)
 
     def __call__(self, pdrlike: PDRLike, name: str, **kwargs):
@@ -164,12 +163,12 @@ class ReadFits(Loader):
     queries = {
         "fn": get_file_mapping,
         'target': get_target,
+        "identifiers": get_identifiers,
         'hdulist': get_hdulist,
-        "hdu_id": get_fits_start_byte,
-        'id_as_offset': constant(True)
-        # ****** BASE *********
-        # 'other_stubs': get_none,
-        # 'hdu_id': specialize(get_fits_id, check_special_hdu_name),
+        "hdu_id": specialize(
+            get_fits_start_byte, check_special_fits_start_byte
+        ),
+        'hdu_id_is_index': constant(False)
     }
 
 
