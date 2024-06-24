@@ -118,6 +118,7 @@ expected data structures and that interpretable portions of their data
   - Pre-launch testing data
   - Radio science ODF files
   - Spacecraft instrument temperature data
+  - IRAS and ground-based supporting observations
 #### Deep Space 1
   - IDS RDRs
   - MICAS DEM, images, and matrices
@@ -182,6 +183,7 @@ expected data structures and that interpretable portions of their data
     - Halley calibrated 1D spectra, and raw and calibrated 2D spectral images
     - Giacobini-Zinner raw 2D spectral images
   - RSN Halley continuum, occultation, OH, radar, and spectral line data
+  - CCD Halley outburst observations
   - *Note: most of the Halley datasets listed above are available at the SBN 
     in 2 versions. Version 2.0 tends to open better with `pdr` and in a more 
     user-friendly format. When V2.0 is available, V1.0 should be considered 
@@ -351,6 +353,7 @@ expected data structures and that interpretable portions of their data
   - PLACES localization data and orbital maps
   - DAN EDRs and RDRs
   - SAM RDRs
+  - REMS EDRs and some RDRs (ADR, and UV corrected)
 #### MSX
   - Infrared Minor Planet Survey
   - Small Bodies Images
@@ -450,7 +453,7 @@ expected data structures and that interpretable portions of their data
   - IRTF images
   - CFHT images
   - WIYN images
-#### Saturn Ring Occultation of 28 Sagittarii
+#### Saturn Ring Occultation of 28 Sagittarii (1989)
   - Earth-based observations at RMS
 #### SOHO
   - LASCO images and photometry data
@@ -460,6 +463,7 @@ expected data structures and that interpretable portions of their data
   - DSE products
   - NAVCAM EDRs, RDRs, derived shape models, and pre-flight calibration images
   - SRC temperature and geometry data
+  - Keck Observatory supporting observations
 #### Stardust-NExT
   - CIDA
   - DFMI
@@ -683,6 +687,7 @@ expected data structures and that interpretable portions of their data
     these efforts! The MSL "calibrated" (RDR) files for these cameras are not 
     compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
+  - REMS RDRs: RTL, RNV, and RMD (support planned)
 #### New Horizons
   - Pluto encounter derived data: ALICE stellar occultation data
 #### Pioneer Venus Orbiter

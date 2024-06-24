@@ -5,6 +5,7 @@
 - 
 
 #### Dataset Support
+- MSL REMS EDRs and most RDRs
 - Rosetta
   - CONSERT ancillary products
   - ALICE supplementary tables
