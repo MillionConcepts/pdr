@@ -269,6 +269,14 @@ def check_special_table_reader(
         return True, formats.msl_rems.edr_table_loader(
             fn, fmtdef_dt, block, start_byte
         )
+    if (
+        all(x in identifiers["DATA_SET_ID"] for x in ["ICE-C-","-3-RDR-"])
+        and "TRAJ_ICE" in fn
+        and name == "TABLE"
+    ):
+        return True, formats.ihw.add_newlines_table_loader(
+            fmtdef_dt, block, fn, start_byte
+        )
     return False, None
 
 

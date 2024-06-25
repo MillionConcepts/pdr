@@ -17,12 +17,14 @@ def curve_table_loader(filename, fmtdef_dt):
 def add_newlines_table_loader(fmtdef_dt, block, filename, start_byte):
     """
     Some Halley V1.0 tables (MSN, PPN, and IRSN datasets) are missing
-    newline characters between rows.
+    newline characters between rows. (Also applies to some ICE ephemeris tables)
 
     HITS
     * ihw
         * ms_radar
         * ms_vis
+    * ice
+        * ephem_tbl
     """
     from io import StringIO
     import pandas as pd
