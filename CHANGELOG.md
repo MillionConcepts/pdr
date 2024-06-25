@@ -10,6 +10,8 @@
   - CONSERT ancillary products
   - ALICE supplementary tables
   - additional COSIMA tables
+- LASP Mars datasets
+- Venus Express (VEX)
 - Misc additional products from:
   - Cassini RPWS and MIMI
   - Galileo Probe
@@ -18,7 +20,9 @@
   - Stardust
   - LRO Mini-RF
   - NEAR NLR
-- 
+  - ICE
+  - Juno JADE
+  - Galileo MAG
 
 #### Other
 - 

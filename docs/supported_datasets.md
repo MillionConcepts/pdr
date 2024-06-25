@@ -171,6 +171,7 @@ expected data structures and that interpretable portions of their data
 #### ICE
   - EPAS, MAG, PLAWAV, RADWAV, ULECA, and SWPLAS
   - ICI text files
+  - ephemeris products
 #### IHW
   - AMSN Halley visual data
   - ASTR Halley observations from 1835 and 1910, and Giacobini-Zinner data
@@ -194,7 +195,7 @@ expected data structures and that interpretable portions of their data
 #### Juno
   - FGM tables
   - Gravity Science tables (EDR, RSR, and TNF)
-  - JADE EDRs and RDRs
+  - JADE EDRs, RDRs, and derived moments 
   - JEDI EDRs and RDRs
   - JIRAM EDRs and RDRs *note: RDRs may not read correctly from their PDS4
   labels. We recommend opening them from their PDS3 labels.*
