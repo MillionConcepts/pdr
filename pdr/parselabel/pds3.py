@@ -96,7 +96,9 @@ class BlockParser:
         self.aggregations[-1].add(parameter, value)
         self.parameters.append(parameter)
 
-    def parse_statements(self, statements) -> tuple[MultiDict, list[str]]:
+    def parse_statements(
+        self, statements
+    ) -> tuple[MultiDict[str, Any], list[str]]:
         """
         Parse a series of PVL statements into a (possibly nested) MultiDict
         and a flattened list of all keys at all levels of that MultiDict.
@@ -130,7 +132,7 @@ def looks_pvl(filename) -> bool:
 
 def parse_pvl(
     label: str, deduplicate_pointers: bool = True
-) -> tuple[MultiDict, list[str]]:
+) -> tuple[MultiDict[str, Any], list[str]]:
     """Parse a PVL-text into a MultiDict and a flattened list of keys."""
     uncommented_label = re.sub(r"/\*.*?(\r|\n|/\*)", "\n", label)
     trimmed_lines = filter(
@@ -194,7 +196,7 @@ def multidict_dig_and_edit(
     input_multidict: MultiDict,
     target: Any = None,
     input_object: Any = None,
-    predicate: Callable[[Any, Any], bool] = eq,
+    predicate: Callable[[Any, Any, Any], bool] = None,
     setter_function: Callable = None,
     key_editor: bool = False,
     keep_values: bool = True,
@@ -205,7 +207,8 @@ def multidict_dig_and_edit(
     but may produce unintended results). It searches through
     a MultiDict's items, recursively continuing into any children that are
     an instance of mtypes, and checking for keys for which
-    `predicate(key, target)` (by default meaning `key == target`) is `True`.
+    `predicate(key, value, target)` is `True`. If `predicate` is `None`,
+    the behavior reverts to `predicate == key`.
 
     If "key_editor" is False, the function changes the values associated with
     those keys. if it is True, the function changes the key names themselves.
@@ -222,8 +225,8 @@ def multidict_dig_and_edit(
     if setter_function is None:
         setter_function = constant(input_object)
     for key, value in input_multidict.items():
-        if isinstance(value, mtypes):
-            edited_multidict = multidict_dig_and_edit(
+        if (is_map := isinstance(value, mtypes)) is True:
+            value = multidict_dig_and_edit(
                 value,
                 target,
                 input_object,
@@ -231,19 +234,17 @@ def multidict_dig_and_edit(
                 setter_function,
                 key_editor,
                 keep_values,
+                mtypes
             )
-            if not predicate(key, target) or not key_editor:
-                output_multidict.add(key, edited_multidict)
-            else:
-                output_multidict.add(
-                    setter_function(input_object, key), edited_multidict
-                )
-            continue
-        if not predicate(key, target):
-            if keep_values:
+        if predicate is None:
+            match = key == target
+        else:
+            match = predicate(key, value, target)
+        if match is False:
+            if keep_values is True or is_map is True:
                 output_multidict.add(key, value)
             continue
-        if not key_editor:
+        if key_editor is False:
             output_multidict.add(key, setter_function(input_object, value))
         else:
             output_multidict.add(setter_function(input_object, key), value)
@@ -288,7 +289,7 @@ def parse_unusual_collection(
 
 
 def literalize_pvl(
-    obj: Union[str, MultiDict]
+    obj: Union[str, MultiDict[str, Any]]
 ) -> Union[MultiDict[str, Any], str, int, float, set, tuple]:
     """
     attempt to interpret string representations of PVL values or aggregations
@@ -327,7 +328,7 @@ def literalize_pvl_block(block: MultiDict[str, Any]) -> MultiDict[str, Any]:
     literalized = multidict_dig_and_edit(
         block,
         None,
-        predicate=lambda x, y: True,
+        predicate=lambda _k, v, _t: not isinstance(v, MultiDict),
         setter_function=lambda _, obj: literalize_pvl(obj),
     )
     # noinspection PyTypeChecker
@@ -360,8 +361,8 @@ def depointerize(string: str) -> str:
 
 
 def index_duplicate_pointers(
-    pointers: Collection[str], mapping: MultiDict, params: list[str]
-) -> tuple[MultiDict, list[str]]:
+    pointers: Collection[str], mapping: MultiDict[str, Any], params: list[str]
+) -> tuple[MultiDict[str, Any], list[str]]:
     """
     Although technically illegal, some PDS3 objects have multiple data objects
     with the same name. This produces counterintuitive results. This function

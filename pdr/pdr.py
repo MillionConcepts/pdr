@@ -31,7 +31,7 @@ except ImportError:
             return {}
         if not isinstance(ann, dict):
             raise ValueError(
-                f"{obj!r}.__annotations__ is neither a dict nor None"
+                f"{o!r}.__annotations__ is neither a dict nor None"
             )
         # copy the dict to match the behavior of the official get_annotations
         return { key: value for key, value in ann.items() }
@@ -536,17 +536,58 @@ class Data:
             return
         raise NotImplementedError
 
+    # TODO, maybe: this can result in multiple keys of self referring to
+    #  duplicate header objects, one like "object_name_HEADER" and one like
+    #  "HEADER_0", etc. This is not really a big deal and is annoying to
+    #  special-case, but may also be annoying to users.
+    def _find_fits_header_pds4_id(self, start_byte: int) -> Optional[str]:
+        """
+        Given start byte for an HDU's data segment, check to see if the
+        PDS4 product associated with self includes that HDU's header as a
+        distinct data object with a local identifier. If it is, return the
+        PDS4 local identifier of that object. If not, return None.
+        """
+        for k, v in self._pds4_structures.items():
+            meta = v.meta_data
+            if meta['offset'] + meta['object_length'] == start_byte:
+                if 'name' not in meta.keys():
+                    return None
+                return meta['name'].replace(' ', '_')
+
+        return None
+
     def _load_pds4(self, object_name: str):
         """
         Load this object however pds4_tools wants to load this object, then
         reformat to DataFrame, expose the array handle in accordance with our
-        type conventions, et..
+        type conventions, etc.
+
+        If the object is from a FITS file, preempt all that behavior and send
+        it to our internal FITS-loading workflow.
         """
         structure = self._pds4_structures[object_name]
         from pds4_tools.reader.label_objects import Label
 
         if isinstance(structure, Label):
             setattr(self, "label", structure)
+        elif check_primary_fmt(structure.parent_filename) == "FITS":
+            from pdr.loaders.handlers import handle_fits_file
+
+            offset = structure.meta_data['offset']
+            result = handle_fits_file(
+                structure.parent_filename,
+                object_name,
+                offset,
+                id_as_offset=True
+            )
+            if structure.is_header() is True:
+                return self._add_loaded_objects(result)
+            if f"{object_name}_HEADER" not in self.index:
+                hid = self._find_fits_header_pds4_id(offset)
+                result[hid] = result.pop(f"{object_name}_HEADER")
+            if structure.is_array() is True:
+                self._scaleflags[object_name] = True
+            self._add_loaded_objects(result)
         elif structure.is_array():
             import numpy as np
 
@@ -621,11 +662,9 @@ class Data:
             self, pointer, tracker=self.tracker, **load_kwargs
         )
         # FITS arrays are scaled by default
-        # TODO: obj should never be an ndarray; it should always be a dict.
-        #  Fix this.
         if (
             (loader.__class__.__name__ == "ReadFits")
-            and (obj.__class__.__name__ == "ndarray")
+            and (obj[pointer].__class__.__name__ == "ndarray")
         ):
             self._scaleflags[pointer] = True
         if self.debug is True and len(loader.errors) > 0:
