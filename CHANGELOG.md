@@ -23,6 +23,7 @@
   - ICE
   - Juno JADE
   - Galileo MAG
+  - Pioneer Venus Orbiter OMAG
 
 #### Other
 - 
