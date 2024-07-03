@@ -518,7 +518,8 @@ class Data:
             self.filename,
             object_name,
             self._hdumap[object_name],
-            self._hdulist
+            self._hdulist,
+            hdu_id_is_index=True
         )
         if obj.__class__.__name__ == "ndarray":
             self._scaleflags[object_name] = True
@@ -536,10 +537,10 @@ class Data:
             return
         raise NotImplementedError
 
-    # TODO, maybe: this can result in multiple keys of self referring to
+    # TODO, maybe: this can result in different keys of self referring to
     #  duplicate header objects, one like "object_name_HEADER" and one like
-    #  "HEADER_0", etc. This is not really a big deal and is annoying to
-    #  special-case, but may also be annoying to users.
+    #  "HEADER_0", etc. This can also happen for PDS3, so maybe this is just
+    #  an acceptable interface idiom.
     def _find_fits_header_pds4_id(self, start_byte: int) -> Optional[str]:
         """
         Given start byte for an HDU's data segment, check to see if the

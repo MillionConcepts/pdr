@@ -1,19 +1,29 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import warnings
 
 import pdr.loaders.queries
 
+if TYPE_CHECKING:
+    from astropy.io.fits.hdu import HDUList
 
-def mdis_hdu_name(name):
+
+# TODO: why is this in the galileo module?
+def mdis_fits_start_byte(name: str, hdulist: HDUList) -> int:
     """
-    the MDIS cal labels do not include file size information.
+    The MDIS cal labels do not include accurate offsets for data objects.
+    (There's also an additional HDU they don't label as a PDS object at all!)
 
     HITS
     * messenger_grnd_cal
         * mdis
     """
-    if name in ("IMAGE", "HEADER"):
+    if name not in ("IMAGE", "HEADER"):
+        raise NotImplementedError("Unknown MDIS extension name")
+    if name == "HEADER":
         return 0
-    raise NotImplementedError("Unknown MDIS extension name")
+    return hdulist.fileinfo(0)['datLoc']
+
 
 
 def galileo_table_loader():

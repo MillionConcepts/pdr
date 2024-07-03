@@ -5,7 +5,7 @@ metadata-processing workflows.
 
 from __future__ import annotations
 
-from _operator import mul
+from operator import mul
 from functools import reduce
 from itertools import chain, product
 from numbers import Number
@@ -16,7 +16,6 @@ from typing import (
 )
 import warnings
 
-from dustgoggles.func import gmap
 from multidict import MultiDict
 
 from pdr.datatypes import sample_types
@@ -29,10 +28,11 @@ from pdr.loaders._helpers import (
     _check_delimiter_stream,
 )
 from pdr.loaders.handlers import add_bit_column_info
-from pdr.parselabel.pds3 import literalize_pvl, pointerize, read_pvl
+from pdr.parselabel.pds3 import pointerize, read_pvl
 from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
+    from astropy.io.fits.hdu import HDUList
     import numpy as np
     import pandas as pd
 
@@ -293,6 +293,56 @@ def get_target(data: PDRLike, name: str) -> PhysicalTarget:
     if isinstance(target, Mapping) or target is None:
         target = data.metaget_(pointerize(name))
     return target
+
+
+def _agnostic_fits_index(is_header, target, hdulist):
+    from pdr.loaders.handlers import hdu_byte_index
+
+    hix = hdu_byte_index(hdulist)
+    # check both byte and FITS record specification, attempting to weed out
+    # the ambiguous edge case where data/header are separated by one record.
+    # this will not _always_ work.
+    for factor in (1, 2880):
+        matches = [
+            t for t in ((target - 1) * factor, target * factor)
+            if t in hix.keys()
+            and (hix[t]['part'] == 'header') == is_header
+        ]
+        if len(matches) == 0:
+            continue
+        # TODO: we could do more complicated things, but for now, just always
+        #  assume that if there are two matches, it's 1-indexed.
+        return matches[0]
+    raise ValueError("Specified target does not match an HDU.")
+
+
+def get_fits_start_byte(
+    name: str, target: Union[str, list, tuple, dict], fn: str, hdulist: HDUList
+):
+    # TODO, maybe: this feels a bit redundant with data_start_byte(), but the
+    #  logic _is_ legitimately different.
+    if isinstance(target, str):
+        if target.lower() == Path(fn).name.lower():
+            target = 0
+        else:
+            # this should never happen!
+            raise ValueError("This appears to point to the wrong file.")
+    elif isinstance(target, (list, tuple)):
+        target = target[1]
+    if isinstance(target, dict):
+        if target['units'] == 'BYTES':
+            target = target['value']
+        else:
+            target = target['value'] * 2880
+    return _agnostic_fits_index('HEADER' in name, target, hdulist)
+
+
+def get_hdulist(fn):
+    from astropy.io import fits
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", module="astropy.io.fits.card")
+        return fits.open(fn)
 
 
 def data_start_byte(
@@ -775,77 +825,6 @@ def get_identifiers(data) -> dict[str, Any]:
 def get_none() -> None:
     """Don't get anything"""
     return None
-
-
-# TODO: reexamine why we're not just checking against explicit byte offsets.
-#  Did we find them consistently unreliable?
-def get_fits_id(
-    data: PDRLike,
-    identifiers: DataIdentifiers,
-    fn: Union[str, Path],
-    name: str,
-    other_stubs: Union[None, Collection[str]]
-) -> tuple[int, int]:
-    """
-    Attempt to perform the remarkably complicated task of associating a PDS3
-    data object with a specific FITS HDU.
-
-    The return value `ix` is the inferred HDU index of the object.
-    The return value `length` is the number of HDUs in the FITS file as
-    inferred from the PDS3 label. `handler.handle_fits_file()` uses this as a
-    soft check later; if it differs from the actual number of HDUs in the FITS
-    file, there is a reasonable chance this association didn't work correctly,
-    and it raises a UserWarning saying so.
-    """
-    # annoying to have to match all files in the label here
-    # but there is not really another reliable way to do it
-    name = name.lower()
-    matches = [
-        k for k in data.keys()
-        # 'in data.pointers' to avoid checking our own generated header keys
-        if (data._target_path(k) == fn) and (pointerize(k) in data.pointers)
-    ]
-    start_bytes = {
-        m: data_start_byte(
-            identifiers, get_block(data, m), get_target(data, m), fn
-        )
-        for m in matches
-    }
-    ordered = gmap(str.lower, sorted(matches, key=lambda m: start_bytes[m]))
-    if other_stubs is not None:
-        noheader = filter(
-            lambda n: (not n.endswith('header') or n.upper() in other_stubs),
-            ordered
-        )
-        num_other_stubs = len(other_stubs)
-    else:
-        noheader = filter(lambda n: not n.endswith('header'), ordered)
-        num_other_stubs = 0
-    noheader = tuple(noheader)
-    # this condition typically implies a "stub" primary hdu whose header but
-    # not body is mentioned in the PDS label
-    has_stub_primary = (
-        (len(noheader) != (len(matches) + num_other_stubs) / 2)
-        and (list(start_bytes.keys())[0].lower() not in noheader)
-    )
-    if not name.endswith('header') or name in noheader:
-        ix, length = noheader.index(name), len(noheader)
-        if has_stub_primary:
-            ix, length = ix + 1, length + 1
-    else:
-        ix, length = ordered.index(name), len(noheader)
-        try:
-            if ix != 0:
-                ix = noheader.index(ordered[ix + 1])
-                if has_stub_primary:
-                    ix += 1
-        except ValueError:
-            raise KeyError(
-                "Unable to identify HDU associated with this header object"
-            )
-        if has_stub_primary:
-            length += 1
-    return ix, length
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(

@@ -38,11 +38,9 @@ should follow that workflow's argument naming and type annotation conventions.
 Exceptions to these naming and signature conventions can be made for checkers
 designed specifically to be called inline of a specific handler function.
 """
-
 from __future__ import annotations
-from pathlib import Path
 import re
-from typing import Any, Mapping, Optional, TYPE_CHECKING, Union
+from typing import Any, Mapping, Optional, TYPE_CHECKING
 
 from multidict import MultiDict
 
@@ -50,8 +48,10 @@ from pdr import formats
 from pdr.loaders.utility import is_trivial
 
 if TYPE_CHECKING:
-    import pandas as pd
+    from astropy.io.fits.hdu import HDUList
     import numpy as np
+    import pandas as pd
+
     from pdr.pdrtypes import DataIdentifiers, PDRLike, PhysicalTarget
 
 
@@ -801,44 +801,30 @@ def check_special_qube_band_storage(identifiers: DataIdentifiers):
     return False, None
 
 
-def check_special_hdu_name(
-    data: PDRLike, identifiers: DataIdentifiers, fn: Union[str, Path], name: str
+def check_special_fits_start_byte(
+    identifiers: DataIdentifiers, name: str, hdulist: HDUList
 ) -> tuple[bool, Optional[int]]:
     """
-    Preempts generic PDS3 data object -> FITS HDU index mapping. Wraps
-    `get_fits_id()`.
+    Preempts generic PDS3 data object -> FITS start byte mapping. Wraps
+    `get_fits_start_byte()`.
     """
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "DAWN"
         and "FC2" in identifiers["DATA_SET_ID"]
+        and name == "HISTORY"
     ):
-        return True, formats.dawn.dawn_hdu_name(name)
+        return True, formats.dawn.dawn_history_hdu_exception()
+    if (
+        identifiers["DATA_SET_ID"].startswith("HST-S-WFPC2-3-RPX")
+        and "IMAGE" in name
+    ):
+        return True, formats.saturn_rpx.rpx_img_hdu_start_byte(name, hdulist)
+    if (
+        identifiers["INSTRUMENT_ID"] == "HRIV"
+        and identifiers["PRODUCT_TYPE"] == "RADIANCE_DECONVOLVED"
+        and name.startswith("EXT_MASK")
+    ):
+        return True, formats.epoxi.hriv_deconv_mask_start_byte(name, hdulist)
     if identifiers["DATA_SET_ID"].startswith("MSGR-H-MDIS-6-CAL"):
-        return True, formats.galileo.mdis_hdu_name(name)
-    if (
-        identifiers["INSTRUMENT_NAME"] == "STUDENT DUST COUNTER"
-        and "-SDC-" in identifiers["DATA_SET_ID"]
-        and identifiers["PRODUCT_TYPE"] == "EDR"
-    ):
-        return True, formats.nh.sdc_edr_hdu_name(name)
-    if re.match(r"NH-\w-REX-[23]", identifiers["DATA_SET_ID"]):
-        return True, formats.nh.rex_hdu_name(name)
-    if identifiers["INSTRUMENT_ID"] == "PEPSSI":
-        if re.search(r"(JUPITER|LAUNCH|CRUISE)", identifiers["DATA_SET_ID"]):
-            return False, None  # these seem ok
-        elif identifiers["PRODUCT_TYPE"] == "EDR":
-            return True, formats.nh.pepssi_edr_hdu_name(name)
-        elif "PLUTO" in identifiers["DATA_SET_ID"]:
-            return True, formats.nh.pepssi_pluto_rdr_hdu_name(name)
-        else:
-            return True, formats.nh.pepssi_rdr_hdu_name(name)
-    if re.match(r"NH.*SWAP", identifiers["DATA_SET_ID"]):
-        return True, formats.nh.swap_hdu_stubs(data, identifiers, fn, name)
-    if identifiers["DATA_SET_ID"].startswith("HST-S-WFPC2-3-RPX"):
-        return True, formats.saturn_rpx.hst_hdu_name(name)
-    if (
-        "MEX-M-SPI-2-IRRDR-CLEANED" in identifiers['DATA_SET_ID']
-        or "MEX-M-SPI-2-UVRDR-CLEANED" in identifiers['DATA_SET_ID']
-    ):
-        return True, formats.mex.spicam_rdr_hdu_name(data, identifiers, fn, name)
+        return True, formats.galileo.mdis_fits_start_byte(name, hdulist)
     return False, None
