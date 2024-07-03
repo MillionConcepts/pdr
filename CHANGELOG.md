@@ -35,6 +35,8 @@
   rather than fuzzy matching between extension name and PDS label key
 - PDS4 FITS files are now opened using `astropy.io.fits` on the backend 
   instead of `pds4_tools` mirroring the PDS3 FITS behavior
+- Non-filled out FITS cards are represented as None rather than special 
+  astropy objects without stable byte representations
 
 ### Fixed
 - 
