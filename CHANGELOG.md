@@ -2,6 +2,9 @@
 ### Added
 
 #### Features
+- Compatibility with numpy 2.0 for pds3 products and fits pds4 products
+ (non-fits pds4 products numpy 2.0 compatibility await changes in
+ `pds4_tools` dependency)
 - 
 
 #### Dataset Support
@@ -28,7 +31,10 @@
 - 
 
 ### Changed
-- 
+- FITS extensions are now matched based on their reported data start byte
+  rather than fuzzy matching between extension name and PDS label key
+- PDS4 FITS files are now opened using `astropy.io.fits` on the backend 
+  instead of `pds4_tools` mirroring the PDS3 FITS behavior
 
 ### Fixed
 - 

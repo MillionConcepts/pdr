@@ -375,6 +375,9 @@ expected data structures and that interpretable portions of their data
   - MVIC EDRs and RDRs
   - PEPSSI EDRs, RDRs, and resampled plasma fluxes
   - REX EDRs and RDRs
+    - Note, some REX files have two pointers for EXTENSION_SSR_SH_HEADER, the
+      EXTENSION_SSR_SH_HEADER_0 should be disregarded (it gives info on an 
+      empty table), refer only to EXTENSION_SSR_SH_HEADER_1
   - SDC EDRs and RDRs
   - SWAP EDRs and RDRs
   - Pluto encounter derived products: surface composition maps, most atmosphere 
