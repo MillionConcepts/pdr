@@ -391,8 +391,7 @@ expected data structures and that interpretable portions of their data
   - OIMS HIRES data and 12 second averages
   - OMAG
     - P-sensor HIRES data and 24 second averages
-    - Spacecraft coordinates HIRES data and 24 second averages (*note: only 
-      the binary versions have been extensively tested*)
+    - Spacecraft coordinates HIRES data and 24 second averages
   - ONMS HIRES data and 12 second averages
   - ORPA processed data
   - OUVS IMIDR images
@@ -563,9 +562,7 @@ expected data structures and that interpretable portions of their data
 #### MRO
   - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
-  - CheMin Film EDRs (have efm in filename)
-#### Pioneer Venus Orbiter
-  - OMAG spacecraft coordinates: HIRES data and 24 second averages (ASCII versions)
+  - CheMin Film EDRs (have efm in filename)  
 #### Rosetta
   - Orbiter:
     - VIRTIS EDRs
