@@ -15,6 +15,10 @@
   - additional COSIMA tables
 - LASP Mars datasets
 - Venus Express (VEX)
+- Phoenix
+  - ASE EDRs, RDS
+  - Telltale Experiment (TT) products
+  - Atmospheric Opacity (AO) products
 - Misc additional products from:
   - Cassini RPWS and MIMI
   - Galileo Probe

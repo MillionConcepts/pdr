@@ -407,7 +407,10 @@ expected data structures and that interpretable portions of their data
     - ELEC EDRs
   - SSI EDRs, RDRs, and mosaics
   - RAC EDRs, RDRs, and mosaics
-  - PDS4 products: RA, MET, LIDAR, ASE, AO, TT, and derived products
+  - ASE EDRs, RDS
+  - Telltale Experiment (TT) products
+  - Atmospheric Opacity (AO) products
+  - PDS4 products: RA, MET, LIDAR, and derived products
 #### Pre-Magellan collection at the GEO node
   - AIRSAR images
   - Earth-based Mars, Mercury, Lunar, and Venus observations
