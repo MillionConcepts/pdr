@@ -416,6 +416,7 @@ def _table_row_position(
 
 def _table_length(block, identifiers, n_records):
     """"""
+    length = None
     try:
         if "BYTES" in block.keys():
             length = block["BYTES"]
@@ -435,7 +436,7 @@ def _table_length(block, identifiers, n_records):
             if record_length is not None:
                 length = record_length * n_records
     except AttributeError:
-        length = None
+        pass
     return length
 
 
@@ -467,7 +468,7 @@ def table_position(
     else:
         start = start_byte
         length = _table_length(block, identifiers, n_records)
-    if length is None and "HEADER" in name:
+    if length in (None, "UNK") and "HEADER" in name:
         raise NotImplementedError("header with unknown length")
     return {"start": start, "length": length, "as_rows": as_rows}
 
