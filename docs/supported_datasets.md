@@ -118,6 +118,7 @@ expected data structures and that interpretable portions of their data
   - Pre-launch testing data
   - Radio science ODF files
   - Spacecraft instrument temperature data
+  - IRAS and ground-based supporting observations
 #### Deep Space 1
   - IDS RDRs
   - MICAS DEM, images, and matrices
@@ -170,6 +171,7 @@ expected data structures and that interpretable portions of their data
 #### ICE
   - EPAS, MAG, PLAWAV, RADWAV, ULECA, and SWPLAS
   - ICI text files
+  - ephemeris products
 #### IHW
   - AMSN Halley visual data
   - ASTR Halley observations from 1835 and 1910, and Giacobini-Zinner data
@@ -182,6 +184,7 @@ expected data structures and that interpretable portions of their data
     - Halley calibrated 1D spectra, and raw and calibrated 2D spectral images
     - Giacobini-Zinner raw 2D spectral images
   - RSN Halley continuum, occultation, OH, radar, and spectral line data
+  - CCD Halley outburst observations
   - *Note: most of the Halley datasets listed above are available at the SBN 
     in 2 versions. Version 2.0 tends to open better with `pdr` and in a more 
     user-friendly format. When V2.0 is available, V1.0 should be considered 
@@ -192,7 +195,7 @@ expected data structures and that interpretable portions of their data
 #### Juno
   - FGM tables
   - Gravity Science tables (EDR, RSR, and TNF)
-  - JADE EDRs and RDRs
+  - JADE EDRs, RDRs, and derived moments 
   - JEDI EDRs and RDRs
   - JIRAM EDRs and RDRs *note: RDRs may not read correctly from their PDS4
   labels. We recommend opening them from their PDS3 labels.*
@@ -351,6 +354,7 @@ expected data structures and that interpretable portions of their data
   - PLACES localization data and orbital maps
   - DAN EDRs and RDRs
   - SAM RDRs
+  - REMS EDRs and some RDRs (ADR, and UV corrected)
 #### MSX
   - Infrared Minor Planet Survey
   - Small Bodies Images
@@ -371,6 +375,9 @@ expected data structures and that interpretable portions of their data
   - MVIC EDRs and RDRs
   - PEPSSI EDRs, RDRs, and resampled plasma fluxes
   - REX EDRs and RDRs
+    - Note, some REX files have two pointers for EXTENSION_SSR_SH_HEADER, the
+      EXTENSION_SSR_SH_HEADER_0 should be disregarded (it gives info on an 
+      empty table), refer only to EXTENSION_SSR_SH_HEADER_1
   - SDC EDRs and RDRs
   - SWAP EDRs and RDRs
   - Pluto encounter derived products: surface composition maps, most atmosphere 
@@ -384,8 +391,7 @@ expected data structures and that interpretable portions of their data
   - OIMS HIRES data and 12 second averages
   - OMAG
     - P-sensor HIRES data and 24 second averages
-    - Spacecraft coordinates HIRES data and 24 second averages (*note: only 
-      the binary versions have been extensively tested*)
+    - Spacecraft coordinates HIRES data and 24 second averages
   - ONMS HIRES data and 12 second averages
   - ORPA processed data
   - OUVS IMIDR images
@@ -450,7 +456,7 @@ expected data structures and that interpretable portions of their data
   - IRTF images
   - CFHT images
   - WIYN images
-#### Saturn Ring Occultation of 28 Sagittarii
+#### Saturn Ring Occultation of 28 Sagittarii (1989)
   - Earth-based observations at RMS
 #### SOHO
   - LASCO images and photometry data
@@ -460,6 +466,7 @@ expected data structures and that interpretable portions of their data
   - DSE products
   - NAVCAM EDRs, RDRs, derived shape models, and pre-flight calibration images
   - SRC temperature and geometry data
+  - Keck Observatory supporting observations
 #### Stardust-NExT
   - CIDA
   - DFMI
@@ -555,9 +562,7 @@ expected data structures and that interpretable portions of their data
 #### MRO
   - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
-  - CheMin Film EDRs (have efm in filename)
-#### Pioneer Venus Orbiter
-  - OMAG spacecraft coordinates: HIRES data and 24 second averages (ASCII versions)
+  - CheMin Film EDRs (have efm in filename)  
 #### Rosetta
   - Orbiter:
     - VIRTIS EDRs
@@ -683,6 +688,7 @@ expected data structures and that interpretable portions of their data
     these efforts! The MSL "calibrated" (RDR) files for these cameras are not 
     compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
+  - REMS RDRs: RTL, RNV, and RMD (support planned)
 #### New Horizons
   - Pluto encounter derived data: ALICE stellar occultation data
 #### Pioneer Venus Orbiter

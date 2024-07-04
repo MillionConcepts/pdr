@@ -2,22 +2,61 @@
 ### Added
 
 #### Features
+- Compatibility with numpy 2.0 for pds3 products and fits pds4 products
+ (non-fits pds4 products numpy 2.0 compatibility await changes in
+ `pds4_tools` dependency)
 - 
 
 #### Dataset Support
-- 
+- MSL REMS EDRs and most RDRs
+- Rosetta
+  - CONSERT ancillary products
+  - ALICE supplementary tables
+  - additional COSIMA tables
+- LASP Mars datasets
+- Venus Express (VEX)
+- Misc additional products from:
+  - Cassini RPWS and MIMI
+  - Galileo Probe
+  - IHW
+  - ground-based datasets at SBN
+  - Stardust
+  - LRO Mini-RF
+  - NEAR NLR
+  - ICE
+  - Juno JADE
+  - Galileo MAG
+  - Pioneer Venus Orbiter OMAG
 
 #### Other
 - 
 
 ### Changed
-- 
+- FITS extensions are now matched based on their reported data start byte
+  rather than fuzzy matching between extension name and PDS label key
+- PDS4 FITS files are now opened using `astropy.io.fits` on the backend 
+  instead of `pds4_tools` mirroring the PDS3 FITS behavior
+- Non-filled out FITS cards are represented as None rather than special 
+  astropy objects without stable byte representations
 
 ### Fixed
 - 
 
 ### Removed
 - 
+
+## [1.1.2] - 2024-06-18
+### Changed
+- Pinned numpy version to less than 2.0 until compatibility issues with new
+release are resolved.
+
+## [1.1.1] - 2024-06-14
+### Fixed
+- Bugfix for compatibility for Python 3.9 by adding two features of Python 3.10.
+  - pdr.py: if inspect.get_annotations is not available, use a fallback
+    implementation (incomplete, but works for the case we care about).
+  - pdrtypes.py: if typing.TypeAlias is not available, define it by hand.
+
 
 ## [1.1.0] - 2024-05-21
 ### Added

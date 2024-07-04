@@ -32,12 +32,11 @@ def enforce_order_and_object(array: np.ndarray, inplace=True) -> np.ndarray:
             # if we don't slice the field out explicitly, numpy will transform
             # it into an array of tuples
             void_return = array[tuple(array.dtype.fields.keys())[0]]
-
         if "V" in str(dtype):
             return void_return.astype("O")
         if dtype.isnative:
             return array
-        return array.byteswap().newbyteorder("=")
+        return array.byteswap().view(array.dtype.newbyteorder("="))
     swap_targets = []
     swapped_dtype = []
     for name, field in array.dtype.fields.items():
