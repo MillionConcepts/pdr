@@ -111,15 +111,20 @@ def lecp_table_loader(filename, fmtdef_dt):
     VG1 LECP Jupiter SUMM Sector tables reference a format file with incorrect
     START_BYTEs for columns within a CONTAINER. Columns are consistently
     separated by whitespace.
+    The VG2 Uranus 12.8 minute step table (ascii version) was missing values 
+    from some rows, not sure why. Reusing this special case fixes it.
 
     HITS
     vg_lecp
         * j_summ_sector_vg1
+        * u_rdr_step_12.8 (partial)
     """
     import pandas as pd
 
     fmtdef, dt = fmtdef_dt
     table = pd.read_csv(filename, header=None, sep=r"\s+")
-    assert len(table.columns) == len(fmtdef.NAME.tolist())
-    table.columns = fmtdef.NAME.tolist()
+
+    col_names = [c for c in fmtdef_dt[0]['NAME'] if "PLACEHOLDER" not in c]
+    assert len(table.columns) == len(col_names), "mismatched column count"
+    table.columns = col_names
     return table
