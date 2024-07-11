@@ -36,15 +36,21 @@
 - 
 
 ### Changed
-- FITS extensions are now matched based on their reported data start byte
-  rather than fuzzy matching between extension name and PDS label key
+- PDR now associates FITS HDUs with PDS data objects based on associatons
+  between reported start byte and FITS file structure, rather than fuzzy
+  string match between HDU names and PDS object names
 - PDS4 FITS files are now opened using `astropy.io.fits` on the backend 
-  instead of `pds4_tools` mirroring the PDS3 FITS behavior
-- Non-filled out FITS cards are represented as None rather than special 
+  instead of `pds4_tools`, mirroring the PDS3 FITS behavior
+- Non-filled out FITS cards are represented as None, rather than special 
   astropy objects without stable byte representations
+- Assorted backend refactoring, linting, and minor improvements
 
 ### Fixed
-- More compatibility fixes for Python 3.9
+- More compatibility fixes for Python 3.9, mostly related to type annotations
+- Improved reliability of associating compressed files with filenames that
+  imply uncompressed files (and vice versa)
+- Addressed some cases in which PDR wasn't accurately determining lengths for
+  HEADER objects 
 
 ### Removed
 - 
