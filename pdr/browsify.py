@@ -213,7 +213,7 @@ def _browsify_array(
     override_rgba: bool = False,
     image_format: str = "jpg",
     **_,
-) -> list[Optional[Image]]:
+) -> list[Optional[Image.Image]]:
     """
     Attempt to render (and optionally save) an ndarray as one or more
     images.
@@ -247,7 +247,7 @@ def _render_array(
     mask_color: Union[int, tuple[int, int, int]],
     save: bool,
     image_format: str
-) -> Optional[Image]:
+) -> Optional[Image.Image]:
     """
     Handler function for array-rendering pipeline, used by `browsify()` on
     most ndarrays and by `show()` always. Render an ndarray as a PIL Image,
