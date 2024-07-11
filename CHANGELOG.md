@@ -44,7 +44,7 @@
   astropy objects without stable byte representations
 
 ### Fixed
-- 
+- More compatibility fixes for Python 3.9
 
 ### Removed
 - 

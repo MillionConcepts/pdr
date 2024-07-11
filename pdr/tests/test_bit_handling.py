@@ -1,4 +1,3 @@
-from inspect import get_annotations
 import random
 
 import pandas as pd
@@ -41,7 +40,7 @@ OBJECT                  = COLUMN
 END_OBJECT              = COLUMN
 """
 
-NULL_IDENTIFIERS = {field: "" for field in get_annotations(DataIdentifiers)}
+NULL_IDENTIFIERS = {field: "" for field in DataIdentifiers.__required_keys__}
 
 
 def test_bit_handling():
