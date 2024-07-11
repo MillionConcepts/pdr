@@ -15,6 +15,7 @@ from typing import (
     TYPE_CHECKING,
     Union
 )
+import re
 import warnings
 
 # get_annotations is new in 3.10.  this polyfill handles only
@@ -203,6 +204,10 @@ class Data:
         tracker: Optional[TrivialTracker] = None,
     ):
         """"""
+        # Bail out early if someone's trying to load directly from the network.
+        if isinstance(fn, str) and re.match("(?i)^(?:https?|ftp):", fn):
+            raise ValueError("Read-from-url is not currently implemented.")
+
         # list of the product's associated data objects
         self.index = []
         # do we raise an exception rather than a warning if loading a data

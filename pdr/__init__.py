@@ -27,21 +27,14 @@ def read(
     object that provides an interface to the data and metadata in all available
     files associated with the product.
     """
-    try:
-        return Data(
-            fp,
-            debug=debug,
-            label_fn=label_fn,
-            search_paths=search_paths,
-            skip_existence_check=skip_existence_check,
-            **kwargs
-        )
-    except FileNotFoundError:
-        if any(val in str(fp) for val in ["http", "www.", "ftp:"]):
-            raise ValueError("Read-from-url is not currently implemented.")
-        from pdr.utils import check_cases
-
-        return Data(check_cases(fp), **kwargs)
+    return Data(
+        fp,
+        debug=debug,
+        label_fn=label_fn,
+        search_paths=search_paths,
+        skip_existence_check=skip_existence_check,
+        **kwargs
+    )
 
 
 def fastread(
