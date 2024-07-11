@@ -1,5 +1,5 @@
 """generic i/o, parsing, and functional utilities."""
-import bz2
+
 from io import BytesIO
 from itertools import chain
 from numbers import Number
@@ -18,7 +18,7 @@ from typing import (
     Union,
 )
 import warnings
-from zipfile import ZipFile
+
 
 from dustgoggles.structures import listify
 from multidict import MultiDict
@@ -158,18 +158,25 @@ def import_best_gzip():
 
 
 def decompress(filename):
-    """"""
-    if filename.lower().endswith(".gz"):
-        f = import_best_gzip().open(filename, "rb")
-    elif filename.lower().endswith(".bz2"):
-        f = bz2.BZ2File(filename, "rb")
-    elif filename.lower().endswith(".zip"):
-        f = ZipFile(filename, "r").open(
-            ZipFile(filename, "r").infolist()[0].filename
-        )
-    else:
-        f = open(filename, "rb")
-    return f
+    """Open FILENAME.  If its name suffix indicates one of the supported
+    compression algorithms, transparently decompress it."""
+    # open the file directly to ensure that we get a regular OSError
+    # (subclass), instead of a GzipError or something, if the file
+    # doesn't exist or there's some other OS-level problem with it
+    fp = open(filename, "rb")
+
+    # this will be the _last_ suffix only, e.g. "foo.tar.gz" -> ".gz"
+    suffix = Path(filename).suffix.lower()
+    if suffix == ".gz":
+        return import_best_gzip().GzipFile(fileobj=fp)
+    if suffix == ".bz2":
+        import bz2
+        return bz2.BZ2File(fp)
+    if suffix == ".zip":
+        from zipfile import ZipFile
+        z = ZipFile(fp)
+        return z.open(z.infolist()[0])
+    return fp
 
 
 def with_extension(fn: Union[str, Path], new_suffix: str) -> str:
