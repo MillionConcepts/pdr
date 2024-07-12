@@ -585,7 +585,8 @@ def check_special_block(
 ) -> tuple[bool, Optional[MultiDict]]:
     """
     `specialize()` target for `queries.get_block()`. Intended for cases in
-    which label pointers don't correspond to label block names.
+    which label pointers don't correspond to label block names AND/OR if a
+    value within the block needs to be changed before going to other functions.
     """
     if name == "XDR_DOCUMENT":
         return True, formats.cassini.xdr_redirect_to_image_block(data)
@@ -756,6 +757,12 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
     if "MSL-M-SAM-" in identifiers["DATA_SET_ID"] and "FILE" in pointer:
         # reusing the msl_cmn special case for msl_sam 'FILE' pointers
         return formats.msl_cmn.trivial_header_loader()
+    if (
+        identifiers["INSTRUMENT_ID"] == "NIMS"
+        and identifiers["SPACECRAFT_NAME"] == 'GALILEO_ORBITER'
+        and pointer == "SAMPLE_SPECTRUM_QUBE"
+    ):
+        return formats.galileo.nims_sample_spectral_qube_trivial_loader()
     return False
 
 

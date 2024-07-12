@@ -5,9 +5,10 @@
 - Compatibility with numpy 2.0 for pds3 products and fits pds4 products
  (non-fits pds4 products numpy 2.0 compatibility await changes in
  `pds4_tools` dependency)
-- 
+- Support for VAX_REAL data types in qubes
 
 #### Dataset Support
+- Galileo NIMS qubes
 - MSL REMS EDRs and most RDRs
 - Rosetta
   - CONSERT ancillary products
@@ -50,7 +51,9 @@
 - Improved reliability of associating compressed files with filenames that
   imply uncompressed files (and vice versa)
 - Addressed some cases in which PDR wasn't accurately determining lengths for
-  HEADER objects 
+  HEADER objects
+- HISTOGRAM_IMAGE objects will now be read as images instead of attempting
+  to be read as tables. (IMAGE_HISTOGRAMS will still be read as tables)
 
 ### Removed
 - 

@@ -167,3 +167,14 @@ def pws_table_loader(filename, fmtdef_dt):
     assert len(table.columns) == len(fmtdef.NAME.tolist())
     table.columns = fmtdef.NAME.tolist()
     return table
+
+
+def nims_sample_spectral_qube_trivial_loader():
+    """
+    HITS
+    * gal_nims
+        *cube
+    """
+    warnings.warn('Galileo NIMS SAMPLE_SPECTRUM_QUBE objects are not supported'
+                  'due to their use of nibble pixels.')
+    return True

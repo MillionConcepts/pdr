@@ -52,6 +52,7 @@ def test_qube_props():
         "bandpad": 8,
         "suffix_bands": 8,
         "linepad": 0,
+        "is_vax_real": False,
     }
     assert extract_axplane_metadata(qube_block, props) == {
         "rowpad": 0,

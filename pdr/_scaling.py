@@ -1,5 +1,5 @@
 from numbers import Number
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -24,6 +24,9 @@ def find_special_constants(
         for name in PDS3_CONSTANT_NAMES
         if (name in block.keys()) and not (block[name] == "N/A")
     }
+    for k in specials.keys():
+        if isinstance(specials[k], Sequence):
+            specials[k] = specials[k][0]
     # ignore uint8 implicit constants (0, 255) for now -- too problematic
     # TODO: maybe add an override
     if obj.dtype.name == "uint8":

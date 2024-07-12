@@ -52,6 +52,7 @@ def generic_qube_properties(
     props["sample_type"] = sample_types(
         use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
     )
+    props["is_vax_real"] = use_block["CORE_ITEM_TYPE"] == "VAX_REAL"
     if "AXIS_NAME" in set(block.keys()).union(use_block.keys()):
         props['axnames'] = block.get("AXIS_NAME")
         if props['axnames'] is None:
@@ -99,8 +100,16 @@ def extract_axplane_metadata(block: MultiDict, props: dict) -> dict:
                 f"Specified {ax} {side} items with no specified axis "
                 f"order; can't interpret."
             )
-        # TODO: handle variable-length axplanes
-        fixbytes = itemcount[props["axnames"].index(ax)] * itembytes
+        if isinstance(itembytes, Sequence):
+            if len(set(itembytes)) > 1:
+                raise NotImplementedError(
+                    "Variable-length axplanes are not yet supported. Please"
+                    "file an issue on github with this product as an example"
+                    "so we can use it to test development and provide support."
+                )
+            fixbytes = sum(itembytes)
+        else:
+            fixbytes = itemcount[props["axnames"].index(ax)] * itembytes
         fix_pix = fixbytes / props["BYTES_PER_PIXEL"]
         if int(fix_pix) != fix_pix:
             raise NotImplementedError(

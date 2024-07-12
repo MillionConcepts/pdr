@@ -82,6 +82,7 @@ def pointer_to_loader(pointer: str, data: Data) -> Loader:
     if (
         any(val in pointer for val in table_words)
         and not any(val+"_HEADER" in pointer for val in table_words)
+        and "HISTOGRAM_IMAGE" not in pointer
     ):
         return ReadTable()
     if "HEADER" in pointer:
