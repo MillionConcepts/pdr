@@ -6,6 +6,8 @@
  (non-fits pds4 products numpy 2.0 compatibility await changes in
  `pds4_tools` dependency)
 - Support for VAX_REAL data types in qubes
+- `pdr.Data.__contains` method
+[see issue #57](https://github.com/MillionConcepts/pdr/issues/57)
 
 #### Dataset Support
 - Galileo NIMS qubes
@@ -56,7 +58,10 @@
   to be read as tables. (IMAGE_HISTOGRAMS will still be read as tables)
 
 ### Removed
-- 
+- `pdr.Data.__iter__` method is being deprecated
+[see issue #57](https://github.com/MillionConcepts/pdr/issues/57)
+- `pdr.Data.__getitem__` method is being deprecated 
+[see issue #57](https://github.com/MillionConcepts/pdr/issues/57)
 
 ## [1.1.2] - 2024-06-18
 ### Changed
