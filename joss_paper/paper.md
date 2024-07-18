@@ -25,9 +25,9 @@ bibliography: paper.bib
 # Summary
 The Planetary Data Reader, `pdr`, is an open-source Python-language package
 designed to planetary science data into standard python objects. `pdr` is
-written accessibly to the introductory Python user. To read a data file one
-must simply import `pdr` and call `pdr.read(fn)` where `fn` is the 
-label or data file, and `pdr` will load all the products data and metadata.
+written to be accessible to the introductory Python user. To read a data file
+a user must simply import `pdr` and call `pdr.read(fn)` where `fn` is the 
+label or data file. `pdr` will load all the metadata and lazily load the data.
 Typically, `pdr` loads image data as `numpy` ndarrays while tabular data is
 represented as `pandas` DataFrames.
 
@@ -49,6 +49,11 @@ for the testing toolchain can be found in `@pdr-tests`. `pdr` also supports
 some common scientific interchange data formats that are not PDS labelled, 
 including FITS.
 
+`pdr` is an affliate package of `planetarypy` `@planetarypy`, and can be
+installed through `pip` and `conda`. It is also currently used in a wide
+variety of planetary projects including in the Perseverance Rover's MastCamZ
+tactical pipeline `@StClair:2023`.
+
 # Statement of need
 A major pain point for planetary scientists is simply figuring out how to
 access their data. In particular, data archived under the PDS3 standards can be
@@ -56,10 +61,21 @@ especially challenging due to inconsistent or specialized formatting. While the
 newer PDS4 standards are significantly stricter, much of the holdings of PDS
 have not yet been migrated to this standard.
 
-`pdr` is currently in use on the Perseverance rover mission.
-It allows for extremely fast metadata parsing without loading an
-entire file making it well suited to working with large data files on a 
-tactical timeline.
+`pdr` has already been used to help the PDS3 to PDS4 migration. It's been used
+in the conversion of PDS3 products from Clementine `@Clementine`, M3 `@M3`, and
+Viking `@Viking`. It will continue to be a useful tool for this process. Not 
+only does it read in these difficult-to-parse PDS3 formats it also allows for
+extremely fast metadata parsing without loading an entire file. This is helpful
+in efficiently translating the PDS3 keywords to PDS4 xml labels.
+
+Other software that has been developed to read planetary data includes 
+`pds4_tools` `@pds4_tools`, which is only compatible with PDS4 data, and is 
+incorporated into `pdr` so that the input and output matches the `pdr` 
+framework. Similarly, `astropy.io.fits` `@astropy` will read FITS files and is
+a dependency of `pdr`. There are several other packages that can support some 
+forms of planetary data but are limited in their scope compared to `pdr` 
+including `VICAR` `@VICAR`, `plio` `@plio`,  `GDAL` `@GDAL`, and `rasterio` 
+`@rasterio`, which are all either dataset or data type specific.
 
 # Acknowledgements
 The development of pdr is supported by NASA grant No. 80NSSC21K0885. 
