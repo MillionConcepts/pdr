@@ -128,3 +128,24 @@ def lecp_table_loader(filename, fmtdef_dt):
     assert len(table.columns) == len(col_names), "mismatched column count"
     table.columns = col_names
     return table
+
+def lecp_vg1_sat_table_loader(filename, fmtdef_dt):
+    """
+    VG1 Saturn RDR step products have an extra header row partway through their 
+    tables. This special case skips those rows by treating them as comments. 
+    PDS volume affected: VG1-S-LECP-3-RDR-STEP-6MIN-V1.0
+
+    HITS
+    vg_lecp
+        * s_rdr_step (partial)
+    """
+    import pandas as pd
+
+    fmtdef, dt = fmtdef_dt
+    # Rows that start with "VOYAGER" are extra headers. "comment='V'" skips them
+    table = pd.read_csv(filename, comment='V')
+
+    col_names = [c for c in fmtdef_dt[0]['NAME'] if "PLACEHOLDER" not in c]
+    assert len(table.columns) == len(col_names), "mismatched column count"
+    table.columns = col_names
+    return table

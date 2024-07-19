@@ -236,6 +236,11 @@ def check_special_table_reader(
         and name == "TABLE"
     ):
         return True, formats.voyager.lecp_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "VG1-S-LECP-3-RDR-STEP-6MIN-V1.0"
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.voyager.lecp_vg1_sat_table_loader(fn, fmtdef_dt)
     if identifiers["DATA_SET_ID"] == "VL2-M-SEIS-5-RDR-V1.0" and name in (
         "TABLE",
         "SPREADSHEET",
