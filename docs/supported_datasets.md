@@ -258,6 +258,7 @@ expected data structures and that interpretable portions of their data
   - Spherical Harmonic, Topography, and Gravity models and maps
   - Occultation raw data and derived profiles
   - Radio Tracking Data (except ODF3B tables)
+  - RSS solar wind experiment ('safed' dataset)
 #### Mariner 9
   - IRIS data
   - RSS electron density profiles
@@ -646,7 +647,6 @@ expected data structures and that interpretable portions of their data
   - SCVDR (support not planned)
   - BSR calibrated time samples (support planned)
   - Radio Tracking ODF3B tables (support planned)
-  - RSS solar wind experiment ('safed' dataset)
   - SAR EDR ('safed' dataset)
 #### Mars Express
   - HRSC RDRs (support planned)

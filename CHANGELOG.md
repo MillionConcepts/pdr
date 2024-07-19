@@ -22,6 +22,7 @@
   - ASE EDRs, RDS
   - Telltale Experiment (TT) products
   - Atmospheric Opacity (AO) products
+- MGN RSS solar wind experiment
 - Misc additional products from:
   - Cassini RPWS and MIMI
   - Galileo Probe
@@ -34,6 +35,8 @@
   - Juno JADE
   - Galileo MAG
   - Pioneer Venus Orbiter OMAG
+  - Vega
+  - Voyager LECP
 
 #### Other
 - 
