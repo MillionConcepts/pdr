@@ -30,8 +30,9 @@ standard Python objects. It typically loads images as `ndarrays`, tables
 as Pandas `DataFrames`, and metadata and ancillary data as strings or dicts.
 `pdr`'s interface is designed to be maximally accessible to the introductory
 Python user. To read a data file, a user must simply `import pdr`, then run 
-`pdr.read(fn)`. `pdr` will immediately load the product's metadata, then 
-lazily load data objects when referenced.
+`pdr.read(fn)`, where `fn` is the product's label or data file. `pdr` will 
+immediately load the product's metadata, then lazily load data objects when 
+referenced.
 
 
 `pdr` reads data products held by the Planetary Data System (PDS) that follow 
@@ -82,7 +83,7 @@ data from Clementine `@Clementine`, Chandrayaan-1 M3 `@M3`, and the Viking Orbit
 cameras `@Viking`. (Its fast metadata parsing features make it especially appealing
 for converting metadata standards across tens of millions of products.)
 
-# Alternatives
+# Other packages
 
 There is a very wide variety of software intended to read data in planetary science 
 formats. `pdr`'s most important distinctions are its emphasis on breadth, simplicity,
