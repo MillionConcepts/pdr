@@ -86,7 +86,7 @@ research.
 The simplicity and consistency of `pdr`'s API, along with its speed and stability,
 make it ideal for use in automated data processing pipelines. `pdr` is currently 
 used in a wide variety of planetary projects. These include the Perseverance rover's 
-MastCam-Z tactical pipeline [@StClair:2023] and PDS3 to PDS4 migration pipelines for
+Mastcam-Z tactical pipeline [@StClair:2023] and PDS3 to PDS4 migration pipelines for
 data from Clementine [@Clementine], Chandrayaan-1 M3 [@M3], and the Viking Orbiter 
 cameras [@Viking]. (Its fast metadata parsing features make it especially appealing
 for converting metadata standards across tens of millions of products.)
