@@ -60,8 +60,8 @@ software that conforms to planetary data rather than planetary data standards.
 Our methods for adding dataset support are further described in `@Kaufman:2022`,
 and our testing toolchain can be found in`@pdr-tests`. 
 
-`pdr` is an affliate package of `planetarypy` `@planetarypy`, and can be
-installed through `pip` and `conda`. 
+`pdr` is an affliate package of `planetarypy` `@planetarypy`. It is available
+on the Python Package Index and `conda-forge`.
 
 # Statement of need
 
