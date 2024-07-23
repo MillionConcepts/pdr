@@ -25,7 +25,7 @@ authors:
 affiliations:
   - name: Million Concepts LLC
     index: 1
-  - name: Freie Universität Berlin
+  - name: Institut für Geologische Wissenschaften, Freie Universität Berlin
     index: 2
 date: 16 July 2024
 bibliography: paper.bib
