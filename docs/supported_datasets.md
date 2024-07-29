@@ -272,6 +272,7 @@ expected data structures and that interpretable portions of their data
   - SPICAM UV and IR RDRs
   - MRS L1B and L2 products, and derived profiles
   - MRS L1A RSR tables (except the "SAMPLE WORDS" field) and most ODF tables
+  - OMEGA derived global maps and hydrous sites
 #### Mars Odyssey
   - THEMIS 
     - spectral qubes: VIS and IR v2 geoprojected images, VIS EDR and RDR,
@@ -558,6 +559,7 @@ expected data structures and that interpretable portions of their data
 #### Mars Express
   - HRSC derived clouds data
   - PFS derived water vapor maps
+  - OMEGA derived atmospheric profiles
 #### MER 1 and 2
   - Many MER products have been converted to PDS4, including: 
     - APXS, Mössbauer and Mini-TES products
@@ -653,6 +655,7 @@ expected data structures and that interpretable portions of their data
   - PFS calibrated radiance spectra (support not planned)
   - SPICAM UV and IR EDRs (support planned)
   - MRS most L1A closed loop products: ICL, TCL, TNF, and some ODF products with incomplete labels (support not planned)
+  - OMEGA EDR data and geometry cubes
 #### Mars Odyssey
   - THEMIS
     - IR RDRs (support planned)
