@@ -39,7 +39,7 @@ OBJECT           = TABLE
         BYTES               = 8
     END_OBJECT              = COLUMN
 END_OBJECT                  = TABLE
-END 
+END
 """
 
 STUB_DSV_TABLE_LABEL = """
@@ -65,7 +65,7 @@ OBJECT           = SPREADSHEET
         DATA_TYPE           = "ASCII_REAL"
     END_OBJECT              = COLUMN
 END_OBJECT                  = TABLE
-END 
+END
 """
 
 
@@ -97,15 +97,15 @@ RECORD_TYPE                         = ABSOLUTELY_NOT
 RECORD_BYTES                        = 1000000
 FILE_RECORDS                        = -1
 /* pointer to CAT */
-^CAT           = "MEOW.CAT"   /* 0:SPECTRUM IR; 1:IMAGE */  
+^CAT           = "MEOW.CAT"   /* 0:SPECTRUM IR; 1:IMAGE */
 CAT_NAME             = LILY
 SOME_PARAMETER              = "1000" /* h h h   h i! */
 OTHER_CATS                    = {
 "this_one"}
-DESCRIPTION                   = "This is a really 
+DESCRIPTION                   = "This is a really
 nice cat. MONTMORILLONITE = 100.
  Great cat"
-/* Misidentification Data Elements */  
+/* Misidentification Data Elements */
 NOTHING:FF         = "B"
 MEOW_SEQUENCE_NUMBERS         = (1, 2,
 3, 4, "5"
@@ -117,7 +117,7 @@ GROUP                              = TAIL_COORDINATE_SYSTEM_PARMS
  COORDINATE_SYSTEM_NAME              = TAIL_FRAME
  OBJECT                             =  TIP_OF_TAIL_FORMAT
     POINTINESS                       = 12
- END_OBJECT                          = TAIL_TIP_FORMAT            
+ END_OBJECT                          = TAIL_TIP_FORMAT
  COORDINATE_SYSTEM_INDEX_NAME        = ("CURL", "FUR", "POSE")
  ARTICULATION_DEVICE_ANGLE           = ( -0.000045 <rad>, -0.785042 <rad> )
 END_GROUP                          = I_FORGOT
@@ -157,7 +157,7 @@ QUBE_BLOCK_TEXT = """OBJECT = SPECTRAL_QUBE
   CORE_LOW_REPR_SATURATION = -32767.0
   CORE_LOW_INSTR_SATURATION = -32766.0
   CORE_HIGH_REPR_SATURATION = -32765.0
-  CORE_HIGH_INSTR_SATURATION = -32764.0  
+  CORE_HIGH_INSTR_SATURATION = -32764.0
   SUFFIX_ITEMS = (0,0,8)
   BAND_SUFFIX_ITEM_BYTES = 4
 END_OBJECT

@@ -24,4 +24,8 @@ def test_array_roundtrip():
         assert data.keys() == ['POISSON']
         assert np.all(data.POISSON == arr)
     finally:
+        # Must close all open file handles on 'temp.fits' so it can
+        # be deleted on Windows.  Unfortunately, pdr.Data lacks a close
+        # method.
+        data = None
         Path('temp.fits').unlink(missing_ok=True)

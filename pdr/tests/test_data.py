@@ -10,7 +10,10 @@ RNG = np.random.default_rng()
 def test_data_init_basic():
     fpath, lpath = make_simple_image_product()
     data = pdr.read(fpath)
-    assert data.LABEL == STUB_IMAGE_LABEL
+    # ??? Should pdr.read canonicalize line endings?
+    # And why are we getting bare \r at the end of a LABEL that mostly
+    # has DOS line endings?
+    assert data.LABEL.splitlines() == STUB_IMAGE_LABEL.splitlines()
     assert data._target_path('IMAGE') == str(fpath)
     for k, v in data.identifiers.items():
         if k == 'SPACECRAFT_NAME':

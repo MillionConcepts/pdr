@@ -45,8 +45,8 @@ def make_simple_image_product_mb():
 
 
 def writepaths(content: Union[np.ndarray, bytes, str], label=STUB_IMAGE_LABEL):
-    fpath = TempFile((Path(__file__).parent / 'PRODUCT.QQQ'))
-    lpath = TempFile((Path(__file__).parent / 'PRODUCT.LBL'))
+    fpath = TempFile(Path.cwd() / 'PRODUCT.QQQ')
+    lpath = TempFile(Path.cwd() / 'PRODUCT.LBL')
     if isinstance(content, np.ndarray):
         content = content.tobytes()
     mode = "wb" if isinstance(content, bytes) else "w"
