@@ -1,4 +1,4 @@
-name: Unit tests (Conda)
+name: Unit tests
 
 on:
   push:
@@ -7,13 +7,15 @@ on:
       - zack/basic-ci
 
 jobs:
-  unit-tests:
+  conda-unit:
     name: |
-      ${{ format('python: {0} os: {1} conda env: {2}',
+      ${{ format('conda python: {0} os: {1} env: {2}',
                  matrix.python-version, matrix.os, matrix.environment-file) }}
     strategy:
       fail-fast: false
       matrix:
+        # Conda-based installations are our recommendation, so we test
+        # comprehensively.
         os: [ubuntu-latest, macos-latest, windows-latest]
         environment-file: ["environment.yml", "minimal_environment.yml"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13.0-rc.1"]
@@ -38,6 +40,36 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest
+      - name: Run unit tests
+        # -r fEsX means show details of tests that failed, errored, skipped
+        # or passed when they were expected to fail.
+        run: pytest -r fEsX
+
+  pip-unit:
+    name: |
+      ${{ format('pip python: {0} os: {1}',
+                 matrix.python-version, matrix.os) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # This test exists to verify that the dependencies declared
+        # for pip-based installs are accurate, and this should not be
+        # drastically affected by which python we have.  Only test
+        # with the oldest supported and latest stable python, but on
+        # all three available OSes.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies using pip
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[browsify,fits,tiff,pvl,tests]'
       - name: Run unit tests
         # -r fEsX means show details of tests that failed, errored, skipped
         # or passed when they were expected to fail.
