@@ -39,11 +39,23 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install pytest pytest-cov
       - name: Run unit tests
         # -r fEsX means show details of tests that failed, errored, skipped
         # or passed when they were expected to fail.
-        run: pytest -r fEsX
+        run: |
+          pytest -r fEsX --cov=pdr --cov-branch --cov-report=
+      - name: Store coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data-conda-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.environment-file }}
+          # the coverage data file will be named .coverage on unixy systems
+          # but may be named _coverage on windows
+          path: ?coverage
+          if-no-files-found: ignore
+          # unmerged coverage analysis data can be ephemeral
+          retention-days: 1
+
 
   pip-unit:
     name: |
@@ -70,7 +82,58 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e '.[browsify,fits,tiff,pvl,tests]'
+          pip install pytest-cov
       - name: Run unit tests
         # -r fEsX means show details of tests that failed, errored, skipped
         # or passed when they were expected to fail.
-        run: pytest -r fEsX
+        run: |
+          pytest -r fEsX --cov=pdr --cov-branch --cov-report=
+      - name: Store coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data-pip-${{ matrix.os }}-${{ matrix.python-version }}
+          # the coverage data file will be named .coverage on unixy systems
+          # but may be named _coverage on windows
+          path: ?coverage
+          if-no-files-found: ignore
+          # unmerged coverage analysis data can be ephemeral
+          retention-days: 1
+
+  coverage:
+    name: combined coverage report
+    if: always()
+    needs: [conda-unit, pip-unit]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - run: |
+          python -m pip install --upgrade coverage[toml]
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          # this does the exact opposite of what it sounds like:
+          # if true, all the artifacts that match the pattern are
+          # unpacked in the *same location* and clobber each other
+          # if false they all get renamed to not collide
+          merge-multiple: false
+      - name: Crunch coverage data
+        run: |
+          shopt -s dotglob
+          for dir in coverage-data-*/; do
+              dir=${dir%/}
+              tag=${dir#coverage-data-}
+              mv "$dir"/?coverage ".coverage.$tag"
+              rmdir "$dir"
+          done
+          python -m coverage combine
+          python -m coverage html
+          python -m coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+      - name: Store coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov

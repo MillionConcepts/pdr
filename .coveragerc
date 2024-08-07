@@ -1,5 +1,14 @@
 [run]
+relative_files = True
+source = pdr
 omit =
     */tests/*
     */formats/*
     *pvl_utils.py*
+
+# As of version 7.6.1 this is required to get "coverage combine" to do
+# the Right Thing for data from both Unix and Windows.
+[paths]
+merge =
+    pdr/
+    pdr\
