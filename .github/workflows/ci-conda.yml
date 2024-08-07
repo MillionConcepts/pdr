@@ -8,16 +8,20 @@ on:
 
 jobs:
   unit-tests:
+    name: |
+      ${{ format('python: {0} os: {1} conda env: {2}',
+                 matrix.python-version, matrix.os, matrix.environment-file) }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         environment-file: ["environment.yml", "minimal_environment.yml"]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13.0-rc.1"]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        # required for conda, see https://github.com/marketplace/actions/setup-miniconda#important
+        # required for conda environments to work correctly
+        # see https://github.com/marketplace/actions/setup-miniconda#important
         shell: bash -elo pipefail {0}
     steps:
       - uses: actions/checkout@v4
@@ -36,5 +40,5 @@ jobs:
           pip install pytest
       - name: Run unit tests
         # -r fEsX means show details of tests that failed, errored, skipped
-        # or xpassed (passed but expected to fail).
+        # or passed when they were expected to fail.
         run: pytest -r fEsX
