@@ -1,0 +1,40 @@
+name: Unit tests (Conda)
+
+on:
+  push:
+    branches:
+      # Change this before merging!
+      - zack/basic-ci
+
+jobs:
+  unit-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        environment-file: ["environment.yml", "minimal_environment.yml"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # required for conda, see https://github.com/marketplace/actions/setup-miniconda#important
+        shell: bash -elo pipefail {0}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies using Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          channels: conda-forge
+          environment-file: ${{ matrix.environment-file }}
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+      - name: Run unit tests
+        # -r fEsX means show details of tests that failed, errored, skipped
+        # or xpassed (passed but expected to fail).
+        run: pytest -r fEsX
