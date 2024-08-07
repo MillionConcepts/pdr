@@ -1,13 +1,19 @@
 from pathlib import Path
 
-from astropy.io import fits
 import numpy as np
 
 import pdr
 
+import pytest
+try:
+    from astropy.io import fits
+    fits_available = True
+except ImportError:
+    fits_available = False
+
 RNG = np.random.default_rng()
 
-
+@pytest.mark.skipif(not fits_available, reason="astropy.io.fits not available")
 def test_array_roundtrip():
     arr = RNG.poisson(100, (100, 100)).astype(np.uint8)
     hdul = fits.HDUList()
@@ -19,4 +25,3 @@ def test_array_roundtrip():
         assert np.all(data.POISSON == arr)
     finally:
         Path('temp.fits').unlink(missing_ok=True)
-

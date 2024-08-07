@@ -2,7 +2,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from PIL import Image
 
 from pdr.browsify import (
     find_masked_bounds,
@@ -12,6 +11,13 @@ from pdr.browsify import (
     colorfill_maskedarray,
     browsify,
 )
+
+import pytest
+try:
+    from PIL import Image
+    pil_available = True
+except ImportError:
+    pil_available = False
 
 RNG = np.random.default_rng()
 # NOTE: all these tests have miniscule chances of randomly failing.
@@ -71,6 +77,7 @@ def test_browsify_df():
         Path("temp.csv").unlink(missing_ok=True)
 
 
+@pytest.mark.skipif(not pil_available, reason="PIL not available")
 def test_browsify_array():
     arr = np.ma.masked_outside(RNG.poisson(100, (1024, 1024)), 10, 90)
     try:
