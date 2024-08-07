@@ -24,7 +24,7 @@ setuptools.setup(
         "pds4_tools",
         "multidict",
         "pandas>=2.0.0",
-        "numpy",
+        "numpy<2.0.0",
         "python-Levenshtein",
         "dustgoggles",
         "more_itertools"
