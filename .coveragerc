@@ -1,3 +1,13 @@
+# As of version 7.6.1 this is required to get "coverage combine" to do
+# the Right Thing for data from both Unix and Windows.
+[paths]
+merge =
+    pdr/
+    pdr\
+
+# This section needs to be last in this file because the CI scripts
+# need to add things to it.  The 'relative_files' and 'source' options
+# are also necessary to get "coverage combine" to do the Right Thing.
 [run]
 relative_files = True
 source = pdr
@@ -5,10 +15,3 @@ omit =
     */tests/*
     */formats/*
     *pvl_utils.py*
-
-# As of version 7.6.1 this is required to get "coverage combine" to do
-# the Right Thing for data from both Unix and Windows.
-[paths]
-merge =
-    pdr/
-    pdr\

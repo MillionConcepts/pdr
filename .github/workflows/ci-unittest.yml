@@ -26,7 +26,10 @@ jobs:
         # see https://github.com/marketplace/actions/setup-miniconda#important
         shell: bash -elo pipefail {0}
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          path: src
       - name: Install Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -35,27 +38,68 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           channels: conda-forge
-          environment-file: ${{ matrix.environment-file }}
+          environment-file: src/${{ matrix.environment-file }}
       - name: Install test dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install pytest pytest-cov
-      - name: Run unit tests
-        # -r fEsX means show details of tests that failed, errored, skipped
-        # or passed when they were expected to fail.
+      - name: Prepare source tree for testing
+        # Run unit tests with a read-only source tree, to weed out
+        # places where the tests and/or pdr core write files into the
+        # source tree.
+        #
+        # This requires us to tell pytest-cov to write its data file
+        # somewhere outside the source tree (which in turn is why we
+        # have the source tree in a subdirectory).  That can only be
+        # done by adding options to .coveragerc, which of course has
+        # to be done *before* the tree is made read-only.  Caution:
+        # for this to work correctly, the [run] section must be the
+        # last section in .coveragerc.
+        #
+        # Fun fact: on Windows `attrib +r` has *no effect* on directories.
+        # You can have read-only directories but you have to drop down
+        # a level and mess directly with ACLs.
+        #
+        # The 'git config' command is just to squelch a warning from
+        # the "post check out code" step, which will try to run the
+        # same command if we don't do it now, and fail because it
+        # can't write .git/config.
         run: |
-          pytest -r fEsX --cov=pdr --cov-branch --cov-report=
+          printf 'data_file = %s\n' "$PWD/pytest-cov.dat" \
+            >> src/.coveragerc
+          (cd src && git config --local --unset-all \
+              'http.https://github.com/.extraheader')
+          case "$OSTYPE" in
+            (msys|cygwin|win32)
+              export MSYS2_ARG_CONV_EXCL='*'
+              icacls src /inheritance:r \
+                  /grant 'CREATOR OWNER:(OI)(CI)(RX,D,DC,WDAC)' \
+                  /grant 'BUILTIN\Users:(OI)(CI)RX'
+              icacls 'src\*.*' /reset /t /l /q
+            ;;
+            (*)
+              chmod -R a-w src
+            ;;
+          esac
+      - name: Run unit tests
+        # Because the source tree is read-only we need to turn off
+        # .pyc generation and the pytest cache, neither of which is
+        # actually ever going to get used anyway.
+        #
+        # The -r fEsX option to pytest means show details of tests
+        # that failed, errored, skipped or passed when they were
+        # expected to fail.
+        run: |
+          cd src
+          export PYTHONDONTWRITEBYTECODE=1
+          pytest -p no:cacheprovider -r fEsX --cov=pdr --cov-branch --cov-report=
       - name: Store coverage data
         uses: actions/upload-artifact@v4
         with:
           name: coverage-data-conda-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.environment-file }}
-          # the coverage data file will be named .coverage on unixy systems
-          # but may be named _coverage on windows
-          path: ?coverage
+          path: pytest-cov.dat
           if-no-files-found: ignore
           # unmerged coverage analysis data can be ephemeral
           retention-days: 1
-
 
   pip-unit:
     name: |
@@ -72,29 +116,66 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.9", "3.12"]
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # so I don't have to write nontrivial script fragments twice
+        shell: bash -eo pipefail {0}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: src
       - name: Install Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies using pip
         run: |
-          python -m pip install --upgrade pip
-          pip install -e '.[browsify,fits,tiff,pvl,tests]'
+          python3 -m venv venv
+          case "$OSTYPE" in
+            (msys|cygwin|win32)  source venv/Scripts/activate ;;
+            (*)                  source venv/bin/activate ;;
+          esac
+          python3 -m pip install --upgrade pip setuptools wheel
           pip install pytest-cov
-      - name: Run unit tests
-        # -r fEsX means show details of tests that failed, errored, skipped
-        # or passed when they were expected to fail.
+          cd src && pip install -e '.[browsify,fits,tiff,pvl,tests]'
+      - name: Prepare source tree for testing
+        # See comments on the matching step of the conda-unit job for
+        # explanation.  This step should be identical between the two jobs.
         run: |
-          pytest -r fEsX --cov=pdr --cov-branch --cov-report=
+          printf 'data_file = %s\n' "$PWD/pytest-cov.dat" \
+            >> src/.coveragerc
+          (cd src && git config --local --unset-all \
+              'http.https://github.com/.extraheader')
+          case "$OSTYPE" in
+            (msys|cygwin|win32)
+              export MSYS2_ARG_CONV_EXCL='*'
+              icacls src /inheritance:r \
+                  /grant 'CREATOR OWNER:(OI)(CI)(RX,D,DC,WDAC)' \
+                  /grant 'BUILTIN\Users:(OI)(CI)RX'
+              icacls 'src\*.*' /reset /t /l /q
+            ;;
+            (*)
+              chmod -R a-w src
+            ;;
+          esac
+      - name: Run unit tests
+        # See comments on the matching step of the conda-unit job for
+        # explanation.  This step should be the same as that step
+        # *except* that when using pip we have to explicitly activate
+        # the virtualenv.
+        run: |
+          case "$OSTYPE" in
+            (msys|cygwin|win32)  source venv/Scripts/activate ;;
+            (*)                  source venv/bin/activate ;;
+          esac
+          cd src
+          export PYTHONDONTWRITEBYTECODE=1
+          pytest -p no:cacheprovider -r fEsX --cov=pdr --cov-branch --cov-report=
       - name: Store coverage data
         uses: actions/upload-artifact@v4
         with:
           name: coverage-data-pip-${{ matrix.os }}-${{ matrix.python-version }}
-          # the coverage data file will be named .coverage on unixy systems
-          # but may be named _coverage on windows
-          path: ?coverage
+          path: pytest-cov.dat
           if-no-files-found: ignore
           # unmerged coverage analysis data can be ephemeral
           retention-days: 1
@@ -110,7 +191,7 @@ jobs:
         with:
           python-version: 3.12
       - run: |
-          python -m pip install --upgrade coverage[toml]
+          python3 -m pip install --upgrade coverage[toml]
       - name: Download coverage data
         uses: actions/download-artifact@v4
         with:
@@ -122,16 +203,15 @@ jobs:
           merge-multiple: false
       - name: Crunch coverage data
         run: |
-          shopt -s dotglob
           for dir in coverage-data-*/; do
               dir=${dir%/}
               tag=${dir#coverage-data-}
-              mv "$dir"/?coverage ".coverage.$tag"
+              mv "$dir/pytest-cov.dat" ".coverage.$tag"
               rmdir "$dir"
           done
-          python -m coverage combine
-          python -m coverage html
-          python -m coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+          python3 -m coverage combine
+          python3 -m coverage html
+          python3 -m coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
       - name: Store coverage report
         uses: actions/upload-artifact@v4
         with:
