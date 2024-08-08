@@ -30,16 +30,15 @@ def test_quantity_start_byte():
         assert quantity_start_byte({'units': unit, 'value': 100}, rb) == ex
 
 
-def test_count_from_bottom_of_file():
-    fn, rows, row_bytes = ['foo.bin', 'FOO.bin'], 100, 256
-    try:
-        with Path(fn[0]).open('wb') as stream:
-            stream.write(b'\x00' * rows * row_bytes * 2)
-        assert (
-                count_from_bottom_of_file(fn, rows, row_bytes) == rows * row_bytes
-        )
-    finally:
-        Path(fn[0]).unlink(missing_ok=True)
+def test_count_from_bottom_of_file(tmp_path):
+    fn = [tmp_path / 'foo.bin', tmp_path / 'FOO.bin']
+    rows = 100
+    row_bytes = 256
+    with fn[0].open('wb') as stream:
+        stream.write(b'\x00' * rows * row_bytes * 2)
+    assert (
+            count_from_bottom_of_file(fn, rows, row_bytes) == rows * row_bytes
+    )
 
 
 def test_check_delimiter_stream():

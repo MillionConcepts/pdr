@@ -29,17 +29,16 @@ def test_casting_to_float():
     assert not casting_to_float(uint8, 1)
 
 
-def test_np_from_buffered_io():
+def test_np_from_buffered_io(tmp_path):
     arr = RNG.poisson(20, (100, 100)).astype(np.uint8)
-    with gzip.open("arr.img.gz", "wb") as stream:
+    fpath = tmp_path / "arr.img.gz"
+    with gzip.open(fpath, "wb") as stream:
         stream.write(arr.tobytes())
-    buf = gzip.open("arr.img.gz", "rb")
-    in1 = np_from_buffered_io(buf, np.dtype("b"))
-    assert np.all(in1.reshape(arr.shape) == arr)
-    in2 = np_from_buffered_io(buf, np.dtype("b"), 10, 10)
-    assert np.all(in2 == arr.ravel()[10:20])
-    buf.close()
-    os.unlink("arr.img.gz")
+    with gzip.open(fpath, "rb") as buf:
+        in1 = np_from_buffered_io(buf, np.dtype("b"))
+        assert np.all(in1.reshape(arr.shape) == arr)
+        in2 = np_from_buffered_io(buf, np.dtype("b"), 10, 10)
+        assert np.all(in2 == arr.ravel()[10:20])
 
 
 def test_enforce_order_and_object():

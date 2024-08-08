@@ -1,14 +1,13 @@
 import pdr
-from pdr.tests.utils import make_simple_image_product, make_simple_image_product_mb
 
 
-def test_image_simple_2d():
-    fpath, lpath = make_simple_image_product()
-    data = pdr.read(fpath, debug=True)
+def test_image_simple_2d(uniband_image_product, tracker_factory):
+    prod_name, fpath, lpath = uniband_image_product
+    data = pdr.read(fpath, debug=True, tracker=tracker_factory(fpath))
     assert data.IMAGE.sum() == 0
 
 
-def test_image_simple_3d():
-    fpath, lpath = make_simple_image_product_mb()
-    data = pdr.read(fpath, debug=True)
+def test_image_simple_3d(multiband_image_product, tracker_factory):
+    prod_name, fpath, lpath = multiband_image_product
+    data = pdr.read(fpath, debug=True, tracker=tracker_factory(fpath))
     assert data.IMAGE.sum() == 0

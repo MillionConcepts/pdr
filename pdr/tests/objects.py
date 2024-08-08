@@ -1,4 +1,3 @@
-import re
 from typing import Optional
 
 
@@ -11,7 +10,7 @@ def takes_x_only(x):
 
 
 STUB_BINARY_TABLE_LABEL = """
-^TABLE          = "PRODUCT.QQQ"
+^TABLE          = "{product_name}.QQQ"
 RECORD_TYPE     = STREAM
 FILE_RECORDS    = 10
 RECORD_BYTES    = 13
@@ -43,7 +42,7 @@ END
 """
 
 STUB_DSV_TABLE_LABEL = """
-^SPREADSHEET          = "PRODUCT.QQQ"
+^SPREADSHEET          = "{product_name}.QQQ"
 RECORD_TYPE     = STREAM
 FILE_RECORDS    = 10
 RECORD_BYTES    = 17
@@ -70,7 +69,7 @@ END
 
 
 STUB_IMAGE_LABEL = """
-^IMAGE = "PRODUCT.QQQ"
+^IMAGE = "{product_name}.QQQ"
 SPACECRAFT_NAME = "ORBITER"
 OBJECT       = IMAGE
     INTERCHANGE_FORMAT              = BINARY
@@ -78,7 +77,7 @@ OBJECT       = IMAGE
     LINE_SAMPLES                    = 100
     SAMPLE_TYPE                     = LSB_UNSIGNED_INTEGER
     SAMPLE_BITS                     = 8
-    BANDS                           = 1
+    BANDS                           = {bands}
     BAND_STORAGE_TYPE               = BAND_SEQUENTIAL
     FIRST_LINE                      = 1
     FIRST_LINE_SAMPLE               = 1
@@ -88,7 +87,6 @@ OBJECT       = IMAGE
 END_OBJECT       = IMAGE
 END
 """
-STUB_IMAGE_LABEL_MB = re.sub(r"BANDS.*?1", 'BANDS     = 3', STUB_IMAGE_LABEL)
 
 SILLY_LABEL = """
 PDS_VERSION_ID                    = NO

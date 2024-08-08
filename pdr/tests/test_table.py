@@ -1,15 +1,11 @@
 import numpy as np
 
 import pdr
-from pdr.tests.utils import (
-    make_simple_binary_table_product,
-    make_simple_dsv_table_product,
-)
 
 
-def test_simple_binary_table():
-    fpath, lpath = make_simple_binary_table_product()
-    data = pdr.read(fpath, debug=True)
+def test_simple_binary_table(binary_table_product, tracker_factory):
+    prod_name, fpath, lpath = binary_table_product
+    data = pdr.read(fpath, debug=True, tracker=tracker_factory(fpath))
     assert list(data.TABLE.columns) == ['X_0', 'Y', 'X_1']
     assert list(data.TABLE.dtypes) == [
         np.dtype('uint8'), np.dtype('float32'), np.dtype('float64')
@@ -19,9 +15,9 @@ def test_simple_binary_table():
     assert np.isclose(data.TABLE.loc[9, "X_1"], 8.8)
 
 
-def test_simple_dsv_table():
-    fpath, lpath = make_simple_dsv_table_product()
-    data = pdr.read(fpath, debug=True)
+def test_simple_dsv_table(dsv_table_product, tracker_factory):
+    prod_name, fpath, lpath = dsv_table_product
+    data = pdr.read(fpath, debug=True, tracker=tracker_factory(fpath))
     assert list(data.SPREADSHEET.columns) == ['X_0', 'Y', 'X_1']
     assert list(data.SPREADSHEET.dtypes) == [
         np.dtype('float64'), np.dtype('O'), np.dtype('int64')

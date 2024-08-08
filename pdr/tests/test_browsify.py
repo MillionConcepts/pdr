@@ -66,32 +66,27 @@ def test_colorfill_maskedarray():
     assert np.equal(filled[masked.mask], np.array([0, 255, 255])).all()
 
 
-def test_browsify_df():
+def test_browsify_df(tmp_path):
     obj = pd.DataFrame({"a": [1, 2], "b": ["cat", "dog"]})
-    try:
-        browsify(obj, "temp")
-        df = pd.read_csv("temp.csv")
-        assert (df["a"] == [1, 2]).all()
-        assert (df["b"] == ["cat", "dog"]).all()
-    finally:
-        Path("temp.csv").unlink(missing_ok=True)
+    browsify(obj, tmp_path / "browse")
+    df = pd.read_csv(tmp_path / "browse.csv")
+    assert (df["a"] == [1, 2]).all()
+    assert (df["b"] == ["cat", "dog"]).all()
 
 
 @pytest.mark.skipif(not pil_available, reason="PIL not available")
-def test_browsify_array():
+def test_browsify_array(tmp_path):
     arr = np.ma.masked_outside(RNG.poisson(100, (1024, 1024)), 10, 90)
-    try:
-        browsify(arr, "temp")
-        im = Image.open("temp.jpg")
-        assert im.size == (1024, 1024)
-        # compression artifacts etc. mean it's not precisely equal
-        assert (
-            np.abs(
-                np.subtract(
-                    np.asarray(im)[arr.mask], np.array([0, 255, 255])
-                ).mean()
-            )
-            < 5
+
+    browsify(arr, tmp_path / "browse")
+    im = Image.open(tmp_path / "browse.jpg")
+    assert im.size == (1024, 1024)
+    # compression artifacts etc. mean it's not precisely equal
+    assert (
+        np.abs(
+            np.subtract(
+                np.asarray(im)[arr.mask], np.array([0, 255, 255])
+            ).mean()
         )
-    finally:
-        Path("temp.jpg").unlink(missing_ok=True)
+        < 5
+    )
