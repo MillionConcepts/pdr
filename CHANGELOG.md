@@ -54,6 +54,8 @@ compatibility
   astropy objects without stable byte representations
 - Assorted backend refactoring, linting, and minor improvements
 - Unit tests no longer unnecessarily write to the source tree
+- All string objects loaded directly from products by `Data` ('DESCRIPTION', 
+  'LABEL', etc.) canonicalize line endings to \n
 
 ### Fixed
 - More compatibility fixes for Python 3.9, mostly related to type annotations

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional, Union
 import warnings
 
+from pdr.loaders._helpers import canonicalized
 from pdr.loaders.utility import looks_like_this_kind_of_file
 from pdr.parselabel.utils import trim_label
 from pdr.utils import check_cases, decompress
@@ -33,6 +34,7 @@ def read_header(
     return skeptically_load_header(fn, table_props, name)
 
 
+@canonicalized
 def read_label(
     fn: Union[str, Path],
     fmt: Optional[str] = "text"
@@ -53,6 +55,7 @@ def read_label(
     raise NotImplementedError(f"The {fmt} format is not yet implemented.")
 
 
+@canonicalized
 def skeptically_load_header(
     fn: Union[Path, str],
     table_props: dict,
@@ -123,6 +126,7 @@ def skeptically_load_header(
         warnings.warn(f"unable to parse {name}: {ex}")
 
 
+@canonicalized
 # TODO: misleading name. Primarily a file _reader_.
 def ignore_if_pdf(fn: Union[str, Path]) -> Optional[str]:
     """Read text from a file if it's not a pdf."""
