@@ -2,12 +2,15 @@
 from numbers import Number
 from pathlib import Path
 import pickle
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, TYPE_CHECKING, Union
 import warnings
 
 from dustgoggles.func import naturals
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    from PIL import Image
 
 
 def find_masked_bounds(

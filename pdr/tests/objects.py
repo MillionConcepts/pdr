@@ -95,9 +95,9 @@ RECORD_TYPE                         = ABSOLUTELY_NOT
 RECORD_BYTES                        = 1000000
 FILE_RECORDS                        = -1
 /* pointer to CAT */
-^CAT           = "MEOW.CAT"   /* 0:SPECTRUM IR; 1:IMAGE */
+^CAT           = "MEOW.CAT"   /* 0:SPECTRUM IR; 1:IMAGE */  
 CAT_NAME             = LILY
-SOME_PARAMETER              = "1000" /* h h h   h i! */
+SOME_PARAMETER              = "1000" /* h h h   h i! */ 
 OTHER_CATS                    = {
 "this_one"}
 DESCRIPTION                   = "This is a really
@@ -105,7 +105,7 @@ nice cat. MONTMORILLONITE = 100.
  Great cat"
 /* Misidentification Data Elements */
 NOTHING:FF         = "B"
-MEOW_SEQUENCE_NUMBERS         = (1, 2,
+MEOW_SEQUENCE_NUMBERS         = (1, 2,      
 3, 4, "5"
 )
 /* Coordinate System State: Tail */
@@ -113,11 +113,11 @@ MEOW_SEQUENCE_NUMBERS         = (1, 2,
 
 GROUP                              = TAIL_COORDINATE_SYSTEM_PARMS
  COORDINATE_SYSTEM_NAME              = TAIL_FRAME
- OBJECT                             =  TIP_OF_TAIL_FORMAT
+ OBJECT                             =  TIP_OF_TAIL_FORMAT    
     POINTINESS                       = 12
  END_OBJECT                          = TAIL_TIP_FORMAT
  COORDINATE_SYSTEM_INDEX_NAME        = ("CURL", "FUR", "POSE")
- ARTICULATION_DEVICE_ANGLE           = ( -0.000045 <rad>, -0.785042 <rad> )
+ ARTICULATION_DEVICE_ANGLE           = ( -0.000045 <rad>, -0.785042 <rad> ) 
 END_GROUP                          = I_FORGOT
 END
 """
