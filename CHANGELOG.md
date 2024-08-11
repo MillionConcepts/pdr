@@ -3,11 +3,13 @@
 
 #### Features
 - Compatibility with numpy 2.0 for pds3 products and fits pds4 products
- (non-fits pds4 products numpy 2.0 compatibility await changes in
+ (non-fits PDS4 product numpy 2.0 compatibility awaits changes in
  `pds4_tools` dependency)
 - Support for VAX_REAL data types in qubes
-- `pdr.Data.__contains` method
+- `pdr.Data.__contains__` method
 [see issue #57](https://github.com/MillionConcepts/pdr/issues/57)
+- Unit tests are now backed by `pytest` fixtures for improved flexibility and
+compatibility
 
 #### Dataset Support
 - Galileo NIMS qubes
@@ -39,17 +41,19 @@
   - Voyager LECP
 
 #### Other
-- 
+- (GitHub-specific) CI for unit tests / coverage reports
 
 ### Changed
-- PDR now associates FITS HDUs with PDS data objects based on associatons
-  between reported start byte and FITS file structure, rather than fuzzy
-  string match between HDU names and PDS object names
+- PDR now associates FITS HDUs with PDS data objects by matching byte ranges 
+  as described in PDS labels to HDU byte ranges as described in their FITS 
+  headers, rather than by performing fuzzy string match between HDU names and 
+  PDS object names
 - PDS4 FITS files are now opened using `astropy.io.fits` on the backend 
   instead of `pds4_tools`, mirroring the PDS3 FITS behavior
-- Non-filled out FITS cards are represented as None, rather than special 
+- Non-filled-out FITS cards are represented as None, rather than special 
   astropy objects without stable byte representations
 - Assorted backend refactoring, linting, and minor improvements
+- Unit tests no longer unnecessarily write to the source tree
 
 ### Fixed
 - More compatibility fixes for Python 3.9, mostly related to type annotations
@@ -59,6 +63,7 @@
   HEADER objects
 - HISTOGRAM_IMAGE objects will now be read as images instead of attempting
   to be read as tables. (IMAGE_HISTOGRAMS will still be read as tables)
+- setup.py also correctly pins `numpy < 2.0.0`
 
 ### Removed
 - `pdr.Data.__iter__` method is being deprecated
