@@ -4,7 +4,7 @@ from functools import wraps
 import os
 from pathlib import Path
 import re
-from typing import Callable, Optional, Union, TYPE_CHECKING
+from typing import Any, Callable, Optional, Union, TYPE_CHECKING
 
 from cytoolz import curry
 from multidict import MultiDict
@@ -119,7 +119,7 @@ def check_explicit_delimiter(block: MultiDict) -> str:
     return ","
 
 
-def canonicalize_line_endings(text: str) -> str:
+def canonicalize_line_endings(text: Any) -> Any:
     """
     Attempt to replace common 'heterodox' line endings in a string or
     list/tuple of strings with canonical endings (\n). Does not attempt to
@@ -132,6 +132,7 @@ def canonicalize_line_endings(text: str) -> str:
         return _cle(text)
     if isinstance(text, (list, tuple)):
         return type(text)([_cle(s) if isinstance(s, str) else s for s in text])
+    return text
 
 
 def canonicalized(func: Callable) -> Callable:
