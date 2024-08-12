@@ -3,8 +3,8 @@ name: Unit tests
 on:
   push:
     branches:
-      # Change this before merging!
-      - zack/basic-ci
+      - develop
+      - main
 
 jobs:
   conda-unit:
