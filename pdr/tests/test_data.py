@@ -9,10 +9,7 @@ def test_data_init_basic(uniband_image_product):
     expected_label = STUB_IMAGE_LABEL.format(product_name=prod_name, bands=1)
 
     data = pdr.read(fpath)
-    # ??? Should pdr.read canonicalize line endings?
-    # And why are we getting bare \r at the end of a LABEL that mostly
-    # has DOS line endings?
-    assert data.LABEL.splitlines() == expected_label.splitlines()
+    assert data.LABEL == expected_label
     assert data._target_path('IMAGE') == str(fpath)
     for k, v in data.identifiers.items():
         if k == 'SPACECRAFT_NAME':
