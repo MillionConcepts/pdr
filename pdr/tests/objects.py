@@ -160,3 +160,16 @@ QUBE_BLOCK_TEXT = """OBJECT = SPECTRAL_QUBE
   BAND_SUFFIX_ITEM_BYTES = 4
 END_OBJECT
 """
+
+# TODO: Can we leave out even more stuff?
+MINIMAL_PDS4_LABEL = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1G00.sch"
+    schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational xmnls="http://pds.nasa.gov/pds4/pds/v1">
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:mc_pdr_testsuite:test_labels:test_minimal_label.dat</logical_identifier>
+  </Identification_Area>
+  <Observation_Area></Observation_Area>
+  <Reference_List></Reference_List>
+  <File_Area_Observational></File_Area_Observational>
+</Product_Observational>"""

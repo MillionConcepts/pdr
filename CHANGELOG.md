@@ -66,6 +66,9 @@ compatibility
 - HISTOGRAM_IMAGE objects will now be read as images instead of attempting
   to be read as tables. (IMAGE_HISTOGRAMS will still be read as tables)
 - setup.py also correctly pins `numpy < 2.0.0`
+- The hotpatch for `pds4-tools` Python 3.12 incompatibility no longer
+  has persistent side effects; for instance, `conda` will no longer
+  complain about checksum mismatches.
 
 ### Removed
 - `pdr.Data.__iter__` method is being deprecated
