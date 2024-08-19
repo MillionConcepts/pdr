@@ -857,4 +857,6 @@ def check_special_fits_start_byte(
         return True, formats.epoxi.hriv_deconv_mask_start_byte(name, hdulist)
     if identifiers["DATA_SET_ID"].startswith("MSGR-H-MDIS-6-CAL"):
         return True, formats.galileo.mdis_fits_start_byte(name, hdulist)
+    if identifiers["DATA_SET_ID"] == "MSSSO-J-CASPIR-3-RDR-SL9-STDS-V1.0":
+        return True, formats.ground.mssso_cal_start_byte(name, hdulist)
     return False, None

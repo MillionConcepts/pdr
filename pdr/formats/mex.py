@@ -70,6 +70,8 @@ def pfs_edr_special_block(data, name):
         * cal_lwc
         * cal_swc
         * hk_early_mission
+        * orb001_lwc
+        * orb001_swc
     """
     block = data.metablock_(name)
     orbit_number = data.metaget_("ORBIT_NUMBER")
