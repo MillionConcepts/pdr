@@ -210,10 +210,10 @@ jobs:
               rmdir "$dir"
           done
           python3 -m coverage combine
-          python3 -m coverage html
           python3 -m coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+          python3 -m coverage xml
       - name: Store coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: htmlcov
+          path: coverage.xml
