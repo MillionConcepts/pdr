@@ -95,7 +95,7 @@ expected data structures and that interpretable portions of their data
     - IR spectra
     - SUSI images
   - IRTF NSFCAM images
-  - MSSSO CASPIR standard star images
+  - MSSSO CASPIR images
   - OAO OASIS IR images
   - HST images
   - IUE spectra
@@ -356,7 +356,7 @@ expected data structures and that interpretable portions of their data
   - PLACES localization data and orbital maps
   - DAN EDRs and RDRs
   - SAM RDRs
-  - REMS EDRs and some RDRs (ADR, and UV corrected)
+  - REMS EDRs and RDRs
 #### MSX
   - Infrared Minor Planet Survey
   - Small Bodies Images
@@ -541,7 +541,6 @@ expected data structures and that interpretable portions of their data
 #### Cassini
   - CIRS spectral cubes
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
-  - MSSSO CASPIR impact images
   - Volume sl9_0007 ground-based observations archived at ATM
 #### Juno
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
@@ -695,7 +694,6 @@ expected data structures and that interpretable portions of their data
     these efforts! The MSL "calibrated" (RDR) files for these cameras are not 
     compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
-  - REMS RDRs: RTL, RNV, and RMD (support planned)
   - RAD EDRs and RDRs (support planned)
 #### New Horizons
   - Pluto encounter derived data: ALICE stellar occultation data

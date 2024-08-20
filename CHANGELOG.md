@@ -13,7 +13,9 @@ compatibility
 
 #### Dataset Support
 - Galileo NIMS qubes
-- MSL REMS EDRs and most RDRs
+- MSL 
+  - EMS EDRs and RDRs
+  - additional navcam and hazcam RDRs
 - Rosetta
   - CONSERT ancillary products
   - ALICE supplementary tables
@@ -25,11 +27,12 @@ compatibility
   - Telltale Experiment (TT) products
   - Atmospheric Opacity (AO) products
 - MGN RSS solar wind experiment
+- MGS RSS solar conjunction data
 - Misc additional products from:
   - Cassini RPWS, MIMI, and ISS
   - Galileo Probe
   - IHW
-  - ground-based datasets at SBN
+  - ground-based datasets at SBN and ATM
   - Stardust
   - LRO Mini-RF
   - NEAR NLR
@@ -39,6 +42,8 @@ compatibility
   - Pioneer Venus Orbiter OMAG
   - Vega
   - Voyager LECP
+  - MEX PFS and MARSIS
+  - MER navcam/hazcam/pancam RDRs
 
 #### Other
 - (GitHub-specific) CI for unit tests / coverage reports
