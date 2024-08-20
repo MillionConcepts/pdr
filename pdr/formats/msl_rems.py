@@ -33,3 +33,28 @@ def edr_offset(data, name):
     start_byte = data.metaget_("^"+name)[1] - 1
     return True, start_byte
 
+def rdr_table_loader(filename, fmtdef_dt):
+    """
+    Missing values are variations of "UNK" and "NULL", which cause mixed dtype 
+    warnings when using the default pd.read_csv() parameters. 
+
+     HITS
+    * msl_rems
+        * rdr_rmd
+        * rdr_rnv
+        * rdr_rtl
+    """
+    import pandas as pd
+
+    fmtdef, dt = fmtdef_dt
+    
+    missing_const = [' UNK', '    UNK', '     UNK', '      UNK',
+                     '       UNK', '         UNK', 
+                     '   NULL', '    NULL']
+    table = pd.read_csv(filename, header=None,
+                        na_values=missing_const)
+
+    col_names = [c for c in fmtdef_dt[0]['NAME'] if "PLACEHOLDER" not in c]
+    assert len(table.columns) == len(col_names), "mismatched column count"
+    table.columns = col_names
+    return table

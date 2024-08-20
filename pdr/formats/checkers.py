@@ -286,6 +286,13 @@ def check_special_table_reader(
             fn, fmtdef_dt, block, start_byte
         )
     if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+        and identifiers["INSTRUMENT_ID"] == "REMS"
+        and name == "REMS_SCIENCE_TABLE"
+        and "RDR" in identifiers["DATA_SET_ID"]
+    ):
+        return True, formats.msl_rems.rdr_table_loader(fn, fmtdef_dt)
+    if (
         all(x in identifiers["DATA_SET_ID"] for x in ["ICE-C-","-3-RDR-"])
         and "TRAJ_ICE" in fn
         and name == "TABLE"
