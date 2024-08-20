@@ -44,7 +44,7 @@ tests      = ["pytest"]
 tiff       = ["pillow"]
 
 [project.urls]
-Repository = "https://github.com/MillionConcepts/pdr-tests"
+Repository = "https://github.com/MillionConcepts/pdr"
 
 [build-system]
 requires = ["setuptools >= 64"]
