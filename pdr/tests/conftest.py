@@ -12,6 +12,22 @@ from pdr.tests.objects import (
 )
 
 
+# This normally only happens when we actually try to construct a
+# pdr.Data object from a pds4 label.  pytest's test enumeration
+# logic may trip over the buggy six implementation itself, whether
+# or not python 3.12 is in use, see
+# https://github.com/pytest-dev/pytest/issues/12179
+#
+# Doing this from a pytest_sessionstart hook is apparently too late,
+# even though the pytest documentation specifically says sessionstart
+# runs before test enumeration.
+#
+# I don't love doing this unconditionally but we can revisit after
+# a fixed version of pds4_tools actually exists.
+from pdr._patches import patch_pds4_tools
+patch_pds4_tools(force="pds4_tools.extern.six.moves")
+
+
 @pytest.fixture(scope="session")
 def tracker_factory(tmp_path_factory):
     tracker_log_dir = tmp_path_factory.mktemp("tracker_logs", numbered=False)

@@ -304,10 +304,11 @@ class Data:
     def _init_pds4(self):
         """use pds4_tools to open pds4 files, but in our interface idiom."""
         # pds4_tools currently uses an outdated version of six.py that is
-        # incompatible with Python 3.12. Replace it if necessary at runtime.
-        from pdr._patches import patch_pds4_tools_six
+        # incompatible with Python 3.12, and may fail to load if tkinter
+        # isn't installed.  Work around both of these problems.
+        from pdr._patches import patch_pds4_tools
 
-        patch_pds4_tools_six()
+        patch_pds4_tools()
 
         import pds4_tools as pds4
 

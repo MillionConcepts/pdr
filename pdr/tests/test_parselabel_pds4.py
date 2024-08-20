@@ -1,8 +1,3 @@
-# This normally only happens when we actually try to construct a
-# pdr.Data object from a pds4 label.
-from pdr._patches import patch_pds4_tools_six
-patch_pds4_tools_six()
-
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.tests.objects import MINIMAL_PDS4_LABEL
 
