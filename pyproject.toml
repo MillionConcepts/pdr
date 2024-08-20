@@ -1,0 +1,60 @@
+# pyproject.toml documentation for reference:
+#   https://packaging.python.org/en/latest/
+#   https://setuptools.pypa.io/en/latest/userguide/
+
+[project]
+name        = "pdr"
+version     = "1.1.2"
+description = "Planetary Data Reader"
+readme      = "README.md"
+license     = { file = "LICENSE.md" }
+
+authors     = [
+    { name = "Chase Million",     email = "chase@millionconcepts.com"    },
+    { name = "Michael St. Clair", email = "mstclair@millionconcepts.com" },
+    { name = "Sabrina Curtis",    email = "scurtis@millionconcepts.com"  },
+    { name = "Sierra Brown",      email = "sierra@millionconcepts.com"   },
+    { name = "Zack Weinberg",     email = "zack@millionconcepts.com"     },
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+
+requires-python = ">=3.9"
+dependencies = [
+    "dustgoggles",
+    "more_itertools",
+    "multidict",
+    "numpy<2.0.0",
+    "pandas>=2.0.0",
+    "pds4_tools",
+    "python-Levenshtein",
+]
+
+[project.optional-dependencies]
+browsify   = ["matplotlib"]
+fits       = ["astropy"]
+notebooks  = ["jupyter", "matplotlib"]
+pvl        = ["pvl"]
+tests      = ["pytest"]
+tiff       = ["pillow"]
+
+[project.urls]
+Repository = "https://github.com/MillionConcepts/pdr-tests"
+
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pdr"]
+
+# Recommended for new projects by pytest manual.
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib"
+]
