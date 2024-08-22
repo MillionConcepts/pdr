@@ -12,7 +12,7 @@ merge =
 relative_files = True
 source = pdr
 omit =
-    */tests/*
     */formats/*
     */pvl_utils.py
     */six_new.py
+    */tkinter_stub.py

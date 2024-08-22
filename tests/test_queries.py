@@ -1,12 +1,12 @@
 from pdr.parselabel.pds3 import parse_pvl, literalize_pvl
-
 from pdr.loaders.queries import (
     generic_image_properties,
     get_qube_band_storage_type,
     generic_qube_properties,
     extract_axplane_metadata,
 )
-from pdr.tests.objects import BLOCK_TEXT, QUBE_BLOCK_TEXT
+
+from tests.objects import BLOCK_TEXT, QUBE_BLOCK_TEXT
 
 
 def basesamp():

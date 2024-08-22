@@ -13,7 +13,7 @@ from pdr.func import (
     softquery,
     specialize,
 )
-from pdr.tests.objects import takes_a_few_things, takes_x_only
+from tests.objects import takes_a_few_things, takes_x_only
 
 
 def test_filterkwargs():

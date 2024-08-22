@@ -1,6 +1,7 @@
 from pdr import Metadata
 from pdr.parselabel.pds3 import parse_pvl
-from pdr.tests.objects import SILLY_LABEL
+
+from tests.objects import SILLY_LABEL
 
 
 def test_metadata_1():

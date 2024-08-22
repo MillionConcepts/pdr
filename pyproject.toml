@@ -50,8 +50,10 @@ Repository = "https://github.com/MillionConcepts/pdr"
 requires = ["setuptools >= 64"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["pdr"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pdr*"]
+namespaces = false
 
 # Recommended for new projects by pytest manual.
 [tool.pytest.ini_options]

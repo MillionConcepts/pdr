@@ -1,7 +1,7 @@
 import numpy as np
-
 import pdr
-from pdr.tests.objects import STUB_IMAGE_LABEL
+
+from tests.objects import STUB_IMAGE_LABEL
 
 
 def test_data_init_basic(uniband_image_product):

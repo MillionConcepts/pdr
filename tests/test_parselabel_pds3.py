@@ -1,5 +1,6 @@
 from pdr.parselabel.pds3 import parse_pvl, parse_pvl_quantity_statement
-from pdr.tests.objects import SILLY_LABEL
+
+from tests.objects import SILLY_LABEL
 
 
 def test_parse_label():
