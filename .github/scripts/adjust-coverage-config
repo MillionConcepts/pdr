@@ -1,0 +1,117 @@
+#! /usr/bin/env python3
+
+"""
+Read a .coveragerc from stdin, adjust it for use in a CI build, and
+write it back out to stdout.
+
+If files are listed on the command line, they are assumed to be
+coverage databases, and a [paths] section is added to the .coveragerc
+(replacing any existing [paths] section) that instructs coverage.py
+to treat the common path prefix of each coverage database's files
+as equivalent.  When used this way, coverage.py must be importable.
+"""
+
+import sys
+
+from argparse import ArgumentParser
+from configparser import ConfigParser
+from pathlib import Path
+
+
+DATABASE_NAME = "coverage.dat"
+
+
+def remap_paths_for_databases(cfg, databases):
+    """
+    Compute a set of path remapping rules that will render all of
+    the databases in DATABASES mergeable, by stripping out the common
+    path prefix found in each database.
+    """
+    from collections import defaultdict
+    from coverage import CoverageData
+    from os.path import commonprefix
+    from pathlib import PurePosixPath, PureWindowsPath
+
+    prefixes = set()
+    for db_fname in databases:
+        db = CoverageData(basename=db_fname)
+        db.read()
+        prefixes.add(commonprefix(list(db.measured_files())))
+
+    packages = defaultdict(set)
+    for p in prefixes:
+        if '\\' in p or (len(p) >= 2 and p[0].isalpha() and p[1] == ':'):
+            name = PureWindowsPath(p).name
+        else:
+            name = PurePosixPath(p).name
+        packages[name].add(p)
+
+    pkg_names = sorted(packages.keys())
+
+    cfg["run"]["relative_files"] = "true"
+    cfg["run"]["source_pkgs"] = " ".join(pkg_names)
+
+    cfg["paths"] = {}
+    for pkg in pkg_names:
+        pkg_paths = ['', pkg + '/']
+        pkg_paths.extend(sorted(packages[pkg]))
+        cfg["paths"]["src_" + pkg] = "\n".join(pkg_paths)
+
+
+def adjust_omit(cfg):
+    """
+    Adjust the "omit" setting to be more appropriate for use in CI;
+    the stock .coveragerc is tailored for interactive use.
+    """
+    GLOBS_TO_DROP = (
+        "*/formats/*",
+        "*/pvl_utils.py",
+    )
+
+    run_section = cfg["run"]
+    pruned_omit_globs = []
+    for glob in run_section.get("omit", "").splitlines():
+        glob = glob.strip()
+        if glob not in GLOBS_TO_DROP:
+            pruned_omit_globs.append(glob)
+
+    if (
+            len(pruned_omit_globs) == 0
+            or len(pruned_omit_globs) == 1 and pruned_omit_globs[0] == ""
+    ):
+        del run_section["omit"]
+    else:
+        run_section["omit"] = "\n".join(pruned_omit_globs)
+
+
+def change_database_name(cfg):
+    """
+    Give the coverage database a more convenient name for use in
+    cross-platform CI.
+    """
+    cfg["run"]["data_file"] = str(Path.cwd() / DATABASE_NAME)
+
+
+def main():
+    ap = ArgumentParser(description=__doc__)
+    ap.add_argument("databases", nargs="*",
+                    help="Coverage databases to be merged")
+    args = ap.parse_args()
+
+    # this must match how coverage.py initializes ConfigParser
+    cfg = ConfigParser(interpolation=None)
+
+    with sys.stdin as ifp:
+        cfg.read_file(ifp, source="<stdin>")
+
+    if args.databases:
+        remap_paths_for_databases(cfg, args.databases)
+
+    adjust_omit(cfg)
+    change_database_name(cfg)
+
+    with sys.stdout as ofp:
+        cfg.write(ofp)
+
+
+main()
