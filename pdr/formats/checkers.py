@@ -866,4 +866,6 @@ def check_special_fits_start_byte(
         return True, formats.galileo.mdis_fits_start_byte(name, hdulist)
     if identifiers["DATA_SET_ID"] == "MSSSO-J-CASPIR-3-RDR-SL9-STDS-V1.0":
         return True, formats.ground.mssso_cal_start_byte(name, hdulist)
+    if "MEX-M-VMC-3-RDR" in identifiers["DATA_SET_ID"]:
+        return True, formats.mex.vmc_rdr_hdu_selection(name, hdulist)
     return False, None

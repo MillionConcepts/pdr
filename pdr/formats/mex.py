@@ -156,3 +156,19 @@ def mrs_l1b_odf_rmp_redirect(data):
     block = data.metablock_(object_name)
     return block
 
+def vmc_rdr_hdu_selection(name, hdulist):
+    """
+    The VMC RDRs have 1 IMAGE pointer and 2 IMAGE objects. From the volume's 
+    readme: "The first layer includes the calibrated values, and the second 
+    layer includes the raw values." It is unclear whether or not the 'second 
+    layer' is a copy of the EDR image or if intermediate calibration steps 
+    have been applied to it.
+    Assuming the single band image is akin to the EDRs, this special case 
+    returns the multiband calibrated image.
+
+    HITS
+    * mex_vmc
+        * rdr
+    """
+
+    return hdulist.fileinfo(1)['datLoc']

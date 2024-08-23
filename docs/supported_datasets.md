@@ -559,6 +559,8 @@ expected data structures and that interpretable portions of their data
   - HRSC derived clouds data
   - PFS derived water vapor maps
   - OMEGA derived atmospheric profiles
+  - VMC EDRs *note: a small subset (~3%) of the EDRs do not open because of mistakes in their labels. They are primarily from extended mission phase 2 and earlier.*
+  - VMC RDRs *note: by default `pdr` returns the calibrated multi-band image layer of the FITS file. To access the raw single-band image layer we recommend using one of the methods described in the MEX VMC EAICD.*
 #### MER 1 and 2
   - Many MER products have been converted to PDS4, including: 
     - APXS, Mössbauer and Mini-TES products
