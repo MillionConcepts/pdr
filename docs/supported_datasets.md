@@ -657,7 +657,6 @@ expected data structures and that interpretable portions of their data
   - SPICAM UV and IR EDRs (support planned)
   - MRS most L1A closed loop products: ICL, TCL, TNF, and some ODF products with incomplete labels (support not planned)
   - OMEGA EDR data and geometry cubes
-  - VMC EDRs and RDRs (support planned)
 #### Mars Odyssey
   - THEMIS
     - IR RDRs (support planned)
