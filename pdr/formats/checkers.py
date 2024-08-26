@@ -426,6 +426,22 @@ def check_special_structure(
             block, name, fn, data, identifiers
         )
     if (
+        identifiers["DATA_SET_ID"] == "PHX-M-TEGA-2-LEDEDR-V1.0"
+        and name == "TIME_SERIES"
+        and block["^STRUCTURE"] == "TEGA_LED.FMT"
+    ):
+        return True, formats.phoenix.led_edr_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-TEGA-4-SCRDR-V1.0"
+        and name == "TIME_SERIES"
+        and block["^STRUCTURE"] == "TEGA_SCRDR.FMT"
+    ):
+        return True, formats.phoenix.sc_rdr_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
         identifiers["DATA_SET_ID"] == "MEX-SUN-ASPERA3-4-SWM-V1.0"
         and name == "TABLE"
     ):

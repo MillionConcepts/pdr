@@ -400,7 +400,7 @@ expected data structures and that interpretable portions of their data
   - POS VSO coordinates
   - POS SEDR
 #### Phoenix
-  - TEGA EDRs (except LED tables) and most RDRs
+  - TEGA EDRs (except LED tables) and RDRs
   - MECA
     - TECP EDRs and RDRs
     - WCL EDRs and some RDRs (PT, ISE, CND)
@@ -569,7 +569,9 @@ expected data structures and that interpretable portions of their data
 #### MRO
   - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
-  - CheMin Film EDRs (have efm in filename)  
+  - CheMin Film EDRs (have efm in filename)
+#### Phoenix
+  - TEGA LED EDRs
 #### Rosetta
   - Orbiter:
     - VIRTIS EDRs
@@ -702,7 +704,6 @@ expected data structures and that interpretable portions of their data
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
 #### Phoenix
-  - TEGA RDRs (support planned)
   - MECA
     - WCL CP/CV-mode RDRs (support not planned)
 #### Rosetta

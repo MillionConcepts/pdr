@@ -26,6 +26,7 @@ compatibility
   - ASE EDRs, RDS
   - Telltale Experiment (TT) products
   - Atmospheric Opacity (AO) products
+  - TEGA LED EDRs and SC RDRs
 - MGN RSS solar wind experiment
 - MGS RSS solar conjunction data
 - MEX VMC EDRs and RDRs
