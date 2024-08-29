@@ -48,7 +48,7 @@ jobs:
       - name: Collect auxiliary files for later stages
         working-directory: src/.github
         run: |
-          zip -r ../../dist/build-scripts.zip scripts
+          zip -r ../../dist/scripts-for-jobs.zip scripts
       - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
@@ -58,8 +58,8 @@ jobs:
       - name: Upload build helpers
         uses: actions/upload-artifact@v4
         with:
-          name: build-scripts
-          path: dist/build-scripts.zip
+          name: scripts-for-jobs
+          path: dist/scripts-for-jobs.zip
           # this artifact exists only to be input to later jobs,
           # it does not need to be retained for long
           retention-days: 1
@@ -95,9 +95,9 @@ jobs:
       - name: Get build helpers
         uses: actions/download-artifact@v4
         with:
-          name: build-scripts
+          name: scripts-for-jobs
       - name: Extract build helpers
-        run: unzip build-scripts.zip
+        run: unzip scripts-for-jobs.zip
 
       - name: Get just-built PDR package
         uses: actions/download-artifact@v4
@@ -181,9 +181,10 @@ jobs:
             --rootdir=$PWD/src --import-mode=importlib -r fEsX
 
       - name: Store coverage data
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-data-conda-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
+          name: unit-test-coverage-conda-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
           path: coverage.dat
           if-no-files-found: ignore
           # unmerged coverage analysis data can be ephemeral
@@ -222,9 +223,9 @@ jobs:
       - name: Get build helpers
         uses: actions/download-artifact@v4
         with:
-          name: build-scripts
+          name: scripts-for-jobs
       - name: Extract build helpers
-        run: unzip build-scripts.zip
+        run: unzip scripts-for-jobs.zip
 
       - name: Get just-built PDR package
         uses: actions/download-artifact@v4
@@ -323,17 +324,19 @@ jobs:
             --rootdir=$PWD/src --import-mode=importlib -r fEsX
 
       - name: Store coverage data
-        if: ${{ fromJSON(steps.deps.outputs.available) }}
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-data-pip-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
+          name: unit-test-coverage-pip-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
           path: coverage.dat
+          if-no-files-found: ignore
           # unmerged coverage analysis data can be ephemeral
           retention-days: 1
 
   coverage:
     name: Combine coverage
     needs: [conda-unit, pip-unit]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Set up Python
@@ -346,7 +349,7 @@ jobs:
       - name: Get build helpers
         uses: actions/download-artifact@v4
         with:
-          name: build-scripts
+          name: scripts-for-jobs
       - name: Get just-built PDR package
         uses: actions/download-artifact@v4
         with:
@@ -355,7 +358,7 @@ jobs:
       - name: Get coverage data
         uses: actions/download-artifact@v4
         with:
-          pattern: coverage-data-*
+          pattern: unit-test-coverage-*
           path: cov
           # this does the exact opposite of what it sounds like:
           # if true, all the artifacts that match the pattern are
@@ -364,7 +367,7 @@ jobs:
           merge-multiple: false
 
       - name: Extract build helpers
-        run: unzip build-scripts.zip
+        run: unzip scripts-for-jobs.zip
 
       - name: Extract sources
         # this is guaranteed to run on Linux so we can assume "tar" is GNU tar
@@ -382,19 +385,18 @@ jobs:
       - name: Crunch coverage data
         run: |
           . venv/bin/activate
-          scripts/adjust-coverage-config cov/coverage-data-*/coverage.dat \
+          scripts/adjust-coverage-config cov/unit-test-coverage-*/coverage.dat \
               < .coveragerc > coveragerc.adjusted
           mv coveragerc.adjusted .coveragerc
 
           printf '### Combined coverage report\n\n' >> $GITHUB_STEP_SUMMARY
 
-          python3 -m coverage combine cov/coverage-data-*/coverage.dat
+          python3 -m coverage combine cov/unit-test-coverage-*/coverage.dat
           python3 -m coverage report --format=markdown --sort=cover \
             >> $GITHUB_STEP_SUMMARY
-          python3 -m coverage xml
 
       - name: Store coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.xml
+          name: unit-test-coverage-all
+          path: coverage.dat
