@@ -264,6 +264,10 @@ expected data structures and that interpretable portions of their data
   - RSS electron density profiles
   - Cloud catalog
   - ISS images
+#### Mariner 10
+  - MAG RDR and SUMM
+  - PLS RDR and DDR
+  - POS flyby trajectory data
 #### Mars Express
   - MARSIS EDRs and RDRs
   - ASPERA EDRs, RDRs, and DDRs
@@ -653,6 +657,8 @@ expected data structures and that interpretable portions of their data
   - BSR calibrated time samples (support planned)
   - Radio Tracking ODF3B tables (support planned)
   - SAR EDR ('safed' dataset)
+#### Mariner 10
+  - Image EDRs (support planned)
 #### Mars Express
   - HRSC RDRs (support planned)
   - PFS calibrated radiance spectra (support not planned)

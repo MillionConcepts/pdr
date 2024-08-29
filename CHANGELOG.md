@@ -30,6 +30,7 @@ compatibility
 - MGN RSS solar wind experiment
 - MGS RSS solar conjunction data
 - MEX VMC EDRs and RDRs
+- Mariner 10 MAG, PLS, and POS products
 - Misc additional products from:
   - Cassini RPWS, MIMI, and ISS
   - Galileo Probe
