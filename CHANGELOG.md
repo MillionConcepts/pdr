@@ -77,6 +77,7 @@ compatibility
 - The hotpatch for `pds4-tools` Python 3.12 incompatibility no longer
   has persistent side effects; for instance, `conda` will no longer
   complain about checksum mismatches.
+- bug reading PDS4-labeled FITS files
 
 ### Removed
 - `pdr.Data.__iter__` method is being deprecated

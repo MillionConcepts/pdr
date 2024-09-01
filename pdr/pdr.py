@@ -582,10 +582,7 @@ class Data:
 
             offset = structure.meta_data['offset']
             result = handle_fits_file(
-                structure.parent_filename,
-                object_name,
-                offset,
-                id_as_offset=True
+                structure.parent_filename, object_name, offset
             )
             if structure.is_header() is True:
                 return self._add_loaded_objects(result)
