@@ -448,6 +448,33 @@ def check_special_structure(
         return True, formats.mex.aspera_ima_ddr_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        "-MIDAS-3-" in identifiers["DATA_SET_ID"]
+        and "SPS" in identifiers["PRODUCT_ID"]
+        and name == "TIME_SERIES"
+    ):
+        return True, formats.rosetta.midas_rdr_sps_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        "-MIDAS-3-" in identifiers["DATA_SET_ID"]
+        and "FSC" in identifiers["PRODUCT_ID"]
+        and name == "FREQUENCY_SERIES"
+    ):
+        return True, formats.rosetta.fix_pad_length_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        "ROSETTA" in identifiers["DATA_SET_NAME"] 
+        and "CONSERT" in identifiers["DATA_SET_NAME"]
+        and "TABLE" in name
+        and name.startswith(("I_", "Q_"))
+    ):
+        if "GRNDBENCH" in identifiers["DATA_SET_ID"]:
+            return False, None
+        return True, formats.rosetta.fix_pad_length_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 

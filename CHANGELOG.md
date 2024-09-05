@@ -17,8 +17,9 @@ compatibility
   - EMS EDRs and RDRs
   - additional navcam and hazcam RDRs
 - Rosetta
-  - CONSERT ancillary products
+  - CONSERT
   - ALICE supplementary tables
+  - MIDAS RDRs
   - additional COSIMA tables
 - LASP Mars datasets
 - Venus Express (VEX)

@@ -426,9 +426,9 @@ expected data structures and that interpretable portions of their data
   - Orbiter:
     - ALICE EDRs, RDRs, and REFDRs
     - COSIMA images and data tables
-    - CONSERT auxiliary tables
+    - CONSERT EDRs, RDRs, REFDRs, and auxiliary tables
     - GIADA EDRs, RDRs, and DDRs
-    - MIDAS RDRs and DDRs (excluding those with a .dat file extension)
+    - MIDAS RDRs and DDRs
     - MIRO EDRs and RDRs
     - NAVCAM EDRs and RDRs
     - OSIRIS EDRs, RDRs, DDRs, and shape models
@@ -449,7 +449,7 @@ expected data structures and that interpretable portions of their data
   - Lander:
     - APXS EDRs
     - COSAC EDRs and RDRs
-    - CONSERT auxiliary tables
+    - CONSERT EDRs, RDRs, REFDRs, and auxiliary tables
     - MODULUS/Ptolemy EDRs, RDRs, and DDRs
     - MUPUS EDRs and RDRs
     - ROLIS EDRs and RDRs
@@ -714,12 +714,9 @@ expected data structures and that interpretable portions of their data
     - WCL CP/CV-mode RDRs (support not planned)
 #### Rosetta
   - Orbiter:
-    - CONSERT EDRs, RDRs, and REFDRs (support planned)
-    - MIDAS RDRs with .dat file extension (support planned)
     - VIRTIS RDRs (support planned)
     - VIRTIS geometry data
   - Lander:
-    - CONSERT EDRs, RDRs, and REFDRs (support planned)
     - SD2 EDRs (support not planned)
 #### Ulysses
   - GAS PostScript files (support not planned)
