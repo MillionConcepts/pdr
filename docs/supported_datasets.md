@@ -102,7 +102,7 @@ expected data structures and that interpretable portions of their data
   - Galileo Orbiter
     - NIMS tables
     - PPR EDRs
-    - SSI REDRs (images only)
+    - SSI REDRs (except line prefix tables)
     - UVS EDRs and RDRs
 #### Dawn
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
@@ -144,7 +144,7 @@ expected data structures and that interpretable portions of their data
   - SSD: derived electron flux data
   - SSI: 
     - Calibration images
-    - REDRs (images only)
+    - REDRs (except line prefix tables)
     - Ida/Gaspra specific data products at SBN
   - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the 
     PDS3 labels are currently unsupported.*
@@ -590,7 +590,7 @@ expected data structures and that interpretable portions of their data
   - Lunar Sample Photographs (support planned; low priority)
 #### Cassini
   - CIRS variable-length '.VAR' tables (support not planned)
-  - ISS telemetry and prefix tables (support planned)
+  - ISS prefix tables (support planned)
   - MAG error count housekeeping data
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
@@ -601,7 +601,7 @@ expected data structures and that interpretable portions of their data
   - LWIR EDRs (support not planned)
   - RSS EDRs (support not planned)
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
-  - Galileo SSI REDR telemetry and line-prefix tables (support planned)
+  - Galileo SSI REDR line-prefix tables (support planned)
 #### Dawn
   - Framing camera: a handful of calibration images
 #### Deep Impact
@@ -610,7 +610,7 @@ expected data structures and that interpretable portions of their data
 #### Galileo
   - MAG summary tables (other tables supported, support not planned)
   - NIMS Jupiter EDRs and cubes (support planned)
-  - SSI REDR telemetry and line-prefix tables (support planned)
+  - SSI REDR line-prefix tables (support planned)
   - PLS EDRs (support not planned)
   - PWS EDRs, binary REDRs, and REFDRs (support planned)
 #### Giotto
@@ -658,7 +658,7 @@ expected data structures and that interpretable portions of their data
   - Radio Tracking ODF3B tables (support planned)
   - SAR EDR ('safed' dataset)
 #### Mariner 10
-  - Image EDRs (support planned)
+  - Image EDRs (support planned; low priority)
 #### Mars Express
   - HRSC RDRs (support planned)
   - PFS calibrated radiance spectra (support not planned)

@@ -34,7 +34,7 @@ compatibility
 - Mariner 10 MAG, PLS, and POS products
 - Misc additional products from:
   - Cassini RPWS, MIMI, and ISS
-  - Galileo Probe
+  - Galileo Probe, MAG, SSI
   - IHW
   - ground-based datasets at SBN and ATM
   - Stardust
@@ -42,7 +42,6 @@ compatibility
   - NEAR NLR
   - ICE
   - Juno JADE
-  - Galileo MAG
   - Pioneer Venus Orbiter OMAG
   - Vega
   - Voyager LECP
