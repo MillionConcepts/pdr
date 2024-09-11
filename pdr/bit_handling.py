@@ -204,8 +204,6 @@ def get_bit_start_and_size(
         if pvl_obj.get("ITEMS"):
             items = pvl_obj.get("ITEMS")
             item_bits = pvl_obj.get("ITEM_BITS")
-            if item_bits == None:
-                item_bits = pvl_obj.get("BITS")
             first_item_start_bit = pvl_obj.get("START_BIT")
             for item_index in range(items):
                 start_bit = first_item_start_bit + item_index * item_bits

@@ -178,3 +178,22 @@ def nims_sample_spectral_qube_trivial_loader():
     warnings.warn('Galileo NIMS SAMPLE_SPECTRUM_QUBE objects are not supported'
                   'due to their use of nibble pixels.')
     return True
+
+def ssi_telemetry_bit_col_format(definition):
+    """
+    One of the bit columns defined in the Galileo SSI telemetry table format 
+    file has multiple items, but ITEM_BITS is mislabled as BITS
+
+    HITS:
+    * gal_ssi
+        * redr
+    * sl9_jupiter_impact
+        * go_ssi
+    """
+    # fix `definition` in-place
+    for column in iter(definition.items()):
+        if "BIT_COLUMN" in column:
+            if "ITEMS" in column[1] and "ITEM_BITS" not in column[1]:
+                column[1].add("ITEM_BITS", 1)
+    # return nothing because nothing modifies `obj`
+    return False, None

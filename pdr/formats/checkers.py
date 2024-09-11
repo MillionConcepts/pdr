@@ -634,6 +634,28 @@ def check_special_bit_start_case(
         )
     return False, None
 
+def check_special_bit_format(
+    obj: dict,
+    definition: MultiDict,
+    identifiers: DataIdentifiers
+) -> tuple[bool, Optional[dict]]:
+    """
+    Special case checker used by add_bit_column_info() to fix problems in `obj` 
+    and/or `definition` caused by mistakes in an external format file. Intended 
+    for cases where check_special_block() doesn't touch the relevant metadata, 
+    and errors are hit before check_special_structure() can be useful.
+    """
+    if re.match(
+        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
+    ):
+        return formats.cassini.iss_telemetry_bit_col_format(obj, definition)
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING"
+    ):
+        return formats.galileo.ssi_telemetry_bit_col_format(definition)
+    return False, None
+
 
 def check_special_block(
     name: str, data: PDRLike, identifiers: Mapping
@@ -792,7 +814,7 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
     if re.match(
         r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
     ):
-        if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
+        if pointer == "LINE_PREFIX_TABLE":
             return formats.cassini.trivial_loader(pointer)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
