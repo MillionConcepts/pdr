@@ -103,6 +103,8 @@ def compute_offsets(fmtdef: pd.DataFrame) -> pd.DataFrame:
         fmtdef.loc[fmt_block.index, "SB_OFFSET"] += (
             prior["SB_OFFSET"] + prior["BYTES"]
         )
+        if "ROW_PREFIX_BYTES" in fmtdef.columns:
+            fmtdef.loc[fmt_block.index, "SB_OFFSET"] -= fmtdef["ROW_PREFIX_BYTES"]
         count = fmt_block["BLOCK_REPETITIONS"].iloc[0]
         if (reps := prior["BLOCK_REPETITIONS"]) > 1:
             if "PLACEHOLDER" in block_name:

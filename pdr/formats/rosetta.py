@@ -17,10 +17,9 @@ def rosetta_table_loader(filename, fmtdef_dt):
 def midas_rdr_sps_structure(block, name, filename, data, identifiers):
     """
     SPS TIME_SERIES tables are made up of a repeated container with 4 columns 
-    followed by a non-repeated checksum column. Something about the specific 
-    combination of ROW_PREFIX_BYTES, a repeated CONTAINER with sub-columns, and 
-    one more non-repeating COLUMN causes problems with compute_offsets(). 
-    Skipping the computer_offsets() call here outputs reasonable looking tables.
+    followed by a non-repeated checksum column. In compute_offsets() the 
+    `block_names` list ends up out of order, so SB_OFFSET is not calculated 
+    correctly for columns in the repeated CONTAINER.
 
     TODO: This seems like a more general issue with how compute_offsets() 
     handles a repeated container followed by a single column
@@ -29,6 +28,8 @@ def midas_rdr_sps_structure(block, name, filename, data, identifiers):
     * rosetta_dust
         * RDR_midas_sps
     """
+    import pandas as pd
+
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -37,9 +38,23 @@ def midas_rdr_sps_structure(block, name, filename, data, identifiers):
         if length is not None:
             fmtdef[f"ROW{end}_BYTES"] = length
 
-    # fmtdef.at[1024, "BLOCK_BYTES"] = fmtdef.at[1024, "BYTES"]
-    # fmtdef = compute_offsets(fmtdef)
+    # Add a placeholder row to the start of the fmtdef so that the 
+    # "block_names" list in compute_offsets() is in the right order and 
+    # SB_OFFSET is calculated correctly
+    placeholder_row = {
+        "NAME": "PLACEHOLDER_block",
+        "DATA_TYPE": "VOID",
+        "BYTES": 0,
+        "START_BYTE": 1,
+        "BLOCK_REPETITIONS": 1,
+        "BLOCK_NAME": "CONTROL_DATA", # matches the checksum column's BLOCK_NAME
+        "ROW_PREFIX_BYTES": 46,
+    }
+    fmtdef = pd.concat(
+        [pd.DataFrame([placeholder_row]), fmtdef]
+    ).reset_index(drop=True)
 
+    fmtdef = compute_offsets(fmtdef)
     return insert_sample_types_into_df(fmtdef, identifiers)
 
 def fix_pad_length_structure(block, name, filename, data, identifiers):
