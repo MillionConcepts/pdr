@@ -779,6 +779,11 @@ def check_special_block(
         and "TABLE" in name
     ):
         return True, formats.mex.mrs_l1b_odf_rmp_redirect(data)
+    if (
+        identifiers["DATA_SET_ID"] == "WFF-E-ATM-1/5-V1.0"
+        and name == "IMAGE"
+    ):
+        return formats.ground.wff_atm_special_block(data, name)
     return False, None
 
 

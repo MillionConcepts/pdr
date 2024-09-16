@@ -536,6 +536,7 @@ expected data structures and that interpretable portions of their data
   - Ring Profiles derived from ISS, PPS, UVS, and RSS data (except VAX_REAL tables)
 #### WFF/ATM
   - DEM vector data tables
+  - DEM derived raster images
 
 ## Notionally Supported Datasets:
 #### Apollo
@@ -736,5 +737,3 @@ expected data structures and that interpretable portions of their data
   - RSS ODRs (support not planned)
   - Ring Profile tables with the VAX_REAL data type (support planned; 8-byte 
     VAX_REALs of unknown type)
-#### WFF/ATM
-  - DEM derived raster images (support planned)

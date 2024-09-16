@@ -32,6 +32,7 @@ compatibility
 - MGS RSS solar conjunction data
 - MEX VMC EDRs and RDRs
 - Mariner 10 MAG, PLS, and POS products
+- WFF/ATM derived DEM images
 - Misc additional products from:
   - Cassini RPWS, MIMI, and ISS
   - Galileo Probe, MAG, SSI
