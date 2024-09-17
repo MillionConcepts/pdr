@@ -80,7 +80,7 @@ def patch_pds4_tools(*, force=None):
 
     while True:
         try:
-            import pds4_tools
+            import pdr.pds4_tools
             return
         except ModuleNotFoundError as e:
             if e.name in patches:
