@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1301.sch"
+  schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1004.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational
+        xmlns="http://pds.nasa.gov/pds4/pds/v1"
+        xmlns:pds="http://pds.nasa.gov/pds4/pds/v1"
+        xmlns:disp="http://pds.nasa.gov/pds4/disp/v1"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1
+  http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1301.xsd
+  http://pds.nasa.gov/pds4/disp/v1 http://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1004.xsd">
+
+  <!--
+
+      NOTE:
+
+             This file has been modified from its original version to
+             be more suitable for functional testing.
+
+             This file tests only a part of group field functionality.
+
+  -->
+
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:maven.iuvs.raw:disk:mvn_iuv_l1a_apoapse-orbit01300-fuv_20150601t003623</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>MAVEN IUVS Experiment </title>
+    <information_model_version>1.3.0.1</information_model_version>
+    <product_class>Product_Observational</product_class>
+    <Modification_History>
+      <Modification_Detail>
+        <modification_date>2015-06-25</modification_date>
+        <version_id>1.0</version_id>
+        <description>Creation</description>
+      </Modification_Detail>
+    </Modification_History>
+  </Identification_Area>
+  <Observation_Area>
+    <Time_Coordinates>
+      <start_date_time>2015-06-01T00:36:23.03Z</start_date_time>
+      <stop_date_time>2015-06-01T00:41:37.43Z</stop_date_time>
+    </Time_Coordinates>
+    <Primary_Result_Summary>
+      <purpose>Science</purpose>
+      <processing_level>Raw</processing_level>
+      <Science_Facets>
+      <wavelength_range>Ultraviolet</wavelength_range>
+      <domain>Atmosphere</domain>
+      <discipline_name>Atmospheres</discipline_name>
+      <facet1>Structure</facet1>
+      </Science_Facets>
+    </Primary_Result_Summary>
+    <Investigation_Area>
+      <name>IUVS</name>
+      <type>Mission</type>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:investigation:mission.maven</lid_reference>
+        <reference_type>data_to_investigation</reference_type>
+      </Internal_Reference>
+    </Investigation_Area>
+    <Observing_System>
+      <name>MAVEN</name>
+      <Observing_System_Component>
+        <name>IUVS</name>
+        <type>Instrument</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument:instrument.iuvs__maven</lid_reference>
+          <reference_type>is_instrument</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>MAVEN</name>
+        <type>Spacecraft</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:instrument_host:instrument_host.maven</lid_reference>
+          <reference_type>is_instrument_host</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+    </Observing_System>
+    <Target_Identification>
+      <name>MARS</name>
+      <type>Planet</type>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:target:planet.mars</lid_reference>
+        <reference_type>data_to_target</reference_type>
+      </Internal_Reference>
+    </Target_Identification>
+    <Discipline_Area>
+     <disp:Display_Settings>
+      <disp:Local_Internal_Reference>
+       <disp:local_identifier_reference>data_Primary</disp:local_identifier_reference>
+       <disp:local_reference_type>display_settings_to_array</disp:local_reference_type>
+      </disp:Local_Internal_Reference>
+      <disp:Display_Direction>
+       <disp:horizontal_display_axis>Sample</disp:horizontal_display_axis>
+       <disp:horizontal_display_direction>Left to Right</disp:horizontal_display_direction>
+       <disp:vertical_display_axis>Line</disp:vertical_display_axis>
+       <disp:vertical_display_direction>Top to Bottom</disp:vertical_display_direction>
+      </disp:Display_Direction>
+     </disp:Display_Settings>
+    </Discipline_Area>
+  </Observation_Area>
+  <File_Area_Observational>
+    <File>
+      <!-- <file_name>mvn_iuv_l1a_apoapse-orbit01300-fuv_20150601T003623_v02_s02.fits</file_name> -->
+      <file_name>test_group_fields.dat</file_name>
+      <local_identifier>file</local_identifier>
+      <creation_date_time>2015-06-25T18:35:03Z</creation_date_time>
+      <records>79</records>
+    </File>
+    <Table_Binary>
+      <local_identifier>two_group_fields</local_identifier>
+      <offset unit="byte">0</offset>
+      <records>21</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>0</fields>
+        <groups>12</groups>
+        <record_length unit="byte">800</record_length>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">1</group_location>
+          <group_length unit="byte">800</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>2</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">80</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LON</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>"East Longitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LON</name>
+              <field_location unit="byte">9</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>"East Longitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+    <Table_Binary>
+      <local_identifier>three_group_fields</local_identifier>
+      <offset unit="byte">16800</offset>
+      <records>21</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>0</fields>
+        <groups>1</groups>
+        <record_length unit="byte">880</record_length>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>1</fields>
+          <groups>1</groups>
+          <group_location unit="byte">1</group_location>
+          <group_length unit="byte">880</group_length>
+          <Field_Binary>
+            <name>PIXEL_CORNER_LON</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>deg</unit>
+            <description>"East Longitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+          </Field_Binary>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>2</fields>
+            <groups>0</groups>
+            <group_location unit="byte">9</group_location>
+            <group_length unit="byte">80</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LON</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>"East Longitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LON</name>
+              <field_location unit="byte">9</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>"East Longitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+  </File_Area_Observational>
+</Product_Observational>

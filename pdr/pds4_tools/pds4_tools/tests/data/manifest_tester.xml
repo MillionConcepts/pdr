@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/current.sch"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/current.xsd">
+
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:gbo-mcdonald:devico_atlas:all</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>122P/deVico Spectral Line Atlas - All Species</title>
+        <information_model_version>1.2.0.1</information_model_version>
+        <product_class>Product_Observational</product_class>
+
+        <Alias_List>
+            <Alias>
+                <alternate_id>EAR-C-CS2-5-RDR-DEVICO-ATLAS-V1.0:DEVATLAS-ALL-200307</alternate_id>
+                <comment>PDS Data set ID + Product ID</comment>
+            </Alias>
+        </Alias_List>
+
+        <Citation_Information>
+            <publication_year>2003</publication_year>
+            <description>
+                This data set presents a list of 12,219 identified and 4055
+                unidentified spectral lines found in high resolution spectra of
+                comet deVico. Wavelength coverage is continuous from 3830-5776
+                Angstroms, and from 5777-10192, there are increasing inter-order
+                gaps. The lines are listed in both wavelength and vacuum frequency
+                format. Also included are the line identifications and transition
+                information, when available.
+
+                Each entry contains up to six columns of information, though for
+                some of the entries, the transition information may not be relevant.
+            </description>
+        </Citation_Information>
+
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2014-08-05</modification_date>
+                <version_id>1.0</version_id>
+                <description>Migration from PDS3</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>1995-10-03T11:37:30Z</start_date_time>
+            <stop_date_time>1995-10-04T11:42:21Z</stop_date_time>
+        </Time_Coordinates>
+
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+            <description>
+                Spectral line atlas of 122P/deVico
+            </description>
+            <Science_Facets>
+                <wavelength_range>Visible</wavelength_range>
+                <discipline_name>Spectroscopy</discipline_name>
+            </Science_Facets>
+        </Primary_Result_Summary>
+
+        <Investigation_Area>
+            <name>None</name>
+            <type>Individual Investigation</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:individual_investigation.none</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+
+        <Observing_System>
+            <Observing_System_Component>
+                <name>McDonald Observatory</name>
+                <type>Observatory</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:facility:facility.mcdonald</lid_reference>
+                    <reference_type>is_facility</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>Harlan J. Smith 2.7m Telescope</name>
+                <type>Telescope</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:telescope:telescope.mcd-hjs2.7m</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>Cross-Dispersed Echelle Spectrometer</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:instrument.mcd-ts2</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+
+        <Target_Identification>
+            <name>122P/1846 D1 (de Vico 1)</name>
+            <type>Comet</type>
+        </Target_Identification>
+    </Observation_Area>
+
+    <Reference_List>
+        <External_Reference>
+            <doi>10.1006/icar.2002.6850</doi>
+            <reference_text>
+                Cochran, A.L. and W.D. Cochran 2002, High Spectral Resolution
+                Atlas of Comet 122P/deVico, Icarus, 157, 297.
+            </reference_text>
+        </External_Reference>
+    </Reference_List>
+
+    <File_Area_Observational>
+        <File>
+            <file_name>does_not_exist</file_name>
+        </File>
+
+        <Table_Character>
+            <name>Spectral Line List</name>
+            <offset unit="byte">0</offset>
+            <records>100</records>
+            <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+            <Uniformly_Sampled>
+                <sampling_parameter_name>Test_Col</sampling_parameter_name>
+                <sampling_parameter_interval>1</sampling_parameter_interval>
+                <sampling_parameter_unit>ms</sampling_parameter_unit>
+                <first_sampling_parameter_value>0</first_sampling_parameter_value>
+                <last_sampling_parameter_value>2.0</last_sampling_parameter_value>
+                <sampling_parameter_scale>Exponential</sampling_parameter_scale>
+            </Uniformly_Sampled>
+            <Record_Character>
+                <fields>3</fields>
+                <groups>4</groups>
+                <record_length unit="byte">118</record_length>
+
+                <Field_Character>
+                    <name>Wavelength</name>
+                    <field_number>1</field_number>
+                    <field_location unit="byte">1</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <scaling_factor>2</scaling_factor>
+                    <unit>Angstrom</unit>
+                    <description>
+                        Central wavelength of the spectral line
+                    </description>
+                </Field_Character>
+
+                <Field_Character>
+                    <name>Wavelength</name>
+                    <field_number>1</field_number>
+                    <field_location unit="byte">1</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <value_offset>4</value_offset>
+                    <unit>Angstrom</unit>
+                    <description>
+                        Central wavelength of the spectral line
+                    </description>
+                </Field_Character>
+
+                <Group_Field_Character>
+                    <group_length>56</group_length>
+                    <group_location>10</group_location>
+                    <repetitions>4</repetitions>
+                    <fields>2</fields>
+                    <groups>0</groups>
+                    <Field_Character>
+                        <name>Wave Number</name>
+                        <field_number>2</field_number>
+                        <field_location unit="byte">1</field_location>
+                        <data_type>ASCII_Real</data_type>
+                        <field_length unit="byte">5</field_length>
+                        <unit>cm**-1</unit>
+                        <description>Vacuum wave number of the spectral line</description>
+                    </Field_Character>
+
+                    <Field_Character>
+                        <name>Cave Number</name>
+                        <field_number>3</field_number>
+                        <field_location unit="byte">6</field_location>
+                        <data_type>ASCII_Real</data_type>
+                        <field_length unit="byte">9</field_length>
+                        <unit>cm**-1</unit>
+                        <description>Vacuum wave number of the spectral line</description>
+                    </Field_Character>
+                </Group_Field_Character>
+
+                <Group_Field_Character>
+                    <group_length>262</group_length>
+                    <group_location>66</group_location>
+                    <repetitions>2</repetitions>
+                    <fields>2</fields>
+                    <groups>3</groups>
+                    <Field_Character>
+                        <name>Lemon</name>
+                        <field_number>1</field_number>
+                        <field_location unit="byte">1</field_location>
+                        <data_type>ASCII_Real</data_type>
+                        <field_length unit="byte">10</field_length>
+                        <unit>cm**-1</unit>
+                        <description>Vacuum wave number of the spectral line</description>
+                    </Field_Character>
+
+                    <Field_Character>
+                        <name>Lemon</name>
+                        <field_number>2</field_number>
+                        <field_location unit="byte">1</field_location>
+                        <data_type>ASCII_Real</data_type>
+                        <field_length unit="byte">10</field_length>
+                        <scaling_factor>2</scaling_factor>
+                        <value_offset>4</value_offset>
+                        <unit>cm**-1</unit>
+                        <description>Vacuum wave number of the spectral line</description>
+                    </Field_Character>
+
+                    <Group_Field_Character>
+                        <group_length>106</group_length>
+                        <group_location>11</group_location>
+                        <repetitions>2</repetitions>
+                        <fields>3</fields>
+                        <groups>1</groups>
+                        <Field_Character>
+                            <name>Citris</name>
+                            <field_number>2</field_number>
+                            <field_location unit="byte">1</field_location>
+                            <data_type>ASCII_Real</data_type>
+                            <field_length unit="byte">5</field_length>
+                            <unit>cm**-1</unit>
+                            <description>Vacuum wave number of the spectral line</description>
+                        </Field_Character>
+
+                        <Field_Character>
+                            <name>Strawberry</name>
+                            <field_number>2</field_number>
+                            <field_location unit="byte">6</field_location>
+                            <data_type>ASCII_Real</data_type>
+                            <field_length unit="byte">8</field_length>
+                            <unit>cm**-1</unit>
+                            <description>Vacuum wave number of the spectral line</description>
+                        </Field_Character>
+
+                        <Group_Field_Character>
+                            <group_length>30</group_length>
+                            <group_location>14</group_location>
+                            <repetitions>1</repetitions>
+                            <fields>2</fields>
+                            <groups>0</groups>
+
+                            <Field_Character>
+                                <name>Eggplant</name>
+                                <field_number>2</field_number>
+                                <field_location unit="byte">1</field_location>
+                                <data_type>ASCII_Real</data_type>
+                                <field_length unit="byte">25</field_length>
+                                <unit>cm**-1</unit>
+                                <description>Vacuum wave number of the spectral line</description>
+                            </Field_Character>
+
+                            <Field_Character>
+                                <name>Grapefruit</name>
+                                <field_number>2</field_number>
+                                <field_location unit="byte">26</field_location>
+                                <data_type>ASCII_Real</data_type>
+                                <field_length unit="byte">5</field_length>
+                                <unit>cm**-1</unit>
+                                <description>Vacuum wave number of the spectral line</description>
+                            </Field_Character>
+
+                        </Group_Field_Character>
+
+                        <Field_Character>
+                            <name>Orange</name>
+                            <field_number>2</field_number>
+                            <field_location unit="byte">44</field_location>
+                            <data_type>ASCII_Real</data_type>
+                            <field_length unit="byte">10</field_length>
+                            <unit>cm**-1</unit>
+                            <description>Vacuum wave number of the spectral line</description>
+                        </Field_Character>
+
+                    </Group_Field_Character>
+
+                    <Group_Field_Character>
+                        <name>hi</name>
+                        <group_length>15</group_length>
+                        <group_location>117</group_location>
+                        <repetitions>1</repetitions>
+                        <fields>1</fields>
+                        <groups>0</groups>
+                        <Field_Character>
+                            <name>Spinach</name>
+                            <field_number>2</field_number>
+                            <field_location unit="byte">1</field_location>
+                            <data_type>ASCII_Real</data_type>
+                            <field_length unit="byte">15</field_length>
+                            <unit>cm**-1</unit>
+                            <description>Vacuum wave number of the spectral line</description>
+                        </Field_Character>
+                    </Group_Field_Character>
+
+                    <Group_Field_Character>
+                        <name>hi</name>
+                        <group_length>15</group_length>
+                        <group_location>117</group_location>
+                        <repetitions>1</repetitions>
+                        <fields>1</fields>
+                        <groups>0</groups>
+                        <Field_Character>
+                            <name>Spinach1</name>
+                            <field_number>2</field_number>
+                            <field_location unit="byte">1</field_location>
+                            <data_type>ASCII_Real</data_type>
+                            <field_length unit="byte">15</field_length>
+                            <unit>cm**-1</unit>
+                            <description>Vacuum wave number of the spectral line</description>
+                        </Field_Character>
+                    </Group_Field_Character>
+
+                </Group_Field_Character>
+
+                <Field_Character>
+                    <name>Navelength</name>
+                    <field_number>1</field_number>
+                    <field_location unit="byte">328</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <unit>Angstrom</unit>
+                    <description>
+                        Central wavelength of the spectral line
+                    </description>
+                </Field_Character>
+
+                <Group_Field_Character>
+                    <name>hi</name>
+                    <group_length>15</group_length>
+                    <group_location>117</group_location>
+                    <repetitions>1</repetitions>
+                    <fields>1</fields>
+                    <groups>0</groups>
+                    <Field_Character>
+                        <name>Spinach1</name>
+                        <field_number>2</field_number>
+                        <field_location unit="byte">1</field_location>
+                        <data_type>ASCII_Real</data_type>
+                        <field_length unit="byte">15</field_length>
+                        <unit>cm**-1</unit>
+                        <description>Vacuum wave number of the spectral line</description>
+                    </Field_Character>
+                </Group_Field_Character>
+
+                <Group_Field_Character>
+                    <name>hi</name>
+                    <group_length>14</group_length>
+                    <group_location>117</group_location>
+                    <repetitions>2</repetitions>
+                    <fields>1</fields>
+                    <groups>0</groups>
+                    <Field_Character>
+                        <name>Spinach1</name>
+                        <field_number>2</field_number>
+                        <field_location unit="byte">1</field_location>
+                        <data_type>ASCII_Real</data_type>
+                        <field_length unit="byte">15</field_length>
+                        <unit>cm**-1</unit>
+                        <description>Vacuum wave number of the spectral line</description>
+                    </Field_Character>
+                </Group_Field_Character>
+
+
+            </Record_Character>
+        </Table_Character>
+    </File_Area_Observational>
+</Product_Observational>

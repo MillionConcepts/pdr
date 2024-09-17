@@ -1,0 +1,5 @@
+/* Remove ugly background and border from contents directive */
+.contents {
+    background-color: white !important;
+    border: none            !important;
+}

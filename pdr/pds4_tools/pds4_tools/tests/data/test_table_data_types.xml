@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/current.sch"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/current.xsd">
+    
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:none</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Table Data Types Tester</title>
+        <information_model_version>1.2.0.1</information_model_version>
+        <product_class>Product_Observational</product_class>
+
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2016-07-09</modification_date>
+                <version_id>1.0</version_id>
+                <description>Created</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>1995-10-03T11:37:30Z</start_date_time>
+            <stop_date_time>1995-10-04T11:42:21Z</stop_date_time>
+        </Time_Coordinates>
+
+        <Investigation_Area>
+            <name>None</name>
+            <type>Individual Investigation</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:individual_investigation.none</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+    </Observation_Area>
+
+    <File_Area_Observational>
+        <File>
+            <file_name>test_table_data_types.dat</file_name>
+        </File>
+
+        <Table_Binary>
+          <name>Table with all Data Types</name>
+          <offset unit="byte">0</offset>
+          <records>3</records>
+          <Record_Binary>
+            <fields>41</fields>
+            <groups>0</groups>
+            <record_length unit="byte">370</record_length>
+            <Field_Binary>
+              <name>SignedByte</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>SignedByte</data_type>
+              <field_length unit="byte">1</field_length>
+              <description>Should contain [-100, 127, 50]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedByte</name>
+              <field_location unit="byte">2</field_location>
+              <data_type>UnsignedByte</data_type>
+              <field_length unit="byte">1</field_length>
+              <description>Should contain [150, 253, 0]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedMSB2</name>
+              <field_location unit="byte">3</field_location>
+              <data_type>SignedMSB2</data_type>
+              <field_length unit="byte">2</field_length>
+              <description>Should contain [-32237, 25020, -100]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedMSB4</name>
+              <field_location unit="byte">5</field_location>
+              <data_type>SignedMSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [2147480000, -1047483647, 143352]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedMSB8</name>
+              <field_location unit="byte">9</field_location>
+              <data_type>SignedMSB8</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [9003372036854775800, -59706567879, 8379869176]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedMSB2</name>
+              <field_location unit="byte">17</field_location>
+              <data_type>UnsignedMSB2</data_type>
+              <field_length unit="byte">2</field_length>
+              <description>Should contain [502, 34542, 60535]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedMSB4</name>
+              <field_location unit="byte">19</field_location>
+              <data_type>UnsignedMSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [50349235, 3994967214, 243414]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedMSB8</name>
+              <field_location unit="byte">23</field_location>
+              <data_type>UnsignedMSB8</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [987654073709550582, 25020, 17396744073709550582]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>IEEE754MSBSingle</name>
+              <field_location unit="byte">31</field_location>
+              <data_type>IEEE754MSBSingle</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [-1.3862e-43, 1.25e-41, 3.403451e+25]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>IEEE754MSBDouble</name>
+              <field_location unit="byte">35</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [1.79e+308, -5.7303e100, -101.432310]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ComplexMSB8</name>
+              <field_location unit="byte">43</field_location>
+              <data_type>ComplexMSB8</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [3.202823e38,   1.41e5,
+                                           1.63230,      -1.2360e10,
+                                           1.155494e-38, -500.23]]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ComplexMSB16</name>
+              <field_location unit="byte">51</field_location>
+              <data_type>ComplexMSB16</data_type>
+              <field_length unit="byte">16</field_length>
+              <description>Should contain [ 2.215073858e-308,  1.41e5,
+                                            5.072014,         -1.2360e10,
+                                           -1.65e308,          1.797693e308]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedLSB2</name>
+              <field_location unit="byte">67</field_location>
+              <data_type>SignedLSB2</data_type>
+              <field_length unit="byte">2</field_length>
+              <description>Should contain [-32237, 25020, -100]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedLSB4</name>
+              <field_location unit="byte">69</field_location>
+              <data_type>SignedLSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [2147480000, -1047483647, 143352]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedLSB8</name>
+              <field_location unit="byte">73</field_location>
+              <data_type>SignedLSB8</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [9003372036854775800, -59706567879, 8379869176]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedLSB2</name>
+              <field_location unit="byte">81</field_location>
+              <data_type>UnsignedLSB2</data_type>
+              <field_length unit="byte">2</field_length>
+              <description>Should contain [502, 34542, 60535]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedLSB4</name>
+              <field_location unit="byte">83</field_location>
+              <data_type>UnsignedLSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [50349235, 3994967214, 243414]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedLSB8</name>
+              <field_location unit="byte">87</field_location>
+              <data_type>UnsignedLSB8</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [987654073709550582, 25020, 17396744073709550582]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>IEEE754LSBSingle</name>
+              <field_location unit="byte">95</field_location>
+              <data_type>IEEE754LSBSingle</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [-1.3862e-43, 1.25e-41, 3.403451e+25]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>IEEE754LSBDouble</name>
+              <field_location unit="byte">99</field_location>
+              <data_type>IEEE754LSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [1.79e+308, -5.7303e100, -101.432310]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ComplexLSB8</name>
+              <field_location unit="byte">107</field_location>
+              <data_type>ComplexLSB8</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [3.202823e38,   1.41e5,
+                                           1.63230,      -1.2360e10,
+                                           1.155494e-38, -500.23]]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ComplexLSB16</name>
+              <field_location unit="byte">115</field_location>
+              <data_type>ComplexLSB16</data_type>
+              <field_length unit="byte">16</field_length>
+              <description>Should contain [ 2.215073858e-308,  1.41e5,
+                                            5.072014,         -1.2360e10,
+                                           -1.65e308,          1.797693e308]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UnsignedBitString</name>
+              <field_location unit="byte">131</field_location>
+              <data_type>UnsignedBitString</data_type>
+              <field_length unit="byte">3</field_length>
+              <description>Should contain [b'\x1cZ\xd8', b'\xfb\xfb\x18', b'ZY\xe8']</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedBitString</name>
+              <field_location unit="byte">134</field_location>
+              <data_type>SignedBitString</data_type>
+              <field_length unit="byte">2</field_length>
+              <description>Should contain [b'\x013', b'\xfe\x82', b'!\xfc']</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Real</name>
+              <field_location unit="byte">136</field_location>
+              <data_type>ASCII_Real</data_type>
+              <field_length unit="byte">13</field_length>
+              <description>Should contain [1.79e+308, -5.7303e100, -101.432310]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Integer</name>
+              <field_location unit="byte">149</field_location>
+              <data_type>ASCII_Integer</data_type>
+              <field_length unit="byte">21</field_length>
+              <description>Should contain [-9003372036854775800, -17396744073709550582, 25020]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_NonNegative_Integer</name>
+              <field_location unit="byte">170</field_location>
+              <data_type>ASCII_NonNegative_Integer</data_type>
+              <field_length unit="byte">20</field_length>
+              <description>Should contain [17396744073709550582, 25020, 0]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Boolean</name>
+              <field_location unit="byte">190</field_location>
+              <data_type>ASCII_Boolean</data_type>
+              <field_length unit="byte">6</field_length>
+              <description>Should contain [False, False, True]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Numeric_Base2</name>
+              <field_location unit="byte">196</field_location>
+              <data_type>ASCII_Numeric_Base2</data_type>
+              <field_length unit="byte">10</field_length>
+              <description>Should contain [5, 20, 992],
+                           converted to decimal from the binary [101, 10100, 1111100000]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Numeric_Base8</name>
+              <field_location unit="byte">206</field_location>
+              <data_type>ASCII_Numeric_Base8</data_type>
+              <field_length unit="byte">12</field_length>
+              <description>Should contain [65, 13464640, 990198263],
+                           converted to decimal from the octal [101, 63272100, 007301234767]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Numeric_Base16</name>
+              <field_location unit="byte">218</field_location>
+              <data_type>ASCII_Numeric_Base16</data_type>
+              <field_length unit="byte">10</field_length>
+              <description>Should contain [4024, 2881494974, 956185033423],
+                           converted to decimal from the hexadecimal [0FB8, ABC01FBE, dea111bacf]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_String</name>
+              <field_location unit="byte">228</field_location>
+              <data_type>ASCII_String</data_type>
+              <field_length unit="byte">16</field_length>
+              <description>Should contain [' Test string 1 ', ' Test  2       ', ' Test longest 3 ']</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>UTF8_String</name>
+              <field_location unit="byte">244</field_location>
+              <data_type>UTF8_String</data_type>
+              <field_length unit="byte">18</field_length>
+              <description>Should contain [' Tést stríng 1  ', ' Tést  2         ', ' Tést longést 3 ']</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Dates_YMD_UTC</name>
+              <field_location unit="byte">262</field_location>
+              <data_type>ASCII_Date_Time_YMD_UTC</data_type>
+              <field_length unit="byte">24</field_length>
+              <description>Should contain [2018-10-10T05:05Z, 2018-01-10T05:05:05.123Z, 2014Z]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Dates_DOY_Local</name>
+              <field_location unit="byte">286</field_location>
+              <data_type>ASCII_Date_DOY</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [2018-200, 2018-201, 2018-202]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Overflow ASCII_Numeric_Base16</name>
+              <field_location unit="byte">294</field_location>
+              <data_type>ASCII_Numeric_Base16</data_type>
+              <field_length unit="byte">17</field_length>
+              <description>Should contain [17396744073709550582, 36893488147419103231, 73786976294838206465],
+                            converted to decimal from hexadecimal [F16DA69029D6FBF6, 1FFFFFFFFFFFFFFFF, 40000000000000001]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Overflow/Scaling ASCII_Numeric_Base8</name>
+              <field_location unit="byte">311</field_location>
+              <data_type>ASCII_Numeric_Base8</data_type>
+              <field_length unit="byte">22</field_length>
+              <value_offset>-73786976294838206463</value_offset>
+              <description>Should contain [0, -6342197851746992128, -1129576409333760]
+                           after scaling/offset, converted to decimal from base-8
+                           [7777777777777777777777, 7237737712377727777777, 7777737712377727777777]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Overflow/Scaling ASCII_Numeric_Base2</name>
+              <field_location unit="byte">333</field_location>
+              <data_type>ASCII_Numeric_Base2</data_type>
+              <field_length unit="byte">16</field_length>
+              <value_offset>100000000000000000000</value_offset>
+              <description>Should contain [100000000000000065535, 100000000000000063347, 100000000000000000117]
+                           after scaling/offset, converted to decimal from base-2
+                           [1111111111111111, 1111011101110011, 0001110101]</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Scaling/Offset Integer 1</name>
+              <field_location unit="byte">349</field_location>
+              <data_type>ASCII_Integer</data_type>
+              <field_length unit="byte">9</field_length>
+              <scaling_factor>98765454</scaling_factor>
+              <value_offset>100</value_offset>
+              <description>Should contain [987654540100, -987654539900, 100] after scaling/offset</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Scaling/Offset Integer 2</name>
+              <field_location unit="byte">358</field_location>
+              <data_type>ASCII_Integer</data_type>
+              <field_length unit="byte">9</field_length>
+              <scaling_factor>98765454</scaling_factor>
+              <value_offset>-100.5</value_offset>
+              <description>Should contain [987654539899.5, -987654540100.5, -100.5] after scaling/offset</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>Scaling/Offset Float</name>
+              <field_location unit="byte">367</field_location>
+              <data_type>IEEE754MSBSingle</data_type>
+              <field_length unit="byte">4</field_length>
+              <scaling_factor>-10000000000</scaling_factor>
+              <value_offset>1234</value_offset>
+              <description>Should contain [-3.2e+48, 3.2e+48, 1234.0] after scaling/offset</description>
+            </Field_Binary>
+            <!--<Field_Binary>-->
+              <!--<name></name>-->
+              <!--<field_location unit="byte"></field_location>-->
+              <!--<data_type></data_type>-->
+              <!--<field_length unit="byte"></field_length>-->
+              <!--<description>Should contain </description>-->
+            <!--</Field_Binary>-->
+          </Record_Binary>
+        </Table_Binary>
+    </File_Area_Observational>
+</Product_Observational>

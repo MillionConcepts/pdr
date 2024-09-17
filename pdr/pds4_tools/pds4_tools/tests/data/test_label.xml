@@ -1,0 +1,1697 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1301.sch"
+  schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1004.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational
+        xmlns="http://pds.nasa.gov/pds4/pds/v1"
+        xmlns:pds="http://pds.nasa.gov/pds4/pds/v1"
+        xmlns:sp_wrong="http://pds.nasa.gov/pds4/sp/v1"
+        xmlns:disp="http://pds.nasa.gov/pds4/disp/v1"
+        xmlns:fake_prefix="http://pds.nasa.gov/pds4/fake_prefix/v1"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1
+  http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1301.xsd
+  http://pds.nasa.gov/pds4/disp/v1 http://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1004.xsd">
+
+  <!--
+
+      NOTE:
+
+             This file has been modified from its original version to
+             be more suitable for functional testing of the Label object.
+
+  -->
+
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:maven.iuvs.raw:disk:mvn_iuv_l1a_apoapse-orbit01300-fuv_20150601t003623</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>MAVEN IUVS Experiment</title>
+    <test_getters attrib1="  is_space_significant  " attrib2="1">  is_space_significant  </test_getters>
+     <!--- W3C spec recommends that XML parsers normalize newlines in attribute values to space, and
+           ElementTree follows this but it does allow an encoding of them. -->
+    <test_multiline_space attrib1="  is_space_significant&#10;               multiline          ">  is_space_significant
+               multiline          </test_multiline_space>
+    <information_model_version>1.3.0.1</information_model_version>
+    <product_class>Product_Observational</product_class>
+    <Modification_History>
+      <Modification_Detail>
+        <modification_date>2015-06-25</modification_date>
+        <version_id>1.0</version_id>
+        <description>Creation</description>
+      </Modification_Detail>
+    </Modification_History>
+  </Identification_Area>
+  <Observation_Area>
+    <Time_Coordinates>
+      <start_date_time>2015-06-01T00:36:23.03Z</start_date_time>
+      <stop_date_time>2015-06-01T00:41:37.43Z</stop_date_time>
+    </Time_Coordinates>
+    <Primary_Result_Summary>
+      <purpose>Science</purpose>
+      <processing_level>Raw</processing_level>
+      <Science_Facets>
+      <wavelength_range>Ultraviolet</wavelength_range>
+      <domain>Atmosphere</domain>
+      <discipline_name>Atmospheres</discipline_name>
+      <facet1>Structure</facet1>
+      </Science_Facets>
+    </Primary_Result_Summary>
+    <Investigation_Area>
+      <name>IUVS</name>
+      <type>Mission</type>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:investigation:mission.maven</lid_reference>
+        <reference_type>data_to_investigation</reference_type>
+      </Internal_Reference>
+    </Investigation_Area>
+    <Observing_System>
+      <name>MAVEN</name>
+      <Observing_System_Component>
+        <name>IUVS</name>
+        <type>Instrument</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument:instrument.iuvs__maven</lid_reference>
+          <reference_type>is_instrument</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>MAVEN</name>
+        <type>Spacecraft</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:instrument_host:instrument_host.maven</lid_reference>
+          <reference_type>is_instrument_host</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+    </Observing_System>
+    <Target_Identification>
+      <name>MARS</name>
+      <type>Planet</type>
+      <cast>1</cast>
+        <spaces>  test  text  </spaces>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:target:planet.mars</lid_reference>
+        <reference_type>data_to_target</reference_type>
+      </Internal_Reference>
+      <unicode_elemènt ằttribute="attrįbute value">elemènt value</unicode_elemènt>
+      <fake_prefix:label_keyword>test element</fake_prefix:label_keyword>
+    </Target_Identification>
+    <Discipline_Area>
+     <disp:Display_Settings>
+      <disp:Local_Internal_Reference>
+       <disp:local_identifier_reference>data_Primary</disp:local_identifier_reference>
+       <disp:local_reference_type>display_settings_to_array</disp:local_reference_type>
+      </disp:Local_Internal_Reference>
+      <disp:Display_Direction>
+       <disp:horizontal_display_axis>Sample</disp:horizontal_display_axis>
+       <disp:horizontal_display_direction>Left to Right</disp:horizontal_display_direction>
+       <disp:vertical_display_axis>Line</disp:vertical_display_axis>
+       <disp:vertical_display_direction>Top to Bottom</disp:vertical_display_direction>
+      </disp:Display_Direction>
+     </disp:Display_Settings>
+      <sp_wrong:Spectral_Characteristics>
+          <sp_wrong:bin_width_desc>some description</sp_wrong:bin_width_desc>
+          <sp_wrong:Local_Internal_Reference>
+              <sp_wrong:local_identifier_reference>data_Primary</sp_wrong:local_identifier_reference>
+              <sp_wrong:local_reference_type>spectral_characteristics_to_array_object</sp_wrong:local_reference_type>
+          </sp_wrong:Local_Internal_Reference>
+          <sp_wrong:Axis_Bin_Set>
+              <sp_wrong:Local_Internal_Reference>
+                  <sp_wrong:local_identifier_reference>Band</sp_wrong:local_identifier_reference>
+                  <sp_wrong:local_reference_type>spectral_characteristics_to_array_axis</sp_wrong:local_reference_type>
+              </sp_wrong:Local_Internal_Reference>
+              <sp_wrong:Bin>
+                  <sp_wrong:bin_sequence_number>1</sp_wrong:bin_sequence_number>
+                  <sp_wrong:center_value unit="nm">415.0</sp_wrong:center_value>
+                  <sp_wrong:bin_width unit="nm">40.0</sp_wrong:bin_width>
+                  <sp_wrong:original_bin_number>1</sp_wrong:original_bin_number>
+                  <sp_wrong:Filter>
+                      <sp_wrong:filter_name>A</sp_wrong:filter_name>
+                  </sp_wrong:Filter>
+              </sp_wrong:Bin>
+              <sp_wrong:Bin>
+                  <sp_wrong:bin_sequence_number>2</sp_wrong:bin_sequence_number>
+                  <sp_wrong:center_value unit="nm">750.0</sp_wrong:center_value>
+                  <sp_wrong:bin_width unit="nm">10.0</sp_wrong:bin_width>
+                  <sp_wrong:original_bin_number>2</sp_wrong:original_bin_number>
+                  <sp_wrong:Filter>
+                      <sp_wrong:filter_name>B</sp_wrong:filter_name>
+                  </sp_wrong:Filter>
+              </sp_wrong:Bin>
+          </sp_wrong:Axis_Bin_Set>
+      </sp_wrong:Spectral_Characteristics>
+    </Discipline_Area>
+  </Observation_Area>
+  <File_Area_Observational>
+    <File>
+      <!-- <file_name>mvn_iuv_l1a_apoapse-orbit01300-fuv_20150601T003623_v02_s02.fits</file_name> -->
+      <file_name>af.fits</file_name>
+      <local_identifier>file</local_identifier>
+      <creation_date_time>2015-06-25T18:35:03Z</creation_date_time>
+      <records>79</records>
+    </File>
+    <Header>
+      <local_identifier>header_Primary</local_identifier>
+      <offset unit="byte">0</offset>
+      <object_length unit="byte">2880</object_length>
+      <parsing_standard_id>FITS 3.0</parsing_standard_id>
+    </Header>
+    <Array_3D_Spectrum>
+      <local_identifier>data_Primary</local_identifier>
+      <offset unit="byte">2880</offset>
+      <axes>3</axes>
+      <axis_index_order>Last Index Fastest</axis_index_order>
+      <description>Raw data for this observation</description>
+      <Element_Array>
+        <data_type>SignedMSB4</data_type>
+      </Element_Array>
+      <Axis_Array>
+        <axis_name>Time</axis_name>
+        <elements>21</elements>
+        <sequence_number>1</sequence_number>
+      </Axis_Array>
+      <Axis_Array>
+        <axis_name>Line</axis_name>
+        <elements>10</elements>
+        <sequence_number>2</sequence_number>
+      </Axis_Array>
+      <Axis_Array>
+        <axis_name>Sample</axis_name>
+        <elements>36</elements>
+        <sequence_number>3</sequence_number>
+      </Axis_Array>
+    </Array_3D_Spectrum>
+    <Header>
+      <local_identifier>header_Integration</local_identifier>
+      <offset unit="byte">34560</offset>
+      <object_length unit="byte">5760</object_length>
+      <parsing_standard_id>FITS 3.0</parsing_standard_id>
+    </Header>
+    <Table_Binary>
+      <local_identifier>data¥_Integration</local_identifier>
+      <offset unit="byte">40320</offset>
+      <records>21</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>9</fields>
+        <groups>0</groups>
+        <record_length unit="byte">65</record_length>
+        <Field_Binary>
+          <name>TIMESTAMP</name>
+          <field_location unit="byte">1</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>SCLK seconds</unit>
+          <description>Time that the integration began according to S/C clock (uncorrected)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>ET</name>
+          <field_location unit="byte">9</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>ET s</unit>
+          <description>Time that the integration began (corrected for SCLK errors by SCLK kernel)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>UTC</name>
+          <field_location unit="byte">17</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">33</field_length>
+          <unit>UTC date string</unit>
+          <description>Time that the integration began (corrected for SCLK errors by SCLK kernel)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>MIRROR_DN</name>
+          <field_location unit="byte">50</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <value_offset>32768</value_offset>
+          <description>Mirror position at beginning of this integration</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>MIRROR_DEG</name>
+          <field_location unit="byte">52</field_location>
+          <data_type>IEEE754MSBSingle</data_type>
+          <field_length unit="byte">4</field_length>
+          <unit>deg</unit>
+          <description>Mirror position at beginning of this integration</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>FOV_DEG</name>
+          <field_location unit="byte">56</field_location>
+          <data_type>IEEE754MSBSingle</data_type>
+          <field_length unit="byte">4</field_length>
+          <unit>deg</unit>
+          <description>Instrument field of view center position at beginning of integration (=MIRROR_THIS_DEG*2)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>LYA_CENTROID</name>
+          <field_location unit="byte">60</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>pixel</unit>
+          <description>Shift of wavelength scale calculated from centroid</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>CASE_TEMP</name>
+          <field_location unit="byte">62</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <value_offset>32768</value_offset>
+          <description>Case temperature in DN</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>DET_TEMP</name>
+          <field_location unit="byte">64</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <value_offset>32768</value_offset>
+          <description>Case temperature in DN</description>
+        </Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+    <Header>
+      <local_identifier>header_Engineering</local_identifier>
+      <offset unit="byte">43200</offset>
+      <object_length unit="byte">20160</object_length>
+      <parsing_standard_id>FITS 3.0</parsing_standard_id>
+    </Header>
+    <Table_Binary>
+      <local_identifier>data_Engineering</local_identifier>
+      <offset unit="byte">63360</offset>
+      <records>1</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>38</fields>
+        <groups>0</groups>
+        <record_length unit="byte">83</record_length>
+        <Field_Binary>
+          <name>SCI_PKT_CKSUM</name>
+          <field_location unit="byte">1</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SCI_ERR_FLAGS</name>
+          <field_location unit="byte">2</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+        </Field_Binary>
+        <Field_Binary>
+          <name>XUV</name>
+          <field_location unit="byte">3</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">3</field_length>
+          <unit>FUV/MUV</unit>
+          <description>Which channel this is</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>LENGTH</name>
+          <field_location unit="byte">6</field_location>
+          <data_type>SignedMSB4</data_type>
+          <field_length unit="byte">4</field_length>
+          <unit>byte</unit>
+          <value_offset>2147483648</value_offset>
+          <description>Length of entire science image to which this segment belongs</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>IMAGE_NUMBER</name>
+          <field_location unit="byte">10</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <value_offset>32768</value_offset>
+          <description>Series number of this image</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>AVERAGE</name>
+          <field_location unit="byte">12</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <value_offset>32768</value_offset>
+          <description>"Average DN value of last packet of observation, not significant"</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>CHECKSUM</name>
+          <field_location unit="byte">14</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <value_offset>32768</value_offset>
+          <description>"Checksum of last packet of observation, not significant, not being checked"</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>START_TIME</name>
+          <field_location unit="byte">16</field_location>
+          <data_type>SignedMSB4</data_type>
+          <field_length unit="byte">4</field_length>
+          <unit>s</unit>
+          <value_offset>2147483648</value_offset>
+          <description>Time when image set containing this segment was initiated</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>START_TIME__SUB</name>
+          <field_location unit="byte">20</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>1/65536 s</unit>
+          <value_offset>32768</value_offset>
+          <description>Time when image set containing this segment was initiated</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>CADENCE</name>
+          <field_location unit="byte">22</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>ms</unit>
+          <value_offset>32768</value_offset>
+          <description>Image cadence parameter for this image set</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>NUMBER</name>
+          <field_location unit="byte">24</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <value_offset>32768</value_offset>
+          <description>Total number of commanded images for this set (equal to number of integrations)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>INT_TIME</name>
+          <field_location unit="byte">26</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>ms</unit>
+          <value_offset>32768</value_offset>
+          <description>Image integration time parameter for this image set</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>MIRROR_POS</name>
+          <field_location unit="byte">28</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <value_offset>32768</value_offset>
+          <description>Position of mirror when image set began</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>STEP_NUM</name>
+          <field_location unit="byte">30</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <value_offset>32768</value_offset>
+          <description>Value of mirror step number when this image was initiated</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>STEP_SIZE</name>
+          <field_location unit="byte">32</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <description>Value of mirror step size when this image was initiated</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>STEP_INT</name>
+          <field_location unit="byte">34</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <unit>DN</unit>
+          <description>Value of mirror step interval when this image was initiated</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>BIN_SHIFT</name>
+          <field_location unit="byte">35</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <unit>pixel</unit>
+          <description>Offset between expected lyman alpha line and calculated</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>OBS_ID</name>
+          <field_location unit="byte">36</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <value_offset>32768</value_offset>
+          <description>Value of Obs ID telemetry point when this image was initiated</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>FUV_BAD_PIXEL_MASK</name>
+          <field_location unit="byte">38</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <description>"Each detector has a list of pixels that are bad and those pixels are never included in the binned data.  This bad pixel masking can be disabled, in which case all pixels are used."</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>MUV_BAD_PIXEL_MASK</name>
+          <field_location unit="byte">39</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <description>"Each detector has a list of pixels that are bad and those pixels are never included in the binned data.  This bad pixel masking can be disabled, in which case all pixels are used."</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>DATA_COMPRESSION</name>
+          <field_location unit="byte">40</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <description>"If data compression is on, all detector data will be sent in 16 bit pixels.  If compression is off, the data can be up to 32 bits wide and it will be different for each bin.  Compression should always be enabled unless taking a full frame image."</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>TEST_PATTERN</name>
+          <field_location unit="byte">41</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <description>There are two types of test patterns that can be produced.  The 16 bit pattern rolls over at 65535 and the 12 bit pattern rolls over at 4095.  This indicates which type will be used for the next test pattern image.</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>ON_CHIP_WINDOWING</name>
+          <field_location unit="byte">43</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <description>"In linear bin mode, the Detector FPGA can read the entire array into SRAM and bin it from there, or it can only read out the pixels in the defined window.  Running with the window enabled can save readout time."</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>BIN_TYPE</name>
+          <field_location unit="byte">44</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">6</field_length>
+          <description>"There are two types of binning, linear and non-linear.  This indicates which the detector will use for the next set of images."</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SCAN_MODE</name>
+          <field_location unit="byte">50</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">3</field_length>
+          <description>"The detector can peform three different types of readouts, in addition to generating a test pattern. This indicates which readout will be used for the next set of images."</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>MODE</name>
+          <field_location unit="byte">53</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">7</field_length>
+        </Field_Binary>
+        <Field_Binary>
+          <name>TIME_FLAG</name>
+          <field_location unit="byte">60</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">6</field_length>
+          <description>Indicates if time was sync'd when this packet was logged (may be Synced/Freewheel)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>BIN_SHIFT_DIR</name>
+          <field_location unit="byte">66</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SHUTTER_ON</name>
+          <field_location unit="byte">67</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>ms</unit>
+          <value_offset>32768</value_offset>
+          <description>Shutter cycle on time for this image set</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SHUTTER_OFF</name>
+          <field_location unit="byte">69</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>ms</unit>
+          <value_offset>32768</value_offset>
+          <description>Shutter cycle off time for this image set</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SHUTTER_NUM</name>
+          <field_location unit="byte">71</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <description>Shutter cycle number for this image set</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SET_TOTAL</name>
+          <field_location unit="byte">72</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <value_offset>32768</value_offset>
+          <description>"It is possible that not all commanded images are received in the SDRAM.  This is the actual number received, out of the commanded"</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>BIN_X_ROW</name>
+          <field_location unit="byte">74</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <description>Image bin table for this image set</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>BIN_Y_ROW</name>
+          <field_location unit="byte">75</field_location>
+          <data_type>UnsignedByte</data_type>
+          <field_length unit="byte">1</field_length>
+          <description>Image bin table row for this image set</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>MCP_GAIN</name>
+          <field_location unit="byte">76</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>DN</unit>
+          <value_offset>32768</value_offset>
+          <description>"MCP value when this image set was initiated. (Commanded value, use that DN conversion)"</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SCI_SEG_TOTAL</name>
+          <field_location unit="byte">78</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <value_offset>32768</value_offset>
+          <description>Series number of this segment (eg 1 out of 4)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SCI_SEG_LENGTH</name>
+          <field_location unit="byte">80</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <unit>byte</unit>
+          <value_offset>32768</value_offset>
+          <description>Length of this segment of the science image</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SCI_SEG_NUM</name>
+          <field_location unit="byte">82</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <value_offset>32768</value_offset>
+          <description>Number of segments for this image</description>
+        </Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+    <Header>
+      <local_identifier>header_Binning</local_identifier>
+      <offset unit="byte">66240</offset>
+      <object_length unit="byte">5760</object_length>
+      <parsing_standard_id>FITS 3.0</parsing_standard_id>
+    </Header>
+    <Table_Binary>
+      <local_identifier>data_Binning</local_identifier>
+      <offset unit="byte">72000</offset>
+      <records>1</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>1</fields>
+        <groups>8</groups>
+        <record_length unit="byte">395</record_length>
+        <Group_Field_Binary>
+          <repetitions>12</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">1</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>SPABINWIDTH</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>"Width of each spatial bin in pixels, one entry for each bin, transmitted or not"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>12</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">25</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>SPABINTRANSMIT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>"1 if bin is transmitted, 0 if not. Total number of 1 entries set equals the number of spatial bins in the file"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>38</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">49</group_location>
+          <group_length unit="byte">76</group_length>
+          <Field_Binary>
+            <name>SPEBINWIDTH</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>"Width of each spectral bin in pixels, one entry for each bin, transmitted or not"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>38</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">125</group_location>
+          <group_length unit="byte">76</group_length>
+          <Field_Binary>
+            <name>SPEBINTRANSMIT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>"1 if bin is transmitted, 0 if not. Total number of 1 entries set equals the number of spatial bins in the file"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">201</group_location>
+          <group_length unit="byte">20</group_length>
+          <Field_Binary>
+            <name>SPAPIXLO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>Lowest numbered pixel in each transmitted spatial bin</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">221</group_location>
+          <group_length unit="byte">20</group_length>
+          <Field_Binary>
+            <name>SPAPIXHI</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>Highest numbered pixel in each transmitted spatial bin</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>36</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">241</group_location>
+          <group_length unit="byte">72</group_length>
+          <Field_Binary>
+            <name>SPEPIXLO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>Lowest numbered pixel in each transmitted spectral bin</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>36</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">313</group_location>
+          <group_length unit="byte">72</group_length>
+          <Field_Binary>
+            <name>SPEPIXHI</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>SignedMSB2</data_type>
+            <field_length unit="byte">2</field_length>
+            <description>Highest numbered pixel in each transmitted spectral bin</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Field_Binary>
+          <name>BINTABLENAME</name>
+          <field_location unit="byte">385</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">11</field_length>
+        </Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+    <Header>
+      <local_identifier>header_PixelGeometry</local_identifier>
+      <offset unit="byte">74880</offset>
+      <object_length unit="byte">8640</object_length>
+      <parsing_standard_id>FITS 3.0</parsing_standard_id>
+    </Header>
+    <Table_Binary>
+      <local_identifier>data_PixelGeometry</local_identifier>
+      <offset unit="byte">83520</offset>
+      <records>21</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>0</fields>
+        <groups>12</groups>
+        <record_length unit="byte">4320</record_length>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">1</group_location>
+          <group_length unit="byte">1200</group_length>
+          <Group_Field_Binary>
+            <repetitions>10</repetitions>
+            <fields>0</fields>
+            <groups>1</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">400</group_length>
+            <Group_Field_Binary>
+              <repetitions>5</repetitions>
+              <fields>1</fields>
+              <groups>0</groups>
+              <group_location unit="byte">1</group_location>
+              <group_length unit="byte">40</group_length>
+              <Field_Binary>
+                <name>PIXEL_VEC</name>
+                <field_location unit="byte">1</field_location>
+                <data_type>IEEE754MSBDouble</data_type>
+                <field_length unit="byte">8</field_length>
+                <unit>unit vector</unit>
+                <description>Unit vector from spacecraft along lines of sight for 4 corners and center of each spatial bin</description>
+              </Field_Binary>
+            </Group_Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">1201</group_location>
+          <group_length unit="byte">400</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">40</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_RA</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>Right ascension of line of sight of 4 corners and center of each spatial bin</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">1601</group_location>
+          <group_length unit="byte">400</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">40</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_DEC</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>Declination of line of sight of 4 corners and center of each spatial bin</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">2001</group_location>
+          <group_length unit="byte">400</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">40</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LAT</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>"Geodetic Latitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">2401</group_location>
+          <group_length unit="byte">800</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>2</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">80</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LON</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>"East Longitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LON</name>
+              <field_location unit="byte">401</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>deg</unit>
+              <description>"East Longitude of tangent or impact point of line of sight with Mars ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">2801</group_location>
+          <group_length unit="byte">400</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">40</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_MRH_ALT</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>km</unit>
+              <description>"Altitude of tangent point, or zero if line of sight hits ellipsoid, for 4 corners and center of each spatial bin"</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">3201</group_location>
+          <group_length unit="byte">400</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">40</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_MRH_ALT_RATE</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>km/s</unit>
+              <description>Time rate of change of altitude of tangent point</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">3601</group_location>
+          <group_length unit="byte">400</group_length>
+          <Group_Field_Binary>
+            <repetitions>5</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">40</group_length>
+            <Field_Binary>
+              <name>PIXEL_CORNER_LOS</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>km</unit>
+              <description>Distance from spacecraft to tangent or impact point</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">4001</group_location>
+          <group_length unit="byte">80</group_length>
+          <Field_Binary>
+            <name>PIXEL_INCIDENCE_ANGLE</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>deg</unit>
+            <description>"Angle between surface normal and vector to Sun, at tangent or impact point"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">4081</group_location>
+          <group_length unit="byte">80</group_length>
+          <Field_Binary>
+            <name>PIXEL_EMISSION_ANGLE</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>deg</unit>
+            <description>"Angle between surface normal and vector to spacecraft, at tangent or impact point"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">4161</group_location>
+          <group_length unit="byte">80</group_length>
+          <Field_Binary>
+            <name>PIXEL_ZENITH_ANGLE</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>deg</unit>
+            <description>Angle between pixel look direction and spacecraft zenith (90deg plus lookdown angle)</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">4241</group_location>
+          <group_length unit="byte">80</group_length>
+          <Field_Binary>
+            <name>PIXEL_PHASE_ANGLE</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>deg</unit>
+            <description>Angle between spacecraft and sun as seen from tangent or impact point</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+    <Header>
+      <local_identifier>header_SpacecraftGeometry</local_identifier>
+      <offset unit="byte">175680</offset>
+      <object_length unit="byte">17280</object_length>
+      <parsing_standard_id>FITS 3.0</parsing_standard_id>
+    </Header>
+    <Table_Binary>
+      <name>data_PixelGeometry</name>
+      <offset unit="byte">192960</offset>
+      <records>21</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>8</fields>
+        <groups>28</groups>
+        <record_length unit="byte">738</record_length>
+        <Field_Binary>
+          <name>SUB_SPACECRAFT_LAT</name>
+          <field_location unit="byte">1</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>deg</unit>
+          <description>Geodetic Latitude of subspacecraft point</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SUB_SPACECRAFT_LON</name>
+          <field_location unit="byte">9</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>deg</unit>
+          <description>East Longitude of subspacecraft point</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SUB_SOLAR_LAT</name>
+          <field_location unit="byte">17</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>deg</unit>
+          <description>Geodetic Latitude of subsolar point</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SUB_SOLAR_LAT</name>
+          <field_location unit="byte">25</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>deg</unit>
+          <description>East Longitude of subsolar point</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SPACECRAFT_ALT</name>
+          <field_location unit="byte">33</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>km</unit>
+          <description>Altitude of spacecraft above reference Mars ellipsoid</description>
+        </Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">41</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SPACECRAFT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km</unit>
+            <description>Position of spacecraft relative to Mars center of mass</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">65</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SPACECRAFT_RATE</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km/s</unit>
+            <description>Velocity of spacecraft</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">89</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SUN</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km</unit>
+            <description>Position of Sun relative to Mars center of mass</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">113</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SUN_RATE</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km/s</unit>
+            <description>Velocity of Sun</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">137</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VX_SPACECRAFT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft X axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">161</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VY_SPACECRAFT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft Y axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">185</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VZ_SPACECRAFT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft Z axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">209</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VX_INSTRUMENT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view X axis, including scan mirror rotation. This is the instrument spatial direction."</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">233</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VY_INSTRUMENT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view Y axis, including scan mirror rotation. This is the instrument scan direction"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">257</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VZ_INSTRUMENT</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view Z axis, including scan mirror rotation. This is the instrument boresight."</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">281</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SPACECRAFT_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km</unit>
+            <description>Position of spacecraft relative to Mars center of mass</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">305</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SPACECRAFT_RATE_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km/s</unit>
+            <description>Velocity of spacecraft</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">329</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SPACECRAFT_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km</unit>
+            <description>Position of spacecraft relative to Mars center of mass</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">353</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SPACECRAFT_RATE_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km/s</unit>
+            <description>Velocity of spacecraft</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Field_Binary>
+          <name>V_SPACECRAFT_INERTIAL_FRAME</name>
+          <field_location unit="byte">377</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">14</field_length>
+          <description>Spice name of inertial frame</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>V_SPACECRAFT_INERTIAL_CENTER</name>
+          <field_location unit="byte">391</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">4</field_length>
+          <description>Spice name of inertial center of mass</description>
+        </Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">395</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SUN_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km</unit>
+            <description>Position of Sun relative to Mars center of mass</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">419</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>V_SUN_RATE_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>km/s</unit>
+            <description>Velocity of Sun</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">443</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VX_SPACECRAFT_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft X axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">467</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VY_SPACECRAFT_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft Y axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">491</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VZ_SPACECRAFT_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft Z axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">515</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VX_INSTRUMENT_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view X axis, including scan mirror rotation. This is the instrument spatial direction."</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">539</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VY_INSTRUMENT_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view Y axis, including scan mirror rotation. This is the instrument scan direction"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">563</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VZÄ_INSTRUMENT_MSO</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view Z axis, including scan mirror rotation. This is the instrument boresight."</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">587</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VX_SPACECRAFT_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft X axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">611</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VY_SPACECRAFT_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft Y axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">635</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VZ_SPACECRAFT_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>Direction of spacecraft Z axis</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">659</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VX_INSTRUMENT_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view X axis, including scan mirror rotation. This is the instrument spatial direction."</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">683</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VY_INSTRUMENT_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view Y axis, including scan mirror rotation. This is the instrument scan direction"</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>3</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">707</group_location>
+          <group_length unit="byte">24</group_length>
+          <Field_Binary>
+            <name>VZ_INSTRUMENT_INERTIAL</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBDouble</data_type>
+            <field_length unit="byte">8</field_length>
+            <unit>unit vector</unit>
+            <description>"Direction of instrument field of view Z axis, including scan mirror rotation. This is the instrument boresight."</description>
+          </Field_Binary>
+        </Group_Field_Binary>
+        <Field_Binary>
+          <name>INST_SUN_ANGLE</name>
+          <field_location unit="byte">731</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+          <unit>deg</unit>
+          <description>"Angle between instrument boresight (taking into account mirror position) and Sun, deg"</description>
+        </Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+    <Header>
+      <local_identifier>header_Observation</local_identifier>
+      <offset unit="byte">210240</offset>
+      <object_length unit="byte">8640</object_length>
+      <parsing_standard_id>FITS 3.0</parsing_standard_id>
+    </Header>
+    <Table_Binary>
+      <name>data_Observation</name>
+      <offset unit="byte">218880</offset>
+      <records>1</records>
+      <description>The records count is the number of rows in this table</description>
+      <Record_Binary>
+        <fields>19</fields>
+        <groups>3</groups>
+        <record_length unit="byte">6201</record_length>
+        <Field_Binary>
+          <name>PRODUCT_ID</name>
+          <field_location unit="byte">1</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">58</field_length>
+          <description>Original filename of this product</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>COLLECTION_ID</name>
+          <field_location unit="byte">59</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">4</field_length>
+          <description>PDS collection ID (currently unused)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>BUNDLE_ID</name>
+          <field_location unit="byte">63</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">3</field_length>
+          <description>PDS bundle ID (currently unused)</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>CODE_SVN_REVISION</name>
+          <field_location unit="byte">66</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">5</field_length>
+          <description>SVN revision number of code used to produce this product</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>ANC_SVN_REVISION</name>
+          <field_location unit="byte">71</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">4</field_length>
+          <description>SVN revision number of ancillary data used to produce this product</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>PRODUCT_CREATION_DATE</name>
+          <field_location unit="byte">75</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">33</field_length>
+          <unit>UTC</unit>
+          <description>Product creation date</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>OBSERVATION_TYPE</name>
+          <field_location unit="byte">108</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">3</field_length>
+          <description>Observation type string</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>MISSION_PHASE</name>
+          <field_location unit="byte">111</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">5</field_length>
+          <description>Mission phase string</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>TARGET_NAME</name>
+          <field_location unit="byte">116</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">4</field_length>
+          <description>Target name string</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>ORBIT_SEGMENT</name>
+          <field_location unit="byte">120</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <description>"Orbit segment (periapse, apoapse, corona etc, currently 0)"</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>ORBIT_NUMBER</name>
+          <field_location unit="byte">122</field_location>
+          <data_type>SignedMSB2</data_type>
+          <field_length unit="byte">2</field_length>
+          <description>"Orbit number (MOI is start of orbit 1, orbit number changes 30min before each periapse)"</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>SOLAR_LONGITUDE</name>
+          <field_location unit="byte">124</field_location>
+          <data_type>IEEE754MSBSingle</data_type>
+          <field_length unit="byte">4</field_length>
+          <unit>deg</unit>
+          <description>"Solar longitude, 0deg=Martian spring equinox, 90deg=solstice, etc"</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>GRATING_SELECT</name>
+          <field_location unit="byte">128</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">6</field_length>
+          <description>Grating select (one of 'ECHELLE'/'LOWRES')</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>KEYHOLE_SELECT</name>
+          <field_location unit="byte">134</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">7</field_length>
+          <description>Keyhole select (one of 'LARGE'/'SMALL'/'NEITHER')</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>BIN_PATTERN_INDEX</name>
+          <field_location unit="byte">141</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">18</field_length>
+          <description>Name of linear or nonlinear binning table used for this observation.</description>
+        </Field_Binary>
+        <Field_Binary>
+          <name>CADENCE</name>
+          <field_location unit="byte">159</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+        </Field_Binary>
+        <Field_Binary>
+          <name>INT_TIME</name>
+          <field_location unit="byte">167</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+        </Field_Binary>
+        <Field_Binary>
+          <name>DUTY_CYCLE</name>
+          <field_location unit="byte">175</field_location>
+          <data_type>IEEE754MSBDouble</data_type>
+          <field_length unit="byte">8</field_length>
+        </Field_Binary>
+        <Field_Binary>
+          <name>CHANNEL</name>
+          <field_location unit="byte">183</field_location>
+          <data_type>ASCII_String</data_type>
+          <field_length unit="byte">3</field_length>
+        </Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">186</group_location>
+          <group_length unit="byte">2880</group_length>
+          <Group_Field_Binary>
+            <repetitions>36</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">288</group_length>
+            <Field_Binary>
+              <name>WAVELENGTH</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>nm</unit>
+              <description>Wavelength of center of each bin</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>10</repetitions>
+          <fields>0</fields>
+          <groups>1</groups>
+          <group_location unit="byte">3066</group_location>
+          <group_length unit="byte">2880</group_length>
+          <Group_Field_Binary>
+            <repetitions>36</repetitions>
+            <fields>1</fields>
+            <groups>0</groups>
+            <group_location unit="byte">1</group_location>
+            <group_length unit="byte">288</group_length>
+            <Field_Binary>
+              <name>WAVELENGTH_WIDTH</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <unit>nm</unit>
+              <description>Wavelength width of each bin</description>
+            </Field_Binary>
+          </Group_Field_Binary>
+        </Group_Field_Binary>
+        <Group_Field_Binary>
+          <repetitions>8</repetitions>
+          <fields>1</fields>
+          <groups>0</groups>
+          <group_location unit="byte">5946</group_location>
+          <group_length unit="byte">256</group_length>
+          <Field_Binary>
+            <name>KERNELS</name>
+            <field_location unit="byte">1</field_location>
+            <data_type>ASCII_String</data_type>
+            <field_length unit="byte">32</field_length>
+          </Field_Binary>
+        </Group_Field_Binary>
+      </Record_Binary>
+    </Table_Binary>
+  </File_Area_Observational>
+</Product_Observational>

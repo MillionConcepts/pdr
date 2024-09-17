@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/current.sch"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/current.xsd">
+    
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:none</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Table Data Types Tester</title>
+        <information_model_version>1.2.0.1</information_model_version>
+        <product_class>Product_Observational</product_class>
+
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2016-07-09</modification_date>
+                <version_id>1.0</version_id>
+                <description>Created</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>1995-10-03T11:37:30Z</start_date_time>
+            <stop_date_time>1995-10-04T11:42:21Z</stop_date_time>
+        </Time_Coordinates>
+
+        <Investigation_Area>
+            <name>None</name>
+            <type>Individual Investigation</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:individual_investigation.none</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+    </Observation_Area>
+
+    <File_Area_Observational>
+        <File>
+            <file_name>test_masked_data.dat</file_name>
+        </File>
+
+        <Table_Binary>
+          <name>Masked Data Table</name>
+          <offset unit="byte">0</offset>
+          <records>4</records>
+          <description>Table for Testing Masked Data</description>
+          <Record_Binary>
+            <fields>5</fields>
+            <groups>0</groups>
+            <record_length unit="byte">63</record_length>
+            <Field_Binary>
+              <name>SignedMSB4</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>SignedMSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [2147480000, -1047483647, -99999, -99999]</description>
+              <Special_Constants>
+                <missing_constant>-99999</missing_constant>
+              </Special_Constants>
+            </Field_Binary>
+            <Field_Binary>
+              <name>IEEE754MSBDouble</name>
+              <field_location unit="byte">5</field_location>
+              <data_type>IEEE754MSBDouble</data_type>
+              <field_length unit="byte">8</field_length>
+              <description>Should contain [1.79e+308, -5.7303e100, -5.7303e100, -101.432310]</description>
+              <Special_Constants>
+                <missing_constant>-5.7303e100</missing_constant>
+              </Special_Constants>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Real</name>
+              <field_location unit="byte">13</field_location>
+              <data_type>ASCII_Real</data_type>
+              <field_length unit="byte">13</field_length>
+              <description>Should contain [1.79e+308, -9.99, -101.432310, -9.99]</description>
+              <Special_Constants>
+                <missing_constant>-9.99</missing_constant>
+              </Special_Constants>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Integer</name>
+              <field_location unit="byte">26</field_location>
+              <data_type>ASCII_Integer</data_type>
+              <field_length unit="byte">21</field_length>
+              <description>Should contain [-9003372036854775800, 100000000, 396744073709550582, 25020]</description>
+              <Special_Constants>
+                <missing_constant>100000000</missing_constant>
+              </Special_Constants>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Numeric_Base16</name>
+              <field_location unit="byte">47</field_location>
+              <data_type>ASCII_Numeric_Base16</data_type>
+              <field_length unit="byte">17</field_length>
+              <description>Should contain [17396744073709550582, 36893488147419103231, 73786976294838206465, 17396744073709550582]</description>
+              <Special_Constants>
+                <missing_constant>17396744073709550582</missing_constant>
+              </Special_Constants>
+            </Field_Binary>
+            <Field_Binary>
+              <name>SignedMSB4 with Scaling/Offset</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>SignedMSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Should contain [2.14748000e+10,  -1.04748365e+10, -99999, -99999] after scaling/offset.</description>
+              <scaling_factor>10</scaling_factor>
+              <value_offset>0.5</value_offset>
+              <Special_Constants>
+                <invalid_constant>-99999</invalid_constant>
+              </Special_Constants>
+            </Field_Binary>
+            <Field_Binary>
+              <name>ASCII_Real with Scaling</name>
+              <field_location unit="byte">13</field_location>
+              <data_type>ASCII_Real</data_type>
+              <field_length unit="byte">13</field_length>
+              <description>Should contain [1.79e+307,  -9.99,  -10.143231, -9.99] after scaling/offset.</description>
+              <scaling_factor>10e-2</scaling_factor>
+              <Special_Constants>
+                <error_constant>-9.99</error_constant>
+              </Special_Constants>
+            </Field_Binary>
+          </Record_Binary>
+        </Table_Binary>
+
+        <Array>
+          <name>Masked Data Array1</name>
+          <offset unit="byte">252</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>
+              Array for Testing Masked Data.
+
+              Should contain [50349235, 3994967214, 3994967214, 243414]</description>
+          <Element_Array>
+            <data_type>UnsignedMSB4</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>4</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+          <Special_Constants>
+              <satured_constant>3994967214</satured_constant>
+          </Special_Constants>
+        </Array>
+
+        <Array>
+          <name>Masked Data Array2</name>
+          <offset unit="byte">268</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>
+            Array for Testing Masked Data.
+
+              Should contain [1.79e+200, -5.7303e100, -101.432310, 1.79e+200]</description>
+          <Element_Array>
+            <data_type>IEEE754LSBDouble</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>4</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+          <Special_Constants>
+              <missing_constant>1.79e+200</missing_constant>
+          </Special_Constants>
+        </Array>
+
+        <Array>
+          <name>Masked Data Array3, with Scaling</name>
+          <offset unit="byte">252</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>
+              Array for Testing Masked Data.
+
+              Should contain [251746175, 3994967214, 3994967214, 1217070] after scaling/offset.</description>
+          <Element_Array>
+            <data_type>UnsignedMSB4</data_type>
+            <scaling_factor>5</scaling_factor>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>4</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+          <Special_Constants>
+              <satured_constant>3994967214</satured_constant>
+          </Special_Constants>
+        </Array>
+
+        <Array>
+          <name>Masked Data Array4, with Scaling</name>
+          <offset unit="byte">268</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>
+            Array for Testing Masked Data.
+
+            Should contain [1.79e+200, -5.730300000000001e+102, -10133.231, 1.79e+200] after scaling/offset.</description>
+          <Element_Array>
+            <data_type>IEEE754LSBDouble</data_type>
+            <scaling_factor>100</scaling_factor>
+            <value_offset>10</value_offset>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>4</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+          <Special_Constants>
+              <missing_constant>1.79e+200</missing_constant>
+          </Special_Constants>
+        </Array>
+    </File_Area_Observational>
+</Product_Observational>

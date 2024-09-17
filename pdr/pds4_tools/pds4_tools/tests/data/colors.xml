@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1400.sch"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1400.xsd">
+    
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:litcomp-comets:nuc_properties:colors</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Properties of Comet Nuclei - Colors</title>
+        <information_model_version>1.4.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+        
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2015-08-10</modification_date>
+                <version_id>1.0</version_id>
+                <description>Migration from PDS3</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    
+    <Observation_Area>
+        
+        <Time_Coordinates>
+            <start_date_time xsi:nil="true" nilReason="inapplicable"/>
+            <stop_date_time>2010-08-01Z</stop_date_time>
+        </Time_Coordinates>
+        
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+            <description>Colors</description>
+            <Science_Facets>
+                
+                <discipline_name>Small Bodies</discipline_name>
+                <facet1>Physical Properties</facet1>
+                
+            </Science_Facets>
+        </Primary_Result_Summary>
+        
+        <Investigation_Area>
+            <name>Null Investigation</name>
+            <type>Other Investigation</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:individual.none</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        
+        
+        <Observing_System>
+            <Observing_System_Component>
+                <name>Published Data</name>
+                <type>Literature Search</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:other:literature_search</lid_reference>
+                    <reference_type>is_other</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+        
+        <Target_Identification>
+            <name>Multiple Cometary Nuclei</name>
+            <type>Comet</type>
+        </Target_Identification>
+    </Observation_Area>
+    
+    <Reference_List>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:litcomp-comets:nuc_properties:reference_list</lid_reference>
+            <reference_type>data_to_ancillary_data</reference_type>
+            <comment>Reference for the cited values in the table.</comment>
+        </Internal_Reference>
+        
+    </Reference_List>
+    
+    <File_Area_Observational>
+        <File>
+            <file_name>colors.tab</file_name>
+            
+        </File>
+        
+        <Table_Character>
+            
+            <offset unit="byte">0</offset>
+            <records>76</records>
+            <description>
+                This file originally contained 'Table 5. Colors of
+                cometary nuclei' from Lamy et al. (2004).  It listed B-V, V-R and R-I colors
+                recorded for 21 different comet nuclei, collected from the literature. It has
+                since been augmented with published results from similar papers.
+            </description>
+            <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+            
+            <Record_Character>
+                <fields>13</fields>
+                <groups>0</groups>
+                <record_length unit="byte">113</record_length>
+                
+                <Field_Character>
+                    <name>Periodic Number</name>
+                    <field_number>1</field_number>
+                    <field_location unit="byte">1</field_location>
+                    <data_type>ASCII_Integer</data_type>
+                    <field_length unit="byte">3</field_length>
+                    <field_format>%3d</field_format>
+                   
+                    <description>Periodic number of the Comet.</description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Comet Type</name>
+                    <field_number>2</field_number>
+                    <field_location unit="byte">4</field_location>
+                    <data_type>ASCII_String</data_type>
+                    <field_length unit="byte">1</field_length>
+                    <field_format>%-1s</field_format>
+                    
+                    <description>Single letter indicating comet type. P = periodic,       
+                        C = non-periodic, D = defunct (believed to have disintegrated).</description>
+                    
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Comet Name</name>
+                    <field_number>3</field_number>
+                    <field_location unit="byte">6</field_location>
+                    <data_type>ASCII_String</data_type>
+                    <field_length unit="byte">25</field_length>
+                    <field_format>%-25s</field_format>
+                   
+                    <description>Name of the Comet.</description>
+                    
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Discovery ID</name>
+                    <field_number>4</field_number>
+                    <field_location unit="byte">32</field_location>
+                    <data_type>ASCII_String</data_type>
+                    <field_length unit="byte">10</field_length>
+                    <field_format>%-10s</field_format>
+                    
+                    <description>Discovery ID assigned by the MPC.  These are provided
+                        only for non-periodic comets.  This may be an asteroid ID if the comet
+                        was not obviously active when first discovered.
+                        A blank has been used to represent those which do not have a Discovery ID.
+                    </description>
+                    
+                    
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Comet Class</name>
+                    <field_number>5</field_number>
+                    <field_location unit="byte">43</field_location>
+                    <data_type>ASCII_String</data_type>
+                    <field_length unit="byte">3</field_length>
+                    <field_format>%-3s</field_format>
+                    
+                    <description>Dynamic classification of the comet; either 'EC', for    
+                        ecliptic comets; or 'NIC' for nearly-isotropic comets.                  
+                        
+                        If T[j] is the Tisserand parameter with respect to Jupiter, then        
+                        ecliptic comets (EC) are those with 2 &lt;= T[j] &lt;= 3 and a period of      
+                        less than about 20 year.  Nearly isotropic comets (NIC) are those       
+                        with T[j] &lt; 2.</description>
+                    
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>BV</name>
+                    <field_number>6</field_number>
+                    <field_location unit="byte">48</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>Magnitude</unit>
+                    <description>B-V color reported in the cited reference, if any.</description>
+                    <Special_Constants>
+                        <missing_constant>-.99</missing_constant>
+                    </Special_Constants>
+                    
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>BV Error</name>
+                    <field_number>7</field_number>
+                    <field_location unit="byte">53</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>Magnitude</unit>
+                    <description>Size of the error bar (+/-) for the B-V value.</description>
+                    <Special_Constants>
+                        <missing_constant>-.99</missing_constant>
+                    </Special_Constants>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>VR</name>
+                    <field_number>8</field_number>
+                    <field_location unit="byte">59</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>Magnitude</unit>
+                    <description>V-R color reported in the cited reference, if any.</description>
+                    <Special_Constants>
+                        <missing_constant>-.99</missing_constant>
+                    </Special_Constants>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>VR Error</name>
+                    <field_number>9</field_number>
+                    <field_location unit="byte">64</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>Magnitude</unit>
+                    <description>Size of the error bar (+/-) for the V-R value.</description>
+                    <Special_Constants>
+                        <missing_constant>-.99</missing_constant>
+                    </Special_Constants>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>RI</name>
+                    <field_number>10</field_number>
+                    <field_location unit="byte">70</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>Magnitude</unit>
+                    <description>R-I color reported in the cited reference, if any.</description>
+                    <Special_Constants>
+                        <missing_constant>-.99</missing_constant>
+                    </Special_Constants>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>RI Error</name>
+                    <field_number>11</field_number>
+                    <field_location unit="byte">75</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>Magnitude</unit>
+                    <description>Size of the error bar (+/-) for the R-I value.</description>
+                    <Special_Constants>
+                        <missing_constant>-.99</missing_constant>
+                    </Special_Constants>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Photometry</name>
+                    <field_number>12</field_number>
+                    <field_location unit="byte">81</field_location>
+                    <data_type>ASCII_String</data_type>
+                    <field_length unit="byte">1</field_length>
+                    <field_format>%-1s</field_format>
+                    
+                    <description>Single character indicating the type of observation:  
+                        F = Filter photometry                                                   
+                        S = Spectrophotometry                                                   
+                        G = in situ measurements by the Giotto Halley Multicolour Camera.</description>
+                    
+                </Field_Character>
+                          
+                
+                <Field_Character>
+                    <name>Source</name>
+                    <field_number>13</field_number>
+                    <field_location unit="byte">84</field_location>
+                    <data_type>ASCII_String</data_type>
+                    <field_length unit="byte">28</field_length>
+                    <field_format>%-28s</field_format>
+                    
+                    <description>Reference for the cited values.  These have been      
+                        expanded from the abbreviations used in Lamy et al. (2004).  Note       
+                        also that the abbreviation 'M+02' used in that reference actually       
+                        corresponds to 'Meech et al. (2004)'.</description>
+                   
+                </Field_Character>
+            </Record_Character>
+        </Table_Character>
+    </File_Area_Observational>
+</Product_Observational>

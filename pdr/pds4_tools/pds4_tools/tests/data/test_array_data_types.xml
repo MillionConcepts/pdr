@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/current.sch"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/current.xsd">
+    
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:none</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Table Data Types Tester</title>
+        <information_model_version>1.2.0.1</information_model_version>
+        <product_class>Product_Observational</product_class>
+
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2016-07-09</modification_date>
+                <version_id>1.0</version_id>
+                <description>Created</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>1995-10-03T11:37:30Z</start_date_time>
+            <stop_date_time>1995-10-04T11:42:21Z</stop_date_time>
+        </Time_Coordinates>
+
+        <Investigation_Area>
+            <name>None</name>
+            <type>Individual Investigation</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:individual_investigation.none</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+    </Observation_Area>
+
+    <File_Area_Observational>
+        <File>
+          <file_name>test_array_data_types.dat</file_name>
+        </File>
+
+        <Array>
+          <name>SignedByte</name>
+          <offset unit="byte">0</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [-100, 127, 50]</description>
+          <Element_Array>
+            <data_type>SignedByte</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>UnsignedByte</name>
+          <offset unit="byte">3</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [150, 253, 0]</description>
+          <Element_Array>
+            <data_type>UnsignedByte</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>SignedMSB2</name>
+          <offset unit="byte">6</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [-32237, 25020, -100]</description>
+          <Element_Array>
+            <data_type>SignedMSB2</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>SignedMSB4</name>
+          <offset unit="byte">12</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [2147480000, -1047483647, 143352]</description>
+          <Element_Array>
+            <data_type>SignedMSB4</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>SignedMSB8</name>
+          <offset unit="byte">24</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [9003372036854775800, -59706567879, 8379869176]</description>
+          <Element_Array>
+            <data_type>SignedMSB8</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>UnsignedMSB2</name>
+          <offset unit="byte">48</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [502, 34542, 60535]</description>
+          <Element_Array>
+            <data_type>UnsignedMSB2</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>UnsignedMSB4</name>
+          <offset unit="byte">54</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [50349235, 3994967214, 243414]</description>
+          <Element_Array>
+            <data_type>UnsignedMSB4</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>UnsignedMSB8</name>
+          <offset unit="byte">66</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [987654073709550582, 25020, 17396744073709550582]</description>
+          <Element_Array>
+            <data_type>UnsignedMSB8</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>IEEE754MSBSingle</name>
+          <offset unit="byte">90</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [-1.3862e-43, 1.25e-41, 3.403451e+25]</description>
+          <Element_Array>
+            <data_type>IEEE754MSBSingle</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>IEEE754MSBDouble</name>
+          <offset unit="byte">102</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [1.79e+308, -5.7303e100, -101.432310]</description>
+          <Element_Array>
+            <data_type>IEEE754MSBDouble</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>ComplexMSB8</name>
+          <offset unit="byte">126</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [3.202823e38,   1.41e5,
+                                       1.63230,      -1.2360e10,
+                                       1.155494e-38, -500.23]]</description>
+          <Element_Array>
+            <data_type>ComplexMSB8</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>ComplexMSB16</name>
+          <offset unit="byte">150</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [ 2.215073858e-308,  1.41e5,
+                                        5.072014,         -1.2360e10,
+                                       -1.65e308,          1.797693e308]</description>
+          <Element_Array>
+            <data_type>ComplexMSB16</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>SignedLSB2</name>
+          <offset unit="byte">198</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [-32237, 25020, -100]</description>
+          <Element_Array>
+            <data_type>SignedLSB2</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>SignedLSB4</name>
+          <offset unit="byte">204</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [2147480000, -1047483647, 143352]</description>
+          <Element_Array>
+            <data_type>SignedLSB4</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>SignedLSB8</name>
+          <offset unit="byte">216</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [9003372036854775800, -59706567879, 8379869176]</description>
+          <Element_Array>
+            <data_type>SignedLSB8</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>UnsignedLSB2</name>
+          <offset unit="byte">240</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [502, 34542, 60535]</description>
+          <Element_Array>
+            <data_type>UnsignedLSB2</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>UnsignedLSB4</name>
+          <offset unit="byte">246</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [50349235, 3994967214, 243414]</description>
+          <Element_Array>
+            <data_type>UnsignedLSB4</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>UnsignedLSB8</name>
+          <offset unit="byte">258</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [987654073709550582, 25020, 17396744073709550582]</description>
+          <Element_Array>
+            <data_type>UnsignedLSB8</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>IEEE754LSBSingle</name>
+          <offset unit="byte">282</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [-1.3862e-43, 1.25e-41, 3.403451e+25]</description>
+          <Element_Array>
+            <data_type>IEEE754LSBSingle</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>IEEE754LSBDouble</name>
+          <offset unit="byte">294</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [1.79e+308, -5.7303e100, -101.432310]</description>
+          <Element_Array>
+            <data_type>IEEE754LSBDouble</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>ComplexLSB8</name>
+          <offset unit="byte">318</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [3.202823e38,   1.41e5,
+                                       1.63230,      -1.2360e10,
+                                       1.155494e-38, -500.23]]</description>
+          <Element_Array>
+            <data_type>ComplexLSB8</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>ComplexLSB16</name>
+          <offset unit="byte">342</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [ 2.215073858e-308,  1.41e5,
+                                        5.072014,         -1.2360e10,
+                                       -1.65e308,          1.797693e308]</description>
+          <Element_Array>
+            <data_type>ComplexLSB16</data_type>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>Integer Scaling/Offset 1</name>
+          <offset unit="byte">390</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [987654540100, -987654539900, 100] after transformation</description>
+          <Element_Array>
+            <data_type>SignedMSB2</data_type>
+            <scaling_factor>98765454</scaling_factor>
+            <value_offset>100</value_offset>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>Integer Scaling/Offset 2</name>
+          <offset unit="byte">396</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [987654539899.5, -987654540100.5, -100.5] after transformation</description>
+          <Element_Array>
+            <data_type>SignedMSB2</data_type>
+            <scaling_factor>98765454</scaling_factor>
+            <value_offset>-100.5</value_offset>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <Array>
+          <name>Float Scaling/Offset</name>
+          <offset unit="byte">402</offset>
+          <axes>1</axes>
+          <axis_index_order>Last Index Fastest</axis_index_order>
+          <description>Should contain [-3.2e+48, 3.2e+48, 1234.0] after transformation</description>
+          <Element_Array>
+            <data_type>IEEE754MSBSingle</data_type>
+            <scaling_factor>-10000000000</scaling_factor>
+            <value_offset>1234</value_offset>
+          </Element_Array>
+          <Axis_Array>
+            <axis_name>axis</axis_name>
+            <elements>3</elements>
+            <sequence_number>1</sequence_number>
+          </Axis_Array>
+        </Array>
+
+        <!--<Array>-->
+          <!--<name></name>-->
+          <!--<offset unit="byte"></offset>-->
+          <!--<axes>1</axes>-->
+          <!--<axis_index_order>Last Index Fastest</axis_index_order>-->
+          <!--<description>Should contain []</description>-->
+          <!--<Element_Array>-->
+            <!--<data_type></data_type>-->
+          <!--</Element_Array>-->
+          <!--<Axis_Array>-->
+            <!--<axis_name>axis</axis_name>-->
+            <!--<elements>3</elements>-->
+            <!--<sequence_number>1</sequence_number>-->
+          <!--</Axis_Array>-->
+        <!--</Array>-->
+
+    </File_Area_Observational>
+</Product_Observational>

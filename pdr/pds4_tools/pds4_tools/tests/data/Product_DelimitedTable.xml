@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1600.sch"
+  schematypens="http://purl.oclc.org/dsdl/schematron"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:pds="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:dph="http://pds.nasa.gov/pds4/dph/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1600.xsd
+    http://pds.nasa.gov/pds4/dph/v1 https://pds.nasa.gov/pds4/dph/v1/PDS4_DPH_1600.xsd">  
+    
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:example.dph.sampleproducts:exampleproducts:streamdelimited.co-s-inst-2-dummy-data-v1.0</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>CASSINI Orbiter Instrument Experiment</title>
+        <information_model_version>1.6.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2012-01-10</modification_date>
+                <version_id>1.0</version_id>
+                <description>
+                    extracted metadata from PDS3 catalog and
+                    modified to comply with PDS4 Information Model
+                </description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    
+    <Observation_Area>
+        <comment>Observational Intent</comment>
+        <Time_Coordinates>
+            <start_date_time>2004-03-04T00:00:00.012Z</start_date_time>
+            <stop_date_time>2004-03-04T00:00:55.017Z</stop_date_time>
+            <local_mean_solar_time>not applicable</local_mean_solar_time>
+            <local_true_solar_time>not applicable</local_true_solar_time>
+        </Time_Coordinates>
+        <Primary_Result_Summary>
+            <!-- deprecated
+            <type>Image</type>
+            -->
+            <purpose>Science</purpose>
+            <!-- deprecated
+            <data_regime>Visible</data_regime>
+            -->
+            <processing_level>Raw</processing_level>
+            <description>
+                This is where a generic description of the product goes            
+            </description>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>.CASSINI-HUYGENS</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lidvid_reference>urn:nasa:pds:context:investigation:mission.cassini-huygens::1.0</lidvid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>Observing System for CO+CDA</name>
+            <Observing_System_Component>
+                <name>PHX</name>
+                <type>Spacecraft</type>
+                <description>instrument_host PHX</description>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:instrument_host.co</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>TT</name>
+                <type>Instrument</type>
+                <description>instrument TT</description>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:instrument.cda__co</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>       
+        <Target_Identification>
+            <name>DUST</name>
+            <type>Planet</type>
+            <description>description of DUST goes here</description>
+            <Internal_Reference>
+                <lidvid_reference>urn:nasa:pds:context:target:target.dust::1.0</lidvid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+        
+        <!-- ============================================================ -->
+        <!-- Reference the attributes that were imported from the         -->
+        <!-- local dictionary (using the local namespace (dph)            -->
+        <!-- ============================================================ -->                   
+        <Mission_Area>
+            <dph:spacecraft_clock_start_count>not applicable</dph:spacecraft_clock_start_count>
+            <dph:spacecraft_clock_stop_count>not applicable</dph:spacecraft_clock_stop_count>
+        </Mission_Area>
+        <Discipline_Area>
+        </Discipline_Area>
+    </Observation_Area>
+    
+    <Reference_List>
+        <Internal_Reference>
+            <lidvid_reference>urn:nasa:pds:context:investigation:mission.cassini-huygens::1.0</lidvid_reference>
+            <reference_type>data_to_document</reference_type>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:context:instrument_host:instrument_host.co</lid_reference>
+            <reference_type>data_to_document</reference_type>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:context:instrument:instrument.cda__co</lid_reference>
+            <reference_type>data_to_document</reference_type>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:context:target:target.dust</lid_reference>
+            <reference_type>data_to_document</reference_type>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:context:node:node.ppi</lid_reference>
+            <reference_type>data_to_document</reference_type>
+        </Internal_Reference>
+    </Reference_List>
+    
+    <File_Area_Observational>
+        <File>
+            <file_name>delim_data.csv</file_name>
+            <local_identifier>STREAM_DELIMITED_CSV_FILE_ID</local_identifier>
+            <creation_date_time>2009-04-28T08:35:10Z</creation_date_time>
+            <file_size unit="byte">1577</file_size>
+            <records>20</records>
+            <md5_checksum>bf500585bef445f130debff7cf674220</md5_checksum>
+        </File>
+        <Table_Delimited>
+            <local_identifier>SIMPLE_DELIMITED_TABLE</local_identifier>
+            <offset unit="byte">0</offset>
+            <parsing_standard_id>PDS DSV 1</parsing_standard_id>
+            <records>20</records>
+            <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+            <field_delimiter>Comma</field_delimiter>
+            <Record_Delimited>
+                <fields>4</fields>
+                <groups>2</groups>
+                <maximum_record_length unit="byte">87</maximum_record_length>
+                
+                <Field_Delimited>
+                    <name>INDEX</name>
+                    <field_number>1</field_number>
+                    <data_type>ASCII_String</data_type>
+                    <maximum_field_length unit="byte">6</maximum_field_length>
+                    <description>Primary index into data record.</description>
+                </Field_Delimited>
+                
+                <Field_Delimited>
+                    <name>TIME</name>
+                    <field_number>2</field_number>
+                    <data_type>ASCII_Date_Time_YMD</data_type>
+                    <maximum_field_length unit="byte">23</maximum_field_length>
+                    <description>
+                        Spacecraft event time (UT) for this data record.
+                    </description>
+                </Field_Delimited>
+
+                <Field_Delimited>
+                    <name>DURATION</name>
+                    <field_number>3</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <maximum_field_length unit="byte">7</maximum_field_length>
+                    <field_format>%7.2f</field_format>
+                    <unit>second/field_unit</unit>
+                    <description>
+                        Time interval over which counting was 
+                        performed (seconds).
+                    </description>
+                </Field_Delimited>
+
+                <Field_Delimited>
+                    <name>MODE</name>
+                    <field_number>4</field_number>
+                    <data_type>ASCII_String</data_type>
+                    <maximum_field_length unit="byte">7</maximum_field_length>
+                    <field_format>%-7s</field_format>
+                    <description> 
+                        Scan mode name. See the instrument 
+                        description for a complete list of 
+                        scan mode names and properties.
+                    </description>
+                </Field_Delimited>
+                
+                <!-- ============================================ -->
+                <!-- Mimick PDS3 "Items / Item_Bytes"             -->
+                <!--   in a single FIELD                          -->
+                <!-- ============================================ -->
+                <Group_Field_Delimited>                  
+                    <repetitions>10</repetitions>
+                    <fields>1</fields>
+                    <groups>0</groups>
+                    
+                    <Field_Delimited>
+                        <name>ELECTRON COUNTS</name>
+                        <field_number>5</field_number>
+                        <data_type>ASCII_Integer</data_type>
+                        <maximum_field_length unit="byte">5</maximum_field_length>
+                        <field_format>%5d</field_format>
+                        <unit>counts/field_unit</unit>
+                        <description>
+                            This field contains electron counts
+                            from channels E1-E10. Items without values indicate 
+                            channels not counted during the interval. Values of 
+                            zero denote counted channels in which no electrons 
+                            were detected. Values of -1 denote corrupted data, 
+                            excluded from the data file (counted, but value 
+                            undefined).</description>
+                    </Field_Delimited>
+                </Group_Field_Delimited>
+                
+                <!-- ============================================ -->
+                <!-- Mimick PDS3 "Items / Item_Bytes"             -->
+                <!--   in a single FIELD                          -->
+                <!-- ============================================ -->
+                <Group_Field_Delimited>
+                    <repetitions>10</repetitions>
+                    <fields>1</fields>
+                    <groups>0</groups>
+                    
+                    <Field_Delimited>
+                        <name>ION COUNTS</name>
+                        <field_number>6</field_number>
+                        <data_type>ASCII_Integer</data_type>
+                        <maximum_field_length unit="byte">5</maximum_field_length>
+                        <field_format>%5d</field_format>
+                        <unit>counts</unit>
+                        <description>This field contains ion counts from 
+                            channels D1-D10. Items without values indicate channels 
+                            not counted during the interval. Values of zero denote 
+                            counted channels in which no ions were detected. Values 
+                            of -1 denote corrupted data, excluded from the data file 
+                            (counted, but value undefined).</description>
+                    </Field_Delimited>
+                </Group_Field_Delimited>
+                
+            </Record_Delimited>
+        </Table_Delimited>
+        <Table_Delimited>
+            <local_identifier>COMPLICATED_DELIMITED_TABLE</local_identifier>
+            <offset unit="byte">1561</offset>
+            <parsing_standard_id>PDS DSV 1</parsing_standard_id>
+            <records>3</records>
+            <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+            <field_delimiter>Comma</field_delimiter>
+            <Record_Delimited>
+
+                <fields>1</fields>
+                <groups>1</groups>
+
+                <Field_Delimited>
+                    <name>FIELD_0</name>
+                    <field_number>1</field_number>
+                    <data_type>ASCII_String</data_type>
+                    <maximum_field_length unit="byte">7</maximum_field_length>
+                </Field_Delimited>
+
+                <Group_Field_Delimited>
+                    <repetitions>3</repetitions>
+                    <fields>4</fields>
+                    <groups>1</groups>
+
+                    <Field_Delimited>
+                        <name>FIELD_1</name>
+                        <field_number>2</field_number>
+                        <data_type>ASCII_Integer</data_type>
+                    </Field_Delimited>
+
+                    <Field_Delimited>
+                        <name>FIELD_2</name>
+                        <field_number>3</field_number>
+                        <data_type>ASCII_Integer</data_type>
+                    </Field_Delimited>
+
+                    <Group_Field_Delimited>
+                        <repetitions>2</repetitions>
+                        <fields>3</fields>
+                        <groups>1</groups>
+
+                        <Field_Delimited>
+                            <name>FIELD_3</name>
+                            <field_number>4</field_number>
+                            <data_type>ASCII_Integer</data_type>
+                        </Field_Delimited>
+
+                        <Group_Field_Delimited>
+                            <repetitions>3</repetitions>
+                            <fields>2</fields>
+                            <groups>1</groups>
+
+                            <Group_Field_Delimited>
+                                <repetitions>2</repetitions>
+                                <fields>1</fields>
+                                <groups>0</groups>
+
+                                <Field_Delimited>
+                                    <name>FIELD_4</name>
+                                    <field_number>5</field_number>
+                                    <data_type>ASCII_Integer</data_type>
+                                </Field_Delimited>
+                            </Group_Field_Delimited>
+
+                            <Field_Delimited>
+                                <name>FIELD_5</name>
+                                <field_number>5</field_number>
+                                <data_type>ASCII_Integer</data_type>
+                            </Field_Delimited>
+
+                            <Field_Delimited>
+                                <name>FIELD_6</name>
+                                <field_number>5</field_number>
+                                <data_type>ASCII_Integer</data_type>
+                            </Field_Delimited>
+                        </Group_Field_Delimited>
+
+                        <Field_Delimited>
+                            <name>FIELD_7</name>
+                            <field_number>5</field_number>
+                            <data_type>ASCII_Integer</data_type>
+                        </Field_Delimited>
+
+                        <Field_Delimited>
+                            <name>FIELD_8</name>
+                            <field_number>5</field_number>
+                            <data_type>ASCII_Integer</data_type>
+                        </Field_Delimited>
+                    </Group_Field_Delimited>
+
+                    <Field_Delimited>
+                        <name>FIELD_9</name>
+                        <field_number>6</field_number>
+                        <data_type>ASCII_Integer</data_type>
+                    </Field_Delimited>
+
+                    <Field_Delimited>
+                        <name>FIELD_10</name>
+                        <field_number>6</field_number>
+                        <data_type>ASCII_Integer</data_type>
+                    </Field_Delimited>
+                </Group_Field_Delimited>
+
+            </Record_Delimited>
+        </Table_Delimited>
+
+       <Table_Delimited>
+            <local_identifier>LF_TAB_DELIMITED_TABLE</local_identifier>
+            <offset unit="byte">2195</offset>
+            <parsing_standard_id>PDS DSV 1</parsing_standard_id>
+            <records>3</records>
+            <record_delimiter>Line-Feed</record_delimiter>
+            <field_delimiter>Horizontal Tab</field_delimiter>
+            <Record_Delimited>
+                <fields>4</fields>
+                <groups>0</groups>
+
+                <Field_Delimited>
+                   <name>id</name>
+                   <data_type>ASCII_Integer</data_type>
+                   <description>Event ID; a unique event ID number</description>
+                </Field_Delimited>
+
+                <Field_Delimited>
+                   <name>start_time</name>
+                   <data_type>ASCII_String</data_type>
+                   <description>Event start date and time</description>
+                </Field_Delimited>
+
+                <Field_Delimited>
+                   <name>tec_enabled</name>
+                   <data_type>ASCII_Boolean</data_type>
+                   <description>Indicates whether the Thermo-electric cooler is active.</description>
+                </Field_Delimited>
+
+                <Field_Delimited>
+                   <name>source</name>
+                   <data_type>ASCII_String</data_type>
+                   <description>Event source: science, MAVEN Integrated Report, or SPICE kernels</description>
+                </Field_Delimited>
+            </Record_Delimited>
+      </Table_Delimited>
+
+    </File_Area_Observational>
+    
+</Product_Observational>

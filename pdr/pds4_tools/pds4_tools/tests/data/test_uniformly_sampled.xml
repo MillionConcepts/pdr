@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/current.sch"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/current.xsd">
+    
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:none</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Table Data Types Tester</title>
+        <information_model_version>1.2.0.1</information_model_version>
+        <product_class>Product_Observational</product_class>
+
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2016-07-09</modification_date>
+                <version_id>1.0</version_id>
+                <description>Created</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>1995-10-03T11:37:30Z</start_date_time>
+            <stop_date_time>1995-10-04T11:42:21Z</stop_date_time>
+        </Time_Coordinates>
+
+        <Investigation_Area>
+            <name>None</name>
+            <type>Individual Investigation</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:individual_investigation.none</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+    </Observation_Area>
+
+    <File_Area_Observational>
+        <File>
+            <file_name>test_masked_data.dat</file_name>
+        </File>
+
+        <Table_Binary>
+          <name>UniSampled Linear</name>
+          <offset unit="byte">0</offset>
+          <records>4</records>
+          <description>Uniformly sampled field data should be: [1, 3, 5, 7].</description>
+          <Uniformly_Sampled>
+              <sampling_parameter_name>linear</sampling_parameter_name>
+              <sampling_parameter_interval>2</sampling_parameter_interval>
+              <sampling_parameter_unit>ms</sampling_parameter_unit>
+              <first_sampling_parameter_value>1</first_sampling_parameter_value>
+              <last_sampling_parameter_value>7</last_sampling_parameter_value>
+              <sampling_parameter_scale>Linear</sampling_parameter_scale>
+          </Uniformly_Sampled>
+          <Record_Binary>
+            <fields>1</fields>
+            <groups>0</groups>
+            <record_length unit="byte">63</record_length>
+            <Field_Binary>
+              <name>SignedMSB4</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>SignedMSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Irrelevant for Uniformly Sampled testing.</description>
+            </Field_Binary>
+          </Record_Binary>
+        </Table_Binary>
+
+        <Table_Binary>
+          <name>UniSampled Exponential</name>
+          <offset unit="byte">0</offset>
+          <records>4</records>
+          <description>Uniformly sampled field data should be: [0., 0.30103, 0.47712, 0.6020].</description>
+          <Uniformly_Sampled>
+              <sampling_parameter_name>exponential</sampling_parameter_name>
+              <sampling_parameter_interval>1</sampling_parameter_interval>
+              <sampling_parameter_unit>ms</sampling_parameter_unit>
+              <first_sampling_parameter_value>0</first_sampling_parameter_value>
+              <last_sampling_parameter_value>0.60206</last_sampling_parameter_value>
+              <sampling_parameter_scale>Exponential</sampling_parameter_scale>
+              <sampling_parameter_base>10</sampling_parameter_base>
+          </Uniformly_Sampled>
+          <Record_Binary>
+            <fields>1</fields>
+            <groups>0</groups>
+            <record_length unit="byte">63</record_length>
+            <Field_Binary>
+              <name>SignedMSB4</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>SignedMSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Irrelevant for Uniformly Sampled testing.</description>
+            </Field_Binary>
+          </Record_Binary>
+        </Table_Binary>
+
+        <Table_Binary>
+          <name>UniSampled Logarithmic</name>
+          <offset unit="byte">0</offset>
+          <records>4</records>
+          <description>Uniformly sampled field data should be: [1, 10, 100, 1000].</description>
+          <Uniformly_Sampled>
+              <sampling_parameter_name>logarithmic</sampling_parameter_name>
+              <sampling_parameter_interval>10</sampling_parameter_interval>
+              <sampling_parameter_unit>ms</sampling_parameter_unit>
+              <first_sampling_parameter_value>1</first_sampling_parameter_value>
+              <last_sampling_parameter_value>1000</last_sampling_parameter_value>
+              <sampling_parameter_scale>Logarithmic</sampling_parameter_scale>
+          </Uniformly_Sampled>
+          <Record_Binary>
+            <fields>1</fields>
+            <groups>0</groups>
+            <record_length unit="byte">63</record_length>
+            <Field_Binary>
+              <name>SignedMSB4</name>
+              <field_location unit="byte">1</field_location>
+              <data_type>SignedMSB4</data_type>
+              <field_length unit="byte">4</field_length>
+              <description>Irrelevant for Uniformly Sampled testing.</description>
+            </Field_Binary>
+          </Record_Binary>
+        </Table_Binary>
+    </File_Area_Observational>
+</Product_Observational>
