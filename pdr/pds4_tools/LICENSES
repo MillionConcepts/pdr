@@ -1,3 +1,21 @@
+"""
+This package is a modified version of pds4_tools
+(https://github.com/Small-Bodies-Node/pds4_tools).
+
+It was originally authored by Lev Nagdimunov and released under the
+license below, copyright University of Maryland. As such, it carries all terms
+of that license and copyright in addition to the terms of the BSD-3 Clause
+license, copyright Million Concepts, that apply to pdr as a whole, including
+our Contributions to this package.
+
+Million Concepts explicitly makes no claim to the University of Maryland
+name or trademarks.
+
+############################################################################
+# PDS4 Tools: easy read-in of NASA PDS4 data and meta-data into Python
+############################################################################
+"""
+
 Copyright (c) 2015 - 2024, University of Maryland
 All rights reserved.
 
