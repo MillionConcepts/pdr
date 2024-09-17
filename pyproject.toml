@@ -31,7 +31,6 @@ dependencies = [
     "multidict",
     "numpy<2.0.0",
     "pandas>=2.0.0",
-    "pds4_tools",
     "python-Levenshtein",
 ]
 

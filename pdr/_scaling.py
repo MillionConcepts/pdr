@@ -100,7 +100,7 @@ def scale_array(
 def scale_pds4_tools_struct(struct: object) -> np.ndarray:
     """see pds4_tools.reader.read_arrays.new_array"""
     # TODO: apply bit_mask
-    from pds4_tools.reader.data_types import apply_scaling_and_value_offset
+    from pdr.pds4_tools.reader.data_types import apply_scaling_and_value_offset
 
     array = struct.data
     element_array = struct.meta_data["Element_Array"]

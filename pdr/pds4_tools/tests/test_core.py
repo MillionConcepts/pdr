@@ -11,20 +11,20 @@ import numpy as np
 
 from . import PDS4ToolsTestCase
 
-from pds4_tools import pds4_read
-from pds4_tools.reader.data import PDS_ndarray, PDS_marray
-from pds4_tools.reader.data_types import data_type_convert_dates
-from pds4_tools.reader.array_objects import ArrayStructure
-from pds4_tools.reader.table_objects import TableStructure, TableManifest
-from pds4_tools.reader.label_objects import Label
+from pdr.pds4_tools import pds4_read
+from pdr.pds4_tools.reader.data import PDS_ndarray, PDS_marray
+from pdr.pds4_tools.reader.data_types import data_type_convert_dates
+from pdr.pds4_tools.reader.array_objects import ArrayStructure
+from pdr.pds4_tools.reader.table_objects import TableStructure, TableManifest
+from pdr.pds4_tools.reader.label_objects import Label
 
-from pds4_tools.utils import compat
-from pds4_tools.utils.compat import OrderedDict
-from pds4_tools.utils.deprecation import (PDS4ToolsDeprecationWarning, deprecated,
+from pdr.pds4_tools.utils import compat
+from pdr.pds4_tools.utils.compat import OrderedDict
+from pdr.pds4_tools.utils.deprecation import (PDS4ToolsDeprecationWarning, deprecated,
                                           rename_parameter, delete_parameter)
 
-from pds4_tools.extern import six
-from pds4_tools.extern.six.moves import collections_abc
+from pdr.pds4_tools.extern import six
+from pdr.pds4_tools.extern.six.moves import collections_abc
 
 
 class TestStructureList(PDS4ToolsTestCase):
