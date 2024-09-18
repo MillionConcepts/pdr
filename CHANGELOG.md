@@ -30,6 +30,7 @@ compatibility and avoid hot patches
 [see issue #57](https://github.com/MillionConcepts/pdr/issues/57)
 - Unit tests are now backed by `pytest` fixtures for improved flexibility and
 compatibility
+- ROW_PREFIX_BYTES are now accounted for when calculating offset positions
 
 #### Dataset Support
 - Galileo NIMS qubes
@@ -98,7 +99,7 @@ compatibility
 - The hotpatch for `pds4-tools` Python 3.12 incompatibility no longer
   has persistent side effects; for instance, `conda` will no longer
   complain about checksum mismatches.
-- bug reading PDS4-labeled FITS files
+- Bug reading PDS4-labeled FITS files
 
 ### Removed
 - `pdr.Data.__iter__` method is being deprecated

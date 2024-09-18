@@ -12,8 +12,8 @@ license     = { file = "LICENSE.md" }
 authors     = [
     { name = "Chase Million",     email = "chase@millionconcepts.com"    },
     { name = "Michael St. Clair", email = "mstclair@millionconcepts.com" },
-    { name = "Sabrina Curtis",    email = "scurtis@millionconcepts.com"  },
     { name = "Sierra Brown",      email = "sierra@millionconcepts.com"   },
+    { name = "Sabrina Curtis",    email = "scurtis@millionconcepts.com"  },
     { name = "Zack Weinberg",     email = "zack@millionconcepts.com"     },
 ]
 
@@ -29,7 +29,7 @@ dependencies = [
     "dustgoggles",
     "more_itertools",
     "multidict",
-    "numpy<2.0.0",
+    "numpy",
     "pandas>=2.0.0",
     "python-Levenshtein",
 ]

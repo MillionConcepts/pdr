@@ -22,7 +22,7 @@ open, while others may not; those that do may open incorrectly. Support is
 planned for some of these datasets. Others—due to unusual data formats,
 availability, or quality issues—may never be supported.
 
-**All PDS4 products, unless explictly listed here as known unsupported or specified
+**All PDS4 products, unless explicitly listed here as known unsupported or specified
 in [`pds4_tools`](https://github.com/Small-Bodies-Node/pds4_tools/) documentation
 as out of support, are considered at least notionally supported**. We 
 give specific comments and usage suggestions about some PDS4 product types below. 
