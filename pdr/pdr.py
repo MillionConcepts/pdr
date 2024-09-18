@@ -303,14 +303,8 @@ class Data:
 
     def _init_pds4(self):
         """use pds4_tools to open pds4 files, but in our interface idiom."""
-        # pds4_tools currently uses an outdated version of six.py that is
-        # incompatible with Python 3.12, and may fail to load if tkinter
-        # isn't installed.  Work around both of these problems.
-        from pdr._patches import patch_pds4_tools
 
-        patch_pds4_tools()
-
-        import pds4_tools as pds4
+        import pdr.pds4_tools as pds4
 
         structure_list = pds4.read(
             self.labelname, lazy_load=True, quiet=True, no_scale=True
@@ -573,7 +567,7 @@ class Data:
         it to our internal FITS-loading workflow.
         """
         structure = self._pds4_structures[object_name]
-        from pds4_tools.reader.label_objects import Label
+        from pdr.pds4_tools.reader.label_objects import Label
 
         if isinstance(structure, Label):
             setattr(self, "label", structure)

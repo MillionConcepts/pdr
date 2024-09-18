@@ -11,7 +11,7 @@ from multidict import MultiDict
 
 
 if TYPE_CHECKING:
-    from pds4_tools.reader.label_objects import Label
+    from pdr.pds4_tools.reader.label_objects import Label
 
 
 def unpack_to_multidict(

@@ -1,52 +1,20 @@
-###  BSD 3-Clause License
+"""
+This package is a modified version of pds4_tools
+(https://github.com/Small-Bodies-Node/pds4_tools).
 
-Copyright (c) 2021, Million Concepts
-All rights reserved.
+It was originally authored by Lev Nagdimunov and released under the
+license below, copyright University of Maryland. As such, it carries all terms
+of that license and copyright in addition to the terms of the BSD-3 Clause
+license, copyright Million Concepts, that apply to pdr as a whole, including
+our Contributions to this package.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+Million Concepts explicitly makes no claim to the University of Maryland
+name or trademarks.
 
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-### pdr/vax.py  and pdr/tests/test_vax.py are derived from code in the SETI [pds-tools module](https://github.com/SETI/pds-tools/) and carries this additional license:
-
-Apache License, Version 2.0
-
-Copyright (c) 2023, SETI
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-### pdr/pds4_tools is derived from code in the Small Bodies Node [pds4_tools package](https://github.com/Small-Bodies-Node/pds4_tools) and carries this additional license:
+############################################################################
+# PDS4 Tools: easy read-in of NASA PDS4 data and meta-data into Python
+############################################################################
+"""
 
 Copyright (c) 2015 - 2024, University of Maryland
 All rights reserved.

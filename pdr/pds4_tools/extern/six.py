@@ -263,7 +263,7 @@ _moved_attributes = [
     MovedAttribute("reduce", "__builtin__", "functools"),
     MovedAttribute("shlex_quote", "pipes", "shlex", "quote"),
     MovedAttribute("StringIO", "StringIO", "io"),
-    MovedAttribute("UserDict", "UserDict", "collections", "IterableUserDict", "UserDict"),
+    MovedAttribute("UserDict", "UserDict", "collections"),
     MovedAttribute("UserList", "UserList", "collections"),
     MovedAttribute("UserString", "UserString", "collections"),
     MovedAttribute("xrange", "__builtin__", "builtins", "xrange", "range"),
@@ -899,12 +899,12 @@ def ensure_binary(s, encoding='utf-8', errors='strict'):
     """Coerce **s** to six.binary_type.
 
     For Python 2:
-      - `unicode` -> encoded to `str`
-      - `str` -> `str`
+      - ``unicode`` -> encoded to ``str``
+      - ``str`` -> ``str``
 
     For Python 3:
-      - `str` -> encoded to `bytes`
-      - `bytes` -> `bytes`
+      - ``str`` -> encoded to ``bytes``
+      - ``bytes`` -> ``bytes``
     """
     if isinstance(s, binary_type):
         return s
@@ -914,15 +914,15 @@ def ensure_binary(s, encoding='utf-8', errors='strict'):
 
 
 def ensure_str(s, encoding='utf-8', errors='strict'):
-    """Coerce *s* to `str`.
+    """Coerce *s* to ``str``.
 
     For Python 2:
-      - `unicode` -> encoded to `str`
-      - `str` -> `str`
+      - ``unicode`` -> encoded to ``str``
+      - ``str`` -> ``str``
 
     For Python 3:
-      - `str` -> `str`
-      - `bytes` -> decoded to `str`
+      - ``str`` -> ``str``
+      - ``bytes`` -> decoded to ``str``
     """
     # Optimization: Fast return for the common case.
     if type(s) is str:
@@ -940,12 +940,12 @@ def ensure_text(s, encoding='utf-8', errors='strict'):
     """Coerce *s* to six.text_type.
 
     For Python 2:
-      - `unicode` -> `unicode`
-      - `str` -> `unicode`
+      - ``unicode`` -> ``unicode``
+      - ``str`` -> ``unicode``
 
     For Python 3:
-      - `str` -> `str`
-      - `bytes` -> decoded to `str`
+      - ``str`` -> ``str``
+      - ``bytes`` -> decoded to ``str``
     """
     if isinstance(s, binary_type):
         return s.decode(encoding, errors)
