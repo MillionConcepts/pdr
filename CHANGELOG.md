@@ -1,3 +1,23 @@
+## [X.X.X] - 2024-XX-XX
+### Added
+
+#### Features
+- Full compatibility with numpy 2.0 for pds3 and pds4 products
+
+#### Dataset Support
+
+
+### Changed
+- `pds4_tools` is now vendored within `pdr` to apply changes for numpy 2.0 
+compatibility and avoid hot patches
+
+### Fixed
+
+
+### Removed
+- `pds4_tools` dependency
+- `_patches` module
+
 ## [1.2.0] - 2024-09-18
 ### Added
 
