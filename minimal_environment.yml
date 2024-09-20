@@ -12,3 +12,4 @@ dependencies:
   - multidict
   - more-itertools
   - dustgoggles
+  - rms-vax

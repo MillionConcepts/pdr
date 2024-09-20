@@ -8,10 +8,10 @@
 
 
 ### Changed
-
+- `vax.py` module was removed in favor of using SETI/rms-vax dependency
 
 ### Fixed
-
+- License copyright extended to 2024; updated docs/LICENSE.md to match LICENSE.md
 
 ### Removed
 

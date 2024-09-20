@@ -6,8 +6,8 @@ from typing import Optional
 import warnings
 
 import numpy as np
+import vax
 
-from pdr import vax
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import make_c_contiguous, np_from_buffered_io
 from pdr.pdrtypes import ImageProps
