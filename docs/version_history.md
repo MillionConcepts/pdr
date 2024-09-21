@@ -23,9 +23,9 @@ MPO, and JP2. Behavior is as follows:
   information.
 
 ### Changed
-- `Data.dump_browse()` no longer applies default scaling if it would result
-in an image with only one value. Explicitly passing the `image_clip` argument
-will override this, if for some reason you want to.
+- `Data.dump_browse()` and `.show()` no longer apply default contrast enhancement 
+if it would result in an image with only one value. Explicitly passing the
+`image_clip` argument will override this, if for some reason you want to.
 
 ### Fixed
 - `Data.dump_browse()` now works correctly with FITS files opened in primary mode.
