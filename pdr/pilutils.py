@@ -16,6 +16,7 @@ from multidict import MultiDict
 from PIL import Image
 from PIL.ExifTags import GPSTAGS, TAGS
 from PIL.ImageCms import ImageCmsProfile
+from PIL.TiffTags import lookup
 
 NS_PATTERN = re.compile("{.*?}")
 
@@ -39,7 +40,12 @@ def add_gps_ifd(im: Image, gps_tagname: int):
 def get_exif_info(im: Image):
     outdict = {}
     for tag, val in im.getexif().items():
-        name = tag if tag not in TAGS.keys() else TAGS[tag]
+        if tag in TAGS.keys():
+            name = TAGS[tag]
+        elif im.format == "TIFF" and (tname := lookup(tag).name) != "unknown":
+            name = tname
+        else:
+            name = tag
         if name == 'GPSInfo':
             outdict |= add_gps_ifd(im, tag)
         elif name == 'XMLPacket':
