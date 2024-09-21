@@ -66,6 +66,7 @@ def normalize_range(
     bounds: Sequence[int] = (0, 1),
     clip: Union[float, tuple[float, float]] = 0,
     inplace: bool = False,
+    nice_clip: bool = False
 ) -> np.ndarray:
     """
     simple linear min-max scaler that optionally percentile-clips the input at
@@ -84,6 +85,8 @@ def normalize_range(
             return image
     else:
         minimum, maximum = find_unmasked_bounds(image, cheat_low, cheat_high)
+    if nice_clip is True and minimum == maximum:  # scaling was too intense
+        return image
     if not ((cheat_high is None) and (cheat_low is None)):
         if inplace is True:
             image = np.clip(image, minimum, maximum, out=image)
@@ -113,15 +116,16 @@ def eightbit(
     array: np.array,
     clip: Union[float, tuple[float, float]] = 0,
     inplace: bool = False,
+    nice_clip: bool = False
 ) -> np.ndarray:
     """
     return an eight-bit version of an array, optionally clipped at min/max
     percentiles. if inplace is True, normalization may transform the original
     array, with attendant memory savings and destructiveness.
     """
-    return np.round(normalize_range(array, (0, 255), clip, inplace)).astype(
-        np.uint8
-    )
+    return np.round(
+        normalize_range(array, (0, 255), clip, inplace, nice_clip)
+    ).astype(np.uint8)
 
 
 def colorfill_maskedarray(
@@ -208,23 +212,32 @@ def _browsify_array(
     obj: np.ndarray,
     outbase: str,
     purge: bool = False,
-    image_clip: Union[float, tuple[float, float]] = (1, 1),
+    image_clip: Union[float, tuple[float, float], None] = None,
     mask_color: Optional[tuple[int, int, int]] = (0, 255, 255),
     band_ix: Optional[int] = None,
     save: bool = True,
     override_rgba: bool = False,
     image_format: str = "jpg",
     **_,
-) -> 'list[Optional[Image.Image]]':
+) -> 'Union[Image.Image, list[Optional[Image.Image]]]':
     """
     Attempt to render (and optionally save) an ndarray as one or more
     images.
     """
+    nice_clip = image_clip is None
+    image_clip = (1, 1) if image_clip is None else image_clip
     if len(obj.shape) == 3:
         obj = _format_multiband_image(obj, band_ix, override_rgba)
     if not isinstance(obj, tuple):
         return _render_array(
-            obj, outbase, purge, image_clip, mask_color, save, image_format
+            obj,
+            outbase,
+            purge,
+            image_clip,
+            mask_color,
+            save,
+            image_format,
+            nice_clip
         )
     results = []
     for ix, band in enumerate(obj):
@@ -236,6 +249,7 @@ def _browsify_array(
             mask_color,
             save,
             image_format,
+            nice_clip
         )
         results.append(result)
     return results
@@ -248,7 +262,8 @@ def _render_array(
     image_clip: Union[float, tuple[float, float]],
     mask_color: Union[int, tuple[int, int, int]],
     save: bool,
-    image_format: str
+    image_format: str,
+    nice_clip: bool
 ) -> 'Optional[Image.Image]':
     """
     Handler function for array-rendering pipeline, used by `browsify()` on
@@ -261,7 +276,7 @@ def _render_array(
     if (obj.dtype.char in np.typecodes["AllInteger"]) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
     # convert to unsigned eight-bit integer to make it easy to write
-    obj = eightbit(obj, image_clip, purge)
+    obj = eightbit(obj, image_clip, purge, nice_clip)
     # unless color_fill is set to None, fill masked elements -- probably
     # special constants -- with RGB value defined by mask_color
     if isinstance(obj, np.ma.MaskedArray) and (mask_color is not None):
