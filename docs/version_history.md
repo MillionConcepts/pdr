@@ -5,16 +5,16 @@
 
 #### Features
 - Support for 'desktop' image formats in primary mode: JPEG, TIFF, GIF, PNG, 
-and JP2. Behavior is as follows:
+MPO, and JP2. Behavior is as follows:
   - `pdr` will attempt to parse all EXIF, TIFF tag, and MPO metadata, including
-  embedded XML packets. Parsed emtadata is available  in `Data.metadata` and 
+  embedded XML packets. Parsed metadata is available  in `Data.metadata` and 
   accessible with `Data.metaget()` and related methods.
   - Some basic image information is also available in `Data.metadata` (format, 
   color mode, dimensions, etc.) 
   - Most files will have a single data object named 'IMAGE'.
   - Animated GIFs will have one data object per frame, named 'FRAME_0', 
   'FRAME_1', etc.
-  - MPO images (this includes many files with .jpg and .jpeg extensions are MPO)
+  - MPO files (this includes many files with .jpg and .jpeg extensions)
   will have one data object per image. The MPO primary image is named 'IMAGE'. 
   Subsequent images are assigned names based on their MPType and index within
   the file.
