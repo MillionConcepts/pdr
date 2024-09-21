@@ -455,14 +455,13 @@ class Data:
             self._add_loaded_objects(self._load_primary_fits(name))
             return
         if self.standard in COMPRESSED_IMAGE_FORMATS:
-            import numpy as np
-            from PIL import Image
+            from pdr.loaders.handlers import handle_compressed_image
 
             # TODO: this may of course need to be made more sophisticated in
             #  some way if we want to handle animated GIFs or video as not-4D,
             #  or container formats with multiple distinct objects
             self._add_loaded_objects(
-                {'IMAGE': np.asarray(Image.open(self.filename)).copy()}
+                {'IMAGE': handle_compressed_image(self.filename)}
             )
             return
         if self.file_mapping.get(name) is None:
@@ -721,6 +720,12 @@ class Data:
             #  check and see if implicit special constants ever still exist
             #  stealthily in PDS4 data. etc.
             return scale_pds4_tools_struct(self._pds4_structures[object_name])
+
+        # TODO: double-check that astropy is successfully handling masking
+        # TODO: most 'desktop' image formats should never contain special
+        #  constants, but some (e.g. JP2) may be able to? check.
+        if self.standard != "PDS3":
+            return obj
 
         from pdr._scaling import mask_specials, scale_array
 
