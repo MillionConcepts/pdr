@@ -1,6 +1,7 @@
 """Support objects for 'utility' Loader subclasses."""
 
 from functools import partial
+from itertools import chain
 from operator import contains
 from pathlib import Path
 from typing import Collection
@@ -8,6 +9,9 @@ import warnings
 
 from multidict import MultiDict
 
+
+# TODO, maybe: I think we should keep these somewhere else; they're certainly
+#  not used exclusively in loaders
 
 LABEL_EXTENSIONS = (".xml", ".lbl")
 IMAGE_EXTENSIONS = (".img", ".rgb")
@@ -17,6 +21,19 @@ FITS_EXTENSIONS = (".fits", ".fit", ".fits.gz", ".fit.gz", ".fz")
 TIFF_EXTENSIONS = (".tif", ".tiff")
 JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 GIF_EXTENSIONS = (".gif",)
+JPEG_EXTENSIONS = (".jpg", ".jpeg")
+PNG_EXTENSIONS = (".png",)
+COMPRESSED_IMAGE_EXTENSION_HASH = {
+    "TIFF": TIFF_EXTENSIONS,
+    "JP2": JP2_EXTENSIONS,
+    "JPEG": JPEG_EXTENSIONS,
+    "GIF": GIF_EXTENSIONS,
+    "PNG": PNG_EXTENSIONS
+}
+COMPRESSED_IMAGE_FORMATS = tuple(COMPRESSED_IMAGE_EXTENSION_HASH.keys())
+COMPRESSED_IMAGE_EXTENSIONS = tuple(
+    chain(*COMPRESSED_IMAGE_EXTENSION_HASH.values())
+)
 
 
 def trivial(*_, **__):

@@ -7,6 +7,7 @@ from typing import (
     Any,
     Callable,
     Collection,
+    Hashable,
     Iterator,
     Literal,
     Mapping,
@@ -17,6 +18,8 @@ from typing import (
 )
 import re
 import warnings
+
+from pdr.pilutils import skim_image_data, paramdig
 
 # get_annotations is new in 3.10.  this polyfill handles only
 # the specific case we care about.
@@ -47,6 +50,7 @@ from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
 from pdr.formats import check_special_fn, special_image_constants
+from pdr.loaders.utility import COMPRESSED_IMAGE_FORMATS
 from pdr.parselabel.pds3 import (
     depointerize,
     get_pds3_pointers,
@@ -79,7 +83,7 @@ class Metadata(MultiDict):
 
     def __init__(
         self,
-        mapping_params: tuple[Mapping, Collection[str]],
+        mapping_params: tuple[Mapping, Collection[Hashable]],
         standard: Literal["PDS3", "PDS4", "FITS"] = "PDS3",
         **kwargs
     ):
@@ -259,6 +263,7 @@ class Data:
             if self.standard == "FITS":
                 from astropy.io import fits
 
+                # TODO: bad. need to not leave this open, although inefficient
                 self._hdulist = fits.open(self.filename)
         elif str(self.labelname).endswith(".xml"):
             self.standard = "PDS4"
@@ -449,6 +454,17 @@ class Data:
         if self.standard == "FITS":
             self._add_loaded_objects(self._load_primary_fits(name))
             return
+        if self.standard in COMPRESSED_IMAGE_FORMATS:
+            import numpy as np
+            from PIL import Image
+
+            # TODO: this may of course need to be made more sophisticated in
+            #  some way if we want to handle animated GIFs or video as not-4D,
+            #  or container formats with multiple distinct objects
+            self._add_loaded_objects(
+                {'IMAGE': np.asarray(Image.open(self.filename)).copy()}
+            )
+            return
         if self.file_mapping.get(name) is None:
             target = self._target_path(name)
             if target is None:
@@ -529,12 +545,14 @@ class Data:
         """
         Initialization handler for "primary" format modes (cases in which
         `Data` offers an interface to a file or files in a standard format).
-        Currently only supports FITS.
+        Currently only supports FITS and 'desktop' image formats.
         """
         if self.standard == "FITS":
             for k in self.metadata.keys():
                 self.index.append(k)
             return
+        elif self.standard in COMPRESSED_IMAGE_FORMATS:
+            return self.index.append("IMAGE")
         raise NotImplementedError
 
     # TODO, maybe: this can result in different keys of self referring to
@@ -627,6 +645,8 @@ class Data:
             return Metadata(
                 reformat_pds4_tools_label(self.label), standard="PDS4"
             )
+        if self.standard in COMPRESSED_IMAGE_FORMATS:
+            return Metadata(paramdig(skim_image_data(self.filename)))
         # self.labelname is None means we didn't find a detached label
         target = self.filename if self.labelname is None else self.labelname
         metadata = Metadata(read_pvl(target, max_size=pvl_limit))

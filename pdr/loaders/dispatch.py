@@ -8,13 +8,11 @@ from typing import Optional, TYPE_CHECKING
 from pdr.formats import check_trivial_case
 from pdr.loaders.utility import (
     looks_like_this_kind_of_file,
+    COMPRESSED_IMAGE_EXTENSIONS,
     FITS_EXTENSIONS,
-    GIF_EXTENSIONS,
     IMAGE_EXTENSIONS,
-    JP2_EXTENSIONS,
     TABLE_EXTENSIONS,
     TEXT_EXTENSIONS,
-    TIFF_EXTENSIONS,
 )
 from pdr.loaders.datawrap import (
     Loader,
@@ -44,7 +42,7 @@ def image_lib_dispatch(pointer: str, data: Data) -> Optional[Loader]:
     if looks_like_this_kind_of_file(object_filename, FITS_EXTENSIONS):
         return ReadFits()
     if looks_like_this_kind_of_file(
-        object_filename, TIFF_EXTENSIONS + JP2_EXTENSIONS + GIF_EXTENSIONS
+        object_filename, COMPRESSED_IMAGE_EXTENSIONS
     ):
         return ReadCompressedImage()
     return None
@@ -113,15 +111,13 @@ def file_extension_to_loader(fn: str) -> Loader:
     """
     if looks_like_this_kind_of_file(fn, FITS_EXTENSIONS):
         return ReadFits()
-    if looks_like_this_kind_of_file(fn, TIFF_EXTENSIONS):
-        return ReadCompressedImage()
     if looks_like_this_kind_of_file(fn, IMAGE_EXTENSIONS):
         return ReadImage()
     if looks_like_this_kind_of_file(fn, TEXT_EXTENSIONS):
         return ReadText()
     if looks_like_this_kind_of_file(fn, TABLE_EXTENSIONS):
         return ReadTable()
-    if looks_like_this_kind_of_file(fn, JP2_EXTENSIONS):
+    if looks_like_this_kind_of_file(fn, COMPRESSED_IMAGE_EXTENSIONS):
         return ReadCompressedImage()
     return TBD()
 

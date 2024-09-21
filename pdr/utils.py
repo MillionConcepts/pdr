@@ -246,11 +246,21 @@ def associate_label_file(
 
 def check_primary_fmt(data_filename: str):
     """"""
-    from pdr.loaders.utility import FITS_EXTENSIONS
+    from pdr.loaders.utility import (
+        COMPRESSED_IMAGE_EXTENSION_HASH,
+        FITS_EXTENSIONS,
+        looks_like_this_kind_of_file
+    )
 
+    lower = data_filename.lower()
     for ext in FITS_EXTENSIONS:
-        if data_filename.lower().endswith(ext):
+        if lower.endswith(ext):
             return "FITS"
+    for fmt, exts in COMPRESSED_IMAGE_EXTENSION_HASH.items():
+        # add some check for geotiff
+        if looks_like_this_kind_of_file(lower, exts):
+            return fmt.upper()
+    return None
 
 
 def catch_return_default(debug: bool, return_default, exception: Exception):
