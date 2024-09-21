@@ -147,7 +147,9 @@ def reindex_dupe_names(hdu: BinTableHDU):
             hdu.columns[ix].name += f"_{i}"
 
 
-def handle_compressed_image(fn: Union[str, Path]) -> np.ndarray:
+def handle_compressed_image(
+    fn: Union[str, Path], frame: Optional[int] = None
+) -> np.ndarray:
     """
     Open an image in a standard 'desktop' format (GIF, standard TIFF, GeoTIFF,
     classic JPEG, JPEG2000, PNG, etc.) using pillow. "Compressed" is slightly
@@ -160,6 +162,8 @@ def handle_compressed_image(fn: Union[str, Path]) -> np.ndarray:
     # are legitimately very large
     Image.MAX_IMAGE_PIXELS = None
     im = Image.open(fn)
+    if frame is not None:
+        im.seek(frame)
     if im.mode == 'P':
         # classic-style GIFs
         im = im.convert('RGB', palette=im.palette)

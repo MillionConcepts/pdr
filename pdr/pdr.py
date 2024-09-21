@@ -457,11 +457,12 @@ class Data:
         if self.standard in COMPRESSED_IMAGE_FORMATS:
             from pdr.loaders.handlers import handle_compressed_image
 
-            # TODO: this may of course need to be made more sophisticated in
-            #  some way if we want to handle animated GIFs or video as not-4D,
-            #  or container formats with multiple distinct objects
+            # TODO: this may need to be more sophisticated
+            args = [self.filename]
+            if self.metaget("n_frames", 0) > 1:
+                args.append(int(name.split("_")[-1]))
             self._add_loaded_objects(
-                {'IMAGE': handle_compressed_image(self.filename)}
+                {name: handle_compressed_image(*args)}
             )
             return
         if self.file_mapping.get(name) is None:
@@ -546,13 +547,19 @@ class Data:
         `Data` offers an interface to a file or files in a standard format).
         Currently only supports FITS and 'desktop' image formats.
         """
-        if self.standard == "FITS":
-            for k in self.metadata.keys():
-                self.index.append(k)
-            return
-        elif self.standard in COMPRESSED_IMAGE_FORMATS:
-            return self.index.append("IMAGE")
-        raise NotImplementedError
+        match self.standard:
+            case "FITS":
+                for k in self.metadata.keys():
+                    self.index.append(k)
+            case self.standard if self.standard in COMPRESSED_IMAGE_FORMATS:
+                if (nframes := self.metaget("n_frames", 0)) > 1:
+                    self.index += [f"FRAME_{i}" for i in range(nframes)]
+                else:
+                    self.index.append("IMAGE")
+            case _:
+                raise NotImplementedError(
+                    f"unrecognized standard {self.standard}"
+                )
 
     # TODO, maybe: this can result in different keys of self referring to
     #  duplicate header objects, one like "object_name_HEADER" and one like

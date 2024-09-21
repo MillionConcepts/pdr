@@ -85,7 +85,7 @@ def pick_text_attrib(node, remove_ns=True):
     return attrib
 
 
-def paramdig(unpacked: Mapping) -> tuple[Mapping, list[Hashable]]:
+def paramdig(unpacked: Mapping) -> tuple[Mapping, list[str]]:
     return unpacked, dig_for_keys(
         unpacked, None, base_pred=constant(True), mtypes=(MultiDict, dict)
     )
@@ -93,8 +93,13 @@ def paramdig(unpacked: Mapping) -> tuple[Mapping, list[Hashable]]:
 
 # TODO: probably want more!
 INTERESTING_IMAGE_ATTRS = (
-    'mode', 'size', 'width', 'height', 'format',
-    'format_description', 'n_frames'
+    'mode',
+    'size',
+    'width',
+    'height',
+    'format',
+    'format_description',
+    'n_frames'
 )
 
 
