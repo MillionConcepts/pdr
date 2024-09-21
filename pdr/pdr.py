@@ -457,12 +457,19 @@ class Data:
         if self.standard in COMPRESSED_IMAGE_FORMATS:
             from pdr.loaders.handlers import handle_compressed_image
 
-            # TODO: this may need to be more sophisticated
-            args = [self.filename]
-            if self.metaget("n_frames", 0) > 1:
-                args.append(int(name.split("_")[-1]))
+            if self.metaget("n_frames", 0) == 1:
+                self.add_loaded_objects(
+                    {name: handle_compressed_image(self.filename)}
+                )
+                return
+            # TODO: hacky!
+            fmt = self.metaget('format')
+            if fmt == 'MPO' and name == 'IMAGE':
+                seek = 0
+            else:
+                seek = int(name.split("_")[-1])
             self._add_loaded_objects(
-                {name: handle_compressed_image(*args)}
+                {name: handle_compressed_image(self.filename, seek)}
             )
             return
         if self.file_mapping.get(name) is None:
@@ -552,14 +559,27 @@ class Data:
                 for k in self.metadata.keys():
                     self.index.append(k)
             case self.standard if self.standard in COMPRESSED_IMAGE_FORMATS:
-                if (nframes := self.metaget("n_frames", 0)) > 1:
-                    self.index += [f"FRAME_{i}" for i in range(nframes)]
-                else:
-                    self.index.append("IMAGE")
+                self._add_compressed_image_objects()
             case _:
                 raise NotImplementedError(
                     f"unrecognized standard {self.standard}"
                 )
+
+    def _add_compressed_image_objects(self):
+        if (nframes := self.metaget("n_frames", 0)) < 2:
+            self.index.append("IMAGE")
+            return
+        if self.metaget('format') == 'GIF':
+            self.index += [f"FRAME_{i}" for i in range(nframes)]
+        elif self.metaget('format') == 'MPO':
+            mpentries = [d['Attribute'] for d in self.metaget('MPEntry')]
+            if mpentries[0]['MPType'] != 'Baseline MP Primary Image':
+                raise NotImplementedError("Non-primary first MPO image")
+            images = ['IMAGE']
+            for i, d in enumerate(mpentries[1:]):
+                tname = re.sub(r'[() ]', '_', d['MPType'])
+                images.append(f"{tname}_{i + 1}")
+            self.index += images
 
     # TODO, maybe: this can result in different keys of self referring to
     #  duplicate header objects, one like "object_name_HEADER" and one like

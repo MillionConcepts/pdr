@@ -7,7 +7,7 @@ TODO: not all of this ultimately goes here. Also, we might want to use opencv
 from io import BytesIO
 import re
 from pathlib import Path
-from typing import Any, Hashable, Union, Mapping
+from typing import Any, Union, Mapping
 from xml.etree import ElementTree
 
 from dustgoggles.func import constant
@@ -37,12 +37,18 @@ def add_gps_ifd(im: Image, gps_tagname: int):
     return {GPSTAGS[k].replace('GPS', ''): v for k, v in gpsdict.items()}
 
 
-def get_exif_info(im: Image):
+def get_image_metadata(im: Image):
     outdict = {}
-    for tag, val in im.getexif().items():
+    meta = list(im.getexif().items())
+    if hasattr(im, "mpinfo"):
+        meta += list(im.mpinfo.items())
+    for tag, val in meta:
         if tag in TAGS.keys():
             name = TAGS[tag]
-        elif im.format == "TIFF" and (tname := lookup(tag).name) != "unknown":
+        elif (
+            im.format in ("TIFF", "MPO")
+            and (tname := lookup(tag).name) != "unknown"
+        ):
             name = tname
         else:
             name = tag
@@ -128,4 +134,4 @@ def skim_image_data(fn: Union[str, Path]) -> dict:
         except AttributeError:
             continue
     # NOTE: this looks at TIFF tags for TIFFs by default
-    return meta | get_exif_info(im)
+    return meta | get_image_metadata(im)
