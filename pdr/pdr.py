@@ -457,8 +457,8 @@ class Data:
         if self.standard in COMPRESSED_IMAGE_FORMATS:
             from pdr.loaders.handlers import handle_compressed_image
 
-            if self.metaget("n_frames", 0) == 1:
-                self.add_loaded_objects(
+            if self.metaget("n_frames", 1) == 1:
+                self._add_loaded_objects(
                     {name: handle_compressed_image(self.filename)}
                 )
                 return
@@ -566,7 +566,7 @@ class Data:
                 )
 
     def _add_compressed_image_objects(self):
-        if (nframes := self.metaget("n_frames", 0)) < 2:
+        if (nframes := self.metaget("n_frames", 1)) == 1:
             self.index.append("IMAGE")
             return
         if self.metaget('format') == 'GIF':
