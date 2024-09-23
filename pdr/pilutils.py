@@ -133,5 +133,6 @@ def skim_image_data(fn: Union[str, Path]) -> dict:
             meta[attr] = getattr(im, attr)
         except AttributeError:
             continue
+    meta['mimetype'] = Image.MIME[meta['format']]
     # NOTE: this looks at TIFF tags for TIFFs by default
     return meta | get_image_metadata(im)
