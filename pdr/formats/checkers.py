@@ -784,6 +784,12 @@ def check_special_block(
         and name == "IMAGE"
     ):
         return formats.ground.wff_atm_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "CO-CAL-ISS-2-V1.0"
+        and name == "IMAGE"
+        and ".DA" in data.metaget_("^IMAGE")[0]
+    ):
+        return formats.cassini.iss_calib_da_special_block(data, name)
     return False, None
 
 

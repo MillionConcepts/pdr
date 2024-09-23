@@ -226,3 +226,18 @@ def iss_telemetry_bit_col_format(obj, definition):
     definition["DATA_TYPE"] = "MSB_BIT_STRING"
 
     return True, obj
+
+def iss_calib_da_special_block(data, name):
+    """
+    The labels for some Cassini ISS calibration images with a .DA filename 
+    extension incorrectly use ROW_PREFIX_BYTES.
+
+    HITS
+    * cassini_iss
+        * calib_da
+    """
+    block = data.metablock_(name)
+    if "LINE_PREFIX_BYTES" in block:
+        del block["LINE_PREFIX_BYTES"]
+        return True, block
+    return False, block
