@@ -18,20 +18,22 @@ IMAGE_EXTENSIONS = (".img", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
 FITS_EXTENSIONS = (".fits", ".fit", ".fits.gz", ".fit.gz", ".fz")
+BMP_EXTENSIONS = (".bmp",)
 TIFF_EXTENSIONS = (".tif", ".tiff")
 JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 GIF_EXTENSIONS = (".gif",)
 JPEG_EXTENSIONS = (".jpg", ".jpeg")  # NOTE: Also extensions like MPO/MPF
 PNG_EXTENSIONS = (".png",)
 WEBP_EXTENSIONS = (".webp",)
-DESKTOP_IMAGE_EXTENSION_SETS = {
+DESKTOP_IMAGE_EXTENSION_SETS = (
+    BMP_EXTENSIONS,
     TIFF_EXTENSIONS,
     JP2_EXTENSIONS,
     JPEG_EXTENSIONS,
     GIF_EXTENSIONS,
     PNG_EXTENSIONS,
     WEBP_EXTENSIONS
-}
+)
 # NOTE: these are codes from pillow. some sources may call them other things.
 DESKTOP_IMAGE_STANDARDS = (
     "JPEG2000",
@@ -40,7 +42,8 @@ DESKTOP_IMAGE_STANDARDS = (
     "WEBP",
     "PNG",
     "TIFF",
-    "GIF"
+    "GIF",
+    "BMP"
 )
 DESKTOP_IMAGE_EXTENSIONS = tuple(chain(*DESKTOP_IMAGE_EXTENSION_SETS))
 
