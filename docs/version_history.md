@@ -4,20 +4,24 @@
 ### Added
 
 #### Features
-- Support for 'desktop' image formats in primary mode: JPEG, TIFF, GIF, PNG, 
-MPO, and JP2. Behavior is as follows:
+- Support for 'desktop' image formats in primary mode: JPEG, TIFF, GIF 
+  (still and animated), PNG, MPO/MPF, WebP (still and animated), JPEG2000/JP2, 
+  and BMP. Behavior is as follows:
   - `pdr` will attempt to parse all EXIF, TIFF tag, and MPO metadata, including
-  embedded XML packets. Parsed metadata is available  in `Data.metadata` and 
+  embedded XML packets. Parsed metadata is available in `Data.metadata` and 
   accessible with `Data.metaget()` and related methods.
   - Some basic image information is also available in `Data.metadata` (format, 
-  color mode, dimensions, etc.) 
+  color mode, dimensions, MIME type, etc.) 
   - Most files will have a single data object named 'IMAGE'.
-  - Animated GIFs will have one data object per frame, named 'FRAME_0', 
-  'FRAME_1', etc.
-  - MPO files (this includes many files with .jpg and .jpeg extensions)
+  - Animated GIF and WebP images will have one data object per frame, named 
+    'FRAME_0', 'FRAME_1', etc.
+  - MPO/MPF files (this includes many files with .jpg and .jpeg extensions)
   will have one data object per image. The MPO primary image is named 'IMAGE'. 
   Subsequent images are assigned names based on their MPType and index within
   the file.
+  - PDR automatically converts palette-mode images (like many GIFs) to 3D RGB
+  arrays on load. In these cases, mappings between RGB values and original 
+  palette indices are available with `data.metaget('palette')`.
   - GeoTiffs work like other TIFF files. `pdr` naively parses the GeoTiff 
   metadata, but does not construct a CRS or otherwise derive projection 
   information.
