@@ -165,7 +165,7 @@ def handle_compressed_image(
     if frame is not None:
         im.seek(frame)
     if im.mode == 'P':
-        # classic-style GIFs
+        # images with imbedded palettes (usually GIFs)
         im = im.convert('RGB', palette=im.palette)
     # noinspection PyTypeChecker
     image = np.ascontiguousarray(im).copy()

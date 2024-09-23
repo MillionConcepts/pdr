@@ -105,7 +105,7 @@ INTERESTING_IMAGE_ATTRS = (
     'height',
     'format',
     'format_description',
-    'n_frames'
+    'n_frames',
 )
 
 
@@ -134,5 +134,7 @@ def skim_image_data(fn: Union[str, Path]) -> dict:
         except AttributeError:
             continue
     meta['mimetype'] = Image.MIME[meta['format']]
+    if hasattr(im, 'palette'):
+        meta['palette'] = im.palette.colors
     # NOTE: this looks at TIFF tags for TIFFs by default
     return meta | get_image_metadata(im)
