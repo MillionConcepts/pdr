@@ -50,7 +50,7 @@ from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
 from pdr.formats import check_special_fn, special_image_constants
-from pdr.loaders.utility import COMPRESSED_IMAGE_FORMATS
+from pdr.loaders.utility import DESKTOP_IMAGE_STANDARDS
 from pdr.parselabel.pds3 import (
     depointerize,
     get_pds3_pointers,
@@ -454,7 +454,7 @@ class Data:
         if self.standard == "FITS":
             self._add_loaded_objects(self._load_primary_fits(name))
             return
-        if self.standard in COMPRESSED_IMAGE_FORMATS:
+        if self.standard in DESKTOP_IMAGE_STANDARDS:
             from pdr.loaders.handlers import handle_compressed_image
 
             if self.metaget("n_frames", 1) == 1:
@@ -463,8 +463,7 @@ class Data:
                 )
                 return
             # TODO: hacky!
-            fmt = self.metaget('format')
-            if fmt == 'MPO' and name == 'IMAGE':
+            if self.standard == 'MPO' and name == 'IMAGE':
                 seek = 0
             else:
                 seek = int(name.split("_")[-1])
@@ -558,7 +557,7 @@ class Data:
             case "FITS":
                 for k in self.metadata.keys():
                     self.index.append(k)
-            case self.standard if self.standard in COMPRESSED_IMAGE_FORMATS:
+            case self.standard if self.standard in DESKTOP_IMAGE_STANDARDS:
                 self._add_compressed_image_objects()
             case _:
                 raise NotImplementedError(
@@ -569,9 +568,9 @@ class Data:
         if (nframes := self.metaget("n_frames", 1)) == 1:
             self.index.append("IMAGE")
             return
-        if self.metaget('format') == 'GIF':
+        if self.standard == 'GIF':
             self.index += [f"FRAME_{i}" for i in range(nframes)]
-        elif self.metaget('format') == 'MPO':
+        elif self.standard == 'MPO':
             mpentries = [d['Attribute'] for d in self.metaget('MPEntry')]
             if mpentries[0]['MPType'] != 'Baseline MP Primary Image':
                 raise NotImplementedError("Non-primary first MPO image")
@@ -671,7 +670,7 @@ class Data:
             return Metadata(
                 reformat_pds4_tools_label(self.label), standard="PDS4"
             )
-        if self.standard in COMPRESSED_IMAGE_FORMATS:
+        if self.standard in DESKTOP_IMAGE_STANDARDS:
             return Metadata(paramdig(skim_image_data(self.filename)))
         # self.labelname is None means we didn't find a detached label
         target = self.filename if self.labelname is None else self.labelname

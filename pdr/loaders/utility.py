@@ -21,19 +21,28 @@ FITS_EXTENSIONS = (".fits", ".fit", ".fits.gz", ".fit.gz", ".fz")
 TIFF_EXTENSIONS = (".tif", ".tiff")
 JP2_EXTENSIONS = (".jp2", ".jpf", ".jpc", ".jpx")
 GIF_EXTENSIONS = (".gif",)
-JPEG_EXTENSIONS = (".jpg", ".jpeg")
+JPEG_EXTENSIONS = (".jpg", ".jpeg")  # NOTE: Also extensions like MPO/MPF
 PNG_EXTENSIONS = (".png",)
-COMPRESSED_IMAGE_EXTENSION_HASH = {
-    "TIFF": TIFF_EXTENSIONS,
-    "JP2": JP2_EXTENSIONS,
-    "JPEG": JPEG_EXTENSIONS,
-    "GIF": GIF_EXTENSIONS,
-    "PNG": PNG_EXTENSIONS
+WEBP_EXTENSIONS = (".webp",)
+DESKTOP_IMAGE_EXTENSION_SETS = {
+    TIFF_EXTENSIONS,
+    JP2_EXTENSIONS,
+    JPEG_EXTENSIONS,
+    GIF_EXTENSIONS,
+    PNG_EXTENSIONS,
+    WEBP_EXTENSIONS
 }
-COMPRESSED_IMAGE_FORMATS = tuple(COMPRESSED_IMAGE_EXTENSION_HASH.keys())
-COMPRESSED_IMAGE_EXTENSIONS = tuple(
-    chain(*COMPRESSED_IMAGE_EXTENSION_HASH.values())
+# NOTE: these are codes from pillow. some sources may call them other things.
+DESKTOP_IMAGE_STANDARDS = (
+    "JPEG2000",
+    "JPEG",
+    "MPO",
+    "WEBP",
+    "PNG",
+    "TIFF",
+    "GIF"
 )
+DESKTOP_IMAGE_EXTENSIONS = tuple(chain(*DESKTOP_IMAGE_EXTENSION_SETS))
 
 
 def trivial(*_, **__):

@@ -247,19 +247,29 @@ def associate_label_file(
 def check_primary_fmt(data_filename: str):
     """"""
     from pdr.loaders.utility import (
-        COMPRESSED_IMAGE_EXTENSION_HASH,
+        DESKTOP_IMAGE_EXTENSIONS,
         FITS_EXTENSIONS,
-        looks_like_this_kind_of_file
+        looks_like_this_kind_of_file,
+        DESKTOP_IMAGE_STANDARDS
     )
 
     lower = data_filename.lower()
     for ext in FITS_EXTENSIONS:
         if lower.endswith(ext):
             return "FITS"
-    for fmt, exts in COMPRESSED_IMAGE_EXTENSION_HASH.items():
-        # add some check for geotiff
-        if looks_like_this_kind_of_file(lower, exts):
-            return fmt.upper()
+    if looks_like_this_kind_of_file(lower, DESKTOP_IMAGE_EXTENSIONS):
+        from PIL import Image, UnidentifiedImageError
+        try:
+            standard = Image.open(data_filename).format
+            assert standard in DESKTOP_IMAGE_STANDARDS
+        except UnidentifiedImageError:
+            raise OSError(f"Can't interpret {data_filename} as an image.")
+        except AssertionError:
+            # noinspection PyUnboundLocalVariable
+            raise NotImplementedError(
+                f"{standard} images are not currently supported."
+            )
+        return standard
     return None
 
 
