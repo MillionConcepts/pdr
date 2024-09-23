@@ -568,7 +568,7 @@ class Data:
         if (nframes := self.metaget("n_frames", 1)) == 1:
             self.index.append("IMAGE")
             return
-        if self.standard == 'GIF':
+        if self.standard in ('GIF', 'WEBP'):
             self.index += [f"FRAME_{i}" for i in range(nframes)]
         elif self.standard == 'MPO':
             mpentries = [d['Attribute'] for d in self.metaget('MPEntry')]
@@ -579,6 +579,10 @@ class Data:
                 tname = re.sub(r'[() ]', '_', d['MPType'])
                 images.append(f"{tname}_{i + 1}")
             self.index += images
+        else:
+            raise NotImplementedError(
+                f"multiframe {self.standard} images are not yet supported."
+            )
 
     # TODO, maybe: this can result in different keys of self referring to
     #  duplicate header objects, one like "object_name_HEADER" and one like
