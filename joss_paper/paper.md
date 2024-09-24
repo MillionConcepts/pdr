@@ -105,8 +105,7 @@ It is important to note that many pieces of software with narrower _format_ scop
 `pdr` have wider _application_ scope. For instance, GDAL [@GDAL] and `rasterio` 
 [@rasterio] (which uses GDAL) read a narrower range of data and do not provide as 
 consistent or straightforward an interface, but will deal with map projection 
-transformations; VICAR [@VICAR] reads only VICAR-processed data, but is also a 
-comprehensive image processing toolkit; `plio` [@plio] only reads data in a few formats,
+transformations; `plio` [@plio] only reads data in a few formats,
 but is capable of applying instrument-specific metadata-parsing rules. Many of these
 tools also offer write capabilities, which `pdr` does not. Users who require write
 capabilities or subdomain-specific behaviors might find narrowly-focused tools more 
