@@ -8,7 +8,7 @@ dependencies:
   - pandas>=2.0.0
   - git
   - pip
-  - python-Levenshtein
+  - python-Levenshtein # used only in Metadata.metaget_fuzzy()
   - multidict
   - more-itertools
   - dustgoggles
