@@ -345,7 +345,7 @@ expected data structures and that interpretable portions of their data
     science_ancillary.fmt, which may or may not actually exist.*)
   - SHARAD rgram and geom files
   - RSS ODF, RSR, RSDMAP, SHADR, SHBDR, and TPS
-  - HiRISE EDRs and DTMs (*note: only the .img DTMs are officially supported*)
+  - HiRISE EDRs, RDRs, and DTMs
   - MCS EDRs and RDRs
   - CTX EDRs
   - MARCI EDRs
@@ -571,8 +571,6 @@ expected data structures and that interpretable portions of their data
     - APXS, Mössbauer and Mini-TES products
     - Navcam and Pancam science images
     - Pancam color mosaics
-#### MRO
-  - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
   - CheMin Film EDRs (have efm in filename)
 #### Phoenix

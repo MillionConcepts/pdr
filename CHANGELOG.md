@@ -6,6 +6,7 @@
 
 #### Dataset Support
 - additional Cassini ISS calibration images
+- MRO HiRISE RDRs and additional DTM images (were notionally supported, now have official support)
 
 ### Changed
 
