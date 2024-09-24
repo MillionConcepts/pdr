@@ -1,0 +1,402 @@
+name: Unit tests
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+jobs:
+  # Inspired by https://github.com/hynek/build-and-inspect-python-package/
+  # but revised for our needs.  In particular, we have some auxiliary
+  # files, needed for later steps of this process, that don't belong
+  # in the sdist or wheel, that we copy into a (separate) job artifact
+  # so those later steps don't need to check out the source tree.
+  # In the future, we might want to build a conda package as well
+  # as a wheel.
+  build-package:
+    name: Build PDR packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source tree
+        uses: actions/checkout@v4
+        with:
+          path: src
+      # Future: Any sort of validation of the source code itself,
+      # that only needs to run once, could go here.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        id: py
+        with:
+          python-version: "3.x" # latest stable
+          update-environment: false
+      - name: Prepare build environment
+        run: |
+          '${{ steps.py.outputs.python-path }}' -m venv venv
+          . venv/bin/activate
+          pip install --only-binary :all: --upgrade pip
+          pip install --only-binary :all: \
+              build check-wheel-contents twine wheel
+      - name: Build and verify sdist and wheel
+        working-directory: src
+        run: |
+          . ../venv/bin/activate
+          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
+          python -BIm build --outdir=../dist
+          check-wheel-contents ../dist/*.whl
+          python -Im twine check --strict ../dist/*
+      - name: Collect auxiliary files for later stages
+        working-directory: src/.github
+        run: |
+          zip -r ../../dist/scripts-for-jobs.zip scripts
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist/pdr*
+
+      - name: Upload build helpers
+        uses: actions/upload-artifact@v4
+        with:
+          name: scripts-for-jobs
+          path: dist/scripts-for-jobs.zip
+          # this artifact exists only to be input to later jobs,
+          # it does not need to be retained for long
+          retention-days: 1
+
+      - name: Report results
+        run: |
+          ( cd dist
+            printf '\n### Contents of the `packages` artifact\n\n```none\n'
+            shasum -a 256 pdr*
+          ) >> $GITHUB_STEP_SUMMARY
+
+  conda-unit:
+    name: |
+      Test:  ${{matrix.python}}, conda, ${{matrix.os}}, ${{matrix.deps}}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Conda-based installations are our recommendation, so we test
+        # comprehensively.
+        os: [ubuntu, macos, windows]
+        deps: [minimal, full]
+        python: ["3.9", "3.10", "3.11", "3.12"]
+
+    needs: build-package
+    runs-on: "${{ matrix.os }}-latest"
+    defaults:
+      run:
+        # bash --login is required for conda environments to work correctly;
+        # see https://github.com/marketplace/actions/setup-miniconda#important
+        # something in conda's shell scripts is incompatible with -u
+        shell: bash -l -e -o pipefail {0}
+    steps:
+      - name: Get build helpers
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts-for-jobs
+      - name: Extract build helpers
+        run: unzip scripts-for-jobs.zip
+
+      - name: Get just-built PDR package
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist
+
+      - name: Extract environment file
+        run: |
+          tar=$(scripts/find-gnu-tar)
+          if [[ "${{ matrix.deps }}" = minimal ]]; then
+            conda_env=minimal_environment.yml
+          else
+            conda_env=environment.yml
+          fi
+          "$tar" --extract --to-stdout -f dist/pdr-*.tar.gz \
+                 --wildcards \*/$conda_env > environment.yml
+
+      - name: Install Python and dependencies using miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python }}
+          channels: conda-forge
+          environment-file: environment.yml
+
+      - name: Install test tools
+        run: |
+          conda install pytest pytest-cov
+
+      - name: Install PDR wheel
+        run: |
+          pip install --no-deps --only-binary :all: dist/pdr-*-py3-*.whl
+
+      - name: Prepare for testing
+        run: |
+          tar=$(scripts/find-gnu-tar)
+          mkdir src
+          "$tar" --extract -f dist/pdr-*.tar.gz \
+                 --strip-components=1 --directory=src \
+                 --wildcards \*/.coveragerc \*/tests
+
+          scripts/adjust-coverage-config < src/.coveragerc > coveragerc
+
+          # Make the directory tree containing the tests, and the directory
+          # tree containing the actual PDR .py files, read-only.  This is
+          # because we used to have a lot of code that used these locations
+          # for scratch space and we don't want it coming back.
+          readonly_dirs="dist src"
+
+          # TODO: Move this block to another helper script to avoid
+          # more repetition in the next job and also the MSYS2 gunk.
+          # (I wonder how hard it would be to reimplement the icacls
+          # invocations using direct system calls from Python.)
+          host_os=$(python3 -c 'import os; print(os.name)')
+          if [ $host_os = nt ]; then
+            # Because of backward compatibility with DOS, attrib +r has no
+            # effect on directories. You have to use ACLs instead.
+            export MSYS2_ARG_CONV_EXCL='*'
+            for f in $readonly_dirs; do
+              icacls "$f" /inheritance:r \
+                  /grant 'CREATOR OWNER:(OI)(CI)(RX,D,DC,WDAC)' \
+                  /grant 'BUILTIN\Users:(OI)(CI)RX'
+              icacls "$f"'\*.*' /reset /t /l /q
+            done
+          else
+            # We only make $CONDA_PREFIX read-only on Unixy platforms,
+            # because doing the same on Windows makes setup-miniconda's
+            # cleanup pass hang.  I don't understand why actions even
+            # *have* a cleanup pass given that they run right before
+            # the entire VM is nuked from orbit, but so it goes.  We
+            # *probably* don't have any code that is both conda- and
+            # Windows-specific that writes to the PDR package directory.
+            chmod -R a-w $readonly_dirs $CONDA_PREFIX
+          fi
+
+      - name: Run unit tests
+        run: |
+          export PYTHONDONTWRITEBYTECODE=1
+          pytest -p no:cacheprovider --basetemp=$PWD/tmp --cov \
+            --cov-config=$PWD/coveragerc --cov-branch --cov-report=term \
+            --rootdir=$PWD/src --import-mode=importlib -r fEsX
+
+      - name: Store coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage-conda-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
+          path: coverage.dat
+          if-no-files-found: ignore
+          # unmerged coverage analysis data can be ephemeral
+          retention-days: 1
+
+  pip-unit:
+    name: |
+      Test: ${{matrix.python}}, pip, ${{matrix.os}}, ${{matrix.deps}}
+    needs: build-package
+    strategy:
+      fail-fast: false
+      matrix:
+        # This test exists to verify that the dependencies declared
+        # for pip-based installs are accurate, and this should not be
+        # drastically affected by which python we have, so we don't
+        # test all the python versions in the support range, just the
+        # ends.  Also, this is our opportunity to test against the
+        # upcoming python 3.13, which is not available via conda yet,
+        # but _is_ available from github's own snake collection.
+        os: [ubuntu, macos, windows]
+        python: ["3.9", "3.12", "3.13-dev"]
+        deps: [minimal, full]
+    runs-on: "${{ matrix.os }}-latest"
+    defaults:
+      run:
+        # so I don't have to write nontrivial script fragments twice
+        shell: bash -e -u -o pipefail {0}
+    steps:
+      - name: Install Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        id: py
+        with:
+          python-version: ${{ matrix.python }}
+          update-environment: false
+
+      - name: Get build helpers
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts-for-jobs
+      - name: Extract build helpers
+        run: unzip scripts-for-jobs.zip
+
+      - name: Get just-built PDR package
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist
+
+      - name: Install pdr from wheel using pip
+        id: deps
+        run: |
+          if [[ "${{ matrix.deps }}" = minimal ]]; then
+            features=
+          else
+            features="[browsify,fits,pvl,tiff]"
+          fi
+          # Need to expand the glob naming the wheel file _before_
+          # it is combined with $features.
+          wheel="$(echo dist/pdr-*-py3-*.whl)"
+
+          '${{ steps.py.outputs.python-path }}' -m venv venv
+          # I do not understand why the activation script is in a
+          # different location on Windows.
+          if [ ! -d venv/bin ]; then mv venv/Scripts venv/bin; fi
+          source venv/bin/activate
+
+          pip install --only-binary :all: pytest pytest-cov
+
+          # If this pip command fails *and* Python is a development
+          # version, the issue is probably that some of our
+          # dependencies aren't available; skip the rest of the steps
+          # but don't fail the job.  continue-on-error is
+          # insufficiently nuanced for this rule.
+          set +e +o pipefail
+          pip install --only-binary :all: "$wheel$features" 2>&1 |
+            tee pip-deps.log
+          pip_status=${PIPESTATUS[0]}
+          python_is_experimental=$(python3 -c 'import sys; print(
+            1 if sys.version_info.releaselevel != "final" else 0
+          )')
+          if [[ $pip_status -eq 0 ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [[ $python_is_experimental -eq 1 ]]; then
+              annote=warning
+              exitcode=0
+            else
+              annote=error
+              exitcode=1
+            fi
+            sed -ne 's/^ERROR: /::'"${annote}"'::/p' < pip-deps.log
+            exit $exitcode
+          fi
+
+      - name: Prepare for testing
+        if: ${{ fromJSON(steps.deps.outputs.available) }}
+        # See comments on the matching step of the conda-unit job for
+        # explanation.  The only difference between that job and this
+        # one should be the value of readonly_dirs.
+        run: |
+          source venv/bin/activate
+          tar=$(scripts/find-gnu-tar)
+          mkdir src
+          "$tar" --extract -f dist/pdr-*.tar.gz \
+                 --strip-components=1 --directory=src \
+                 --wildcards \*/.coveragerc \*/tests
+
+          scripts/adjust-coverage-config < src/.coveragerc > coveragerc
+
+          readonly_dirs="dist src venv"
+          host_os=$(python3 -c 'import os; print(os.name)')
+          if [ $host_os = nt ]; then
+            export MSYS2_ARG_CONV_EXCL='*'
+            for f in $readonly_dirs; do
+              icacls "$f" /inheritance:r \
+                  /grant 'CREATOR OWNER:(OI)(CI)(RX,D,DC,WDAC)' \
+                  /grant 'BUILTIN\Users:(OI)(CI)RX'
+              icacls "$f"'\*.*' /reset /t /l /q
+            done
+          else
+            chmod -R a-w $readonly_dirs
+          fi
+
+      - name: Run unit tests
+        if: ${{ fromJSON(steps.deps.outputs.available) }}
+        # See comments on the matching step of the conda-unit job for
+        # explanation.  This step should be the same as that step
+        # *except* that when using pip we have to explicitly activate
+        # the virtualenv.
+        run: |
+          source venv/bin/activate
+          export PYTHONDONTWRITEBYTECODE=1
+          pytest -p no:cacheprovider --basetemp=$PWD/tmp --cov \
+            --cov-config=$PWD/coveragerc --cov-branch --cov-report=term \
+            --rootdir=$PWD/src --import-mode=importlib -r fEsX
+
+      - name: Store coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage-pip-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
+          path: coverage.dat
+          if-no-files-found: ignore
+          # unmerged coverage analysis data can be ephemeral
+          retention-days: 1
+
+  coverage:
+    name: Combine coverage
+    needs: [conda-unit, pip-unit]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        id: py
+        with:
+          python-version: "3.x" # latest stable
+          update-environment: false
+
+      - name: Get build helpers
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts-for-jobs
+      - name: Get just-built PDR package
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist
+      - name: Get coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: unit-test-coverage-*
+          path: cov
+          # this does the exact opposite of what it sounds like:
+          # if true, all the artifacts that match the pattern are
+          # unpacked in the *same location* and clobber each other
+          # if false they all get renamed to not collide
+          merge-multiple: false
+
+      - name: Extract build helpers
+        run: unzip scripts-for-jobs.zip
+
+      - name: Extract sources
+        # this is guaranteed to run on Linux so we can assume "tar" is GNU tar
+        run: |
+          tar -xz --strip-components=1 -f dist/pdr-*.tar.gz \
+              --wildcards \*/.coveragerc \*/pyproject.toml \*/pdr
+
+      - name: Prepare analysis environment
+        run: |
+          '${{ steps.py.outputs.python-path }}' -m venv venv
+          . venv/bin/activate
+          pip install --only-binary :all: --upgrade pip
+          pip install --only-binary :all: coverage
+
+      - name: Crunch coverage data
+        run: |
+          . venv/bin/activate
+          scripts/adjust-coverage-config cov/unit-test-coverage-*/coverage.dat \
+              < .coveragerc > coveragerc.adjusted
+          mv coveragerc.adjusted .coveragerc
+
+          printf '### Combined coverage report\n\n' >> $GITHUB_STEP_SUMMARY
+
+          python3 -m coverage combine cov/unit-test-coverage-*/coverage.dat
+          python3 -m coverage report --format=markdown --sort=cover \
+            >> $GITHUB_STEP_SUMMARY
+
+      - name: Store coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage-all
+          path: coverage.dat

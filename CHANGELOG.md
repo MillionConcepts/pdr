@@ -1,20 +1,41 @@
-## [X.X.X] - 202X-XX-XX
+## [1.2.1] - 2024-09-18
+### Added
+
+#### Features
+- Full compatibility with numpy 2.0 for pds4 products 
+(pds3 products already compatible in last release)
+
+### Changed
+- `pds4_tools` is now vendored within `pdr` to apply changes for numpy 2.0 
+compatibility and avoid hot patches
+
+### Removed
+- `pds4_tools` dependency
+- `_patches` module
+
+## [1.2.0] - 2024-09-18
 ### Added
 
 #### Features
 - Compatibility with numpy 2.0 for pds3 products and fits pds4 products
- (non-fits pds4 products numpy 2.0 compatibility await changes in
+ (non-fits PDS4 product numpy 2.0 compatibility awaits changes in
  `pds4_tools` dependency)
 - Support for VAX_REAL data types in qubes
-- `pdr.Data.__contains` method
+- `pdr.Data.__contains__` method
 [see issue #57](https://github.com/MillionConcepts/pdr/issues/57)
+- Unit tests are now backed by `pytest` fixtures for improved flexibility and
+compatibility
+- ROW_PREFIX_BYTES are now accounted for when calculating offset positions
 
 #### Dataset Support
 - Galileo NIMS qubes
-- MSL REMS EDRs and most RDRs
+- MSL 
+  - EMS EDRs and RDRs
+  - additional navcam and hazcam RDRs
 - Rosetta
-  - CONSERT ancillary products
+  - CONSERT
   - ALICE supplementary tables
+  - MIDAS RDRs
   - additional COSIMA tables
 - LASP Mars datasets
 - Venus Express (VEX)
@@ -22,31 +43,44 @@
   - ASE EDRs, RDS
   - Telltale Experiment (TT) products
   - Atmospheric Opacity (AO) products
+  - TEGA LED EDRs and SC RDRs
+- MGN RSS solar wind experiment
+- MGS RSS solar conjunction data
+- MEX VMC EDRs and RDRs
+- Mariner 10 MAG, PLS, and POS products
+- WFF/ATM derived DEM images
 - Misc additional products from:
-  - Cassini RPWS and MIMI
-  - Galileo Probe
+  - Cassini RPWS, MIMI, and ISS
+  - Galileo Probe, MAG, SSI
   - IHW
-  - ground-based datasets at SBN
+  - ground-based datasets at SBN and ATM
   - Stardust
   - LRO Mini-RF
   - NEAR NLR
   - ICE
   - Juno JADE
-  - Galileo MAG
   - Pioneer Venus Orbiter OMAG
+  - Vega
+  - Voyager LECP
+  - MEX PFS and MARSIS
+  - MER navcam/hazcam/pancam RDRs
 
 #### Other
-- 
+- (GitHub-specific) CI for unit tests / coverage reports
 
 ### Changed
-- PDR now associates FITS HDUs with PDS data objects based on associatons
-  between reported start byte and FITS file structure, rather than fuzzy
-  string match between HDU names and PDS object names
+- PDR now associates FITS HDUs with PDS data objects by matching byte ranges 
+  as described in PDS labels to HDU byte ranges as described in their FITS 
+  headers, rather than by performing fuzzy string match between HDU names and 
+  PDS object names
 - PDS4 FITS files are now opened using `astropy.io.fits` on the backend 
   instead of `pds4_tools`, mirroring the PDS3 FITS behavior
-- Non-filled out FITS cards are represented as None, rather than special 
+- Non-filled-out FITS cards are represented as None, rather than special 
   astropy objects without stable byte representations
 - Assorted backend refactoring, linting, and minor improvements
+- Unit tests no longer unnecessarily write to the source tree
+- All string objects loaded directly from products by `Data` ('DESCRIPTION', 
+  'LABEL', etc.) canonicalize line endings to \n
 
 ### Fixed
 - More compatibility fixes for Python 3.9, mostly related to type annotations
@@ -56,6 +90,11 @@
   HEADER objects
 - HISTOGRAM_IMAGE objects will now be read as images instead of attempting
   to be read as tables. (IMAGE_HISTOGRAMS will still be read as tables)
+- setup.py also correctly pins `numpy < 2.0.0`
+- The hotpatch for `pds4-tools` Python 3.12 incompatibility no longer
+  has persistent side effects; for instance, `conda` will no longer
+  complain about checksum mismatches.
+- Bug reading PDS4-labeled FITS files
 
 ### Removed
 - `pdr.Data.__iter__` method is being deprecated

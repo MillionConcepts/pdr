@@ -205,3 +205,24 @@ def get_special_qube_band_storage():
     """
     band_storage_type = "BAND_SEQUENTIAL"
     return True, band_storage_type
+
+def iss_telemetry_bit_col_format(obj, definition):
+    """
+    The format file for Cassini ISS telemetry tables incorrectly uses 
+    BIT_DATA_TYPE instead of DATA_TYPE when defining its top-level COLUMN 
+    (causing a key error in add_bit_column_info()). It also says the data type 
+    is BINARY instead of (presumably) MSB_BIT_STRING. 
+
+    HITS:
+    * cassini_iss
+        * calib
+        * calib_atm
+        * edr_evj
+        * edr_sat
+    """
+    # modify and return `obj`
+    obj["DATA_TYPE"] = "MSB_BIT_STRING"
+    # may as well fix it in `definition` too
+    definition["DATA_TYPE"] = "MSB_BIT_STRING"
+
+    return True, obj

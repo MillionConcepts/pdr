@@ -1,13 +1,22 @@
 """Simple utility functions for assorted loaders and queries."""
 from __future__ import annotations
+from functools import wraps
 import os
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING
+import re
+from typing import Any, Callable, Optional, Union, TYPE_CHECKING
 
+from cytoolz import curry
 from multidict import MultiDict
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import DataIdentifiers, PhysicalTarget
+
+
+HETERODOX_ENDING = re.compile(r"\r\n?")
+"""Pattern for heterodox but not deeply bizarre line endings."""
+_cle = curry(re.sub, HETERODOX_ENDING, "\n")
+"""partially evaluated replacer of heterodox with orthodox line endings."""
 
 
 def looks_like_ascii(block: MultiDict, name: str) -> bool:
@@ -108,3 +117,32 @@ def check_explicit_delimiter(block: MultiDict) -> str:
         except KeyError:
             raise KeyError("Unknown FIELD_DELIMITER character.")
     return ","
+
+
+def canonicalize_line_endings(text: Any) -> Any:
+    """
+    Attempt to replace common 'heterodox' line endings in a string or
+    list/tuple of strings with canonical endings (\n). Does not attempt to
+    perform sophisticated delimiter sniffing, and will only reliably handle
+    only \r and \r\n endings, not \n\r, EM / 0x19, \r\r\n, etc.
+    Ignores (returns unchanged) non-strings and non-string elements of
+    lists/tuples.
+    """
+    if isinstance(text, str):
+        return _cle(text)
+    if isinstance(text, (list, tuple)):
+        return type(text)([_cle(s) if isinstance(s, str) else s for s in text])
+    return text
+
+
+def canonicalized(func: Callable) -> Callable:
+    """
+    Creates a version of `func` that canonicalizes line endings of any string
+    (or top-level string elements of a list/tuple), returned by `func`
+    """
+
+    @wraps(func)
+    def with_canonical_endings(*args, **kwargs):
+        return canonicalize_line_endings(func(*args, **kwargs))
+
+    return with_canonical_endings

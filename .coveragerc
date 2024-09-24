@@ -1,5 +1,7 @@
 [run]
+source_pkgs = pdr
 omit =
-    */tests/*
     */formats/*
-    *pvl_utils.py*
+    */pvl_utils.py
+    */six_new.py
+    */tkinter_stub.py

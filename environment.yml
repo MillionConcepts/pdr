@@ -4,11 +4,10 @@ channels:
 dependencies:
   - python>=3.9
   - cytoolz
-  - numpy<2.0.0
+  - numpy
   - pandas>=2.0.0
   - git
   - dustgoggles
-  - pds4_tools
   - pip
   - python-Levenshtein
   - multidict

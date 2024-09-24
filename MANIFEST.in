@@ -1,0 +1,5 @@
+# No, it isn't possible to do this in pyproject.toml :-(
+include CHANGELOG.md
+include *environment.yml
+include .coveragerc
+recursive-include tests *.py

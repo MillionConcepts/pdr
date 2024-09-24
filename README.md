@@ -2,9 +2,9 @@ README.md
 ## The Planetary Data Reader (pdr)
 
 This tool provides a single command---`read(‘/path/to/file’)`---for ingesting
-_all_ common planetary data types. It is currently in development. Almost every kind
-of "primary observational data" product currently archived in the PDS
-(under PDS3 or PDS4) should be covered eventually. 
+_all_ common planetary data types. It reads almost all "primary observational 
+data" products currently archived in the PDS (under PDS3 or PDS4), and the 
+fraction of products it does not read is continuously shrinking.
 [Currently-supported datasets are listed here.](docs/supported_datasets.md) 
 
 If the software fails while attempting to read from datasets that we have 
@@ -32,7 +32,7 @@ Using the conda install will install all dependencies in the environment.yml
 file (both required and optional) for pdr. If you'd prefer to forego the 
 optional dependencies, please use minimal_environment.yml in your 
 installation. This is not supported through a direct conda install as 
-described above and will reqiore additional steps. Optional dependencies 
+described above and will require additional steps. Optional dependencies 
 and the added functionality they support are listed below:
 
   - `pvl`: allows `Data.load("LABEL", as_pvl=True)`, which will load PDS3 

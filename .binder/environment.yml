@@ -9,7 +9,6 @@ dependencies:
   - pandas
   - git
   - dustgoggles
-  - pds4_tools
   - pip
   - python-Levenshtein
   - multidict

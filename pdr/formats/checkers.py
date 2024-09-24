@@ -236,6 +236,11 @@ def check_special_table_reader(
         and name == "TABLE"
     ):
         return True, formats.voyager.lecp_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "VG1-S-LECP-3-RDR-STEP-6MIN-V1.0"
+        and name == "SPREADSHEET"
+    ):
+        return True, formats.voyager.lecp_vg1_sat_table_loader(fn, fmtdef_dt)
     if identifiers["DATA_SET_ID"] == "VL2-M-SEIS-5-RDR-V1.0" and name in (
         "TABLE",
         "SPREADSHEET",
@@ -280,6 +285,13 @@ def check_special_table_reader(
         return True, formats.msl_rems.edr_table_loader(
             fn, fmtdef_dt, block, start_byte
         )
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+        and identifiers["INSTRUMENT_ID"] == "REMS"
+        and name == "REMS_SCIENCE_TABLE"
+        and "RDR" in identifiers["DATA_SET_ID"]
+    ):
+        return True, formats.msl_rems.rdr_table_loader(fn, fmtdef_dt)
     if (
         all(x in identifiers["DATA_SET_ID"] for x in ["ICE-C-","-3-RDR-"])
         and "TRAJ_ICE" in fn
@@ -414,10 +426,53 @@ def check_special_structure(
             block, name, fn, data, identifiers
         )
     if (
+        identifiers["DATA_SET_ID"] == "PHX-M-TEGA-2-LEDEDR-V1.0"
+        and name == "TIME_SERIES"
+        and block["^STRUCTURE"] == "TEGA_LED.FMT"
+    ):
+        return True, formats.phoenix.led_edr_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "PHX-M-TEGA-4-SCRDR-V1.0"
+        and name == "TIME_SERIES"
+        and block["^STRUCTURE"] == "TEGA_SCRDR.FMT"
+    ):
+        return True, formats.phoenix.sc_rdr_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
         identifiers["DATA_SET_ID"] == "MEX-SUN-ASPERA3-4-SWM-V1.0"
         and name == "TABLE"
     ):
         return True, formats.mex.aspera_ima_ddr_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        "-MIDAS-3-" in identifiers["DATA_SET_ID"]
+        and "SPS" in identifiers["PRODUCT_ID"]
+        and name == "TIME_SERIES"
+    ):
+        return True, formats.rosetta.midas_rdr_sps_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        "-MIDAS-3-" in identifiers["DATA_SET_ID"]
+        and "FSC" in identifiers["PRODUCT_ID"]
+        and name == "FREQUENCY_SERIES"
+    ):
+        return True, formats.rosetta.fix_pad_length_structure(
+            block, name, fn, data, identifiers
+        )
+    if (
+        "ROSETTA" in identifiers["DATA_SET_NAME"] 
+        and "CONSERT" in identifiers["DATA_SET_NAME"]
+        and "TABLE" in name
+        and name.startswith(("I_", "Q_"))
+    ):
+        if "GRNDBENCH" in identifiers["DATA_SET_ID"]:
+            return False, None
+        return True, formats.rosetta.fix_pad_length_structure(
             block, name, fn, data, identifiers
         )
     return False, None
@@ -579,6 +634,28 @@ def check_special_bit_start_case(
         )
     return False, None
 
+def check_special_bit_format(
+    obj: dict,
+    definition: MultiDict,
+    identifiers: DataIdentifiers
+) -> tuple[bool, Optional[dict]]:
+    """
+    Special case checker used by add_bit_column_info() to fix problems in `obj` 
+    and/or `definition` caused by mistakes in an external format file. Intended 
+    for cases where check_special_block() doesn't touch the relevant metadata, 
+    and errors are hit before check_special_structure() can be useful.
+    """
+    if re.match(
+        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
+    ):
+        return formats.cassini.iss_telemetry_bit_col_format(obj, definition)
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING"
+    ):
+        return formats.galileo.ssi_telemetry_bit_col_format(definition)
+    return False, None
+
 
 def check_special_block(
     name: str, data: PDRLike, identifiers: Mapping
@@ -702,6 +779,11 @@ def check_special_block(
         and "TABLE" in name
     ):
         return True, formats.mex.mrs_l1b_odf_rmp_redirect(data)
+    if (
+        identifiers["DATA_SET_ID"] == "WFF-E-ATM-1/5-V1.0"
+        and name == "IMAGE"
+    ):
+        return formats.ground.wff_atm_special_block(data, name)
     return False, None
 
 
@@ -737,7 +819,7 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
     if re.match(
         r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
     ):
-        if pointer in ("TELEMETRY_TABLE", "LINE_PREFIX_TABLE"):
+        if pointer == "LINE_PREFIX_TABLE":
             return formats.cassini.trivial_loader(pointer)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
@@ -852,4 +934,8 @@ def check_special_fits_start_byte(
         return True, formats.epoxi.hriv_deconv_mask_start_byte(name, hdulist)
     if identifiers["DATA_SET_ID"].startswith("MSGR-H-MDIS-6-CAL"):
         return True, formats.galileo.mdis_fits_start_byte(name, hdulist)
+    if identifiers["DATA_SET_ID"] == "MSSSO-J-CASPIR-3-RDR-SL9-STDS-V1.0":
+        return True, formats.ground.mssso_cal_start_byte(name, hdulist)
+    if "MEX-M-VMC-3-RDR" in identifiers["DATA_SET_ID"]:
+        return True, formats.mex.vmc_rdr_hdu_selection(name, hdulist)
     return False, None

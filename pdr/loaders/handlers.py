@@ -226,6 +226,14 @@ def add_bit_column_info(
     from pdr.bit_handling import (
         set_bit_string_data_type, get_bit_start_and_size
     )
+
+    from pdr.formats import check_special_bit_format
+    is_special, special_obj = check_special_bit_format(
+        obj, definition, identifiers
+    )
+    if is_special:
+        obj = special_obj
+    
     obj["DATA_TYPE"] = obj["DATA_TYPE"].replace(" ", "_")
     if "BIT_STRING" not in obj["DATA_TYPE"]:
         obj = set_bit_string_data_type(obj, identifiers)

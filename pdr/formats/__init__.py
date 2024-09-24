@@ -14,6 +14,7 @@ import pdr.formats.dawn as dawn
 import pdr.formats.diviner as diviner
 import pdr.formats.epoxi as epoxi
 import pdr.formats.galileo as galileo
+import pdr.formats.ground as ground
 import pdr.formats.ihw as ihw
 import pdr.formats.juno as juno
 import pdr.formats.lroc as lroc

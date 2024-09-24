@@ -1,0 +1,90 @@
+#! /usr/bin/env python3
+
+"""
+Find GNU tar, whose pathname transformation options we need, and which
+is named 'tar' on Github's Linux and Windows CI runners but 'gtar' on
+their MacOS runners.
+"""
+
+import os
+import stat
+import sys
+
+from argparse import ArgumentParser
+from pathlib import Path
+
+
+if os.name == "nt":
+    EXE_SUFFIX = ".exe"
+    def is_executable_mode(mode):
+        return True
+else:
+    EXE_SUFFIX = ""
+    def is_executable_mode(mode):
+        return (stat.S_IMODE(mode) & 0o111) != 0
+
+
+def is_executable_file(path, debug):
+    if debug:
+        sys.stderr.write(f"  {path}: ")
+    try:
+        st = os.stat(path)
+    except FileNotFoundError:
+        if debug:
+            sys.stderr.write("not found\n")
+        return False
+
+    if not stat.S_ISREG(st.st_mode):
+        if debug:
+            sys.stderr.write("not a regular file (mode={})\n"
+                             .format(stat.filemode(st.st_mode)))
+        return False
+
+    if not is_executable_mode(st.st_mode):
+        if debug:
+            sys.stderr.write("not executable (mode={}, os={})\n"
+                             .format(stat.filemode(st.st_mode, os.name)))
+        return False
+
+    if debug:
+        sys.stderr.write(" ok\n")
+    return True
+
+
+
+def find_gnu_tar(debug=False):
+    GTAR_CMD = "gtar" + EXE_SUFFIX
+    TAR_CMD = "tar" + EXE_SUFFIX
+    candidate = None
+    for d in os.get_exec_path():
+        # Resolve symlinks in the directory components of the path,
+        # but *not* the command name, because changing the command
+        # name might alter the behavior of the command.
+        p = Path(d).resolve()
+        if debug:
+            sys.stderr.write(f"checking {p}\n")
+        gtar = p / GTAR_CMD
+        tar = p / TAR_CMD
+        if is_executable_file(gtar, debug):
+            # gtar is preferred
+            return gtar
+        if is_executable_file(tar, debug):
+            # use tar only if we don't find a gtar later in the path
+            candidate = tar
+    if candidate is not None:
+        return candidate
+    sys.stderr.write(f"neither {GTAR_CMD} nor {TAR_CMD} found in PATH\n")
+    sys.exit(1)
+
+
+def main():
+    ap = ArgumentParser(description=__doc__)
+    ap.add_argument("--debug", action="store_true",
+                    help="Print debugging information during the search")
+    args = ap.parse_args()
+
+    sys.stdout.write(str(find_gnu_tar(args.debug)) + "\n")
+    sys.exit(0)
+
+
+main()

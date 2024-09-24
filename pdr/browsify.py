@@ -2,13 +2,15 @@
 from numbers import Number
 from pathlib import Path
 import pickle
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, TYPE_CHECKING, Union
 import warnings
 
 from dustgoggles.func import naturals
 import numpy as np
 import pandas as pd
-from PIL import Image
+
+if TYPE_CHECKING:
+    from PIL import Image
 
 
 def find_masked_bounds(
@@ -213,7 +215,7 @@ def _browsify_array(
     override_rgba: bool = False,
     image_format: str = "jpg",
     **_,
-) -> list[Optional[Image.Image]]:
+) -> 'list[Optional[Image.Image]]':
     """
     Attempt to render (and optionally save) an ndarray as one or more
     images.
@@ -247,13 +249,14 @@ def _render_array(
     mask_color: Union[int, tuple[int, int, int]],
     save: bool,
     image_format: str
-) -> Optional[Image.Image]:
+) -> 'Optional[Image.Image]':
     """
     Handler function for array-rendering pipeline, used by `browsify()` on
     most ndarrays and by `show()` always. Render an ndarray as a PIL Image,
     optionally clipping and masking it. If `save` is True, save it to disk;
     if False, return it.
     """
+    from PIL import Image
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
     if (obj.dtype.char in np.typecodes["AllInteger"]) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)

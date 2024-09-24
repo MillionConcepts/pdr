@@ -22,7 +22,7 @@ open, while others may not; those that do may open incorrectly. Support is
 planned for some of these datasets. Others—due to unusual data formats,
 availability, or quality issues—may never be supported.
 
-**All PDS4 products, unless explictly listed here as known unsupported or specified
+**All PDS4 products, unless explicitly listed here as known unsupported or specified
 in [`pds4_tools`](https://github.com/Small-Bodies-Node/pds4_tools/) documentation
 as out of support, are considered at least notionally supported**. We 
 give specific comments and usage suggestions about some PDS4 product types below. 
@@ -95,14 +95,14 @@ expected data structures and that interpretable portions of their data
     - IR spectra
     - SUSI images
   - IRTF NSFCAM images
-  - MSSSO CASPIR standard star images
+  - MSSSO CASPIR images
   - OAO OASIS IR images
   - HST images
   - IUE spectra
   - Galileo Orbiter
     - NIMS tables
     - PPR EDRs
-    - SSI REDRs (images only)
+    - SSI REDRs (except line prefix tables)
     - UVS EDRs and RDRs
 #### Dawn
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
@@ -144,7 +144,7 @@ expected data structures and that interpretable portions of their data
   - SSD: derived electron flux data
   - SSI: 
     - Calibration images
-    - REDRs (images only)
+    - REDRs (except line prefix tables)
     - Ida/Gaspra specific data products at SBN
   - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the 
     PDS3 labels are currently unsupported.*
@@ -258,11 +258,16 @@ expected data structures and that interpretable portions of their data
   - Spherical Harmonic, Topography, and Gravity models and maps
   - Occultation raw data and derived profiles
   - Radio Tracking Data (except ODF3B tables)
+  - RSS solar wind experiment ('safed' dataset)
 #### Mariner 9
   - IRIS data
   - RSS electron density profiles
   - Cloud catalog
   - ISS images
+#### Mariner 10
+  - MAG RDR and SUMM
+  - PLS RDR and DDR
+  - POS flyby trajectory data
 #### Mars Express
   - MARSIS EDRs and RDRs
   - ASPERA EDRs, RDRs, and DDRs
@@ -271,6 +276,7 @@ expected data structures and that interpretable portions of their data
   - SPICAM UV and IR RDRs
   - MRS L1B and L2 products, and derived profiles
   - MRS L1A RSR tables (except the "SAMPLE WORDS" field) and most ODF tables
+  - OMEGA derived global maps and hydrous sites
 #### Mars Odyssey
   - THEMIS 
     - spectral qubes: VIS and IR v2 geoprojected images, VIS EDR and RDR,
@@ -354,7 +360,7 @@ expected data structures and that interpretable portions of their data
   - PLACES localization data and orbital maps
   - DAN EDRs and RDRs
   - SAM RDRs
-  - REMS EDRs and some RDRs (ADR, and UV corrected)
+  - REMS EDRs and RDRs
 #### MSX
   - Infrared Minor Planet Survey
   - Small Bodies Images
@@ -398,7 +404,7 @@ expected data structures and that interpretable portions of their data
   - POS VSO coordinates
   - POS SEDR
 #### Phoenix
-  - TEGA EDRs (except LED tables) and most RDRs
+  - TEGA EDRs (except LED tables) and RDRs
   - MECA
     - TECP EDRs and RDRs
     - WCL EDRs and some RDRs (PT, ISE, CND)
@@ -420,9 +426,9 @@ expected data structures and that interpretable portions of their data
   - Orbiter:
     - ALICE EDRs, RDRs, and REFDRs
     - COSIMA images and data tables
-    - CONSERT auxiliary tables
+    - CONSERT EDRs, RDRs, REFDRs, and auxiliary tables
     - GIADA EDRs, RDRs, and DDRs
-    - MIDAS RDRs and DDRs (excluding those with a .dat file extension)
+    - MIDAS RDRs and DDRs
     - MIRO EDRs and RDRs
     - NAVCAM EDRs and RDRs
     - OSIRIS EDRs, RDRs, DDRs, and shape models
@@ -443,7 +449,7 @@ expected data structures and that interpretable portions of their data
   - Lander:
     - APXS EDRs
     - COSAC EDRs and RDRs
-    - CONSERT auxiliary tables
+    - CONSERT EDRs, RDRs, REFDRs, and auxiliary tables
     - MODULUS/Ptolemy EDRs, RDRs, and DDRs
     - MUPUS EDRs and RDRs
     - ROLIS EDRs and RDRs
@@ -530,6 +536,7 @@ expected data structures and that interpretable portions of their data
   - Ring Profiles derived from ISS, PPS, UVS, and RSS data (except VAX_REAL tables)
 #### WFF/ATM
   - DEM vector data tables
+  - DEM derived raster images
 
 ## Notionally Supported Datasets:
 #### Apollo
@@ -539,7 +546,6 @@ expected data structures and that interpretable portions of their data
 #### Cassini
   - CIRS spectral cubes
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
-  - MSSSO CASPIR impact images
   - Volume sl9_0007 ground-based observations archived at ATM
 #### Juno
   - JUGN EDRs *note: most will open from PDS4 .xml labels only; RSRs open more
@@ -557,6 +563,9 @@ expected data structures and that interpretable portions of their data
 #### Mars Express
   - HRSC derived clouds data
   - PFS derived water vapor maps
+  - OMEGA derived atmospheric profiles
+  - VMC EDRs *note: a small subset (~3%) of the EDRs do not open because of mistakes in their labels. They are primarily from extended mission phase 2 and earlier.*
+  - VMC RDRs *note: by default `pdr` returns the calibrated multi-band image layer of the FITS file. To access the raw single-band image layer we recommend using one of the methods described in the MEX VMC EAICD.*
 #### MER 1 and 2
   - Many MER products have been converted to PDS4, including: 
     - APXS, Mössbauer and Mini-TES products
@@ -565,7 +574,9 @@ expected data structures and that interpretable portions of their data
 #### MRO
   - HiRISE RDRs and DTMs (the .jp2 products)
 #### MSL
-  - CheMin Film EDRs (have efm in filename)  
+  - CheMin Film EDRs (have efm in filename)
+#### Phoenix
+  - TEGA LED EDRs
 #### Rosetta
   - Orbiter:
     - VIRTIS EDRs
@@ -580,7 +591,7 @@ expected data structures and that interpretable portions of their data
   - Lunar Sample Photographs (support planned; low priority)
 #### Cassini
   - CIRS variable-length '.VAR' tables (support not planned)
-  - ISS telemetry and prefix tables (support planned)
+  - ISS prefix tables (support planned)
   - MAG error count housekeeping data
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
@@ -591,7 +602,7 @@ expected data structures and that interpretable portions of their data
   - LWIR EDRs (support not planned)
   - RSS EDRs (support not planned)
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
-  - Galileo SSI REDR telemetry and line-prefix tables (support planned)
+  - Galileo SSI REDR line-prefix tables (support planned)
 #### Dawn
   - Framing camera: a handful of calibration images
 #### Deep Impact
@@ -600,7 +611,7 @@ expected data structures and that interpretable portions of their data
 #### Galileo
   - MAG summary tables (other tables supported, support not planned)
   - NIMS Jupiter EDRs and cubes (support planned)
-  - SSI REDR telemetry and line-prefix tables (support planned)
+  - SSI REDR line-prefix tables (support planned)
   - PLS EDRs (support not planned)
   - PWS EDRs, binary REDRs, and REFDRs (support planned)
 #### Giotto
@@ -646,13 +657,15 @@ expected data structures and that interpretable portions of their data
   - SCVDR (support not planned)
   - BSR calibrated time samples (support planned)
   - Radio Tracking ODF3B tables (support planned)
-  - RSS solar wind experiment ('safed' dataset)
   - SAR EDR ('safed' dataset)
+#### Mariner 10
+  - Image EDRs (support planned; low priority)
 #### Mars Express
   - HRSC RDRs (support planned)
   - PFS calibrated radiance spectra (support not planned)
   - SPICAM UV and IR EDRs (support planned)
   - MRS most L1A closed loop products: ICL, TCL, TNF, and some ODF products with incomplete labels (support not planned)
+  - OMEGA EDR data and geometry cubes
 #### Mars Odyssey
   - THEMIS
     - IR RDRs (support planned)
@@ -691,24 +704,20 @@ expected data structures and that interpretable portions of their data
     these efforts! The MSL "calibrated" (RDR) files for these cameras are not 
     compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
-  - REMS RDRs: RTL, RNV, and RMD (support planned)
+  - RAD EDRs and RDRs (support planned)
 #### New Horizons
   - Pluto encounter derived data: ALICE stellar occultation data
 #### Pioneer Venus Orbiter
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
 #### Phoenix
-  - TEGA RDRs (support planned)
   - MECA
     - WCL CP/CV-mode RDRs (support not planned)
 #### Rosetta
   - Orbiter:
-    - CONSERT EDRs, RDRs, and REFDRs (support planned)
-    - MIDAS RDRs with .dat file extension (support planned)
     - VIRTIS RDRs (support planned)
     - VIRTIS geometry data
   - Lander:
-    - CONSERT EDRs, RDRs, and REFDRs (support planned)
     - SD2 EDRs (support not planned)
 #### Ulysses
   - GAS PostScript files (support not planned)
@@ -728,5 +737,3 @@ expected data structures and that interpretable portions of their data
   - RSS ODRs (support not planned)
   - Ring Profile tables with the VAX_REAL data type (support planned; 8-byte 
     VAX_REALs of unknown type)
-#### WFF/ATM
-  - DEM derived raster images (support planned)

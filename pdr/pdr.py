@@ -303,13 +303,8 @@ class Data:
 
     def _init_pds4(self):
         """use pds4_tools to open pds4 files, but in our interface idiom."""
-        # pds4_tools currently uses an outdated version of six.py that is
-        # incompatible with Python 3.12. Replace it if necessary at runtime.
-        from pdr._patches import patch_pds4_tools_six
 
-        patch_pds4_tools_six()
-
-        import pds4_tools as pds4
+        import pdr.pds4_tools as pds4
 
         structure_list = pds4.read(
             self.labelname, lazy_load=True, quiet=True, no_scale=True
@@ -572,7 +567,7 @@ class Data:
         it to our internal FITS-loading workflow.
         """
         structure = self._pds4_structures[object_name]
-        from pds4_tools.reader.label_objects import Label
+        from pdr.pds4_tools.reader.label_objects import Label
 
         if isinstance(structure, Label):
             setattr(self, "label", structure)
@@ -581,10 +576,7 @@ class Data:
 
             offset = structure.meta_data['offset']
             result = handle_fits_file(
-                structure.parent_filename,
-                object_name,
-                offset,
-                id_as_offset=True
+                structure.parent_filename, object_name, offset
             )
             if structure.is_header() is True:
                 return self._add_loaded_objects(result)
