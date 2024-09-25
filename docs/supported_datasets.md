@@ -39,6 +39,12 @@ of this project. "Support" for these types means that they load correctly into
 expected data structures and that interpretable portions of their data
 (like timestamps) appear to match other sources.
 
+A note on spice files: `pdr` does not open spice files (usually ending in .bsp 
+or .spk from NAIF), in part because "opening" a spice file in the way `pdr` 
+reads planetary data isn't very useful. If you're looking to work with these 
+files we recommend [spiceypy](https://github.com/AndrewAnnex/SpiceyPy) or 
+[lhorizon](https://github.com/MillionConcepts/lhorizon) (which works with spice
+kernels in combination with JPL Horizons.
 
 ## Officially Supported Datasets:
 #### Apollo
