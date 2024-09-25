@@ -54,5 +54,21 @@ Additional information on usage including examples, output data types, notes
 and caveats, tests, etc. can now be accessed in our documentation on 
 readthedocs at: https://pdr.readthedocs.io [![Documentation Status](https://readthedocs.org/projects/pdr/badge/?version=latest)](https://pdr.readthedocs.io/en/latest/?badge=latest)
 
+
+### Contributing
+
+Thank you for wanting to contribute to `pdr` and improving efforts to make 
+planetary science data accessible. Please review our code of conduct before
+contributing. [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](docs/code_of_conduct.md)
+
+If you have found a bug, a dataset that we claim to support that's not opening
+properly, or you have a feature request, please file an issue. We will also
+review pull requests, but would probably prefer you start the conversation with
+us first, so we can expect your contributions and make sure they will be within
+scope.
+
+If you need general support you can find us on [OpenPlanetary Slack](https://app.slack.com/client/T04CWPQL9/C04CWPQM5)
+or feel free to [email](mailto:sierra@millionconcepts.com) the team.
+
 ---
 This work is supported by NASA grant No. 80NSSC21K0885.
