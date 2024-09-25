@@ -552,16 +552,13 @@ class Data:
         `Data` offers an interface to a file or files in a standard format).
         Currently only supports FITS and 'desktop' image formats.
         """
-        match self.standard:
-            case "FITS":
-                for k in self.metadata.keys():
-                    self.index.append(k)
-            case self.standard if self.standard in DESKTOP_IMAGE_STANDARDS:
-                self._add_compressed_image_objects()
-            case _:
-                raise NotImplementedError(
-                    f"unrecognized standard {self.standard}"
-                )
+        if self.standard == "FITS":
+            for k in self.metadata.keys():
+                self.index.append(k)
+            return
+        elif self.standard in DESKTOP_IMAGE_STANDARDS:
+            return self._add_compressed_image_objects()
+        raise NotImplementedError(f"unrecognized standard {self.standard}")
 
     def _add_compressed_image_objects(self):
         if (nframes := self.metaget("n_frames", 1)) == 1:
