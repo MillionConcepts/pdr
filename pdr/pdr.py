@@ -19,7 +19,6 @@ from typing import (
 import re
 import warnings
 
-from pdr.pilutils import skim_image_data, paramdig
 
 # get_annotations is new in 3.10.  this polyfill handles only
 # the specific case we care about.
@@ -675,6 +674,8 @@ class Data:
                 reformat_pds4_tools_label(self.label), standard="PDS4"
             )
         if self.standard in DESKTOP_IMAGE_STANDARDS:
+            from pdr.pilutils import skim_image_data, paramdig
+
             return Metadata(paramdig(skim_image_data(self.filename)))
         # self.labelname is None means we didn't find a detached label
         target = self.filename if self.labelname is None else self.labelname
