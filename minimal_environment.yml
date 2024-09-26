@@ -8,7 +8,6 @@ dependencies:
   - pandas>=2.0.0
   - git
   - pip
-  - python-Levenshtein
   - multidict
   - more-itertools
   - dustgoggles
