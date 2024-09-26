@@ -239,7 +239,7 @@ jobs:
           if [[ "${{ matrix.deps }}" = minimal ]]; then
             features=
           else
-            features="[browsify,fits,pvl,tiff]"
+            features="[browsify,fits,pvl,tiff,fuzzy]"
           fi
           # Need to expand the glob naming the wheel file _before_
           # it is combined with $features.
