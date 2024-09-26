@@ -88,8 +88,13 @@ make it ideal for use in automated data processing pipelines. `pdr` is currently
 used in a wide variety of planetary projects. These include the Perseverance rover's 
 Mastcam-Z tactical pipeline [@StClair:2023] and PDS3 to PDS4 migration pipelines for
 data from Clementine [@Clementine], Chandrayaan-1 M3 [@M3], and the Viking Orbiter 
-cameras [@Viking]. (Its fast metadata parsing features make it especially appealing
-for converting metadata standards across tens of millions of products.)
+cameras [@Viking]. Its fast metadata parsing features make it especially appealing
+for converting metadata standards across tens of millions of products. For example,
+`pdr` is able to parse metadata and load the image arrays for 100 nominal-sized 
+Mastcam-Z IOFs using their attached PDS3 labels in 1.5 seconds and in 0.75 
+seconds to parse the metadata alone. More complex labels such as the New Horizons
+ALICE calibrated Jupyter PDS3 labels took `pdr` 1.7 seconds to parse metadata 
+for 100 files.
 
 # Other packages
 
