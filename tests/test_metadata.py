@@ -11,6 +11,7 @@ if importlib.util.find_spec("Levenshtein"):
 else:
     lev_available = False
 
+
 def test_metadata_1():
     meta = Metadata(parse_pvl(SILLY_LABEL), 'PDS3')
     assert meta.metaget('POINTINESS') == 12
