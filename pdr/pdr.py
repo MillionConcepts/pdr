@@ -39,7 +39,6 @@ except ImportError:
         # copy the dict to match the behavior of the official get_annotations
         return { key: value for key, value in ann.items() }
 
-import Levenshtein as lev
 from cytoolz import countby, identity
 from dustgoggles.dynamic import Dynamic
 from dustgoggles.func import gmap
@@ -133,6 +132,7 @@ class Metadata(MultiDict):
 
     def metaget_fuzzy(self, text: str) -> Any:
         """Like `metaget()`, but fuzzy-matches key names."""
+        import Levenshtein as lev
         levratio = {
             key: lev.ratio(key, text) for key in set(self.fieldcounts.keys())
         }

@@ -32,6 +32,8 @@
 ### Changed
 - `Data.dump_browse()` and `.show()` no longer apply default contrast enhancement 
   if it would result in an image with only one value. Explicitly passing the
+- Levenshtein dependency is now optional. Users installing via pip will need to
+  use the "fuzzy" option.
 
 ### Fixed
 - `Data.dump_browse()` now works correctly with FITS files opened in primary mode.
