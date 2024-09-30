@@ -98,7 +98,7 @@ def paramdig(unpacked: Mapping) -> tuple[Mapping, list[str]]:
 
 
 # TODO: probably want more!
-INTERESTING_IMAGE_ATTRS = (
+IMAGE_META_ATTRS = (
     'mode',
     'size',
     'width',
@@ -128,13 +128,12 @@ def unpack_xml(root: ElementTree.Element, remove_ns: bool = True) -> Any:
 
 def skim_image_data(fn: Union[str, Path]) -> dict:
     im, meta = Image.open(fn), {'fn': str(fn)}
-    for attr in INTERESTING_IMAGE_ATTRS:
-        try:
-            meta[attr] = getattr(im, attr)
-        except AttributeError:
+    for attr in IMAGE_META_ATTRS:
+        if (val := getattr(im, attr, None)) is None:
             continue
+        meta[attr] = val
     meta['mimetype'] = Image.MIME[meta['format']]
-    if hasattr(im, 'palette'):
+    if (pal := getattr(im, 'palette', None)) is not None:
         meta['palette'] = im.palette.colors
     # NOTE: this looks at TIFF tags for TIFFs by default
     return meta | get_image_metadata(im)
