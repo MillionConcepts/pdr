@@ -53,7 +53,7 @@ tags are:
   - `pillow`: installs `pillow`
   - `fuzzy`: installs `Levenshtein`
 
-Example syntax for using pip to install syntax with `fits` and `pillow` optional
+Example syntax for using pip to install syntax with `astropy` and `pillow` optional
 dependencies:
 ```
 pip install pdr[fits, pillow]

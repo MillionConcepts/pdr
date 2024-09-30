@@ -52,10 +52,10 @@ tags are:
   - `pillow`: installs `pillow`
   - `fuzzy`: installs `Levenshtein`
 
-Example syntax for using pip to install syntax with `pvl` and `jupyter` optional
+Example syntax for using pip to install syntax with `astropy` and `pillow` optional
 dependencies:
 ```
-pip install pdr[pvl, notebooks]
+pip install pdr[fits, pillow]
 ```
 
 ### Usage
