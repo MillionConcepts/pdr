@@ -44,7 +44,7 @@ then lazily load data objects when referenced.
 
 
 `pdr` reads data products held by the Planetary Data System (PDS) that follow 
-either PDS3 [@PDS3] or PDS4 [@PDS4] standards -- meaning in practice that they
+either PDS3 [@PDS3] or PDS4 [@PDS4] standards -- meaning that they
 have metadata labels that generally follow one of these two formats. (It also
 supports some common scientific interchange data formats that are not PDS, 
 including FITS.) We knew from the outset that many products in the PDS were not
