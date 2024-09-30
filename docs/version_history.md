@@ -50,6 +50,7 @@
 
 ### Removed
 - `CHANGELOG.md` was removed in preference of solely `docs/version_history.md`
+- Binder demo of example notebook due to issues with Binder servers.
 
 ## [1.2.1] - 2024-09-18
 ### Added
