@@ -4,7 +4,7 @@
 
 [project]
 name        = "pdr"
-version     = "1.2.2"
+version     = "1.2.3"
 description = "Planetary Data Reader"
 readme      = "README.md"
 license     = { file = "LICENSE.md" }

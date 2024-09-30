@@ -82,6 +82,12 @@
     options:
         heading_level: 4
 
+### formats.ground
+
+::: pdr.formats.ground
+    options:
+        heading_level: 4
+
 ### formats.ihw
 
 ::: pdr.formats.ihw
@@ -157,6 +163,16 @@
 ### formats.msl_cmn
 
 ::: pdr.formats.msl_cmn
+    options:
+        heading_level: 4
+
+### formats.msl_places
+::: pdr.formats.msl_places
+    options:
+        heading_level: 4
+
+### formats.msl_rems
+::: pdr.formats.msl_rems
     options:
         heading_level: 4
 
@@ -241,6 +257,11 @@
 ### loaders._helpers
 
 ::: pdr.loaders._helpers
+    options:
+        heading_level: 4
+
+### loaders.astrowrap
+::: pdr.loaders.astrowrap
     options:
         heading_level: 4
 
@@ -337,6 +358,12 @@
 ## pdrtypes
 
 ::: pdr.pdrtypes
+    options:
+        heading_level: 3
+
+### pilutils
+
+::: pdr.pilutils
     options:
         heading_level: 3
 
