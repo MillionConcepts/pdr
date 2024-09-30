@@ -3,3 +3,4 @@ include CHANGELOG.md
 include *environment.yml
 include .coveragerc
 recursive-include tests *.py
+include tests/data/*
