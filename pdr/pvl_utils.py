@@ -1,9 +1,14 @@
 """utilities for working with the `pvl` library."""
 from functools import cache
 
-import pvl
-import pvl.decoder
-import pvl.grammar
+try:
+    import pvl
+    import pvl.decoder
+    import pvl.grammar
+except ImportError:
+    raise ModuleNotFoundError(
+        "pvl is not installed. Please install pvl to parse PVL labels with it."
+    )
 
 
 class TimelessOmniDecoder(pvl.decoder.OmniDecoder):

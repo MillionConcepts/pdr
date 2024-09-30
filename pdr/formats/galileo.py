@@ -5,7 +5,7 @@ import warnings
 import pdr.loaders.queries
 
 if TYPE_CHECKING:
-    from astropy.io.fits.hdu import HDUList
+    from pdr.loaders.astrowrap import fits
 
 
 # TODO: why is this in the galileo module?

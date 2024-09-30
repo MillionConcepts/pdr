@@ -16,6 +16,5 @@ dependencies:
   - astropy
   - jupyter
   - pillow
-  - matplotlib
   - pytest
   - Levenshtein

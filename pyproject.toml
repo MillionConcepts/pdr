@@ -34,12 +34,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-browsify      = ["matplotlib"]
+pillow        = ["pillow"]
 fits          = ["astropy"]
-notebooks     = ["jupyter", "matplotlib"]
+notebooks     = ["jupyter"]
 pvl           = ["pvl"]
 tests         = ["pytest"]
-desktop_image = ["pillow"]
 fuzzy         = ["Levenshtein"]
 
 [project.urls]

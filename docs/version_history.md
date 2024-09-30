@@ -10,12 +10,20 @@
 
 
 ### Changed
-
+* Consolidated optional 'browsify' and 'desktop_image' dependencies into simply 
+  'pillow'.
+* Any attempt to use functionality that requires an optional dependency now raises
+  a `ModuleNotFoundError` naming the required module.
+  * To support this, `astropy` objects are now always imported through 
+    `loaders.astrowrap`.
 
 ### Fixed
 
 
 ### Removed
+* Experimental `save_sparklines()` function in `pdr.browsify`, and along with 
+  it, the optional matplotlib dependency.
+* Unnecessary full `matplotlib` dependency for Notebook use.
 
 
 ## [1.2.2] - 2024-09-30

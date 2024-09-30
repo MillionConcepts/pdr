@@ -32,7 +32,7 @@ from pdr.parselabel.pds3 import pointerize, read_pvl
 from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
-    from astropy.io.fits.hdu import HDUList
+    from pdr.loaders.astrowrap import fits
     import numpy as np
     import pandas as pd
 

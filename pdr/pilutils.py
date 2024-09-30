@@ -13,10 +13,14 @@ from xml.etree import ElementTree
 from dustgoggles.func import constant
 from dustgoggles.structures import dig_for_keys
 from multidict import MultiDict
-from PIL import Image
-from PIL.ExifTags import GPSTAGS, TAGS
-from PIL.ImageCms import ImageCmsProfile
-from PIL.TiffTags import lookup
+
+try:
+    from PIL import Image
+    from PIL.ExifTags import GPSTAGS, TAGS
+    from PIL.ImageCms import ImageCmsProfile
+    from PIL.TiffTags import lookup
+except ImportError:
+    raise ModuleNotFoundError
 
 NS_PATTERN = re.compile("{.*?}")
 
