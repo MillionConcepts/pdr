@@ -15,5 +15,6 @@ nav:
   - 'index.md'
   - 'supported_datasets.md'
   - 'version_history.md'
+  - 'code_of_conduct.md'
   - License: 'LICENSE.md'
   - API Reference: 'pdr_api.md'
