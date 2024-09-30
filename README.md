@@ -47,13 +47,13 @@ and the added functionality they support are listed below:
 
 For pip users, no optional dependencies will be packaged with pdr. The extras 
 tags are:
-  - pvl = ['pvl']
-  - fits = ['astropy']
-  - notebooks = ["jupyter"]
-  - pillow = ['pillow']
-  - fuzzy = ['Levenshtein']
+  - `pvl`: installs `pvl`
+  - `fits`: installs `astropy`
+  - `notebooks`: installs `jupyter`
+  - `pillow`: installs `pillow`
+  - `fuzzy`: installs `Levenshtein`
 
-Example syntax for using pip to install syntax with `fits` and `pillow` optional
+Example syntax for using pip to install syntax with `astropy` and `pillow` optional
 dependencies:
 ```
 pip install pdr[fits, pillow]
