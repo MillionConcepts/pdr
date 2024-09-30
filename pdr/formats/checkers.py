@@ -300,6 +300,13 @@ def check_special_table_reader(
         return True, formats.ihw.add_newlines_table_loader(
             fmtdef_dt, block, fn, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "MGS-M-MOLA-3-PEDR-L1A-V1.0"
+        and "TABLE" in name
+    ):
+        return True, formats.mgs.mola_pedr_table_loader(
+            name, identifiers, fn, fmtdef_dt, block, start_byte,
+        )
     return False, None
 
 
@@ -654,6 +661,21 @@ def check_special_bit_format(
         and identifiers["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING"
     ):
         return formats.galileo.ssi_telemetry_bit_col_format(definition)
+    return False, None
+
+def check_special_pvl_mapping(
+    mapping: MultiDict,
+) -> tuple[bool, Optional[dict]]:
+    """
+    Special case checker used by parse_pvl() to fix pointer names from 
+    non-standard labels that hit errors before they can be fixed by 
+    check_special_block(). (e.g. ^STRUCTURE pointers called ^FIRST_STRUCTURE)
+    """
+    if (
+        "DATA_SET_ID" in mapping 
+        and mapping["DATA_SET_ID"] == '"MGS-M-MOLA-3-PEDR-L1A-V1.0"'
+    ):
+        return True, formats.mgs.mola_pedr_pointer_mapping(mapping)
     return False, None
 
 
