@@ -62,7 +62,7 @@ pip install pdr[fits, pillow]
 
 You can check out our example Notebook on a JupyterLite server for a 
 quick interactive demo of functionality: 
-[![JupyterLite](docs/jlitebadge.svg)](https://millionconcepts.github.io/jlite-pdr-demo/)
+[![JupyterLite](jlitebadge.svg)](https://millionconcepts.github.io/jlite-pdr-demo/)
 
 Just open a python shell and run `import pdr` and then `pdr.read(filename)`, 
 where _filename_ is the full path to a data file _or_ a metadata / label file 
