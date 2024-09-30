@@ -1,4 +1,53 @@
-# Version History
+## [1.2.2] - 2024-09-30
+### Added
+
+#### Features
+- Support for 'desktop' image formats in primary mode: JPEG, TIFF, GIF 
+  (still and animated), PNG, MPO/MPF, WebP (still and animated), JPEG2000/JP2, 
+  and BMP. Behavior is as follows:
+  - `pdr` will attempt to parse all EXIF, TIFF tag, and MPO metadata, including
+  embedded XML packets. Parsed metadata is available in `Data.metadata` and 
+  accessible with `Data.metaget()` and related methods.
+  - Some basic image information is also available in `Data.metadata` (format, 
+  color mode, dimensions, MIME type, etc.) 
+  - Most files will have a single data object named 'IMAGE'.
+  - Animated GIF and WebP images will have one data object per frame, named 
+    'FRAME_0', 'FRAME_1', etc.
+  - MPO/MPF files (this includes many files with .jpg and .jpeg extensions)
+  will have one data object per image. The MPO primary image is named 'IMAGE'. 
+  Subsequent images are assigned names based on their MPType and index within
+  the file.
+  - PDR automatically converts palette-mode images (like many GIFs) to 3D RGB
+  arrays on load. In these cases, mappings between RGB values and original 
+  palette indices are available with `data.metaget('palette')`.
+  - GeoTiffs work like other TIFF files. `pdr` naively parses the GeoTiff 
+  metadata, but does not construct a CRS or otherwise derive projection 
+  information.
+
+#### Dataset Support
+- additional Cassini ISS calibration images
+- MRO HiRISE RDRs and additional DTM images (were notionally supported, now have official support)
+
+#### Other
+- The text of our JOSS paper publication on pdr is now included under 
+  `joss_paper/paper.md`. It will be moved to `docs/paper.md` in next release.
+- Clarifying comments were added to the supported_datasets documentation regarding
+  spice files
+- Community guidelines including a code of conduct and contribution guidelines
+  have been added to the readme and docs folder
+
+### Changed
+- `Data.dump_browse()` and `.show()` no longer apply default contrast enhancement 
+  if it would result in an image with only one value. Explicitly passing the
+  `image_clip` argument will override this, if for some reason you want to.
+- Levenshtein dependency is now optional. Users installing via pip will need to
+  use the "fuzzy" option.
+
+### Fixed
+- `Data.dump_browse()` now works correctly with FITS files opened in primary mode.
+
+### Removed
+- `CHANGELOG.md` was removed in preference of solely `docs/version_history.md`
 
 ## [1.2.1] - 2024-09-18
 ### Added

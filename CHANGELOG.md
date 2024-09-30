@@ -1,4 +1,4 @@
-## [X.X.X] - 202X-XX-XX
+## [1.2.2] - 2024-XX-XX
 ### Added
 
 #### Features
@@ -27,11 +27,19 @@
 #### Dataset Support
 - additional Cassini ISS calibration images
 - MRO HiRISE RDRs and additional DTM images (were notionally supported, now have official support)
-  `image_clip` argument will override this, if for some reason you want to.
+
+#### Other
+- The text of our JOSS paper publication on pdr is now included under 
+  `joss_paper/paper.md`. It will be moved to `docs/paper.md` in next release.
+- Clarifying comments were added to the supported_datasets documentation regarding
+  spice files
+- Community guidelines including a code of conduct and contribution guidelines
+  have been added to the readme and docs folder
 
 ### Changed
 - `Data.dump_browse()` and `.show()` no longer apply default contrast enhancement 
   if it would result in an image with only one value. Explicitly passing the
+  `image_clip` argument will override this, if for some reason you want to.
 - Levenshtein dependency is now optional. Users installing via pip will need to
   use the "fuzzy" option.
 
