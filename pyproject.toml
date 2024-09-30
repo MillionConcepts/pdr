@@ -46,7 +46,8 @@ fuzzy         = ["Levenshtein"]
 Repository = "https://github.com/MillionConcepts/pdr"
 
 [build-system]
-requires = ["setuptools >= 64"]
+requires = ["setuptools >= 64",
+            "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
