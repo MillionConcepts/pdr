@@ -1,3 +1,5 @@
+# Version History
+
 ## [1.2.2] - 2024-09-30
 ### Added
 
