@@ -34,13 +34,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-browsify   = ["matplotlib"]
-fits       = ["astropy"]
-notebooks  = ["jupyter", "matplotlib"]
-pvl        = ["pvl"]
-tests      = ["pytest"]
-tiff       = ["pillow"]
-fuzzy      = ["Levenshtein"]
+browsify      = ["matplotlib"]
+fits          = ["astropy"]
+notebooks     = ["jupyter", "matplotlib"]
+pvl           = ["pvl"]
+tests         = ["pytest"]
+desktop_image = ["pillow"]
+fuzzy         = ["Levenshtein"]
 
 [project.urls]
 Repository = "https://github.com/MillionConcepts/pdr"

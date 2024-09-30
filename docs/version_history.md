@@ -25,6 +25,8 @@
   - GeoTiffs work like other TIFF files. `pdr` naively parses the GeoTiff 
   metadata, but does not construct a CRS or otherwise derive projection 
   information.
+  - Note that some of PDR's convenience features like `Data.show()` do not 
+    work well with images that rely on transparency.
 
 #### Dataset Support
 - additional Cassini ISS calibration images

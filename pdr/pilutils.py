@@ -126,6 +126,7 @@ def unpack_xml(root: ElementTree.Element, remove_ns: bool = True) -> Any:
     return xmd
 
 
+# TODO, maybe: decode ImageResources (see kings_river_canyon.tiff)
 def skim_image_data(fn: Union[str, Path]) -> dict:
     im, meta = Image.open(fn), {'fn': str(fn)}
     for attr in IMAGE_META_ATTRS:
@@ -134,6 +135,8 @@ def skim_image_data(fn: Union[str, Path]) -> dict:
         meta[attr] = val
     meta['mimetype'] = Image.MIME[meta['format']]
     if (pal := getattr(im, 'palette', None)) is not None:
-        meta['palette'] = im.palette.colors
+        # TODO, maybe: I hate that they use the color as the key and the
+        #  palette index as the value, but keeping it now for compatibility
+        meta['palette'] = pal.colors
     # NOTE: this looks at TIFF tags for TIFFs by default
     return meta | get_image_metadata(im)
