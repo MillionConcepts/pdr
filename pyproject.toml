@@ -54,6 +54,9 @@ where = ["."]
 include = ["pdr*"]
 namespaces = false
 
+[tool.setuptools.package-data]
+"*" = ["tests/data/*"]
+
 # Recommended for new projects by pytest manual.
 [tool.pytest.ini_options]
 addopts = [
