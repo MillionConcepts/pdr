@@ -1,29 +1,23 @@
 # Version History
 
-## [X.X.X] - 202X-XX-XX
-### Added
-
-#### Features
-
-
-#### Dataset Support
-
+## [1.2.3] - 2024-09-30
 
 ### Changed
-* Consolidated optional 'browsify' and 'desktop_image' dependencies into simply 
+- Consolidated optional 'browsify' and 'desktop_image' dependencies into simply 
   'pillow'.
-* Any attempt to use functionality that requires an optional dependency now raises
+- Any attempt to use functionality that requires an optional dependency now raises
   a `ModuleNotFoundError` naming the required module.
-  * To support this, `astropy` objects are now always imported through 
+  - To support this, `astropy` objects are now always imported through 
     `loaders.astrowrap`.
+- Updates to documentation to include instructions for pip users, etc. 
 
 ### Fixed
-
+- `docs/index.md` updated to reflect the same content as README.md
 
 ### Removed
-* Experimental `save_sparklines()` function in `pdr.browsify`, and along with 
+- Experimental `save_sparklines()` function in `pdr.browsify`, and along with 
   it, the optional matplotlib dependency.
-* Unnecessary full `matplotlib` dependency for Notebook use.
+- Unnecessary full `matplotlib` dependency for Notebook use.
 
 
 ## [1.2.2] - 2024-09-30
