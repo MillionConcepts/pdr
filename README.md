@@ -28,8 +28,8 @@ conda install -c conda-forge pdr
 ```
 The minimum supported version of Python is _3.9_.
 
-Using the conda install will install all dependencies in the environment.yml 
-file (both required and optional) for pdr. If you'd prefer to forego the 
+Using the conda install will install some optional dependencies in the environment.yml 
+file for pdr including: `astropy` and `pillow`. If you'd prefer to forego those 
 optional dependencies, please use minimal_environment.yml in your 
 installation. This is not supported through a direct conda install as 
 described above and will require additional steps. Optional dependencies 
@@ -40,9 +40,24 @@ and the added functionality they support are listed below:
   - `astropy`: adds support for FITS files
   - `jupyter`: allows usage of the Example Jupyter Notebook (and other jupyter 
      notebooks you create)
-  - `pillow`: adds support for TIFF files and browse image rendering
-  - `matplotlib`: allows usage of `save_sparklines`, an experimental browse 
-    function
+  - `pillow`: adds support for reading a variety of 'desktop' image formats 
+    (TIFF, JPEG, etc.) and for browse image rendering
+  - `Levenshtein`: allows use of `metaget_fuzzy`, a fuzzy-matching metadata 
+    parsing function
+
+For pip users, no optional dependencies will be packaged with pdr. The extras 
+tags are:
+  - pvl = ['pvl']
+  - fits = ['astropy']
+  - notebooks = ["jupyter"]
+  - pillow = ['pillow']
+  - fuzzy = ['Levenshtein']
+
+Example syntax for using pip to install syntax with `fits` and `pillow` optional
+dependencies:
+```
+pip install pdr[fits, pillow]
+```
 
 ### Usage
 
