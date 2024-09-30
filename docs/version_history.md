@@ -46,6 +46,8 @@
   `image_clip` argument will override this, if for some reason you want to.
 - Levenshtein dependency is now optional. Users installing via pip will need to
   use the "fuzzy" option.
+- `tiff` optional-dependency feature in has been changed to `desktop_image` for
+  pip users to better fit with new features in this version 
 
 ### Fixed
 - `Data.dump_browse()` now works correctly with FITS files opened in primary mode.
