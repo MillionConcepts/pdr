@@ -73,7 +73,6 @@ def mola_pedr_table_loader(
     # then subset the table based on the FRAME_INDEX flag
     frame_number = name.split('_')[2]
     table = table[table["FRAME_INDEX"] == int(frame_number)]
-    table.reset_index(drop=True, inplace=True)
 
     return table
 
