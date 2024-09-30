@@ -9,7 +9,6 @@ dependencies:
   - git
   - dustgoggles
   - pip
-  - Levenshtein
   - multidict
   - more-itertools
   # optional dependencies (use minimal_environment.yml if you'd prefer not to install)
@@ -19,3 +18,4 @@ dependencies:
   - pillow
   - matplotlib
   - pytest
+  - Levenshtein
