@@ -14,7 +14,7 @@ from multidict import MultiDict
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from astropy.io.fits.hdu import BinTableHDU, HDUList
+    from pdr.loaders.astrowrap import fits
     import numpy as np
     import pandas as pd
     from pdr.pdrtypes import DataIdentifiers

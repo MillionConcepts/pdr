@@ -1,4 +1,3 @@
-import numpy as np
 import pdr
 
 from tests.objects import STUB_IMAGE_LABEL

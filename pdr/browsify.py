@@ -171,15 +171,6 @@ def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs) -> None:
         else:
             obj.to_csv(outbase + ".csv")
         # TODO: experimental, add more handles
-        if any(("spectrum" in c.lower() for c in obj.columns)):
-            try:
-                save_sparklines(obj, outbase)
-            except TypeError:
-                warnings.warn(
-                    "This appears to be a spectrum table, but the "
-                    "experimental sparklines browse rendering function "
-                    "failed. This is not surprising or especially problematic."
-                )
     elif obj is None:
         return
     elif "to_string" in dir(obj):  # probably an XML ElementTree interface
@@ -271,7 +262,13 @@ def _render_array(
     optionally clipping and masking it. If `save` is True, save it to disk;
     if False, return it.
     """
-    from PIL import Image
+    try:
+        from PIL import Image
+    except ImportError:
+        raise ModuleNotFoundError(
+            "Rendering browse images requires the optional pillow dependency."
+        )
+
     # upcast integer data types < 32-bit to prevent unhelpful wraparound
     if (obj.dtype.char in np.typecodes["AllInteger"]) and (obj.itemsize <= 2):
         obj = obj.astype(np.int32)
@@ -349,34 +346,3 @@ def _format_as_single_band(band_ix, obj):
             f"band_ix={band_ix} does not exist, dumping band {middle_ix}"
         )
         return obj[middle_ix]
-
-
-def save_sparklines(
-    df: pd.DataFrame,
-    outbase: str,
-    sparkline_column_key=lambda c: "spectrum" in c.lower(),
-    orientation="rows",
-):
-    """
-    Experimental function to render a DataFrame that represents time-series
-    samples as sparklines. Mostly doesn't work.
-    """
-    from matplotlib import pyplot as plt
-
-    sparkframe = (
-        df[[c for c in df.columns if sparkline_column_key(c)]]
-        .copy()
-        .reset_index(drop=True)
-    )
-
-    fig, ax = plt.subplots()
-    if orientation == "rows":
-        height = (sparkframe.max(axis=1) - sparkframe.min(axis=1)).iloc[0]
-        for ix, row in sparkframe.iterrows():
-            ax.plot(row.values + height * ix)
-    else:
-        height = (sparkframe.max(axis=0) - sparkframe.min(axis=0)).iloc[0]
-        for ix, colvals in enumerate(sparkframe.iteritems()):
-            ax.plot(colvals[1].values + height * ix)
-    fig.savefig(outbase + "_sparklines.jpg")
-    plt.close("all")

@@ -48,7 +48,7 @@ from pdr import formats
 from pdr.loaders.utility import is_trivial
 
 if TYPE_CHECKING:
-    from astropy.io.fits.hdu import HDUList
+    from pdr.loaders.astrowrap import HDUList
     import numpy as np
     import pandas as pd
 

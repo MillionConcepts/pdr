@@ -1,20 +1,24 @@
 # Welcome to the Planetary Data Reader (pdr)
 
 This tool provides a single command---`read(‘/path/to/file’)`---for ingesting
-_all_ common planetary data types. It is currently in development. Almost every kind
-of "primary observational data" product currently archived in the PDS
-(under PDS3 or PDS4) should be covered eventually. [Currently-supported datasets are listed here.](supported_datasets.md) 
+_all_ common planetary data types. It reads almost all "primary observational 
+data" products currently archived in the PDS (under PDS3 or PDS4), and the 
+fraction of products it does not read is continuously shrinking.
+[Currently-supported datasets are listed here.](docs/supported_datasets.md) 
 
-If the software fails while attempting to read from datasets that we have listed as supported, please submit an issue with a link to the file and information about the error (if applicable). There might also be datasets that work but are not listed. We would like to hear about those too. If a dataset is not yet supported that you would like us to consider prioritizing, [please fill out this request form](https://docs.google.com/forms/d/1JHyMDzC9LlXY4MOMcHqV5fbseSB096_PsLshAMqMWBw/viewform).
+If the software fails while attempting to read from datasets that we have 
+listed as supported, please submit an issue with a link to the file and 
+information about the error (if applicable). There might also be datasets that 
+work but are not listed. We would like to hear about those too. If a dataset 
+is not yet supported that you would like us to consider prioritizing, 
+[please fill out this request form](https://docs.google.com/forms/d/1JHyMDzC9LlXY4MOMcHqV5fbseSB096_PsLshAMqMWBw/viewform).
 
-You can access the source code for pdr on github at: [https://github.com/MillionConcepts/pdr](https://github.com/MillionConcepts/pdr)
-
-### Attribution/Citation
+### Attribution
 If you use _pdr_ in your work, please cite us using our Zenodo DOI: [![DOI](https://zenodo.org/badge/266449940.svg)](https://zenodo.org/badge/latestdoi/266449940)
 
 ### Installation
-_pdr_ is now on `conda` and `pip`. We recommend (and only officially support) installation into a `conda` environment.
-You can do this like so: 
+_pdr_ is now on `conda` and `pip`. We recommend (and only officially support) 
+installation into a `conda` environment. You can do this like so: 
 
 ```
 conda create --name pdrenv
@@ -23,24 +27,42 @@ conda install -c conda-forge pdr
 ```
 The minimum supported version of Python is _3.9_.
 
-Using the conda install will install all dependencies in the environment.yml 
-file (both required and optional) for pdr. If you'd prefer to forego the 
+Using the conda install will install some optional dependencies in the environment.yml 
+file for pdr including: `astropy` and `pillow`. If you'd prefer to forego those 
 optional dependencies, please use minimal_environment.yml in your 
 installation. This is not supported through a direct conda install as 
-described above and will reqiore additional steps. Optional dependencies 
+described above and will require additional steps. Optional dependencies 
 and the added functionality they support are listed below:
 
-  - `pvl`: allows `Data.load("LABEL", as_pvl=True)` which will load PDS3 labels as `pvl` objects rather than plain text
+  - `pvl`: allows `Data.load("LABEL", as_pvl=True)`, which will load PDS3 
+     labels as `pvl` objects rather than plain text
   - `astropy`: adds support for FITS files
-  - `jupyter`: allows usage of the Example Jupyter Notebook (and other jupyter notebooks you create)
-  - `pillow`: adds support for TIFF files and browse image rendering
-  - `matplotlib`: allows usage of `save_sparklines`, an experimental browse function
+  - `jupyter`: allows usage of the Example Jupyter Notebook (and other jupyter 
+     notebooks you create)
+  - `pillow`: adds support for reading a variety of 'desktop' image formats 
+    (TIFF, JPEG, etc.) and for browse image rendering
+  - `Levenshtein`: allows use of `metaget_fuzzy`, a fuzzy-matching metadata 
+    parsing function
+
+For pip users, no optional dependencies will be packaged with pdr. The extras 
+tags are:
+  - `pvl`: installs `pvl`
+  - `fits`: installs `astropy`
+  - `notebooks`: installs `jupyter`
+  - `pillow`: installs `pillow`
+  - `fuzzy`: installs `Levenshtein`
+
+Example syntax for using pip to install syntax with `astropy` and `pillow` optional
+dependencies:
+```
+pip install pdr[fits, pillow]
+```
 
 ### Usage
 
-(You can check out our example Notebook on Binder for a 
+You can check out our example Notebook on a JupyterLite server for a 
 quick interactive demo of functionality: 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/millionconcepts/pdr/main))
+[![JupyterLite](jlitebadge.svg)](https://millionconcepts.github.io/jlite-pdr-demo/)
 
 Just open a python shell and run `import pdr` and then `pdr.read(filename)`, 
 where _filename_ is the full path to a data file _or_ a metadata / label file 
@@ -48,7 +70,7 @@ where _filename_ is the full path to a data file _or_ a metadata / label file
 or metadata files in the same path, or read metadata directly from the data file 
 if it has an attached label.
 
-`read` returns a `pdr.Data` object whose attributes include all of the data
+`read` returns a `pdr.Data` object whose attributes include all the data
 and metadata. Data attributes take their names directly from the product's
 label. They can be accessed either as attributes or using
 `dict`-style \[\] index notation. For example, PDS3 image objects are often
@@ -97,8 +119,8 @@ In general:
 + Table data are presented as pandas `DataFrame` objects. 
 + Parsed label contents (metadata fields + values) are presented in a
 `pdr.Metadata` object (behaves much like a `dict`).
-+ Header and label contents are presented as plain text (`str` objects), 
-`bytes`, or, for PDS4 labels, `pds4_tools.reader.label_objects.Label` objects.
++ Header and label contents are also presented as plain text (`str` objects) or, 
+for PDS4 labels, `pds4_tools.reader.label_objects.Label` objects.
 + Other data are presented as simple python types (`str`, `tuple`, `dict`).
 + There might be rare exceptions.
 
@@ -154,7 +176,7 @@ return a pandas DataFrame with columns named "COLUMN_0" and "COLUMN_1."
 with underscores in order to make them easily usable as Python attributes.
 
 #### PDS4 products
-`pdr.Data` wraps [`pds4_tools`](https://github.com/Small-Bodies-Node/pds4_tools/) 
+`pdr.Data` vendors [`pds4_tools`](https://github.com/Small-Bodies-Node/pds4_tools/) 
 to read PDS4 products. All valid PDS4 products should be fully supported. `pdr`
 modifies some `pds4_tools` outputs in order to provide interface and behavior
 consistency. In general, you should be able to use `pdr` with PDS4 products 
@@ -277,6 +299,21 @@ unit testing on simple cases, and although `ix` is well-optimized, running a
 comprehensive regression test against >100 GB of data products is simply not 
 a fast affair. For these reasons, `pdr` also features a small suite of unit 
 tests. You can run them by executing `pytest` from the repository root.
+
+### Contributing
+
+Thank you for wanting to contribute to `pdr` and improving efforts to make 
+planetary science data accessible. Please review our code of conduct before
+contributing. [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](docs/code_of_conduct.md)
+
+If you have found a bug, a dataset that we claim to support that's not opening
+properly, or you have a feature request, please file an issue. We will also
+review pull requests, but would probably prefer you start the conversation with
+us first, so we can expect your contributions and make sure they will be within
+scope.
+
+If you need general support you can find us on [OpenPlanetary Slack](https://app.slack.com/client/T04CWPQL9/C04CWPQM5)
+or feel free to [email](mailto:sierra@millionconcepts.com) the team.
 
 ---
 #### Funding Acknowledgement

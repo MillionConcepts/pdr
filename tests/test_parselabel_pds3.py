@@ -1,4 +1,4 @@
-from pdr.parselabel.pds3 import parse_pvl, parse_pvl_quantity_statement
+from pdr.parselabel.pds3 import parse_pvl
 
 from tests.objects import SILLY_LABEL
 

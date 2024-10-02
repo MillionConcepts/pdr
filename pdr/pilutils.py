@@ -13,10 +13,14 @@ from xml.etree import ElementTree
 from dustgoggles.func import constant
 from dustgoggles.structures import dig_for_keys
 from multidict import MultiDict
-from PIL import Image
-from PIL.ExifTags import GPSTAGS, TAGS
-from PIL.ImageCms import ImageCmsProfile
-from PIL.TiffTags import lookup
+
+try:
+    from PIL import Image
+    from PIL.ExifTags import GPSTAGS, TAGS
+    from PIL.ImageCms import ImageCmsProfile
+    from PIL.TiffTags import lookup
+except ImportError:
+    raise ModuleNotFoundError
 
 NS_PATTERN = re.compile("{.*?}")
 
@@ -98,7 +102,7 @@ def paramdig(unpacked: Mapping) -> tuple[Mapping, list[str]]:
 
 
 # TODO: probably want more!
-INTERESTING_IMAGE_ATTRS = (
+IMAGE_META_ATTRS = (
     'mode',
     'size',
     'width',
@@ -126,15 +130,17 @@ def unpack_xml(root: ElementTree.Element, remove_ns: bool = True) -> Any:
     return xmd
 
 
+# TODO, maybe: decode ImageResources (see kings_river_canyon.tiff)
 def skim_image_data(fn: Union[str, Path]) -> dict:
     im, meta = Image.open(fn), {'fn': str(fn)}
-    for attr in INTERESTING_IMAGE_ATTRS:
-        try:
-            meta[attr] = getattr(im, attr)
-        except AttributeError:
+    for attr in IMAGE_META_ATTRS:
+        if (val := getattr(im, attr, None)) is None:
             continue
+        meta[attr] = val
     meta['mimetype'] = Image.MIME[meta['format']]
-    if hasattr(im, 'palette'):
-        meta['palette'] = im.palette.colors
+    if (pal := getattr(im, 'palette', None)) is not None:
+        # TODO, maybe: I hate that they use the color as the key and the
+        #  palette index as the value, but keeping it now for compatibility
+        meta['palette'] = pal.colors
     # NOTE: this looks at TIFF tags for TIFFs by default
     return meta | get_image_metadata(im)
