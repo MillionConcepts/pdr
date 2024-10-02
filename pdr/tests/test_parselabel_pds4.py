@@ -1,7 +1,7 @@
 from pdr.pds4_tools.reader.label_objects import Label
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 
-from tests.objects import MINIMAL_PDS4_LABEL
+from pdr.tests.objects import MINIMAL_PDS4_LABEL
 
 
 # pds4_tools offers no obvious way to parse a Label out of a str,

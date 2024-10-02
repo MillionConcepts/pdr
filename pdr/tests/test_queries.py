@@ -6,7 +6,7 @@ from pdr.loaders.queries import (
     extract_axplane_metadata,
 )
 
-from tests.objects import BLOCK_TEXT, QUBE_BLOCK_TEXT
+from pdr.tests.objects import BLOCK_TEXT, QUBE_BLOCK_TEXT
 
 
 def basesamp():

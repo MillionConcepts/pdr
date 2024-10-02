@@ -1,6 +1,5 @@
 from pdr.parselabel.pds3 import parse_pvl
-
-from tests.objects import SILLY_LABEL
+from pdr.tests.objects import SILLY_LABEL
 
 
 def test_parse_label():
@@ -14,4 +13,3 @@ def test_parse_label():
                'TAIL_COORDINATE_SYSTEM_PARMS'
            ]['ARTICULATION_DEVICE_ANGLE'][0] == \
         {'value': -4.5e-05, 'units': 'rad'}
-

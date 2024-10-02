@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from dustgoggles.tracker import Tracker
-from tests.objects import (
+from pdr.tests.objects import (
     STUB_IMAGE_LABEL,
     STUB_BINARY_TABLE_LABEL,
     STUB_DSV_TABLE_LABEL,

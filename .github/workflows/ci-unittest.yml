@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: src
+
       # Future: Any sort of validation of the source code itself,
       # that only needs to run once, could go here.
       - name: Set up Python
@@ -30,6 +31,7 @@ jobs:
         with:
           python-version: "3.x" # latest stable
           update-environment: false
+
       - name: Prepare build environment
         run: |
           '${{ steps.py.outputs.python-path }}' -m venv venv
@@ -37,6 +39,7 @@ jobs:
           pip install --only-binary :all: --upgrade pip
           pip install --only-binary :all: \
               build check-wheel-contents twine wheel
+
       - name: Build and verify sdist and wheel
         working-directory: src
         run: |
@@ -45,10 +48,16 @@ jobs:
           python -BIm build --outdir=../dist
           check-wheel-contents ../dist/*.whl
           python -Im twine check --strict ../dist/*
+
       - name: Collect auxiliary files for later stages
         working-directory: src/.github
         run: |
-          zip -r ../../dist/scripts-for-jobs.zip scripts
+          ZIPFILE=../../dist/scripts-for-jobs.zip
+          zip -r $ZIPFILE scripts
+          zip -j -r $ZIPFILE ../.coveragerc
+          printf '@ .coveragerc\n@=scripts/coveragerc.raw\n' |
+              zipnote -w $ZIPFILE
+
       - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
@@ -133,44 +142,23 @@ jobs:
 
       - name: Prepare for testing
         run: |
-          tar=$(scripts/find-gnu-tar)
-          mkdir src
-          "$tar" --extract -f dist/pdr-*.tar.gz \
-                 --strip-components=1 --directory=src \
-                 --wildcards \*/.coveragerc \*/tests
-
-          scripts/adjust-coverage-config < src/.coveragerc > coveragerc
-
-          # Make the directory tree containing the tests, and the directory
-          # tree containing the actual PDR .py files, read-only.  This is
-          # because we used to have a lot of code that used these locations
-          # for scratch space and we don't want it coming back.
-          readonly_dirs="dist src"
-
-          # TODO: Move this block to another helper script to avoid
-          # more repetition in the next job and also the MSYS2 gunk.
-          # (I wonder how hard it would be to reimplement the icacls
-          # invocations using direct system calls from Python.)
           host_os=$(python3 -c 'import os; print(os.name)')
-          if [ $host_os = nt ]; then
-            # Because of backward compatibility with DOS, attrib +r has no
-            # effect on directories. You have to use ACLs instead.
-            export MSYS2_ARG_CONV_EXCL='*'
-            for f in $readonly_dirs; do
-              icacls "$f" /inheritance:r \
-                  /grant 'CREATOR OWNER:(OI)(CI)(RX,D,DC,WDAC)' \
-                  /grant 'BUILTIN\Users:(OI)(CI)RX'
-              icacls "$f"'\*.*' /reset /t /l /q
-            done
-          else
-            # We only make $CONDA_PREFIX read-only on Unixy platforms,
-            # because doing the same on Windows makes setup-miniconda's
-            # cleanup pass hang.  I don't understand why actions even
-            # *have* a cleanup pass given that they run right before
-            # the entire VM is nuked from orbit, but so it goes.  We
-            # *probably* don't have any code that is both conda- and
-            # Windows-specific that writes to the PDR package directory.
-            chmod -R a-w $readonly_dirs $CONDA_PREFIX
+          scripts/adjust-coverage-config < scripts/coveragerc.raw > coveragerc
+
+          # Make the directory tree containing the actual PDR .py
+          # files read-only.  This is because we used to have a lot
+          # of code that wrote scratch files into the PDR source tree
+          # and we don't want it coming back.
+          #
+          # We only do this on Unixy platforms, because doing the same
+          # on Windows makes setup-miniconda's cleanup pass hang.
+          # I don't understand why actions even *have* a cleanup pass
+          # given that they run right before the entire VM is nuked
+          # from orbit, but so it goes.  We *probably* don't have any
+          # code that is both conda- and Windows-specific that writes
+          # to the PDR package directory.
+          if [ $host_os != nt ]; then
+            chmod -R a-w dist $CONDA_PREFIX
           fi
 
       - name: Run unit tests
@@ -178,7 +166,7 @@ jobs:
           export PYTHONDONTWRITEBYTECODE=1
           pytest -p no:cacheprovider --basetemp=$PWD/tmp --cov \
             --cov-config=$PWD/coveragerc --cov-branch --cov-report=term \
-            --rootdir=$PWD/src --import-mode=importlib -r fEsX
+            --import-mode=importlib -r fEsX --pyargs pdr.tests
 
       - name: Store coverage data
         if: always()
@@ -283,20 +271,17 @@ jobs:
 
       - name: Prepare for testing
         if: ${{ fromJSON(steps.deps.outputs.available) }}
-        # See comments on the matching step of the conda-unit job for
-        # explanation.  The only difference between that job and this
-        # one should be the value of readonly_dirs.
         run: |
-          source venv/bin/activate
-          tar=$(scripts/find-gnu-tar)
-          mkdir src
-          "$tar" --extract -f dist/pdr-*.tar.gz \
-                 --strip-components=1 --directory=src \
-                 --wildcards \*/.coveragerc \*/tests
+          host_os=$(python3 -c 'import os; print(os.name)')
+          scripts/adjust-coverage-config < scripts/coveragerc.raw > coveragerc
 
-          scripts/adjust-coverage-config < src/.coveragerc > coveragerc
-
-          readonly_dirs="dist src venv"
+          # Make the directory tree containing the actual PDR .py
+          # files read-only.  This is because we used to have a lot
+          # of code that wrote scratch files into the PDR source tree
+          # and we don't want it coming back.
+          # We can do this on all platforms for pip-based testing.
+          # Note: on Windows attrib +r has no effect on directories.
+          readonly_dirs="dist venv"
           host_os=$(python3 -c 'import os; print(os.name)')
           if [ $host_os = nt ]; then
             export MSYS2_ARG_CONV_EXCL='*'
@@ -321,7 +306,7 @@ jobs:
           export PYTHONDONTWRITEBYTECODE=1
           pytest -p no:cacheprovider --basetemp=$PWD/tmp --cov \
             --cov-config=$PWD/coveragerc --cov-branch --cov-report=term \
-            --rootdir=$PWD/src --import-mode=importlib -r fEsX
+            --import-mode=importlib -r fEsX --pyargs pdr.tests
 
       - name: Store coverage data
         if: always()

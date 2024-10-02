@@ -2,8 +2,7 @@ import importlib.util
 
 from pdr import Metadata
 from pdr.parselabel.pds3 import parse_pvl
-
-from tests.objects import SILLY_LABEL
+from pdr.tests.objects import SILLY_LABEL
 
 import pytest
 if importlib.util.find_spec("Levenshtein"):

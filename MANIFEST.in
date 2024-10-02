@@ -1,7 +1,7 @@
 # No, it isn't possible to do this in pyproject.toml :-(
-include docs/version_history.md
+include .coveragerc
 include environment.yml
 include minimal_environment.yml
-include .coveragerc
-recursive-include tests *.py
-include tests/data/*
+include docs/version_history.md
+include pdr/pds4_tools/CREDITS
+include pdr/pds4_tools/LICENSES

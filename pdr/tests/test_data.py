@@ -1,6 +1,6 @@
 import pdr
 
-from tests.objects import STUB_IMAGE_LABEL
+from pdr.tests.objects import STUB_IMAGE_LABEL
 
 
 def test_data_init_basic(uniband_image_product):
