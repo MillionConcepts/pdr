@@ -5,3 +5,4 @@ include minimal_environment.yml
 include docs/version_history.md
 include pdr/pds4_tools/CREDITS
 include pdr/pds4_tools/LICENSES
+include pdr/tests/data/*
