@@ -89,4 +89,7 @@ def is_trivial(pointer: str) -> bool:
     # we don't present STRUCTURES separately from their tables
     if "STRUCTURE" in pointer:
         return True
+    # only in MSL CCAM products; probably for internal processing pipelines
+    if "PDS_OBJECT" in pointer:
+        return True
     return False

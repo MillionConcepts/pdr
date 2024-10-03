@@ -381,17 +381,19 @@ def index_duplicate_pointers(
     for pointer, group in pt_groups.items():
         if (len(group) > 1) and \
                 not any(sub in pointer for sub in
-                        ["STRUCTURE", "DESCRIPTION", "PDS_OBJECT"]):
+                        ["STRUCTURE", "PDS_OBJECT"]):
             # don't waste anyone's time mentioning, that the label
             # references both ODL.TXT and VICAR2.TXT, etc.
-            warnings.warn(
-                f"Duplicated {pointer}, indexing with integers after each "
-                f"entry (e.g.: {pointer}_0)"
-            )
+            if "DESCRIPTION" not in pointer:
+                depoint = True
+                warnings.warn(
+                    f"Duplicated {pointer}, indexing with integers after each "
+                    f"entry (e.g.: {pointer}_0)"
+                )
+            else:
+                depoint = False
             for ix in range(len(group)):
-                depointer = depointerize(pointer)
                 indexed_pointer = f"{pointer}_{ix}"
-                indexed_depointer = f"{depointer}_{ix}"
                 mapping = multidict_dig_and_edit(
                     input_multidict=mapping,
                     target=pointer,
@@ -399,17 +401,21 @@ def index_duplicate_pointers(
                     setter_function=set_key_index,
                     key_editor=True,
                 )
-                mapping = multidict_dig_and_edit(
-                    input_multidict=mapping,
-                    target=depointer,
-                    input_object=list(range(len(group))),
-                    setter_function=set_key_index,
-                    key_editor=True,
-                )
                 params.append(indexed_pointer)
-                params.append(indexed_depointer)
                 params.remove(pointer)
-                params.remove(depointer)
+                if depoint:
+                    depointer = depointerize(pointer)
+                    indexed_depointer = f"{depointer}_{ix}"
+                    mapping = multidict_dig_and_edit(
+                        input_multidict=mapping,
+                        target=depointer,
+                        input_object=list(range(len(group))),
+                        setter_function=set_key_index,
+                        key_editor=True,
+                    )
+                    params.append(indexed_depointer)
+                    params.remove(depointer)
+
     return mapping, params
 
 

@@ -10,12 +10,17 @@
 
 
 ### Changed
-
+- DESCRIPTION pointers will now be deduplicated and print with indexes in the 
+keys list (e.g. DESCRIPTION_0, DESCRIPTION_1, etc.). No warning will be triggered.
+- unit tests have been moved inside the pdr/ folder and will now be packaged
+and shipped with pdr
 
 ### Fixed
 
 
 ### Removed
+- PDS_OBJECT pointers will no longer be served in the keys list (previously
+returned only a tbd message)
 
 
 ## [1.2.3] - 2024-09-30

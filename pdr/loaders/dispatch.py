@@ -122,7 +122,8 @@ def file_extension_to_loader(fn: str) -> Loader:
     return TBD()
 
 
-OBJECTS_TO_IGNORE = ["DATA_SET_MAP_PROJECT.*", ".*_DESC$", ".*DESCRIPTION$"]
+OBJECTS_TO_IGNORE = ["DATA_SET_MAP_PROJECT.*", ".*_DESC$",
+                     ".*DESCRIPTION(_[0-9]*)?$"]
 """
 PDS3 objects we do not automatically load, even when loading greedily.
 These are reference files, usually throwaway ones, that are usually not
