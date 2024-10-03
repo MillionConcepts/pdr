@@ -790,6 +790,11 @@ def check_special_block(
         and ".DA" in data.metaget_("^IMAGE")[0]
     ):
         return formats.cassini.iss_calib_da_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "MGS-M-MOLA-3-PEDR-L1A-V1.0"
+        and "TABLE" in name
+    ):
+        return True, formats.mgs.mola_pedr_special_block(data, name, identifiers)
     return False, None
 
 

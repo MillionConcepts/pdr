@@ -206,6 +206,7 @@ def get_special_qube_band_storage():
     band_storage_type = "BAND_SEQUENTIAL"
     return True, band_storage_type
 
+
 def iss_telemetry_bit_col_format(obj, definition):
     """
     The format file for Cassini ISS telemetry tables incorrectly uses 
@@ -226,6 +227,7 @@ def iss_telemetry_bit_col_format(obj, definition):
     definition["DATA_TYPE"] = "MSB_BIT_STRING"
 
     return True, obj
+
 
 def iss_calib_da_special_block(data, name):
     """

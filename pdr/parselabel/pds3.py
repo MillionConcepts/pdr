@@ -140,6 +140,7 @@ def parse_pvl(
     )
     statements = chunk_statements(trimmed_lines)
     mapping, params = BlockParser().parse_statements(statements)
+
     if deduplicate_pointers:
         pointers = get_pds3_pointers(mapping)
         mapping, params = index_duplicate_pointers(pointers, mapping, params)
@@ -378,9 +379,9 @@ def index_duplicate_pointers(
     # noinspection PyTypeChecker
     pt_groups = groupby(identity, pointers)
     for pointer, group in pt_groups.items():
-        if (len(group) > 1) and (
-            pointer not in ("^STRUCTURE", "^DESCRIPTION", "^PDS_OBJECT")
-        ):
+        if (len(group) > 1) and \
+                not any(sub in pointer for sub in
+                        ["STRUCTURE", "DESCRIPTION", "PDS_OBJECT"]):
             # don't waste anyone's time mentioning, that the label
             # references both ODL.TXT and VICAR2.TXT, etc.
             warnings.warn(
