@@ -141,11 +141,6 @@ def parse_pvl(
     statements = chunk_statements(trimmed_lines)
     mapping, params = BlockParser().parse_statements(statements)
 
-    from pdr.formats.checkers import check_special_pvl_mapping
-    is_special, special_mapping = check_special_pvl_mapping(mapping)
-    if is_special:
-        mapping = special_mapping
-    
     if deduplicate_pointers:
         pointers = get_pds3_pointers(mapping)
         mapping, params = index_duplicate_pointers(pointers, mapping, params)

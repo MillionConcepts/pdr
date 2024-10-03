@@ -30,6 +30,7 @@ def get_ecs_structure(block, name, filename, data, identifiers):
     fmtdef, dt = insert_sample_types_into_df(fmtdef, identifiers)
     return fmtdef, dt
 
+
 def mola_pedr_table_loader(
         name,
         identifiers,
@@ -76,23 +77,21 @@ def mola_pedr_table_loader(
 
     return table
 
-def mola_pedr_pointer_mapping(mapping):
+
+def mola_pedr_special_block(data, name):
     """
-    Pointers to the format files have non-standard names, e.g. ^FIRST_STRUCTURE 
+    Pointers to the format files have non-standard names, e.g. ^FIRST_STRUCTURE
     instead of ^STRUCTURE.
-    
+
     HITS
     * mgs_mola
         * pedr
     * mgs_sampler
         * pedr
     """
-    from multidict import MultiDict
-
-    for item in iter(mapping.items()):
-        if "TABLE" in item[0] and type(item[1]) == MultiDict:
-            item[1].add("^STRUCTURE", item[1].pop("^FIRST_STRUCTURE"))
-            frame = item[0].split('_')[2]
-            item[1].add("^STRUCTURE", item[1].pop(f"^FR_{frame}_ENG_STRUCTURE"))
-            item[1].add("^STRUCTURE", item[1].pop("^THIRD_STRUCTURE"))
-    return mapping
+    block = data.metablock_(name)
+    block.add("^STRUCTURE", block.pop("^FIRST_STRUCTURE"))
+    frame = name.split('_')[2]
+    block.add("^STRUCTURE", block.pop(f"^FR_{frame}_ENG_STRUCTURE"))
+    block.add("^STRUCTURE", block.pop("^THIRD_STRUCTURE"))
+    return block

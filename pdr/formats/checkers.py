@@ -663,21 +663,6 @@ def check_special_bit_format(
         return formats.galileo.ssi_telemetry_bit_col_format(definition)
     return False, None
 
-def check_special_pvl_mapping(
-    mapping: MultiDict,
-) -> tuple[bool, Optional[dict]]:
-    """
-    Special case checker used by parse_pvl() to fix pointer names from 
-    non-standard labels that hit errors before they can be fixed by 
-    check_special_block(). (e.g. ^STRUCTURE pointers called ^FIRST_STRUCTURE)
-    """
-    if (
-        "DATA_SET_ID" in mapping 
-        and mapping["DATA_SET_ID"] == '"MGS-M-MOLA-3-PEDR-L1A-V1.0"'
-    ):
-        return True, formats.mgs.mola_pedr_pointer_mapping(mapping)
-    return False, None
-
 
 def check_special_block(
     name: str, data: PDRLike, identifiers: Mapping
@@ -812,6 +797,11 @@ def check_special_block(
         and ".DA" in data.metaget_("^IMAGE")[0]
     ):
         return formats.cassini.iss_calib_da_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == "MGS-M-MOLA-3-PEDR-L1A-V1.0"
+        and "TABLE" in name
+    ):
+        return True, formats.mgs.mola_pedr_special_block(data, name)
     return False, None
 
 
