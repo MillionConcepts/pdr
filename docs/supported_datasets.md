@@ -337,6 +337,10 @@ kernels in combination with JPL Horizons).
   - TES-TSDR ATM, BOL, GEO, OBS, POS, TLM, IFG and RAD (fixed-length tables only)
   - TES Thermal Inertia and Albedo maps
   - MOLA PRDR, IEGDR (v1 and v2), MEGDR, and SHADR
+  - MOLA PEDR *note: It is especially important to read the labels and archived 
+    documentation for this dataset because the tables' formatting are neither 
+    standard nor intuitive, and `pdr` reads them as they are described in their 
+    labels.*
   - RSS most Raw Data and Science Data Products (see Known Unsupported Datasets 
     below for excluded products)
   - RSS electron density profiles
@@ -685,7 +689,7 @@ kernels in combination with JPL Horizons).
 #### MGS
   - TES-TSDR PCT (support not planned)
   - TES-TSDR variable-length '.VAR' tables (support not planned)
-  - MOLA AEDR and PEDR (support planned)
+  - MOLA AEDR (support planned, low priority)
   - RSS Raw Data products with a "stream" or undefined RECORD_TYPE (support 
     not planned)
   - RSS PostScript files from both Raw Data and Science Data Products (support 

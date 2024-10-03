@@ -7,6 +7,8 @@
 
 
 #### Dataset Support
+- MGS MOLA PEDR (a special case fixes non-standard STRUCTURE pointer names and
+  'ROWS = "UNK"' from the labels)
 
 
 ### Changed
@@ -14,6 +16,8 @@
 keys list (e.g. DESCRIPTION_0, DESCRIPTION_1, etc.). No warning will be triggered.
 - unit tests have been moved inside the pdr/ folder and will now be packaged
 and shipped with pdr
+- Previously "^STRUCTURE" and "^PDS_OBJECT" pointer names were allowed to skip
+  deduplication, now any pointer with STRUCTURE or PDS_OBJECT in the name is skipped.
 
 ### Fixed
 
