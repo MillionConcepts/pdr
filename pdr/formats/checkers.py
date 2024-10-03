@@ -300,13 +300,6 @@ def check_special_table_reader(
         return True, formats.ihw.add_newlines_table_loader(
             fmtdef_dt, block, fn, start_byte
         )
-    if (
-        identifiers["DATA_SET_ID"] == "MGS-M-MOLA-3-PEDR-L1A-V1.0"
-        and "TABLE" in name
-    ):
-        return True, formats.mgs.mola_pedr_table_loader(
-            name, identifiers, fn, fmtdef_dt, block, start_byte,
-        )
     return False, None
 
 
@@ -801,7 +794,7 @@ def check_special_block(
         identifiers["DATA_SET_ID"] == "MGS-M-MOLA-3-PEDR-L1A-V1.0"
         and "TABLE" in name
     ):
-        return True, formats.mgs.mola_pedr_special_block(data, name)
+        return True, formats.mgs.mola_pedr_special_block(data, name, identifiers)
     return False, None
 
 
