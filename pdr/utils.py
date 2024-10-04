@@ -258,7 +258,13 @@ def check_primary_fmt(data_filename: str):
         if lower.endswith(ext):
             return "FITS"
     if looks_like_this_kind_of_file(lower, DESKTOP_IMAGE_EXTENSIONS):
-        from PIL import Image, UnidentifiedImageError
+        try:
+            from PIL import Image, UnidentifiedImageError
+        except ImportError:
+            raise ModuleNotFoundError(
+                "Reading desktop image formats requires the 'pillow' library."
+            )
+        Image.MAX_IMAGE_PIXELS = None
         try:
             standard = Image.open(data_filename).format
             assert standard in DESKTOP_IMAGE_STANDARDS
