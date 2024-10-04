@@ -867,9 +867,44 @@ class Data:
         to disk.
 
         if purge is True, objects are deleted as soon as they are dumped,
-        rendering this Data object 'empty' afterwards.
+        rendering this Data object 'empty' afterward.
 
-        browse_kwargs are passed directly to pdr.browisfy.dump_browse.
+        browse_kwargs are passed directly to pdr.browsify.browsify.
+
+        - image_clip: Union[float, tuple[float, float], None] = None
+            Applies a percentile clip to the image at
+            clip = (low_percentile, 100-high_percentile).
+            If clip is a single value, low_percentile=high_percentile
+            in the above formula. If it's a tuple, low_percentile is
+            the first value in the tuple.
+
+        - mask_color: Optional[tuple[int, int, int]] = (0, 255, 255)
+            Allows specification of RGB color for masked arrays (default cyan)
+
+        - band_ix: Optional[int] = None
+            The index of the band to be exported in a multiband image. If None,
+            the middle band of the image is exported. If there are 3-4 bands in
+            the image and the override_rgba argument is False, this value is
+            ignored.
+            When set equal to "burst", returns a separate browse product for
+            each band of a multiband image.
+
+        - save: bool = True
+            If false an array of the browse image is returned rather than
+            saving a file on disk.
+
+        - override_rgba: bool=False
+            Allows use of band_ix when there are 3-4 bands in the image.
+            Otherwise, the image will be returned as a stacked rgb(a) image.
+
+        - image_format: str = "jpg"
+            Sets image extension which informs the format pillow will save the
+            browse image as.
+
+        - nice_clip: bool = False
+            Refuses to use image_clip if the scaling is too intense
+            (preventing all values from being set the same)
+
         """
         if prefix is None:
             prefix = Path(self.filename).stem
