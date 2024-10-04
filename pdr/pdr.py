@@ -866,10 +866,33 @@ class Data:
         attempt to dump all data objects associated with this Data object
         to disk.
 
+        By default, writes files to the working directory.
+
+        By default, assigns filenames like:
+        {filename stem}_{object name}.{file extension}
+
+        So, for instance, a browse version of a TABLE object referenced from
+        "jn23a1.lbl" would be written to  "jn23a1_TABLE.csv".
+
+        If prefix is not None, filenames will begin with the value of prefix
+        rather than the original filename stem.
+
+        If outpath is not None, files will be written to the value of outpath
+        rather than to the working directory.
+
+        By default, attempts to apply scaling/offset factors and special
+        constant masking before writing images. If scaled is False, does not
+        do that. If scaled == "both", writes both scaled and unscaled
+        versions, adding "_scaled" and "_unscaled" to their respective
+        filenames before the file extension. Note that some types of load
+        operations (like for FITS files) may have already applied scaling
+        factors, in which case recovering the unscaled image is not possible.
+
         if purge is True, objects are deleted as soon as they are dumped,
         rendering this Data object 'empty' afterward.
 
-        browse_kwargs are passed directly to pdr.browsify.browsify.
+        **browse_kwargs are passed directly to browsify.browsify(), and
+        offer various ways to modify image dumping behavior:
 
         - image_clip: Union[float, tuple[float, float], None] = None
             Applies a percentile clip to the image at
@@ -877,6 +900,11 @@ class Data:
             If clip is a single value, low_percentile=high_percentile
             in the above formula. If it's a tuple, low_percentile is
             the first value in the tuple.
+
+            The default None value causes 'nice' clipping: it clips the image
+            at (1, 1), but if this results in the clipped image containing only
+            a single value, it uses the original image instead. Pass 0 if
+            absolutely no clipping is desired.
 
         - mask_color: Optional[tuple[int, int, int]] = (0, 255, 255)
             Allows specification of RGB color for masked arrays (default cyan)
@@ -886,24 +914,27 @@ class Data:
             the middle band of the image is exported. If there are 3-4 bands in
             the image and the override_rgba argument is False, this value is
             ignored.
+
             When set equal to "burst", returns a separate browse product for
-            each band of a multiband image.
+            each band of a multiband image, appending numbers to the filenames
+            prior to the file extension.
 
         - save: bool = True
-            If false an array of the browse image is returned rather than
-            saving a file on disk.
+            If False, renders images in memory but does not save them to disk.
+            Not generally useful when passed to this method except for testing.
 
-        - override_rgba: bool=False
+        - override_rgba: bool = False
             Allows use of band_ix when there are 3-4 bands in the image.
-            Otherwise, the image will be returned as a stacked rgb(a) image.
+            Otherwise, the image will be returned as a stacked rgb image
+            (the assumed 'alpha' channel is always dropped). Setting this to
+            True is useful when a 3/4 band image is not actually RGB(A) (e.g.
+            XYZ spatial products).
+
+            This argument has no effect on images that do not have 3-4 bands.
 
         - image_format: str = "jpg"
             Sets image extension which informs the format pillow will save the
             browse image as.
-
-        - nice_clip: bool = False
-            Refuses to use image_clip if the scaling is too intense
-            (preventing all values from being set the same)
 
         """
         if prefix is None:

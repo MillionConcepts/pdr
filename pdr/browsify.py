@@ -154,7 +154,7 @@ def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs) -> None:
     attempts to dump a browse version of a data object, writing it into a file
     type that can be opened with desktop software: .jpg for most arrays, .csv
     for tables, .txt for most other things. if it can't find a reasonable
-    translation, it dumps as .pkl (pickled binary blob).
+    translation, it attempts to dump it as .pkl (a serialized binary 'blob').
     """
     outbase = str(outbase)
     if isinstance(obj, np.recarray):
@@ -170,7 +170,6 @@ def browsify(obj: Any, outbase: Union[str, Path], **dump_kwargs) -> None:
             obj.T.to_csv(outbase + ".csv"),
         else:
             obj.to_csv(outbase + ".csv")
-        # TODO: experimental, add more handles
     elif obj is None:
         return
     elif "to_string" in dir(obj):  # probably an XML ElementTree interface
