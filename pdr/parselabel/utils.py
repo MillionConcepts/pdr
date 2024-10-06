@@ -20,25 +20,28 @@ class InvalidAttachedLabel(ValueError):
     pass
 
 
-def _scan_to_end_of_label(buf: IO, max_size: int, text: bytes):
+def _scan_to_end_of_label(
+    buf: IO, max_size: int, text: bytes, raise_no_ending: bool
+):
     """Subroutine of trim_label()"""
     length = 0
     while length < max_size:
-        # TODO, maybe: this will perform null reads over and over on short
-        #  files with no attached label. This is probably not a big deal, but
-        #  we could add a check.
-        chunk = buf.read(50 * 1024)
+        if (chunk := buf.read(50 * 1024)) == b'':
+            break
         for ending in KNOWN_LABEL_ENDINGS:
             if (endmatch := re.search(ending, text[:-15] + chunk)) is not None:
                 return text + chunk[: endmatch.span()[1]]
         text, length = text + chunk, length + 50 * 1024
-    raise InvalidAttachedLabel("Couldn't find a label ending.")
+    if raise_no_ending is True:
+        raise InvalidAttachedLabel("Couldn't find a label ending.")
+    return text
 
 
 def trim_label(
     fn: Union[IO, Path, str],
     max_size: int = DEFAULT_PVL_LIMIT,
-    strict_decode: bool = True
+    strict_decode: bool = True,
+    raise_no_ending: bool = False
 ) -> str:
     """Look for a PVL label at the top of a file."""
     target_is_fn = isinstance(fn, (Path, str))
@@ -51,7 +54,7 @@ def trim_label(
                 text.decode('ascii')
             except UnicodeDecodeError:
                 raise InvalidAttachedLabel("File head appears to be binary.")
-        text = _scan_to_end_of_label(fn, max_size, text)
+        text = _scan_to_end_of_label(fn, max_size, text, raise_no_ending)
     finally:
         if target_is_fn is True:
             fn.close()
