@@ -47,7 +47,7 @@ def read_label(
     (typically by accessing the "LABEL" key of a `pdr.Data` object).
     """
     if fmt == "text":
-        return trim_label(decompress(fn)).decode("utf-8")
+        return trim_label(decompress(fn))
     elif fmt == "pvl":
         import pvl
 
