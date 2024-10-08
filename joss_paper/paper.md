@@ -23,9 +23,9 @@ authors:
     orcid: 0000-0003-3216-2963
     affiliation: 1
 affiliations:
-  - name: Million Concepts LLC
+  - name: Million Concepts LLC, USA
     index: 1
-  - name: Institut für Geologische Wissenschaften, Freie Universität Berlin
+  - name: Institut für Geologische Wissenschaften, Freie Universität Berlin, Germany
     index: 2
 date: 16 July 2024
 bibliography: paper.bib
