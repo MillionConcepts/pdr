@@ -102,7 +102,7 @@ There is a very wide variety of software intended to read data in planetary scie
 formats. `pdr`'s most important distinctions are its emphasis on breadth, simplicity,
 and high compatibility with other tools. `pdr` incorporates some of this software,
 including `pds4_tools` [@pds4_tools] and `astropy.io.fits` 
-[@astropy3, @astropy2, @astropy1]. `pdr` uses these packages to read, 
+[@astropy3; @astropy2; @astropy1]. `pdr` uses these packages to read, 
 respectively, PDS4 and FITS files, converting their outputs into standard 
 Python objects to provide users with a common interface regardless of file format. 
 
