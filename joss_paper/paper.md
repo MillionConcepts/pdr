@@ -50,7 +50,7 @@ supports some common scientific interchange data formats that are not PDS,
 including FITS.) We knew from the outset that many products in the PDS were not
 fully standards-compliant, particularly those archived under PDS3; its holdings
 are extremely diverse and span over half a century. For this reason, 
-we took a **data-driven development** approach rather than attempting to implement
+we took a *data-driven* development approach rather than attempting to implement
 these standards to the letter. What this means in practice is that we built `pdr` 
 around a core of extremely flexible heuristics that permit it to permissively accept
 and correctly handle many products that deviate from the standards.
@@ -101,10 +101,10 @@ for 100 files.
 There is a very wide variety of software intended to read data in planetary science 
 formats. `pdr`'s most important distinctions are its emphasis on breadth, simplicity,
 and high compatibility with other tools. `pdr` incorporates some of this software,
-including `pds4_tools` [@pds4_tools] and `astropy.io.fits` [@astropy]. `pdr` uses
-these packages to read, respectively, PDS4 and FITS files, converting their outputs
-into standard Python objects to provide users with a common interface regardless
-of file format. 
+including `pds4_tools` [@pds4_tools] and `astropy.io.fits` 
+[@astropy3, @astropy2, @astropy1]. `pdr` uses these packages to read, 
+respectively, PDS4 and FITS files, converting their outputs into standard 
+Python objects to provide users with a common interface regardless of file format. 
 
 It is important to note that many pieces of software with narrower _format_ scope than
 `pdr` have wider _application_ scope. For instance, GDAL [@GDAL] and `rasterio` 
