@@ -7,7 +7,8 @@ authors:
   - name: Sierra V. Brown
     orcid: 0000-0001-6065-5461
     affiliation: 1
-  - name: Michael St. Clair
+  - given-names: Michael
+    surname: St. Clair
     orcid: 0000-0002-7877-3148
     affiliation: 1
   - name: Chase Million
