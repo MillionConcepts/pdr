@@ -18,9 +18,10 @@ keys list (e.g. DESCRIPTION_0, DESCRIPTION_1, etc.). No warning will be triggere
 and shipped with pdr
 - Previously "^STRUCTURE" and "^PDS_OBJECT" pointer names were allowed to skip
   deduplication, now any pointer with STRUCTURE or PDS_OBJECT in the name is skipped.
+- `vax.py` module was removed in favor of using SETI/rms-vax dependency
 
 ### Fixed
-
+- updated docs/LICENSE.md to match LICENSE.md
 
 ### Removed
 - PDS_OBJECT pointers will no longer be served in the keys list (previously
