@@ -4,7 +4,7 @@ tags:
   - Python
   - planetary science
 authors:
-  - name: Sierra Brown
+  - name: Sierra V. Brown
     orcid: 0000-0001-6065-5461
     affiliation: 1
   - name: Michael St. Clair
