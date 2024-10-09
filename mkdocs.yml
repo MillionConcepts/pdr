@@ -16,5 +16,6 @@ nav:
   - 'supported_datasets.md'
   - 'version_history.md'
   - 'code_of_conduct.md'
+  - Joss Publication: 'joss_paper/pdr_joss_paper.pdf'
   - License: 'LICENSE.md'
   - API Reference: 'pdr_api.md'

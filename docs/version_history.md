@@ -10,6 +10,9 @@
 - MGS MOLA PEDR (a special case fixes non-standard STRUCTURE pointer names and
   'ROWS = "UNK"' from the labels)
 
+#### Other
+- A pdf of our JOSS publication is included in the documentation. This is now 
+  our preferred citation. A CITATION.txt file is now included in the repo.
 
 ### Changed
 - DESCRIPTION pointers will now be deduplicated and print with indexes in the 
@@ -19,6 +22,8 @@ and shipped with pdr
 - Previously "^STRUCTURE" and "^PDS_OBJECT" pointer names were allowed to skip
   deduplication, now any pointer with STRUCTURE or PDS_OBJECT in the name is skipped.
 - `vax.py` module was removed in favor of using SETI/rms-vax dependency
+- The text of our JOSS paper publication on pdr has been moved from
+  `joss_paper/paper.md` to `docs/joss_paper/paper.md`.
 
 ### Fixed
 - updated docs/LICENSE.md to match LICENSE.md
