@@ -11,8 +11,9 @@
   'ROWS = "UNK"' from the labels)
 
 #### Other
-- A pdf of our JOSS publication is included in the documentation. This is now 
-  our preferred citation. A CITATION.txt file is now included in the repo.
+- Our JOSS paper was accepted for publication! :tada: A pdf of our JOSS 
+  publication is included in the documentation. This is now our preferred
+  citation. A CITATION.txt file is now included in the repo.
 
 ### Changed
 - DESCRIPTION pointers will now be deduplicated and print with indexes in the 
