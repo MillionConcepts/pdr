@@ -379,9 +379,4 @@
     options:
         heading_level: 3
 
-## vax
-
-::: pdr.vax
-    options:
-        heading_level: 3
 

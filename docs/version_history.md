@@ -23,8 +23,7 @@ and shipped with pdr
 - Previously "^STRUCTURE" and "^PDS_OBJECT" pointer names were allowed to skip
   deduplication, now any pointer with STRUCTURE or PDS_OBJECT in the name is skipped.
 - `vax.py` module was removed in favor of using SETI/rms-vax dependency
-- The text of our JOSS paper publication on pdr has been moved from
-  `joss_paper/paper.md` to `docs/joss_paper/paper.md`.
+
 
 ### Fixed
 - updated docs/LICENSE.md to match LICENSE.md
@@ -32,6 +31,8 @@ and shipped with pdr
 ### Removed
 - PDS_OBJECT pointers will no longer be served in the keys list (previously
 returned only a tbd message)
+- The text of our JOSS paper publication on pdr has been removed from
+  `joss_paper/paper.md`. Please refer instead to the pdf under `docs/pdr_joss_paper.pdf`
 
 
 ## [1.2.3] - 2024-09-30
