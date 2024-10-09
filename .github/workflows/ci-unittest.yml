@@ -3,6 +3,7 @@ name: Unit tests
 on:
   push:
     branches:
+      - zack/ci-py313-fixes
       - develop
       - main
 
@@ -80,103 +81,103 @@ jobs:
             shasum -a 256 pdr*
           ) >> $GITHUB_STEP_SUMMARY
 
-  conda-unit:
-    name: |
-      Test:  ${{matrix.python}}, conda, ${{matrix.os}}, ${{matrix.deps}}
-    strategy:
-      fail-fast: false
-      matrix:
-        # Conda-based installations are our recommendation, so we test
-        # comprehensively.
-        os: [ubuntu, macos, windows]
-        deps: [minimal, full]
-        python: ["3.9", "3.10", "3.11", "3.12"]
+  # conda-unit:
+  #   name: |
+  #     Test:  ${{matrix.python}}, conda, ${{matrix.os}}, ${{matrix.deps}}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       # Conda-based installations are our recommendation, so we test
+  #       # comprehensively.
+  #       os: [ubuntu, macos, windows]
+  #       deps: [minimal, full]
+  #       python: ["3.9", "3.10", "3.11", "3.12"]
 
-    needs: build-package
-    runs-on: "${{ matrix.os }}-latest"
-    defaults:
-      run:
-        # bash --login is required for conda environments to work correctly;
-        # see https://github.com/marketplace/actions/setup-miniconda#important
-        # something in conda's shell scripts is incompatible with -u
-        shell: bash -l -e -o pipefail {0}
-    steps:
-      - name: Get build helpers
-        uses: actions/download-artifact@v4
-        with:
-          name: scripts-for-jobs
-      - name: Extract build helpers
-        run: unzip scripts-for-jobs.zip
+  #   needs: build-package
+  #   runs-on: "${{ matrix.os }}-latest"
+  #   defaults:
+  #     run:
+  #       # bash --login is required for conda environments to work correctly;
+  #       # see https://github.com/marketplace/actions/setup-miniconda#important
+  #       # something in conda's shell scripts is incompatible with -u
+  #       shell: bash -l -e -o pipefail {0}
+  #   steps:
+  #     - name: Get build helpers
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: scripts-for-jobs
+  #     - name: Extract build helpers
+  #       run: unzip scripts-for-jobs.zip
 
-      - name: Get just-built PDR package
-        uses: actions/download-artifact@v4
-        with:
-          name: packages
-          path: dist
+  #     - name: Get just-built PDR package
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: packages
+  #         path: dist
 
-      - name: Extract environment file
-        run: |
-          tar=$(scripts/find-gnu-tar)
-          if [[ "${{ matrix.deps }}" = minimal ]]; then
-            conda_env=minimal_environment.yml
-          else
-            conda_env=environment.yml
-          fi
-          "$tar" --extract --to-stdout -f dist/pdr-*.tar.gz \
-                 --wildcards \*/$conda_env > environment.yml
+  #     - name: Extract environment file
+  #       run: |
+  #         tar=$(scripts/find-gnu-tar)
+  #         if [[ "${{ matrix.deps }}" = minimal ]]; then
+  #           conda_env=minimal_environment.yml
+  #         else
+  #           conda_env=environment.yml
+  #         fi
+  #         "$tar" --extract --to-stdout -f dist/pdr-*.tar.gz \
+  #                --wildcards \*/$conda_env > environment.yml
 
-      - name: Install Python and dependencies using miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          python-version: ${{ matrix.python }}
-          channels: conda-forge
-          environment-file: environment.yml
+  #     - name: Install Python and dependencies using miniconda
+  #       uses: conda-incubator/setup-miniconda@v3
+  #       with:
+  #         python-version: ${{ matrix.python }}
+  #         channels: conda-forge
+  #         environment-file: environment.yml
 
-      - name: Install test tools
-        run: |
-          conda install pytest pytest-cov
+  #     - name: Install test tools
+  #       run: |
+  #         conda install pytest pytest-cov
 
-      - name: Install PDR wheel
-        run: |
-          pip install --no-deps --only-binary :all: dist/pdr-*-py3-*.whl
+  #     - name: Install PDR wheel
+  #       run: |
+  #         pip install --no-deps --only-binary :all: dist/pdr-*-py3-*.whl
 
-      - name: Prepare for testing
-        run: |
-          host_os=$(python3 -c 'import os; print(os.name)')
-          scripts/adjust-coverage-config < scripts/coveragerc.raw > coveragerc
+  #     - name: Prepare for testing
+  #       run: |
+  #         host_os=$(python3 -c 'import os; print(os.name)')
+  #         scripts/adjust-coverage-config < scripts/coveragerc.raw > coveragerc
 
-          # Make the directory tree containing the actual PDR .py
-          # files read-only.  This is because we used to have a lot
-          # of code that wrote scratch files into the PDR source tree
-          # and we don't want it coming back.
-          #
-          # We only do this on Unixy platforms, because doing the same
-          # on Windows makes setup-miniconda's cleanup pass hang.
-          # I don't understand why actions even *have* a cleanup pass
-          # given that they run right before the entire VM is nuked
-          # from orbit, but so it goes.  We *probably* don't have any
-          # code that is both conda- and Windows-specific that writes
-          # to the PDR package directory.
-          if [ $host_os != nt ]; then
-            chmod -R a-w dist $CONDA_PREFIX
-          fi
+  #         # Make the directory tree containing the actual PDR .py
+  #         # files read-only.  This is because we used to have a lot
+  #         # of code that wrote scratch files into the PDR source tree
+  #         # and we don't want it coming back.
+  #         #
+  #         # We only do this on Unixy platforms, because doing the same
+  #         # on Windows makes setup-miniconda's cleanup pass hang.
+  #         # I don't understand why actions even *have* a cleanup pass
+  #         # given that they run right before the entire VM is nuked
+  #         # from orbit, but so it goes.  We *probably* don't have any
+  #         # code that is both conda- and Windows-specific that writes
+  #         # to the PDR package directory.
+  #         if [ $host_os != nt ]; then
+  #           chmod -R a-w dist $CONDA_PREFIX
+  #         fi
 
-      - name: Run unit tests
-        run: |
-          export PYTHONDONTWRITEBYTECODE=1
-          pytest -p no:cacheprovider --basetemp=$PWD/tmp --cov \
-            --cov-config=$PWD/coveragerc --cov-branch --cov-report=term \
-            --import-mode=importlib -r fEsX --pyargs pdr.tests
+  #     - name: Run unit tests
+  #       run: |
+  #         export PYTHONDONTWRITEBYTECODE=1
+  #         pytest -p no:cacheprovider --basetemp=$PWD/tmp --cov \
+  #           --cov-config=$PWD/coveragerc --cov-branch --cov-report=term \
+  #           --import-mode=importlib -r fEsX --pyargs pdr.tests
 
-      - name: Store coverage data
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-coverage-conda-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
-          path: coverage.dat
-          if-no-files-found: ignore
-          # unmerged coverage analysis data can be ephemeral
-          retention-days: 1
+  #     - name: Store coverage data
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: unit-test-coverage-conda-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
+  #         path: coverage.dat
+  #         if-no-files-found: ignore
+  #         # unmerged coverage analysis data can be ephemeral
+  #         retention-days: 1
 
   pip-unit:
     name: |
@@ -193,8 +194,8 @@ jobs:
         # upcoming python 3.13, which is not available via conda yet,
         # but _is_ available from github's own snake collection.
         os: [ubuntu, macos, windows]
-        python: ["3.9", "3.12", "3.13-dev"]
-        deps: [minimal, full]
+        python: ["3.13"] #["3.9", "3.12", "3.13-dev"]
+        deps: [minimal] #[minimal, full]
     runs-on: "${{ matrix.os }}-latest"
     defaults:
       run:
@@ -237,8 +238,12 @@ jobs:
           # I do not understand why the activation script is in a
           # different location on Windows.
           if [ ! -d venv/bin ]; then mv venv/Scripts venv/bin; fi
+          echo "::group::venv script"
+          cat venv/bin/activate
+
           source venv/bin/activate
 
+          echo "::group::pip install test helpers"
           pip install --only-binary :all: pytest pytest-cov
 
           # If this pip command fails *and* Python is a development
@@ -246,6 +251,7 @@ jobs:
           # dependencies aren't available; skip the rest of the steps
           # but don't fail the job.  continue-on-error is
           # insufficiently nuanced for this rule.
+          echo "::group::pip install pdr and deps"
           set +e +o pipefail
           pip install --only-binary :all: "$wheel$features" 2>&1 |
             tee pip-deps.log
@@ -308,80 +314,80 @@ jobs:
             --cov-config=$PWD/coveragerc --cov-branch --cov-report=term \
             --import-mode=importlib -r fEsX --pyargs pdr.tests
 
-      - name: Store coverage data
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-coverage-pip-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
-          path: coverage.dat
-          if-no-files-found: ignore
-          # unmerged coverage analysis data can be ephemeral
-          retention-days: 1
+      # - name: Store coverage data
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: unit-test-coverage-pip-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.deps }}
+      #     path: coverage.dat
+      #     if-no-files-found: ignore
+      #     # unmerged coverage analysis data can be ephemeral
+      #     retention-days: 1
 
-  coverage:
-    name: Combine coverage
-    needs: [conda-unit, pip-unit]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        id: py
-        with:
-          python-version: "3.x" # latest stable
-          update-environment: false
+  # coverage:
+  #   name: Combine coverage
+  #   needs: [conda-unit, pip-unit]
+  #   if: always()
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       id: py
+  #       with:
+  #         python-version: "3.x" # latest stable
+  #         update-environment: false
 
-      - name: Get build helpers
-        uses: actions/download-artifact@v4
-        with:
-          name: scripts-for-jobs
-      - name: Get just-built PDR package
-        uses: actions/download-artifact@v4
-        with:
-          name: packages
-          path: dist
-      - name: Get coverage data
-        uses: actions/download-artifact@v4
-        with:
-          pattern: unit-test-coverage-*
-          path: cov
-          # this does the exact opposite of what it sounds like:
-          # if true, all the artifacts that match the pattern are
-          # unpacked in the *same location* and clobber each other
-          # if false they all get renamed to not collide
-          merge-multiple: false
+  #     - name: Get build helpers
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: scripts-for-jobs
+  #     - name: Get just-built PDR package
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: packages
+  #         path: dist
+  #     - name: Get coverage data
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: unit-test-coverage-*
+  #         path: cov
+  #         # this does the exact opposite of what it sounds like:
+  #         # if true, all the artifacts that match the pattern are
+  #         # unpacked in the *same location* and clobber each other
+  #         # if false they all get renamed to not collide
+  #         merge-multiple: false
 
-      - name: Extract build helpers
-        run: unzip scripts-for-jobs.zip
+  #     - name: Extract build helpers
+  #       run: unzip scripts-for-jobs.zip
 
-      - name: Extract sources
-        # this is guaranteed to run on Linux so we can assume "tar" is GNU tar
-        run: |
-          tar -xz --strip-components=1 -f dist/pdr-*.tar.gz \
-              --wildcards \*/.coveragerc \*/pyproject.toml \*/pdr
+  #     - name: Extract sources
+  #       # this is guaranteed to run on Linux so we can assume "tar" is GNU tar
+  #       run: |
+  #         tar -xz --strip-components=1 -f dist/pdr-*.tar.gz \
+  #             --wildcards \*/.coveragerc \*/pyproject.toml \*/pdr
 
-      - name: Prepare analysis environment
-        run: |
-          '${{ steps.py.outputs.python-path }}' -m venv venv
-          . venv/bin/activate
-          pip install --only-binary :all: --upgrade pip
-          pip install --only-binary :all: coverage
+  #     - name: Prepare analysis environment
+  #       run: |
+  #         '${{ steps.py.outputs.python-path }}' -m venv venv
+  #         . venv/bin/activate
+  #         pip install --only-binary :all: --upgrade pip
+  #         pip install --only-binary :all: coverage
 
-      - name: Crunch coverage data
-        run: |
-          . venv/bin/activate
-          scripts/adjust-coverage-config cov/unit-test-coverage-*/coverage.dat \
-              < .coveragerc > coveragerc.adjusted
-          mv coveragerc.adjusted .coveragerc
+  #     - name: Crunch coverage data
+  #       run: |
+  #         . venv/bin/activate
+  #         scripts/adjust-coverage-config cov/unit-test-coverage-*/coverage.dat \
+  #             < .coveragerc > coveragerc.adjusted
+  #         mv coveragerc.adjusted .coveragerc
 
-          printf '### Combined coverage report\n\n' >> $GITHUB_STEP_SUMMARY
+  #         printf '### Combined coverage report\n\n' >> $GITHUB_STEP_SUMMARY
 
-          python3 -m coverage combine cov/unit-test-coverage-*/coverage.dat
-          python3 -m coverage report --format=markdown --sort=cover \
-            >> $GITHUB_STEP_SUMMARY
+  #         python3 -m coverage combine cov/unit-test-coverage-*/coverage.dat
+  #         python3 -m coverage report --format=markdown --sort=cover \
+  #           >> $GITHUB_STEP_SUMMARY
 
-      - name: Store coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-coverage-all
-          path: coverage.dat
+  #     - name: Store coverage report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: unit-test-coverage-all
+  #         path: coverage.dat
