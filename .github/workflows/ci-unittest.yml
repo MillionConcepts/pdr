@@ -44,17 +44,10 @@ jobs:
           '${{ steps.py.outputs.python-path }}' -m venv venv
           # I do not understand why the activation script is in a
           # different location on Windows.
-          if [ ! -d venv/bin ]; then
-              mv venv/Scripts venv/bin
-              (
-                  cd venv/bin
-                  sed -i -e 's@/Scripts:@/bin:@' activate
-                  grep - Scripts * || :
-              )
+          if [ -f venv/bin/activate ]
+          then source venv/bin/activate
+          else source venv/Scripts/activate
           fi
-          echo "::group::venv script"
-          cat venv/bin/activate
-          source venv/bin/activate
           echo "::group::environment after activation"
           printenv
           echo "::group::python after activation"
