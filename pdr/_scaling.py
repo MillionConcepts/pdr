@@ -33,6 +33,11 @@ def find_special_constants(
         return specials
     # check for implicit constants appropriate to the sample type
     implicit_possibilities = IMPLICIT_PDS3_CONSTANTS[obj.dtype.name]
+    # can't check for nans with "in" because it's an equality check, so
+    # we don't intend this to be used, just want to make the key and put
+    # in a value that won't conflict later
+    if np.any(~np.isfinite(obj.data)):
+        specials["INVALIDS"] = np.nan
     return specials | {
         possibility: constant
         for possibility, constant in implicit_possibilities.items()
@@ -43,7 +48,12 @@ def find_special_constants(
 def mask_specials(obj, specials):
     """"""
     obj = np.ma.masked_array(obj)
-    obj.mask = np.isin(obj.data, specials)
+    if "INVALIDS" in specials:
+        # masks infs and nans as well
+        obj.mask = np.ma.mask_or(np.isin(obj.data, specials),
+                                 ~np.isfinite(obj.data))
+    else:
+        obj.mask = np.isin(obj.data)
     return obj
 
 
