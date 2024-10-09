@@ -11,7 +11,7 @@
   'ROWS = "UNK"' from the labels)
 
 #### Other
-- Our JOSS paper was accepted for publication! :tada: A pdf of our JOSS 
+- Our [JOSS paper](https://joss.theoj.org/papers/10.21105/joss.07256) was accepted for publication! :tada: A pdf of our JOSS 
   publication is included in the documentation. This is now our preferred
   citation. A CITATION.cff file is now included in the repo.
 
@@ -30,7 +30,7 @@ and shipped with pdr
 
 ### Removed
 - PDS_OBJECT pointers will no longer be served in the keys list (previously
-returned only a tbd message)
+  returned only a tbd message)
 - The text of our JOSS paper publication on pdr has been removed from
   `joss_paper/paper.md`. Please refer instead to the pdf under `docs/pdr_joss_paper.pdf`
 
