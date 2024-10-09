@@ -48,12 +48,12 @@ def find_special_constants(
 def mask_specials(obj, specials):
     """"""
     obj = np.ma.masked_array(obj)
-    if "INVALIDS" in specials:
+    if np.nan in specials:
         # masks infs and nans as well
         obj.mask = np.ma.mask_or(np.isin(obj.data, specials),
                                  ~np.isfinite(obj.data))
     else:
-        obj.mask = np.isin(obj.data)
+        obj.mask = np.isin(obj.data, specials)
     return obj
 
 
