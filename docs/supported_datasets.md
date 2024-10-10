@@ -224,7 +224,9 @@ kernels in combination with JPL Horizons).
 #### LRO
   - CRaTER EDR secondary science and housekeeping tables, CDR, and DDR
   - DIVINER
-    - EDR and RDR tables
+    - EDR and RDR tables (*note*: RDR tables should be opened from the PDS3 
+      labels as the PDS4 versions refer to the hypothetical uncompressed version 
+      of the file in the incorrect letter case)
     - L2 and L3 GDR images/backplanes
     - L4 tables
   - LAMP 
