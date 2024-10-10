@@ -300,6 +300,12 @@ def check_special_table_reader(
         return True, formats.ihw.add_newlines_table_loader(
             fmtdef_dt, block, fn, start_byte
         )
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "LUNAR RECONNAISSANCE ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "RADIO SCIENCE SUBSYSTEM"
+        and name == "WEAREC_TABLE"
+    ):
+        return True, formats.lro.wea_table_loader(fn, fmtdef_dt)
     return False, None
 
 

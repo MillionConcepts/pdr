@@ -5,7 +5,7 @@ import warnings
 import pdr.loaders.queries
 
 if TYPE_CHECKING:
-    from pdr.loaders.astrowrap import fits
+    from pdr.loaders.astrowrap.fits import HDUList
 
 
 # TODO: why is this in the galileo module?
@@ -23,7 +23,6 @@ def mdis_fits_start_byte(name: str, hdulist: HDUList) -> int:
     if name == "HEADER":
         return 0
     return hdulist.fileinfo(0)['datLoc']
-
 
 
 def galileo_table_loader():

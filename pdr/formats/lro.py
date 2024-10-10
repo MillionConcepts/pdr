@@ -85,6 +85,7 @@ def mini_rf_image_loader(data, name):
     block["LINE_SAMPLES"] = 11520
     return block
 
+
 def mini_rf_spreadsheet_loader(filename, fmtdef_dt):
     """
     Mini-RF housekeeping CSVs have variable-width columns but the labels treat 
@@ -103,4 +104,24 @@ def mini_rf_spreadsheet_loader(filename, fmtdef_dt):
                         names = ("POINT_NAME", "VALUE", "UNITS"))
     assert len(table.columns) == len(fmtdef.NAME.tolist())
     table.columns = fmtdef.NAME.tolist()
+    return table
+
+
+def wea_table_loader(filename, fmtdef_dt):
+    """
+    Some, but not all, wea files have more bytes than the labels define per row.
+
+    HITS
+    * lro_rss
+        * wea
+    """
+    import pandas as pd
+
+    fmtdef, dt = fmtdef_dt
+
+    table = pd.read_csv(filename, skiprows=1, header=None, sep=r':|\s+',
+                        engine='python')
+    table.columns = [
+        f for f in fmtdef['NAME'] if not f.startswith('PLACEHOLDER')
+    ]
     return table
