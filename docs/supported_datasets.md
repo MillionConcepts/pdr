@@ -230,9 +230,8 @@ kernels in combination with JPL Horizons).
     - L2 and L3 GDR images/backplanes
     - L4 tables
   - LAMP 
-    - EDR and RDR (except acquisition list tables and spectral image 'door open' 
-      headers)
-    - GDR
+    - EDR and GDR
+    - RDR (except acquisition list and pixel list tables)
   - LEND EDR and RDR
   - LOLA RDR (*note: other LOLA datasets have been migrated to PDS4 and are 
     notionally supported*)
@@ -657,7 +656,8 @@ kernels in combination with JPL Horizons).
   - Level 0: sun pulse and merged telemetry (support planned; low priority)
 #### LRO
   - CRaTER EDR primary science data (support not planned)
-  - LAMP EDR/RDR acquisition list tables and spectral image 'door open' headers (support planned)
+  - LAMP RDR acquisition list and pixel list tables (support planned)
+  - LAMP RDR calibrated histogram images read correctly, but they crash data.show() (support planned)
   - Mini-RF raw SAR products (support not planned)
 #### Magellan
   - C-BIDR ancillary tables (support not planned)

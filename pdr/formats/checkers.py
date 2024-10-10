@@ -955,4 +955,13 @@ def check_special_fits_start_byte(
         return True, formats.ground.mssso_cal_start_byte(name, hdulist)
     if "MEX-M-VMC-3-RDR" in identifiers["DATA_SET_ID"]:
         return True, formats.mex.vmc_rdr_hdu_selection(name, hdulist)
+    if (
+        identifiers["DATA_SET_ID"] == "LRO-L-LAMP-2-EDR-V1.0" 
+        and "TABLE" in name
+    ):
+        return formats.lro.lamp_edr_hdu_exceptions(name, hdulist)
+    if (
+        identifiers["DATA_SET_ID"] == "LRO-L-LAMP-3-RDR-V1.0" 
+    ):
+        return formats.lro.lamp_rdr_hdu_start_byte(name, hdulist)
     return False, None
