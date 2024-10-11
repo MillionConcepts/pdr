@@ -7,7 +7,6 @@ from typing import (
     Any,
     Callable,
     Collection,
-    Hashable,
     Iterator,
     Literal,
     Mapping,

@@ -6,12 +6,10 @@ from numbers import Number
 from pathlib import Path
 import struct
 import textwrap
-from types import MappingProxyType as MPt
 from typing import (
     Collection,
     IO,
     Mapping,
-    MutableMapping,
     MutableSequence,
     Optional,
     Sequence,
