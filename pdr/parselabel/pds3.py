@@ -154,7 +154,9 @@ def read_pvl(
 ) -> tuple[MultiDict, list[str]]:
     """Read and parse a file containing a PVL-text."""
     with decompress(filename) as stream:
-        label = trim_label(stream, max_size, strict_decode=looks_pvl(filename))
+        label = trim_label(
+            stream, max_size, strict_decode=not looks_pvl(filename)
+        )
     return parse_pvl(label, deduplicate_pointers)
 
 
