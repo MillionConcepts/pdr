@@ -30,7 +30,7 @@ def quote_str(s):
         else:
             return f"\\u{u:04X}"
     # UNPRINTABLES_RE is at the bottom of the file
-    return shlex.quote(UNPRINTABLES_RE.sub(quote_str, s))
+    return shlex.quote(UNPRINTABLES_RE.sub(quote_unprintable, s))
 
 
 def log_environment(ofp):
@@ -187,29 +187,39 @@ def log_commands(ofp, expected_pyver):
             if cmd == "pip":
                 # Just log the version.
                 ofp.write("> pip --version\n")
+                ofp.flush()
                 subprocess.run([program, "--version"],
-                               check=True, timeout=1)
+                               check=True, timeout=1,
+                               stdout=ofp, stderr=subprocess.STDOUT)
 
             elif cmd == "python":
                 # If this command exists, it should error out for
                 # everything (see make-venv).
                 ofp.write("> python --version # should fail\n")
+                ofp.flush()
                 result = subprocess.run([program, "--version"],
-                                        timeout=1)
+                                        timeout=1, stdout=ofp,
+                                        stderr=subprocess.STDOUT)
                 report_exit(program, result.returncode, 1)
 
             else:
                 ofp.write(f"> {cmd} --version\n")
+                ofp.flush()
                 subprocess.run([program, "--version"],
-                               check=True, timeout=1)
+                               check=True, timeout=1,
+                               stdout=ofp, stderr=subprocess.STDOUT)
                 result = subprocess.run([
                     program, "-c",
                     "import sys\n"
-                    "sys.exit(0 if sys.version.split('.')[:2] == sys.argv[1].split('.') else 1)",
+                    "sys.exit(0 if sys.version.split('.')[:2]"
+                    " == sys.argv[1].split('.') else 1)",
                     expected_pyver
-                ], timeout=1)
+                ], timeout=1, stdout=ofp, stderr=subprocess.STDOUT)
                 if result.returncode == 1:
-                    ofp.write("::error::wrong version for {cmd} (expected {expected_pyver})\n")
+                    ofp.write(
+                        f"::error::wrong version for {cmd}"
+                        f" (expected {expected_pyver})\n"
+                    )
                 else:
                     report_exit(program, result.returncode, 0)
 
@@ -218,7 +228,10 @@ def log_commands(ofp, expected_pyver):
             status = 1
 
         except subprocess.TimeoutExpired as e:
-            ofp.write(f"::error::{e.cmd[0]}: timed out after {round(e.timeout)}s\n")
+            ofp.write(
+                f"::error::{e.cmd[0]}: timed out"
+                f" after {round(e.timeout)}s\n"
+            )
             status = 1
 
         except subprocess.CalledProcessError as e:
@@ -228,7 +241,9 @@ def log_commands(ofp, expected_pyver):
 
     if status == 0:
         ofp.write("::group::pip debug\n")
-        result = subprocess.run(["pip", "debug"])
+        ofp.flush()
+        result = subprocess.run(["pip", "debug"], stdout=ofp,
+                                stderr=subprocess.STDOUT)
         report_exit("pip", result.returncode, 0)
 
     return status

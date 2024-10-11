@@ -48,7 +48,7 @@ jobs:
         run: |
           '${{ steps.py.outputs.python-path }}' src/.github/scripts/make-venv venv
           source venv/bin/activate
-          src/.github/scripts/validate-environment ${{matrix.python}}
+          python3 src/.github/scripts/validate-environment ${{matrix.python}}
 
 
   # Inspired by https://github.com/hynek/build-and-inspect-python-package/
