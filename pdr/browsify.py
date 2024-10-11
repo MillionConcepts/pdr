@@ -208,6 +208,7 @@ def _browsify_array(
     save: bool = True,
     override_rgba: bool = False,
     image_format: str = "jpg",
+    slice_axis: int = 0,
     **_,
 ) -> 'Union[Image.Image, list[Optional[Image.Image]]]':
     """
@@ -217,7 +218,7 @@ def _browsify_array(
     nice_clip = image_clip is None
     image_clip = (1, 1) if image_clip is None else image_clip
     if len(obj.shape) == 3:
-        obj = _format_multiband_image(obj, band_ix, override_rgba)
+        obj = _format_multiband_image(obj, band_ix, override_rgba, slice_axis)
     if not isinstance(obj, tuple):
         return _render_array(
             obj,
@@ -305,11 +306,13 @@ def _format_as_rgb(obj):
         return np.dstack([channel for channel in obj[0:3]])
 
 
-def _format_multiband_image(obj, band_ix, override_rgba):
+def _format_multiband_image(obj, band_ix, override_rgba, slice_axis):
     """
     helper function for _browsify_array -- truncate, stack, or burst
     multiband images and send for further processing.
     """
+    if slice_axis != 0:
+        obj = obj.swapaxes(0, slice_axis)
     if (obj.shape[0] not in (3, 4)) or (override_rgba is True):
         if band_ix == "burst":
             return tuple([obj[ix] for ix in range(obj.shape[0])])

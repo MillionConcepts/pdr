@@ -4,12 +4,18 @@
 ### Added
 
 #### Features
-
+- `dump_browse` now will take an optional `slice_axis` keyword argument 
+  which controls which axis multiband images are sliced along.
 
 #### Dataset Support
 - MGS MOLA PEDR (a special case fixes non-standard STRUCTURE pointer names and
   'ROWS = "UNK"' from the labels)
+- LRO LAMP EDR and most RDR table/image pointers
 
+#### Other
+- Our [JOSS paper](https://joss.theoj.org/papers/10.21105/joss.07256) was accepted for publication! :tada: A pdf of our JOSS 
+  publication is included in the documentation. This is now our preferred
+  citation. A CITATION.cff file is now included in the repo.
 
 ### Changed
 - DESCRIPTION pointers will now be deduplicated and print with indexes in the 
@@ -18,13 +24,19 @@ keys list (e.g. DESCRIPTION_0, DESCRIPTION_1, etc.). No warning will be triggere
 and shipped with pdr
 - Previously "^STRUCTURE" and "^PDS_OBJECT" pointer names were allowed to skip
   deduplication, now any pointer with STRUCTURE or PDS_OBJECT in the name is skipped.
+- `vax.py` module was removed in favor of using SETI/rms-vax dependency
+
 
 ### Fixed
-
+- updated docs/LICENSE.md to match LICENSE.md
+- `Data.get_scaled` and functions that use it (like `Data.dump_browse`) now also 
+  mask nonfinite values (inf, -inf, and nan)
 
 ### Removed
 - PDS_OBJECT pointers will no longer be served in the keys list (previously
-returned only a tbd message)
+  returned only a tbd message)
+- The text of our JOSS paper publication on pdr has been removed from
+  `joss_paper/paper.md`. Please refer instead to the pdf under `docs/pdr_joss_paper.pdf`
 
 
 ## [1.2.3] - 2024-09-30

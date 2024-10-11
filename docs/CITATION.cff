@@ -1,0 +1,16 @@
+If you use pdr for any published work, please cite it using the reference below:
+
+@article{Brown2024,
+    author = {{Brown}, Sierra V. and {St. Clair}, Michael and {Million}, Chase
+              and {Curtis}, Sabrina and {Aye}, K. -Michael and {Weinberg}, Zack},
+    year = {2024},
+    journal = {Journal of Open Source Software},
+    title = {PDR: The Planetary Data Reader},
+    year = {2024},
+    url = {https://doi.org/10.21105/joss.07256},
+    publisher = {The Open Journal},
+    volume = {9},
+    number = {102},
+    pages = {7256},
+    doi = {10.21105/joss.07256}
+    }

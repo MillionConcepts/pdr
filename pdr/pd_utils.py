@@ -13,13 +13,13 @@ import numpy as np
 import pandas as pd
 import pandas.api.types
 from pandas.errors import SettingWithCopyWarning
+import vax
 
 from pdr.datatypes import sample_types
 from pdr.formats import check_special_sample_type
 from pdr.np_utils import (
     enforce_order_and_object, ibm32_to_np_f32, ibm64_to_np_f64
 )
-from pdr import vax
 
 if TYPE_CHECKING:
     from pdr.pdrtypes import DataIdentifiers

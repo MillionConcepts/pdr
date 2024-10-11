@@ -23,7 +23,8 @@ def get_structure(block, name, filename, data, identifiers):
 
 
 def mcs_ddr_table_loader(fmtdef_dt, block, filename, start_byte):
-    """Reads each row of the table and removes extra newline characters. Adapted from _interpret_as_ascii()."""
+    """Reads each row of the table and removes extra newline characters.
+    Adapted from _interpret_as_ascii()."""
     with head_file(filename) as f:
         f.read(start_byte)
         newlines_removed = bytearray()

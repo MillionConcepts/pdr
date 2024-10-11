@@ -85,6 +85,7 @@ def mini_rf_image_loader(data, name):
     block["LINE_SAMPLES"] = 11520
     return block
 
+
 def mini_rf_spreadsheet_loader(filename, fmtdef_dt):
     """
     Mini-RF housekeeping CSVs have variable-width columns but the labels treat 
@@ -104,3 +105,104 @@ def mini_rf_spreadsheet_loader(filename, fmtdef_dt):
     assert len(table.columns) == len(fmtdef.NAME.tolist())
     table.columns = fmtdef.NAME.tolist()
     return table
+
+
+def wea_table_loader(filename, fmtdef_dt):
+    """
+    Some, but not all, wea files have more bytes than the labels define per row.
+
+    HITS
+    * lro_rss
+        * wea
+    """
+    import pandas as pd
+
+    fmtdef, dt = fmtdef_dt
+
+    table = pd.read_csv(filename, skiprows=1, header=None, sep=r':|\s+',
+                        engine='python')
+    table.columns = [
+        f for f in fmtdef['NAME'] if not f.startswith('PLACEHOLDER')
+    ]
+    return table
+
+
+class DoesNotExistError(Exception):
+    """"""
+    pass
+
+def lamp_edr_hdu_exceptions(name, hdulist):
+    """
+    Sometimes all the LAMP EDR table pointers exist, sometimes they aren't 
+    actually there.
+
+    HITS
+    * lro_lamp
+        * edr
+    """
+    if name == "ACQUISITION_LIST_TABLE":
+        extname = "Acquisition List"
+    elif name == "FRAME_DATA_TABLE":
+        extname = "Raw Frame Data"
+    elif name == "CALCULATED_COUNTRATE_TABLE":
+        extname = "Calculated Countrate"
+    elif name == "LTS_DATA_TABLE":
+        extname = "LTS Data"
+    elif name == "HOUSEKEEPING_TABLE":
+        extname = "Housekeeping Data"
+    else:
+        # Nothing should hit this, but it's here in case there is a rogue 
+        # product with a [*]_TABLE pointer missed above
+        return False, None
+    
+    if hdulist.fileinfo(extname)['datSpan'] == 0:
+        raise DoesNotExistError(
+            f"The {name}'s length is zero; the table does not actually exist."
+        )
+    return False, None
+
+def lamp_rdr_hdu_start_byte(name, hdulist):
+    """
+    This special case raises an error if a pointer's data doesn't actually 
+    exist, and returns the correct start byte if it does.
+
+    HITS
+    * lro_lamp
+        * rdr
+    """
+    if "ACQUISITION_LIST" in name:
+        extname = "Acquisition List"
+    elif "CAL_PIXELLIST_DATA" in name:
+        extname = "Calibrated Pixel List Mode Data"
+    elif "ANCILLARY_DATA" in name:
+        extname = "Ancillary Data"
+    elif "CAL_HISTOGRAM_" in name:
+        # The multiple CAL_HISTOGRAM_[...]_IMAGE pointers all point at the same 
+        # FITS HDU (each pointer illegally represents one image in the cube).
+        extname = "Calibrated Histogram Mode Data"
+    elif "CAL_CALCULATED_COUNTRATE" in name:
+        extname = "Calculated Countrate"
+        try:
+            # Check to see if this is the correct 'EXTNAM' in the fits HDU
+            hdulist.fileinfo(extname)
+        except:
+            # Sometimes this pointer refers to a different HDU extension name
+            extname = "Reduced Count Rate"
+    elif "LTS_DATA" in name:
+        extname = "LTS Data"
+    elif "HOUSEKEEPING" in name:
+        extname = "Housekeeping Data"
+    elif "WAVELENGTH_LOOKUP" in name:
+        extname = "Wavelength Lookup Image"
+    else:
+        # The CAL_SPECTRAL_IMAGE_* pointers open fine
+        return False, None
+
+    if 'HEADER' in name:
+        return True, hdulist.fileinfo(extname)['hdrLoc']
+    if hdulist.fileinfo(extname)['datSpan'] == 0:
+        raise DoesNotExistError(
+            f"The {name}'s length is zero; the data object does not actually exist."
+        )
+    return True, hdulist.fileinfo(extname)['datLoc']
+

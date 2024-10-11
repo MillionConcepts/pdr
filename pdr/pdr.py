@@ -936,6 +936,11 @@ class Data:
             Sets image extension which informs the format pillow will save the
             browse image as.
 
+        - slice_axis: int = 0
+            Allows specification of which axis to slice along for the
+            dump_browse image. The default slices at axis 0 (which is usually
+            the axis labelled "BAND").
+
         """
         if prefix is None:
             prefix = Path(self.filename).stem

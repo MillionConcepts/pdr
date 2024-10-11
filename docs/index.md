@@ -4,7 +4,7 @@ This tool provides a single command---`read(‘/path/to/file’)`---for ingestin
 _all_ common planetary data types. It reads almost all "primary observational 
 data" products currently archived in the PDS (under PDS3 or PDS4), and the 
 fraction of products it does not read is continuously shrinking.
-[Currently-supported datasets are listed here.](docs/supported_datasets.md) 
+[Currently-supported datasets are listed here.](supported_datasets.md) 
 
 If the software fails while attempting to read from datasets that we have 
 listed as supported, please submit an issue with a link to the file and 
@@ -14,7 +14,8 @@ is not yet supported that you would like us to consider prioritizing,
 [please fill out this request form](https://docs.google.com/forms/d/1JHyMDzC9LlXY4MOMcHqV5fbseSB096_PsLshAMqMWBw/viewform).
 
 ### Attribution
-If you use _pdr_ in your work, please cite us using our Zenodo DOI: [![DOI](https://zenodo.org/badge/266449940.svg)](https://zenodo.org/badge/latestdoi/266449940)
+If you use _pdr_ in your work, please cite us using our [JOSS Paper](pdr_joss_paper.pdf): [![DOI](https://joss.theoj.org/papers/10.21105/joss.07256/status.svg)](https://doi.org/10.21105/joss.07256).
+A BibTex style citation is available in [CITATION.cff](CITATION.cff).
 
 ### Installation
 _pdr_ is now on `conda` and `pip`. We recommend (and only officially support) 
@@ -304,7 +305,7 @@ tests. You can run them by executing `pytest` from the repository root.
 
 Thank you for wanting to contribute to `pdr` and improving efforts to make 
 planetary science data accessible. Please review our code of conduct before
-contributing. [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](docs/code_of_conduct.md)
+contributing. [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
 
 If you have found a bug, a dataset that we claim to support that's not opening
 properly, or you have a feature request, please file an issue. We will also
