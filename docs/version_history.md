@@ -4,8 +4,9 @@
 ### Added
 
 #### Features
-- `dump_browse` now will take an optional `slice_axis` keyword argument 
-  which controls which axis multiband images are sliced along.
+- `Data.dump_browse()` and `Data.show()` now take an optional `slice_axis`
+  keyword argument which controls which axis of a 3-D image array `Data` 
+  treats as the 'band' or 'channel' axis
 
 #### Dataset Support
 - MGS MOLA PEDR (a special case fixes non-standard STRUCTURE pointer names and
@@ -22,19 +23,25 @@
 keys list (e.g. DESCRIPTION_0, DESCRIPTION_1, etc.). No warning will be triggered.
 - unit tests have been moved inside the pdr/ folder and will now be packaged
 and shipped with pdr
-- Previously "^STRUCTURE" and "^PDS_OBJECT" pointer names were allowed to skip
-  deduplication, now any pointer with STRUCTURE or PDS_OBJECT in the name is skipped.
-- `vax.py` module was removed in favor of using SETI/rms-vax dependency
-
+- Previously only pointers named exactly "^STRUCTURE" or "^PDS_OBJECT" skipped
+  deduplication. Now all pointers with "STRUCTURE" in the name skip deduplication,
+  and all pointers with "PDS_OBJECT" in the name get ignored.
+- vendored `pdr.vax` module removed in favor of using SETI's `rms-vax` (successor 
+  package to that vendored module)
+- `pdr.pilutils` renamed to `pdr.pil_utils` for consistency
+- `Data.get_scaled` and functions that use it (like `Data.dump_browse`) now also
+  mask nonfinite values (inf, -inf, and nan)
 
 ### Fixed
 - updated docs/LICENSE.md to match LICENSE.md
-- `Data.get_scaled` and functions that use it (like `Data.dump_browse`) now also 
-  mask nonfinite values (inf, -inf, and nan)
+- `pillow`'s `DecompressionBombError` now fully suppressed when reading desktop
+  format images in primary mode
 
 ### Removed
-- PDS_OBJECT pointers will no longer be served in the keys list (previously
-  returned only a tbd message)
+- `pdr` ignores all PDS3 pointers containing the string "PDS_OBJECT". `Data`
+  previously returned a TBD message on attempts to access objects associated
+  with these pointers. We have determined that these pointers were markers for
+  internal software tools and do not refer to unique data objects.
 - The text of our JOSS paper publication on pdr has been removed from
   `joss_paper/paper.md`. Please refer instead to the pdf under `docs/pdr_joss_paper.pdf`
 
