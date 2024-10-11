@@ -670,7 +670,7 @@ class Data:
                 reformat_pds4_tools_label(self.label), standard="PDS4"
             )
         if self.standard in DESKTOP_IMAGE_STANDARDS:
-            from pdr.pilutils import skim_image_data, paramdig
+            from pdr.pil_utils import skim_image_data, paramdig
 
             return Metadata(paramdig(skim_image_data(self.filename)))
         # self.labelname is None means we didn't find a detached label
