@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.9", "3.12"]
-        os: ["windows", "ubuntu"]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: ["macos", "ubuntu"]
     runs-on: ${{matrix.os}}-latest
     defaults:
       run:
@@ -30,19 +30,6 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           update-environment: false
-
-      - name: Log environment before venv creation
-        run: |
-          echo ::group::environment
-          printenv
-          echo ::group::python
-          for tool in python python3 pip '${{ steps.py.outputs.python-path }}'; do
-              if command -v "$tool"; then
-                  "$tool" --version
-              else
-                  printf '%s: not found\n' "$tool"
-              fi
-          done
 
       - name: Create and check a venv
         run: |
