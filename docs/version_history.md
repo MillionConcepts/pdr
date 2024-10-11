@@ -25,11 +25,11 @@ and shipped with pdr
 - Previously "^STRUCTURE" and "^PDS_OBJECT" pointer names were allowed to skip
   deduplication, now any pointer with STRUCTURE or PDS_OBJECT in the name is skipped.
 - `vax.py` module was removed in favor of using SETI/rms-vax dependency
-
+- `pdr` no longer greedily heads files when looking for PVL labels  
 
 ### Fixed
 - updated docs/LICENSE.md to match LICENSE.md
-- `Data.get_scaled` and functions that use it (like `Data.dump_browse`) now also 
+- `Data.get_scaled` and functions that use it (like `Data.dump_browse`) now also
   mask nonfinite values (inf, -inf, and nan)
 
 ### Removed
