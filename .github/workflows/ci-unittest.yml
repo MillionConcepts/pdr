@@ -9,7 +9,7 @@ on:
 
 jobs:
   pip-windows-venv-setup-debugging:
-    name: "Test creation of ${{matrix.python}} virtualenv on Windows"
+    name: "Test creation of ${{matrix.python}} virtualenv on ${{matrix.os}}"
     strategy:
       fail-fast: false
       matrix:
@@ -48,7 +48,7 @@ jobs:
         run: |
           '${{ steps.py.outputs.python-path }}' src/.github/scripts/make-venv venv
           source venv/bin/activate
-          src/.github/scripts/validate-environment
+          src/.github/scripts/validate-environment ${{matrix.python}}
 
 
   # Inspired by https://github.com/hynek/build-and-inspect-python-package/
