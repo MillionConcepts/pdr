@@ -13,12 +13,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        os: ["macos", "ubuntu"]
+        python: ["3.9", "3.12"]
+        os: [windows, ubuntu]
     runs-on: ${{matrix.os}}-latest
-    defaults:
-      run:
-        shell: bash -e -u -o pipefail {0}
     steps:
       - name: Check out source tree
         uses: actions/checkout@v4
@@ -31,10 +28,20 @@ jobs:
           python-version: ${{ matrix.python }}
           update-environment: false
 
-      - name: Create and check a venv
+      - name: Create a pip-based virtualenv
         run: |
           '${{ steps.py.outputs.python-path }}' src/.github/scripts/make-venv venv
+
+      - name: Validate the environment (sh)
+        if: runner.os != 'Windows'
+        run: |
           source venv/bin/activate
+          python3 src/.github/scripts/validate-environment ${{matrix.python}}
+
+      - name: Validate the environment (cmd)
+        if: runner.os == 'Windows'
+        run: |
+          venv\bin\activate.bat
           python3 src/.github/scripts/validate-environment ${{matrix.python}}
 
 

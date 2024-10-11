@@ -48,9 +48,8 @@ set PATH=%VIRTUAL_ENV%\\{__VENV_BIN_NAME__};%PATH%
 """
 
 BAT_PYTHON2_STUB = """\
-@echo off
-echo "%0: error: Python 2 interpreter not available." >&2
-exit 1
+@echo "%0: error: Python 2 interpreter not available." >&2
+@exit 1
 """
 
 SH_ACTIVATE = """\
@@ -97,6 +96,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
         )
 
     def ensure_directories(self, env_dir):
+        sys.stderr.write("creating directories...\n")
         context = super().ensure_directories(env_dir)
 
         # we always want <env>/bin, not <env>/scripts
@@ -125,6 +125,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
         return context
 
     def setup_python(self, context):
+        sys.stderr.write("setting up python...\n")
         super().setup_python(context)
         for unwanted in ['python', 'python.exe', 'python_d.exe',
                          'pythonw.exe', 'pythonw_d.exe']:
@@ -159,6 +160,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
             os.chmod(python2, 0o755)
 
     def setup_scripts(self, context):
+        sys.stderr.write("setting up scripts...\n")
         # always install the sh activation script; on windows also
         # install the batch file
         scripts = [("activate", SH_ACTIVATE)]
@@ -182,12 +184,9 @@ def main():
     ap.add_argument("dir", help="Directory to create the environment in.")
     args = ap.parse_args()
 
-    try:
-        CustomEnvBuilder().create(args.dir)
-        sys.exit(0)
-    except Exception as e:
-        sys.stderr.write(str(e) + "\n")
-        sys.exit(1)
+    CustomEnvBuilder().create(args.dir)
+    sys.stderr.write("done\n")
+    sys.exit(0)
 
 
 main()
