@@ -1,0 +1,193 @@
+#! /usr/bin/env python3
+
+"""
+Create an isolated virtual environment for installation of Python packages.
+Customized for our needs, relative to what the stock `python3 -m venv` does:
+
+ - No command line options are available.  You always get the behavior
+   of `python3 -m venv --clear <DIRECTORY>`.
+
+ - Always creates a 'bin' directory containing the activation scripts
+   and interpreter executables, never a 'Scripts' directory.
+
+ - Always creates interpreter executables named 'python3' and 'python3.X'
+   (where X is sys.version_info[1]).
+
+ - Also always creates a 'python' executable in the bin directory, but
+   it's a stub that prints an error message and exits unsuccessfully.
+   (This is because 'python' should never be used by Python 3
+   programs; that name is properly left reserved for a Python 2
+   interpreter.  Our code is strictly Python 3 and so should not use
+   it, but the base system might, incorrectly, provide a Python 3
+   interpreter under that name, potentially masking bugs.)
+
+ - Backported a bugfix in the Bourne-shell activation script from
+   the Python 3.12 venv module.
+
+ - Activation scripts do not provide "deactivate" and do not modify the
+   prompt, since we only ever use these venvs in automated builds that
+   don't need those features.
+
+"""
+
+
+import argparse
+import os
+import sys
+import venv
+
+
+BAT_ACTIVATE = """\
+@echo off
+set VIRTUAL_ENV={__VENV_DIR__}
+set PYTHONHOME=
+
+if defined _OLD_VIRTUAL_PATH set PATH=%_OLD_VIRTUAL_PATH%
+if not defined _OLD_VIRTUAL_PATH set _OLD_VIRTUAL_PATH=%PATH%
+set PATH=%VIRTUAL_ENV%\\{__VENV_BIN_NAME__};%PATH%
+"""
+
+BAT_PYTHON2_STUB = """\
+@echo off
+echo "%0: error: Python 2 interpreter not available." >&2
+exit 1
+"""
+
+SH_ACTIVATE = """\
+# on Windows, a path can contain colons and backslashes and has to be converted:
+if [ "${{OSTYPE:-}}" = "cygwin" ] || [ "${{OSTYPE:-}}" = "msys" ] ; then
+    # transform D:\\path\\to\\venv to /d/path/to/venv on MSYS
+    # and to /cygdrive/d/path/to/venv on Cygwin
+    export VIRTUAL_ENV=$(cygpath "{__VENV_DIR__}")
+else
+    # use the path as-is
+    export VIRTUAL_ENV="{__VENV_DIR__}"
+fi
+
+if [ -n "${{_OLD_VIRTUAL_PATH:-}}" ] ; then
+    PATH="${{_OLD_VIRTUAL_PATH:-}}"
+fi
+_OLD_VIRTUAL_PATH="$PATH"
+export PATH="$VIRTUAL_ENV/{__VENV_BIN_NAME__}:$PATH"
+
+unset PYTHONHOME
+unset _OLD_VIRTUAL_PYTHONHOME
+unset VIRTUAL_ENV_PROMPT
+
+hash -r 2> /dev/null
+"""
+
+
+SH_PYTHON2_STUB = """\
+#! /bin/sh
+echo "$0: error: Python 2 interpreter not available." >&2
+exit 1
+"""
+
+
+class CustomEnvBuilder(venv.EnvBuilder):
+    def __init__(self):
+        super().__init__(
+            clear=True,
+            symlinks = (os.name != 'nt'),
+            system_site_packages=False,
+            upgrade=False,
+            upgrade_deps=False,
+            with_pip=True,
+        )
+
+    def ensure_directories(self, env_dir):
+        context = super().ensure_directories(env_dir)
+
+        # we always want <env>/bin, not <env>/scripts
+        if context.bin_name != "bin":
+            corrected_bin_path = os.path.join(context.env_dir, 'bin')
+            os.rename(context.bin_path, corrected_bin_path)
+
+            context.bin_name = "bin"
+            context.bin_path = corrected_bin_path
+
+        # no matter what the interpreter is called outside the environment,
+        # it should be called 'python3' inside the environment
+        if context.python_exe.endswith(".exe"):
+            context.env_exe = os.path.join(context.bin_path, "python3.exe")
+        else:
+            context.env_exe = os.path.join(context.bin_path, "python3")
+
+        # duplicate the fix for bpo-45337
+        if sys.platform == "win32":
+            context.env_exec_cmd = os.path.normcase(
+                os.path.realpath(context.env_exec_cmd)
+            )
+        else:
+            context.env_exec_cmd = context.env_exe
+
+        return context
+
+    def setup_python(self, context):
+        super().setup_python(context)
+        for unwanted in ['python', 'python.exe', 'python_d.exe',
+                         'pythonw.exe', 'pythonw_d.exe']:
+            try:
+                os.remove(os.path.join(context.bin_path, unwanted))
+            except FileNotFoundError:
+                pass
+        assert os.path.isfile(context.env_exe)
+        assert os.path.isfile(context.env_exec_cmd)
+
+        if os.name == 'nt':
+            python3x = f'python3.{sys.version_info[1]}.exe'
+            python2 = 'python.bat'
+            python2_stub = BAT_PYTHON2_STUB
+            do_chmod = False
+        else:
+            python3x = f'python3.{sys.version_info[1]}'
+            python2 = 'python'
+            python2_stub = SH_PYTHON2_STUB
+            do_chmod = True
+
+        python3x = os.path.join(context.bin_path, python3x)
+        python2 = os.path.join(context.bin_path, python2)
+
+        if not os.path.exists(python3x):
+            self.symlink_or_copy(context.env_exe, python3x,
+                                 relative_symlinks_ok=True)
+
+        with open(python2, "xt") as fp:
+            fp.write(python2_stub)
+        if do_chmod:
+            os.chmod(python2, 0o755)
+
+    def setup_scripts(self, context):
+        # always install the sh activation script; on windows also
+        # install the batch file
+        scripts = [("activate", SH_ACTIVATE)]
+        if os.name == 'nt':
+            scripts.append(("activate.bat", BAT_ACTIVATE))
+
+        for name, contents in scripts:
+            path = os.path.join(context.bin_path, name)
+            with open(path, "xt") as fp:
+                fp.write(contents.format(
+                    __VENV_DIR__ = context.env_dir,
+                    __VENV_BIN_NAME__ = context.bin_name,
+                ))
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ap.add_argument("dir", help="Directory to create the environment in.")
+    args = ap.parse_args()
+
+    try:
+        CustomEnvBuilder().create(args.dir)
+        sys.exit(0)
+    except Exception as e:
+        sys.stderr.write(str(e) + "\n")
+        sys.exit(1)
+
+
+main()

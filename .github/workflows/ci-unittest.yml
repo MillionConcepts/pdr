@@ -13,12 +13,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-    runs-on: windows-latest
+        python: ["3.9", "3.12"]
+        os: ["windows", "ubuntu"]
+    runs-on: ${{matrix.os}}-latest
     defaults:
       run:
         shell: bash -e -u -o pipefail {0}
     steps:
+      - name: Check out source tree
+        uses: actions/checkout@v4
+        with:
+          path: src
       - name: Install Python ${{ matrix.python }}
         uses: actions/setup-python@v5
         id: py
@@ -41,35 +46,10 @@ jobs:
 
       - name: Create and check a venv
         run: |
-          '${{ steps.py.outputs.python-path }}' -m venv venv
-          # I do not understand why the activation script is in a
-          # different location on Windows.
-          if [ -f venv/bin/activate ]
-          then source venv/bin/activate
-          else source venv/Scripts/activate
-          fi
-          echo "::group::environment after activation"
-          printenv
-          echo "::group::python after activation"
-          status=0
-          for tool in python python3 pip '${{ steps.py.outputs.python-path }}'; do
-              if command -v "$tool"; then
-                  "$tool" --version
-                  if [ "$tool" != pip ]; then
-                      ver=$("$tool" -c 'import sys; print(".".join(str(x) for x in sys.version_info[:2]))')
-                      if [ "$ver" != '${{ matrix.python }}' ]; then
-                          printf '::error::%s wrong version %s (should be %s)\n' "$tool" "$ver" '${{ matrix.python }}'
-                          status=1
-                      fi
-                  fi
-              else
-                  printf '::error::command "%s" not found\n' "$tool"
-                  status=1
-              fi
-          done
-          echo "::group::pip debug after activation"
-          pip debug
-          exit $status
+          '${{ steps.py.outputs.python-path }}' src/.github/scripts/make-venv venv
+          source venv/bin/activate
+          src/.github/scripts/validate-environment
+
 
   # Inspired by https://github.com/hynek/build-and-inspect-python-package/
   # but revised for our needs.  In particular, we have some auxiliary
