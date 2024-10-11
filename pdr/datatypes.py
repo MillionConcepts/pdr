@@ -100,12 +100,14 @@ def sample_types(
         "VOID": f"{void}{sample_bytes}",
         "BCD": f"{void}{sample_bytes}",
         "BINARY_CODED_DECIMAL": f"{void}{sample_bytes}",
-        # this one (VAX_REAL) unfortunately doesn't work perfectly cleanly
-        # -- numpy doesn't have built-in support for it, so we just get the
-        # byte width correct here and add an additional check to transform
-        # it after load. the data type used here is totally arbitrary apart
-        # from byte size.
-        "VAX_REAL": f"<{_float}",
+        # these two (VAX_REAL and IBM_REAL) unfortunately don't work perfectly
+        # cleanly -- numpy doesn't have built-in support for them, so we just
+        # get the byte width/order correct here and add additional checks to
+        # transform it after load. the data type used here is mostly arbitrary
+        # apart from byte width and order, but it shouldn't be a float type in
+        # case of platform-specific differences, numpy being excessively
+        # clever, etc.
+        "VAX_REAL": f"<u{sample_bytes}",
         "IBM_REAL": f">u{sample_bytes}",
         "EBCDIC": f"V{sample_bytes}",
         "EBCDIC_CHARACTER": f"V{sample_bytes}",
