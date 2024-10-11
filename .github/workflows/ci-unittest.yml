@@ -30,7 +30,7 @@ jobs:
 
       - name: Create a pip-based virtualenv
         run: |
-          '${{ steps.py.outputs.python-path }}' src/.github/scripts/make-venv venv
+          '${{ steps.py.outputs.python-path }}' 'src/.github/scripts/make-venv' venv
 
       - name: Validate the environment (sh)
         if: runner.os != 'Windows'
@@ -42,7 +42,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           venv\bin\activate.bat
-          python3 src/.github/scripts/validate-environment ${{matrix.python}}
+          python3 src\.github\scripts\validate-environment ${{matrix.python}}
 
 
   # Inspired by https://github.com/hynek/build-and-inspect-python-package/
