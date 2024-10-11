@@ -55,7 +55,7 @@ def get_image_metadata(im: Image):
         ):
             name = tname
         else:
-            name = tag
+            name = str(tag)
         if name == 'GPSInfo':
             outdict |= add_gps_ifd(im, tag)
         elif name == 'XMLPacket':
