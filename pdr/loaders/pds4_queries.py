@@ -1,53 +1,25 @@
 from __future__ import annotations
 
-from operator import mul
-from functools import reduce
-from itertools import chain, product
-from numbers import Number
-from pathlib import Path
-from types import MappingProxyType
 from typing import (
-    Any, Collection, Mapping, Optional, Sequence, TYPE_CHECKING, Union
+    Optional,
+    TYPE_CHECKING
 )
-import warnings
 
 from multidict import MultiDict
 
+from pdr.parselabel.utils import dig_for_parent, levelpick
 from pdr.pds4_datatypes import sample_types
-from pdr.formats import check_special_block, check_special_offset
-from pdr.func import specialize
-from pdr.loaders._helpers import (
-    count_from_bottom_of_file,
-    looks_like_ascii,
-    quantity_start_byte,
-    _check_delimiter_stream,
-)
-from pdr.loaders.handlers import add_bit_column_info
-from pdr.parselabel.pds3 import pointerize, read_pvl
-from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
-    from pdr.loaders.astrowrap import fits
     import numpy as np
-    import pandas as pd
 
     from pdr.pdrtypes import (
-        BandStorageType, DataIdentifiers, ImageProps, PDRLike, PhysicalTarget
+        ImageProps, PDRLike
     )
 
-from dustgoggles.structures import dig_for_value
+# TODO: this is a slightly silly trick that may or may not remain necessary
+#  after building full init workflow. make cleaner if it does remain so.
 
-
-def dig_for_parent(
-    mapping, key, value, mtypes=(dict, MultiDict)
-):
-    return dig_for_value(
-        mapping,
-        None,
-        base_pred=lambda _, v: isinstance(v, mtypes) and v.get(key) == value,
-        match='value',
-        mtypes=mtypes
-    )
 
 BSTORE_DICT = {
     ("Band", "Line", "Sample"): "BAND_SEQUENTIAL",
@@ -58,6 +30,17 @@ BSTORE_DICT = {
 
 def get_block(data: PDRLike, name: str) -> Optional[MultiDict]:
     return dig_for_parent(data.metadata, 'local_identifier', name)
+
+
+# TODO: should probably use populated Data.file_mapping, will consider/build
+#  after creating full init workflow
+def get_fn(data: PDRLike, name: str) -> str:
+    return levelpick(
+        data.metadata,
+        lambda k, v: k == 'local_identifier' and v == name,
+        1,
+        (dict, MultiDict)
+    )['File']['file_name']
 
 
 def generic_image_properties(block: MultiDict) -> ImageProps:
@@ -79,7 +62,8 @@ def generic_image_properties(block: MultiDict) -> ImageProps:
         "nrows": axes['Line']["elements"],
         "ncols": axes['Sample']["elements"],
         "is_vax_real": False  # no VAX in PDS4
-    } | {"rowpad": 0, "colpad": 0, "bandpad": 0}  # no axplanes etc. in PDS4
+        # no axplanes etc. in PDS4
+    } | {"rowpad": 0, "colpad": 0, "bandpad": 0, "linepad": 0}
     if axes['Band'] is not None:
         props["nbands"] = axes['Band']
         axorder = sorted(axes.keys(), key=lambda k: axes[k]['sequence_number'])
@@ -87,9 +71,8 @@ def generic_image_properties(block: MultiDict) -> ImageProps:
     else:
         props["nbands"] = 1
         props["band_storage_type"] = None
-    props["pixels"] = props["nrows"] * props["ncols"] * props["nbands"]
     return props
 
 
-def get_target(block: MultiDict):
+def get_start_byte(block: MultiDict):
     return block["offset"]

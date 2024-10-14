@@ -72,6 +72,26 @@ class Loader:
     queries = DEFAULT_DATA_QUERIES
 
 
+class ReadPDS4Image(Loader):
+
+    def __init__(self):
+        from pdr.loaders.image import read_image
+        from pdr.loaders.pds4_queries import (
+            generic_image_properties,
+            get_block,
+            get_start_byte,
+            get_fn
+        )
+
+        super().__init__(read_image)
+        self.queries = {
+            'block': get_block,
+            'gen_props': generic_image_properties,
+            'fn': get_fn,
+            'start_byte': get_start_byte
+        }
+
+
 class ReadImage(Loader):
     """wrapper for read_image"""
 
@@ -148,7 +168,6 @@ class ReadLabel(Loader):
 
 class ReadFits(Loader):
     """wrapper for handle_fits_file"""
-
 
     def __init__(self):
         from pdr.loaders.handlers import handle_fits_file

@@ -55,7 +55,7 @@ from pdr.parselabel.pds3 import (
     pointerize,
     read_pvl,
 )
-from pdr.parselabel.pds4 import reformat_pds4_tools_label
+from pdr.parselabel.pds4 import read_xml, get_pds4_index, get_pds4_fn
 from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
 from pdr.pdrtypes import DataIdentifiers
 from pdr.utils import (
@@ -238,8 +238,6 @@ class Data:
         # not yet fully implemented; only uses first (automatic) one.
         self.search_paths = [self._init_search_path()] + listify(search_paths)
         self.standard = None
-        # cache for pds4_tools.reader.general_objects.Structure objects.
-        self._pds4_structures = None
         # cache for hdulist, for primary FITS files -- this is primarily
         # an optimization for compressed files
         self._hdulist = None
@@ -266,8 +264,6 @@ class Data:
                 self._hdulist = fits.open(self.filename)
         elif str(self.labelname).endswith(".xml"):
             self.standard = "PDS4"
-            self._pds4_structures = {}
-            self._init_pds4()
         else:
             self.standard = "PDS3"
         try:
@@ -278,6 +274,7 @@ class Data:
             )
         self.load_metadata_changes()
         if self.standard == "PDS4":
+            self.index = get_pds4_index(self.metadata)
             return
         if primary_format is not None:
             self._init_primary_format()
@@ -304,20 +301,6 @@ class Data:
             self.metadata.refresh_cache()
         self._metaget_interior = self.metadata._metaget_interior
         self._metablock_interior = self.metadata._metablock_interior
-
-    def _init_pds4(self):
-        """use pds4_tools to open pds4 files, but in our interface idiom."""
-
-        import pdr.pds4_tools as pds4
-
-        structure_list = pds4.read(
-            self.labelname, lazy_load=True, quiet=True, no_scale=True
-        )
-        for structure in structure_list.structures:
-            self._pds4_structures[structure.id.replace(" ", "_")] = structure
-            self.index.append(structure.id.replace(" ", "_"))
-        self._pds4_structures["label"] = structure_list.label
-        self.index.append("label")
 
     def _init_search_path(self) -> str:
         """
@@ -351,6 +334,10 @@ class Data:
         a named data object. Does not actually check if files exist at those
         paths (typically performed by calls to `utils.check_cases()).
         """
+        if self.standard == 'PDS4':
+            return self.get_absolute_paths(
+                get_pds4_fn(self.metadata, object_name)
+            )
         is_special, special_target = check_special_fn(
             self, object_name, self.identifiers
         )
@@ -666,22 +653,26 @@ class Data:
                 self.filename, hdulist=self._hdulist
             )
             return Metadata((mapping, params), standard="FITS")
-        if self.standard == "PDS4":
-            return Metadata(
-                reformat_pds4_tools_label(self.label), standard="PDS4"
-            )
         if self.standard in DESKTOP_IMAGE_STANDARDS:
             from pdr.pilutils import skim_image_data, paramdig
 
             return Metadata(paramdig(skim_image_data(self.filename)))
-        # self.labelname is None means we didn't find a detached label
-        target = self.filename if self.labelname is None else self.labelname
-        metadata = Metadata(read_pvl(target, max_size=pvl_limit))
-        # we wait until after the read step to make these assignments in order
-        # to facilitate debugging in cases where there is not in fact an
-        # attached label or we couldn't read it
-        self.labelname, self.file_mapping["LABEL"] = target, target
+        if self.standard == "PDS4":
+            metadata = Metadata(read_xml(self.labelname), standard="PDS4")
+        elif self.standard == "PDS3":
+            # self.labelname is None means we didn't find a detached label
+            target = self.labelname
+            if target is None:
+                target = self.filename
+            metadata = Metadata(read_pvl(target, max_size=pvl_limit))
+            # we wait until after the read step to make these assignments in order
+            # to facilitate debugging in cases where there is not in fact an
+            # attached label or we couldn't read it
+            self.labelname = target
+        else:
+            raise ValueError(f"{self.standard} standard not recognized.")
         self.index.append("LABEL")
+        self.file_mapping["LABEL"] = self.labelname
         return metadata
 
     def load_from_pointer(

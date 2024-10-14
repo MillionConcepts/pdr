@@ -12,3 +12,4 @@ dependencies:
   - more-itertools
   - dustgoggles
   - rms-vax
+  - lxml

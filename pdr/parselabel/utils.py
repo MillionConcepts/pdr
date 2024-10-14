@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 from pathlib import Path
 import re
-from typing import Union, IO
+from typing import Union, IO, Mapping, Hashable, Any, Optional, Callable
+
+from dustgoggles.structures import dig_for_value, _evaluate_diglevel
+from multidict import MultiDict
 
 from pdr.utils import head_file
 
@@ -31,3 +36,63 @@ def trim_label(
     if raise_for_failure:
         raise ValueError("couldn't find a label ending")
     return head
+
+
+def dig_for_parent(
+    mapping: Mapping,
+    key: Hashable,
+    value: Any,
+    mtypes: tuple[type[Mapping], ...] = (dict, MultiDict)
+) -> Optional[Mapping]:
+    """
+    like dig_for_value, but returns the mapping that contains the matched item
+    rather than the value of the matched item
+    """
+    return dig_for_value(
+        mapping,
+        None,
+        base_pred=lambda _, v: isinstance(v, mtypes) and v.get(key) == value,
+        match='value',
+        mtypes=mtypes
+    )
+
+
+def _levelpick_inner(
+    mapping: Mapping,
+    predicate: Callable[[Hashable, Any], bool],
+    backup: int,
+    mtypes: tuple[type[Mapping], ...],
+    level: int
+) -> tuple[Optional[Mapping], Optional[int]]:
+    level_items, nests = _evaluate_diglevel(mapping, predicate, mtypes)
+    if level_items:
+        return mapping, level
+    if not nests:
+        return None, None
+    pick, iternests, picklevel = None, iter(nests), None
+    for nest in iter(nests):
+        pick, picklevel = _levelpick_inner(
+            nest, predicate, backup, mtypes, level + 1
+        )
+        if pick is not None:
+            break
+    if pick is None:
+        return None, None
+    if picklevel - level > backup:
+        return pick, picklevel
+    if level == 0 and picklevel - level != backup:
+        raise ValueError("Can't back up this far.")
+    return mapping, picklevel
+
+
+def levelpick(
+    mapping: Mapping,
+    predicate: Callable[[Hashable, Any], bool],
+    backup: int = 0,
+    mtypes: tuple[type[Mapping], ...] = (dict, MultiDict)
+) -> Optional[Mapping]:
+    """
+    Give mapping up `backup` levels from possibly-nested item that matches
+    predicate. `backup=0` is roughly equivalent to `dig_for_parent`.
+    """
+    return _levelpick_inner(mapping, predicate, backup, mtypes, 0)[0]

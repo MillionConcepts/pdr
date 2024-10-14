@@ -2,60 +2,96 @@
 Simple utilities for preprocessing pds4_tools-produced label objects for the
 pdr.Metadata constructor.
 """
-from collections import OrderedDict
-from typing import Mapping, TYPE_CHECKING
+from itertools import chain
+from pathlib import Path
+import re
+from typing import Union
 
 from dustgoggles.func import constant
-from dustgoggles.structures import dig_for_keys
+from dustgoggles.structures import dig_for_keys, dig_for_values
+from lxml import etree
 from multidict import MultiDict
 
+from pdr.parselabel.utils import levelpick
 
-if TYPE_CHECKING:
-    from pdr.pds4_tools.reader.label_objects import Label
-
-
-def unpack_to_multidict(
-    packed: Mapping, mtypes: tuple[type, ...] = (dict,)
-) -> MultiDict:
-    """
-    Recursively unpack any Mapping into a MultiDict. Unpacks all list or tuple
-    values at any level into multiple keys at that level. This is an unusual-
-    sounding behavior but is generally appropriate for PDS4 labels, and
-    specifically for the pds4_tools representation of XML labels. PDS4 types
-    with cardinality > 1 always (?) represent multiple distinct entities /
-    properties rather than an array of properties. The list can also always be
-    retrieved from the resulting multidict with `MultiDict.get_all()`.
-
-    Example:
-    ```
-    >>> unpack_to_multidict({'a': 1, 'b': [{'c': 2}, 3]})
-    <MultiDict('a': 1, 'b': <MultiDict('c': 2)>, 'b': 3)>
-    ```
-    """
-    unpacked, items = MultiDict(), list(reversed(packed.items()))
-    while len(items) > 0:
-        k, v = items.pop()
-        if isinstance(v, (list, tuple)):
-            items += [(k, e) for e in reversed(v)]
-        elif isinstance(v, mtypes):
-            unpacked.add(k, unpack_to_multidict(v, mtypes))
-        else:
-            unpacked.add(k, v)
-    return unpacked
+STRIP_NS = re.compile(r"^{.*?}")
 
 
-# noinspection PyTypeChecker
-def reformat_pds4_tools_label(label: "Label") -> tuple[MultiDict, list[str]]:
-    """
-    Convert a pds4_tools Label object into a MultiDict and a list of parameters
-    suitable for constructing a pdr.Metadata object. This is not just a type
-    conversion; it also rearranges some nested data structures (in particular,
-    repeated child elements become multiple keys of a MultiDict rather than
-    a list of OrderedDicts).
-    """
-    unpacked = unpack_to_multidict(label.to_dict(), (OrderedDict, MultiDict))
-    # collect all keys to populate pdr.Metadata's fieldcounts attribute
-    params = dig_for_keys(
-        unpacked, None, base_pred=constant(True), mtypes=(MultiDict,)
+def simple_elpath(node: etree._Element) -> str:
+    return '/'.join(
+        STRIP_NS.sub('', n.tag)
+        for n in chain(reversed(tuple(node.iterancestors())), (node,))
     )
-    return unpacked, params
+
+
+# TODO: should probably make namespace stripping optional
+#  but it's faster if I don't
+# TODO: do we have to worry about any other Python typecasting
+#  cases? PDS4 doesn't use weird tuple types etc, it
+#  represents that sort of metadata with higher-cardinality
+#  XML types, or by explicitly naming the elements of
+#  the tuple as separate XML types (e.g., compare
+#  ROVER_MOTION_COUNTER to geom:Motion_Counter)
+# TODO: is there a cleaner way to do this? I
+#  sort of think there's not unless we literally look at
+#  the XML schema and build a mapping from it, which seems
+#  like a big pain and also very slow if we do it dynamically
+#  (although we shouldn't need to).
+# NOTE: intentionally ignores attributes on nodes with children
+# TODO, maybe: convoluted but I don't want all the extra function
+#  calls, maybe doesn't matter, will check
+def node_to_multidict(node: etree._Element) -> MultiDict:
+    nodemap = MultiDict()
+    for child in node:
+        tag = STRIP_NS.sub('', child.tag)
+        cval = None if child.text is None else child.text.strip()
+        if cval not in (None, ''):
+            if len(child) > 0:
+                raise NotImplementedError(
+                    f"Mixed text / element content is not supported "
+                    f"(founud in {simple_elpath(node)})"
+                )
+            if cval is not None:
+                for ptype in (int, float):
+                    try:
+                        cval = ptype(cval)
+                        break
+                    except ValueError:
+                        pass
+            if len(child.attrib) > 0:
+                cval = {'value': cval} | dict(child.attrib)
+            nodemap.add(tag, cval)
+        elif len(child) > 0:
+            nodemap.add(tag, node_to_multidict(child))
+        else:
+            nodemap.add(tag, None)
+    return nodemap
+
+
+def read_xml(label_fn: Union[str, Path]) -> tuple[MultiDict, list[str]]:
+    with open(label_fn, "rb") as stream:
+        root = etree.fromstring(stream.read())
+    labeldict = node_to_multidict(root)
+    # collect all tag names to populate pdr.Metadata's fieldcounts attribute
+    params = dig_for_keys(
+        labeldict, None, base_pred=constant(True), mtypes=(MultiDict,)
+    )
+    return labeldict, params
+
+
+def get_pds4_index(unpacked: MultiDict) -> list[str]:
+    index = dig_for_values(unpacked, "local_identifier", mtypes=(MultiDict,))
+    if len(set(index)) == len(index):
+        return index
+    raise NotImplementedError(
+        "Duplicate local_identifier not supported for PDS4 products."
+    )
+
+
+def get_pds4_fn(unpacked: MultiDict, objname: str) -> str:
+    return levelpick(
+        unpacked,
+        lambda k, v: k == 'local_identifier' and v == objname,
+        1,
+        (MultiDict,)
+    )['File']['file_name']
