@@ -87,6 +87,9 @@ def generic_image_properties(block: MultiDict) -> ImageProps:
     else:
         props["nbands"] = 1
         props["band_storage_type"] = None
-    # noinspection PyTypeChecker
-    # not type-complete, 'pixels' added in get_image_properties()
+    props["pixels"] = props["nrows"] * props["ncols"] * props["nbands"]
     return props
+
+
+def get_target(block: MultiDict):
+    return block["offset"]
