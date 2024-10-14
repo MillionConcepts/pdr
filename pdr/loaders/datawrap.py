@@ -80,14 +80,13 @@ class ReadPDS4Image(Loader):
             generic_image_properties,
             get_block,
             get_start_byte,
-            get_fn
         )
 
         super().__init__(read_image)
         self.queries = {
             'block': get_block,
             'gen_props': generic_image_properties,
-            'fn': get_fn,
+            'fn': get_file_mapping,
             'start_byte': get_start_byte
         }
 

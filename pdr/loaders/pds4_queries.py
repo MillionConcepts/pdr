@@ -75,4 +75,4 @@ def generic_image_properties(block: MultiDict) -> ImageProps:
 
 
 def get_start_byte(block: MultiDict):
-    return block["offset"]
+    return block["offset"]['value']
