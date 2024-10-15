@@ -252,6 +252,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
         # legitimate user preferences (such as not writing bytecode). All we
         # really need is to ensure that the path variables do not overrule
         # normal venv handling.
+        kwargs = {}
         kwargs['env'] = env = os.environ.copy()
         env['VIRTUAL_ENV'] = context.env_dir
         env.pop('PYTHONHOME', None)
