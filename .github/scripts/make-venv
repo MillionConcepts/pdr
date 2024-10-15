@@ -218,15 +218,12 @@ class CustomEnvBuilder(venv.EnvBuilder):
                 fp.write(BAT_PYTHON2_STUB)
 
         else:
-            subprocess.check_call(["ls", "-l", context.bin_path])
-
-            pythons = glob.glob(P.join(context.bin_path, "python*"))
-
             # On non-Windows platforms, what we need to find is the
-            # name matching the above glob that is either a regular file
-            # or a symlink to somewhere outside the venv root.
-            # That's the one that should be renamed to "python3" if it isn't
-            # already.
+            # name matching the above glob that is either a regular
+            # file or a symlink to somewhere outside the venv root.
+            # That's the one that should be renamed to "python3" if
+            # it isn't already.
+            pythons = glob.glob(P.join(context.bin_path, "python*"))
             the_good_one = None
             for p in pythons:
                 if the_good_one is not None:
@@ -243,12 +240,8 @@ class CustomEnvBuilder(venv.EnvBuilder):
                             continue
                     os.remove(p)
 
-            subprocess.check_call(["ls", "-l", context.bin_path])
-
             desired_path = P.join(context.bin_path, "python3")
             os.rename(the_good_one, desired_path)
-
-            subprocess.check_call(["ls", "-l", context.bin_path])
 
             versioned_path = P.join(context.bin_path,
                                     f"python3.{sys.version_info[1]}")
@@ -258,14 +251,10 @@ class CustomEnvBuilder(venv.EnvBuilder):
             context.env_exe = desired_path
             context.env_exec_cmd = desired_path
 
-            subprocess.check_call(["ls", "-l", context.bin_path])
-
             masked_path = P.join(context.bin_path, "python")
             with open(masked_path, "xt") as fp:
                 fp.write(SH_PYTHON2_STUB)
             os.chmod(masked_path, 0o755)
-
-            subprocess.check_call(["ls", "-l", context.bin_path])
 
     def _setup_pip(self, context):
         # differences from base class:

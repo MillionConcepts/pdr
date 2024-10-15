@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.12"] #["3.9", "3.10", "3.11", "3.12", "3.13"]
-        os: [ubuntu, macos] #[windows, ubuntu, macos]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [windows, ubuntu, macos]
     runs-on: ${{matrix.os}}-latest
     defaults:
       run:
