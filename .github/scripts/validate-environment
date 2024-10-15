@@ -73,6 +73,7 @@ def log_cwd(ofp):
 
 
 def log_venv(ofp):
+    P = os.path
     try:
         ofp.write("::group::Python virtualenv\n")
         venv_root = os.environ.get("VIRTUAL_ENV", None)
@@ -85,29 +86,30 @@ def log_venv(ofp):
         ok = True
         for i, p in enumerate(exe_path):
             ofp.write(f"PATH[{i}]={quote_str(p)}\n")
-            if not os.path.isabs(p):
+            if not P.isabs(p):
                 ofp.write(f"::error::PATH entry {i} is not absolute\n")
                 ok = False
         if not ok:
             return 1
 
-        path_0_canon = os.path.realpath(exe_path[0])
-        venv_bin_canon = os.path.realpath(os.path.join(venv_root, 'bin'))
-        if path_0_canon != venv_bin_canon:
-            ofp.write(f"::error::PATH[0] is {quote_str(path_0_canon)},"
-                      f" not {quote_str(venv_bin_canon)}\n")
+        path_0 = P.normcase(P.realpath(exe_path[0]))
+        venv_bin = P.normcase(P.realpath(P.join(venv_root, 'bin')))
+        venv_scr = P.normcase(P.realpath(P.join(venv_root, 'Scripts')))
+        if path_0 not in (venv_bin, venv_scr):
+            ofp.write(f"::error::PATH[0] is {quote_str(path_0)},"
+                      f" not {quote_str(venv_bin)} or {quote_str(venv_scr)}\n")
             return 1
 
         ofp.write("\n")
         log_dir_contents(ofp, venv_root)
         ofp.write("\n")
-        if os.path.isdir(bindir := os.path.join(venv_root, 'bin')):
-            log_dir_contents(ofp, bindir)
+        if P.isdir(venv_bin)
+            log_dir_contents(ofp, venv_bin)
             ofp.write("\n")
-        if os.path.isdir(scrdir := os.path.join(venv_root, 'Scripts')):
-            log_dir_contents(ofp, scrdir)
+        if P.isdir(venv_scr)
+            log_dir_contents(ofp, venv_scr)
             ofp.write("\n")
-        log_file_contents(ofp, os.path.join(venv_root, 'pyvenv.cfg'))
+        log_file_contents(ofp, P.join(venv_root, 'pyvenv.cfg'))
         return 0
 
     except OSError as e:
