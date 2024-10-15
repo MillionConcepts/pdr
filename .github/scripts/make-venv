@@ -31,6 +31,7 @@ Customized for our needs, relative to what the stock `python3 -m venv` does:
 import argparse
 import glob
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -204,9 +205,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
             os.rename(the_good_one, desired_path)
             versioned_path = P.join(context.bin_path,
                                           f"python3.{sys.version_info[1]}.exe")
-            self.symlink_or_copy(desired_path, versioned_path,
-                                 relative_symlinks_ok=True)
-
+            shutil.copyfile(desired_path, versioned_path)
 
             context.env_exe = desired_path
             # bpo-45337
@@ -219,7 +218,12 @@ class CustomEnvBuilder(venv.EnvBuilder):
                 fp.write(BAT_PYTHON2_STUB)
 
         else:
+            subprocess.check_call(["ls", "-l", context.bin_path])
+
+            import pprint
             pythons = glob.glob(P.join(context.bin_path, "python*"))
+            pprint.pprint(sorted(pythons))
+
             # On non-Windows platforms, what we need to find is the
             # name matching the above glob that is either a regular file
             # or a symlink to somewhere outside the venv root.
@@ -254,10 +258,14 @@ class CustomEnvBuilder(venv.EnvBuilder):
             context.env_exe = desired_path
             context.env_exec_cmd = desired_path
 
+            subprocess.check_call(["ls", "-l", context.bin_path])
+
             masked_path = P.join(context.bin_path, "python")
             with open(masked_path, "xt") as fp:
                 fp.write(SH_PYTHON2_STUB)
             os.chmod(masked_path, 0o755)
+
+            subprocess.check_call(["ls", "-l", context.bin_path])
 
     def _setup_pip(self, context):
         # differences from base class:
