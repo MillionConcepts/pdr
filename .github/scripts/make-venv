@@ -33,6 +33,7 @@ Customized for our needs, relative to what the stock `python3 -m venv` does:
 
 import argparse
 import os
+import stat
 import sys
 import venv
 
@@ -83,6 +84,31 @@ echo "$0: error: Python 2 interpreter not available." >&2
 exit 1
 """
 
+def require_regular_file(path):
+    """Raise an exception if PATH does not exist or is not a regular file,
+       being specific about what the issue is."""
+    try:
+        st = os.lstat(path)
+        if stat.S_ISREG(st.st_mode):
+            return
+        if stat.S_ISDIR(st.st_mode):
+            raise RuntimeError(f"{path!r} is a directory, not a file")
+        if stat.S_ISLNK(st.st_mode):
+            raise RuntimeError(f"{path!r} is a symlink, not a file")
+        if stat.S_ISSOCK(st.st_mode):
+            raise RuntimeError(f"{path!r} is a socket, not a file")
+        if stat.S_ISFIFO(st.st_mode):
+            raise RuntimeError(f"{path!r} is a named pipe, not a file")
+        if stat.S_ISCHR(st.st_mode):
+            raise RuntimeError(f"{path!r} is a character device, not a file")
+        if stat.S_ISBLK(st.st_mode):
+            raise RuntimeError(f"{path!r} is a block device, not a file")
+        raise RuntimeError(f"{path!r} is something strange, not a file"
+                           f" (type code {stat.S_IFMT(mode):o})")
+
+    except OSError as e:
+        raise RuntimeError(f"{path!r}: {e.strerror}")
+
 
 class CustomEnvBuilder(venv.EnvBuilder):
     def __init__(self):
@@ -117,7 +143,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
         # duplicate the fix for bpo-45337
         if sys.platform == "win32":
             context.env_exec_cmd = os.path.normcase(
-                os.path.realpath(context.env_exec_cmd)
+                os.path.realpath(context.env_exe)
             )
         else:
             context.env_exec_cmd = context.env_exe
@@ -133,8 +159,9 @@ class CustomEnvBuilder(venv.EnvBuilder):
                 os.remove(os.path.join(context.bin_path, unwanted))
             except FileNotFoundError:
                 pass
-        assert os.path.isfile(context.env_exe)
-        assert os.path.isfile(context.env_exec_cmd)
+        require_regular_file(context.env_exe)
+        if context.env_exec_cmd != context.env_exec_cmd:
+            require_regular_file(context.env_exec_cmd)
 
         if os.name == 'nt':
             python3x = f'python3.{sys.version_info[1]}.exe'
