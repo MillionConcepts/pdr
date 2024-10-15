@@ -220,9 +220,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
         else:
             subprocess.check_call(["ls", "-l", context.bin_path])
 
-            import pprint
             pythons = glob.glob(P.join(context.bin_path, "python*"))
-            pprint.pprint(sorted(pythons))
 
             # On non-Windows platforms, what we need to find is the
             # name matching the above glob that is either a regular file
@@ -239,17 +237,19 @@ class CustomEnvBuilder(venv.EnvBuilder):
                         the_good_one = p
                         continue
                     if stat.S_ISLNK(st.st_mode):
-                        dest = P.realpath(P.join(
-                            context.bin_path,
-                            os.readlink(p)
-                        ))
-                        if P.relpath(dest, context.env_dir).startswith("../"):
+                        dest = os.readlink(p)
+                        if dest.startswith("/") or dest.startswith("../"):
                             the_good_one = p
                             continue
                     os.remove(p)
 
+            subprocess.check_call(["ls", "-l", context.bin_path])
+
             desired_path = P.join(context.bin_path, "python3")
             os.rename(the_good_one, desired_path)
+
+            subprocess.check_call(["ls", "-l", context.bin_path])
+
             versioned_path = P.join(context.bin_path,
                                     f"python3.{sys.version_info[1]}")
             self.symlink_or_copy(desired_path, versioned_path,
