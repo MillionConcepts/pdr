@@ -85,29 +85,84 @@ exit 1
 """
 
 def require_regular_file(path):
-    """Raise an exception if PATH does not exist or is not a regular file,
-       being specific about what the issue is."""
+    """Raise an exception if PATH does not exist or is not a regular
+       file or a symlink to a regular file, being specific about what
+       the issue is.
+    """
+    def describe_filetype(mode):
+        if stat.S_ISREG(mode):
+            return "a file"
+        if stat.S_ISDIR(mode):
+            return "a directory"
+        if stat.S_ISLNK(mode):
+            return "a symlink"
+        if stat.S_ISSOCK(mode):
+            return "a socket"
+        if stat.S_ISFIFO(mode):
+            return "a named pipe"
+        if stat.S_ISCHR(mode):
+            return "a character device"
+        if stat.S_ISBLK(mode):
+            return "a block device"
+        if stat.S_ISDOOR(mode):
+            return "a door"
+        if stat.S_ISPORT(mode):
+            return "an event port"
+        if stat.S_ISWHT(mode):
+            return "a whiteout"
+        return f"something strange (format code 0x{stat.S_IFMT(mode):4x})"
+
+    def describe_non_file(path, mode_or_error,
+                          path2=None, mode2_or_error=None):
+        if isinstance(mode_or_error, FileNotFoundError):
+            return f"{path!r} doesn't exist"
+        if isinstance(mode2_or_error, OSError):
+            return f"{path!r} is inaccessible: {mode_or_error.strerror}"
+
+        what = describe_filetype(mode_or_error)
+        if what == "a file":
+            raise ValueError("describe_non_file called on a file")
+        if what != "a symlink":
+            return f"{path!r} is {what}, not a file"
+
+        if isinstance(mode2_or_error, FileNotFoundError):
+            return f"{path!r} is a symlink to {path2!r} which doesn't exist"
+
+        if isinstance(mode2_or_error, OSError):
+            return (
+                f"{path!r} is a symlink to {path2!r}"
+                f" which is inaccessible: {mode2_or_error.strerror}"
+            )
+
+        what2 = describe_filetype(mode2)
+        if what2 == "a file":
+            raise ValueError("describe_non_file called on a symlink to a file")
+        return (
+            f"{path!r} is a symlink to {path2!r} which is {what2}, not a file"
+        )
+
     try:
         st = os.lstat(path)
-        if stat.S_ISREG(st.st_mode):
-            return
-        if stat.S_ISDIR(st.st_mode):
-            raise RuntimeError(f"{path!r} is a directory, not a file")
-        if stat.S_ISLNK(st.st_mode):
-            raise RuntimeError(f"{path!r} is a symlink, not a file")
-        if stat.S_ISSOCK(st.st_mode):
-            raise RuntimeError(f"{path!r} is a socket, not a file")
-        if stat.S_ISFIFO(st.st_mode):
-            raise RuntimeError(f"{path!r} is a named pipe, not a file")
-        if stat.S_ISCHR(st.st_mode):
-            raise RuntimeError(f"{path!r} is a character device, not a file")
-        if stat.S_ISBLK(st.st_mode):
-            raise RuntimeError(f"{path!r} is a block device, not a file")
-        raise RuntimeError(f"{path!r} is something strange, not a file"
-                           f" (type code {stat.S_IFMT(mode):o})")
-
     except OSError as e:
-        raise RuntimeError(f"{path!r}: {e.strerror}")
+        raise RuntimeError(describe_non_file(path, e)) from e
+
+    if stat.S_ISREG(st.st_mode):
+        return
+    if not stat.S_ISLNK(st.st_mode):
+        raise RuntimeError(describe_non_file(path, st.st_mode))
+
+    target = os.readlink(path)
+    try:
+        tst = os.stat(path)
+    except OSError as e:
+        raise RuntimeError(describe_non_file(
+            path, st.st_mode, target, e
+        )) from e
+
+    if not stat.S_ISREG(tst.st_mode):
+        raise RuntimeError(describe_non_file(
+            path, st.st_mode, target, tst.st_mode
+        ))
 
 
 class CustomEnvBuilder(venv.EnvBuilder):
