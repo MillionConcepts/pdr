@@ -103,10 +103,10 @@ def log_venv(ofp):
         ofp.write("\n")
         log_dir_contents(ofp, venv_root)
         ofp.write("\n")
-        if P.isdir(venv_bin)
+        if P.isdir(venv_bin):
             log_dir_contents(ofp, venv_bin)
             ofp.write("\n")
-        if P.isdir(venv_scr)
+        if P.isdir(venv_scr):
             log_dir_contents(ofp, venv_scr)
             ofp.write("\n")
         log_file_contents(ofp, P.join(venv_root, 'pyvenv.cfg'))
