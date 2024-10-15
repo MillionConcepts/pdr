@@ -34,6 +34,7 @@ Customized for our needs, relative to what the stock `python3 -m venv` does:
 import argparse
 import os
 import stat
+import subprocess
 import sys
 import venv
 
@@ -77,12 +78,12 @@ unset VIRTUAL_ENV_PROMPT
 hash -r 2> /dev/null
 """
 
-
 SH_PYTHON2_STUB = """\
 #! /bin/sh
 echo "$0: error: Python 2 interpreter not available." >&2
 exit 1
 """
+
 
 def require_regular_file(path):
     """Raise an exception if PATH does not exist or is not a regular
@@ -178,6 +179,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
 
     def ensure_directories(self, env_dir):
         sys.stderr.write("creating directories...\n")
+        env_dir = os.path.normcase(os.path.realpath(env_dir))
         context = super().ensure_directories(env_dir)
 
         # we always want <env>/bin, not <env>/scripts
@@ -240,6 +242,26 @@ class CustomEnvBuilder(venv.EnvBuilder):
             fp.write(python2_stub)
         if do_chmod:
             os.chmod(python2, 0o755)
+
+    def _setup_pip(self, context):
+        # differences from base class:
+        # - bug fix for gh-98251 backported from 3.11
+        # - don't swallow the output from the command
+
+        # gh-98251: We do not want to just use '-I' because that masks
+        # legitimate user preferences (such as not writing bytecode). All we
+        # really need is to ensure that the path variables do not overrule
+        # normal venv handling.
+        kwargs['env'] = env = os.environ.copy()
+        env['VIRTUAL_ENV'] = context.env_dir
+        env.pop('PYTHONHOME', None)
+        env.pop('PYTHONPATH', None)
+        kwargs['cwd'] = context.env_dir
+        kwargs['executable'] = context.env_exec_cmd
+        subprocess.check_call([
+            context.env_exec_cmd,
+            "-Im", "ensurepip", "--upgrade", "--default-pip"
+        ], **kwargs)
 
     def setup_scripts(self, context):
         sys.stderr.write("setting up scripts...\n")

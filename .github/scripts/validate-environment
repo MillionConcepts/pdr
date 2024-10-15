@@ -36,7 +36,9 @@ def quote_str(s):
 def log_environment(ofp):
     ofp.write("::group::Environment variables\n")
     for key, value in sorted(os.environ.items()):
-        ofp.write("{}={}\n".format(quote_str(key), quote_str(value)))
+        # Spacing here prevents the runner from redacting the name of
+        # any environment variable whose value is a masked secret.
+        ofp.write("{} = {}\n".format(quote_str(key), quote_str(value)))
     ofp.write("\n")
 
 
@@ -55,6 +57,13 @@ def log_dir_contents(ofp, path):
 
         name = quote_str(entry.name)
         ofp.write(f"    {name}{tag}\n")
+
+
+def log_file_contents(ofp, path):
+    ofp.write(quote_str(path) + ":\n")
+    with open(path, "rt") as fp:
+        for line in fp:
+            ofp.write(f"| {line.rstrip()}\n")
 
 
 def log_cwd(ofp):
@@ -94,6 +103,7 @@ def log_venv(ofp):
         ofp.write("\n")
         log_dir_contents(ofp, os.path.join(venv_root, 'bin'))
         ofp.write("\n")
+        log_file_contents(ofp, os.path.join(venv_root, 'pyvenv.cfg'))
         return 0
 
     except OSError as e:
@@ -166,9 +176,11 @@ def log_commands(ofp, expected_pyver):
     for cmd in commands:
         for bin_dir in bin_path:
             path = os.path.join(os.path.realpath(bin_dir), cmd)
-            if os.path.isfile(path):
-                programs.append((cmd, path))
-                break
+            for suffix in ("", ".exe", ".bat"):
+                xpath = path + suffix
+                if os.path.isfile(xpath):
+                    programs.append((cmd, xpath))
+                    break
         else:
             programs.append((cmd, None))
 
