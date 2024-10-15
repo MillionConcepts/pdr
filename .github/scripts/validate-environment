@@ -176,11 +176,16 @@ def log_commands(ofp, expected_pyver):
     for cmd in commands:
         for bin_dir in bin_path:
             path = os.path.join(os.path.realpath(bin_dir), cmd)
+            found = False
             for suffix in ("", ".exe", ".bat"):
                 xpath = path + suffix
                 if os.path.isfile(xpath):
                     programs.append((cmd, xpath))
+                    found = True
                     break
+            if found:
+                break
+
         else:
             programs.append((cmd, None))
 

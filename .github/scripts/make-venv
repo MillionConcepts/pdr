@@ -261,7 +261,7 @@ class CustomEnvBuilder(venv.EnvBuilder):
         kwargs['executable'] = context.env_exec_cmd
         subprocess.check_call([
             context.env_exec_cmd,
-            "-Im", "ensurepip", "--upgrade", "--default-pip"
+            "-m", "ensurepip", "--upgrade", "--default-pip"
         ], **kwargs)
 
     def setup_scripts(self, context):
