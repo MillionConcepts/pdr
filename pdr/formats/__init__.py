@@ -16,6 +16,7 @@ import pdr.formats.epoxi as epoxi
 import pdr.formats.galileo as galileo
 import pdr.formats.ground as ground
 import pdr.formats.ihw as ihw
+import pdr.formats.iue as iue
 import pdr.formats.juno as juno
 import pdr.formats.lroc as lroc
 import pdr.formats.lro as lro

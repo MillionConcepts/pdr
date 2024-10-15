@@ -5,11 +5,11 @@ import numpy as np
 
 from pdr.datatypes import PDS3_CONSTANT_NAMES, IMPLICIT_PDS3_CONSTANTS
 from pdr.np_utils import casting_to_float
-from pdr.pdrtypes import PDRLike
+from multidict import MultiDict
 
 
 def find_special_constants(
-    meta: PDRLike, obj: np.ndarray, object_name: str
+    block: MultiDict, obj: np.ndarray
 ) -> dict[str, Number]:
     """
     attempts to find special constants in an ndarray associated with a PDS3
@@ -17,7 +17,7 @@ def find_special_constants(
     """
     # NOTE: doesn't do anything for PDS4 products at present, although this
     #  may not be important; usually pds4_tools handles it.
-    block = meta.metablock_(object_name)
+    
     # check for explicitly-defined special constants
     specials = {
         name: block[name]
@@ -58,14 +58,13 @@ def mask_specials(obj, specials):
 
 
 def scale_array(
-    meta: PDRLike,
+    block: MultiDict,
     obj: np.ndarray,
-    object_name: str,
     inplace: bool = False,
     float_dtype: Optional["np.dtype"] = None,
 ):
     """"""
-    scale, offset, block = 1, 0, meta.metablock_(object_name)
+    scale, offset = 1, 0
     if "SCALING_FACTOR" in block.keys():
         scale = block["SCALING_FACTOR"]
         if isinstance(scale, dict):

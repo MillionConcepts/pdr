@@ -755,17 +755,24 @@ class Data:
             return obj
 
         from pdr._scaling import mask_specials, scale_array
+        from pdr.formats.checkers import check_special_block
 
+        block = self.metablock_(object_name)
+        is_special, special_block = check_special_block(
+            object_name, self, self.identifiers
+        )
+        if is_special:
+            block = special_block
         if object_name not in self.specials:
             self.specials[object_name] = self.find_special_constants(
-                object_name
+                object_name, block
             )
         if self.specials[object_name] != {}:
             obj = mask_specials(obj, list(self.specials[object_name].values()))
-        return scale_array(self, obj, object_name, inplace, float_dtype)
+        return scale_array(block, obj, inplace, float_dtype)
 
     def find_special_constants(
-        self, object_name: str
+        self, object_name: str, block: MultiDict
     ) -> dict[str, Number]:
         """
         look up or infer special constants for one of our data objects.
@@ -774,9 +781,7 @@ class Data:
         if len(consts := special_image_constants(self.identifiers)) > 0:
             return consts
         from pdr._scaling import find_special_constants
-        return find_special_constants(
-            self.metadata, self[object_name], object_name
-        )
+        return find_special_constants(block, self[object_name])
 
     def metaget(
         self, text: str, default: Any = None, warn: bool = True

@@ -160,7 +160,7 @@ class ReadFits(Loader):
         # slightly hacky but works with how we've done dictionary construction
         return tuple(super().__call__(pdrlike, name, **kwargs).values())[0]
 
-    queries = {
+    queries = DEFAULT_DATA_QUERIES | {
         "fn": get_file_mapping,
         'target': get_target,
         "identifiers": get_identifiers,
