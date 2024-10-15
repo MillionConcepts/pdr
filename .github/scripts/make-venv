@@ -29,6 +29,7 @@ Customized for our needs, relative to what the stock `python3 -m venv` does:
 
 
 import argparse
+import glob
 import os
 import stat
 import subprocess
@@ -174,78 +175,89 @@ class CustomEnvBuilder(venv.EnvBuilder):
             with_pip=True,
         )
 
-    def ensure_directories(self, env_dir):
-        sys.stderr.write("creating directories...\n")
-        env_dir = os.path.normcase(os.path.realpath(env_dir))
-        context = super().ensure_directories(env_dir)
-
-        # no matter what the interpreter is called outside the environment,
-        # it should be called 'python3' inside the environment
-        if context.python_exe.endswith(".exe"):
-            context.env_exe = os.path.join(context.bin_path, "python3.exe")
-        else:
-            context.env_exe = os.path.join(context.bin_path, "python3")
-
-        # duplicate the fix for bpo-45337
-        if sys.platform == "win32":
-            context.env_exec_cmd = os.path.normcase(
-                os.path.realpath(context.env_exe)
-            )
-        else:
-            context.env_exec_cmd = context.env_exe
-
-        return context
-
     def setup_python(self, context):
         sys.stderr.write("setting up python...\n")
         super().setup_python(context)
-        # It's possible that the base class ignored what we did in
-        # ensure_directories and installed the interpreter only under
-        # some other name than the one we want.
-        if not os.path.isfile(context.env_exe):
-            sys.stderr.write(
-                f"::error:: {context.env_exe!r} not installed by base class\n"
-            )
-            import glob
-            candidates = sorted(glob.glob(os.path.join(context.bin_path,
-                                                       "python*")))
-            sys.stderr.write("candidates for interpreter are:\n")
-            for c in candidates:
-                sys.stderr.write(f"    {c!r}\n")
-            sys.exit(1)
 
-        for unwanted in ['python', 'python.exe', 'python_d.exe',
-                         'pythonw.exe', 'pythonw_d.exe']:
-            try:
-                os.remove(os.path.join(context.bin_path, unwanted))
-            except FileNotFoundError:
-                pass
-        require_regular_file(context.env_exe)
-        if context.env_exec_cmd != context.env_exec_cmd:
-            require_regular_file(context.env_exec_cmd)
-
+        P = os.path
         if os.name == 'nt':
-            python3x = f'python3.{sys.version_info[1]}.exe'
-            python2 = 'python.bat'
-            python2_stub = BAT_PYTHON2_STUB
-            do_chmod = False
-        else:
-            python3x = f'python3.{sys.version_info[1]}'
-            python2 = 'python'
-            python2_stub = SH_PYTHON2_STUB
-            do_chmod = True
+            # On Windows, *only* context.bin_path / "python.exe" can
+            # be trusted to exist and to work.  If any other
+            # pythonXXX.exe files exist, they probably don't work;
+            # specifically, they probably crash on startup due to
+            # looking for essential DLLs in the wrong place.
+            # See https://github.com/pyenv-win/pyenv-win/issues/490
+            # for gory details.  Delete the broken executables, then
+            # rename "python.exe" to "python3.exe", copy it to
+            # "python3.X.exe", and fix up the context accordingly.
+            pythons = glob.glob(P.join(context.bin_path, "python*.exe"))
+            the_good_one = None
+            for p in pythons:
+                if p.endswith("/python.exe") or p.endswith("\\python.exe"):
+                    the_good_one = p
+                    continue
+                os.remove(p)
 
-        python3x = os.path.join(context.bin_path, python3x)
-        python2 = os.path.join(context.bin_path, python2)
+            require_regular_file(the_good_one)
 
-        if not os.path.exists(python3x):
-            self.symlink_or_copy(context.env_exe, python3x,
+            desired_path = P.join(context.bin_path, "python3.exe")
+            os.rename(the_good_one, desired_path)
+            versioned_path = P.join(context.bin_path,
+                                          f"python3.{sys.version_info[1]}.exe")
+            self.symlink_or_copy(desired_path, versioned_path,
                                  relative_symlinks_ok=True)
 
-        with open(python2, "xt") as fp:
-            fp.write(python2_stub)
-        if do_chmod:
-            os.chmod(python2, 0o755)
+
+            context.env_exe = desired_path
+            # bpo-45337
+            context.env_exec_cmd = P.normcase(
+                P.realpath(context.env_exe)
+            )
+
+            masked_path = P.join(context.bin_path, "python.bat")
+            with open(masked_path, "xt") as fp:
+                fp.write(BAT_PYTHON2_STUB)
+
+        else:
+            pythons = glob.glob(P.join(context.bin_path, "python*"))
+            # On non-Windows platforms, what we need to find is the
+            # name matching the above glob that is either a regular file
+            # or a symlink to somewhere outside the venv root.
+            # That's the one that should be renamed to "python3" if it isn't
+            # already.
+            the_good_one = None
+            for p in pythons:
+                if the_good_one is not None:
+                    os.remove(p)
+                else:
+                    st = os.lstat(p)
+                    if stat.S_ISREG(st.st_mode):
+                        the_good_one = p
+                        continue
+                    if stat.S_ISLNK(st.st_mode):
+                        dest = P.realpath(P.join(
+                            context.bin_path,
+                            os.readlink(p)
+                        ))
+                        if P.relpath(dest, context.env_dir).startswith("../"):
+                            the_good_one = p
+                            continue
+                    os.remove(p)
+
+            desired_path = P.join(context.bin_path, "python3")
+            os.rename(the_good_one, desired_path)
+            versioned_path = P.join(context.bin_path,
+                                    f"python3.{sys.version_info[1]}")
+            self.symlink_or_copy(desired_path, versioned_path,
+                                 relative_symlinks_ok=True)
+
+            context.env_exe = desired_path
+            context.env_exec_cmd = desired_path
+
+            masked_path = P.join(context.bin_path, "python")
+            with open(masked_path, "xt") as fp:
+                fp.write(SH_PYTHON2_STUB)
+            os.chmod(masked_path, 0o755)
 
     def _setup_pip(self, context):
         # differences from base class:
