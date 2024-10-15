@@ -204,14 +204,14 @@ class CustomEnvBuilder(venv.EnvBuilder):
         # some other name than the one we want.
         if not os.path.isfile(context.env_exe):
             sys.stderr.write(
-                f"::error:: {quote_str(context.env_exe)} not installed by base class\n"
+                f"::error:: {context.env_exe!r} not installed by base class\n"
             )
             import glob
             candidates = sorted(glob.glob(os.path.join(context.bin_path,
                                                        "python*")))
             sys.stderr.write("candidates for interpreter are:\n")
             for c in candidates:
-                sys.stderr.write("    " + quote_str(c) + "\n")
+                sys.stderr.write(f"    {c!r}\n")
             sys.exit(1)
 
         for unwanted in ['python', 'python.exe', 'python_d.exe',
