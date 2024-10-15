@@ -7,9 +7,6 @@ Customized for our needs, relative to what the stock `python3 -m venv` does:
  - No command line options are available.  You always get the behavior
    of `python3 -m venv --clear <DIRECTORY>`.
 
- - Always creates a 'bin' directory containing the activation scripts
-   and interpreter executables, never a 'Scripts' directory.
-
  - Always creates interpreter executables named 'python3' and 'python3.X'
    (where X is sys.version_info[1]).
 
@@ -21,13 +18,13 @@ Customized for our needs, relative to what the stock `python3 -m venv` does:
    it, but the base system might, incorrectly, provide a Python 3
    interpreter under that name, potentially masking bugs.)
 
- - Backported a bugfix in the Bourne-shell activation script from
-   the Python 3.12 venv module.
+ - Backported a bugfix in the Bourne-shell activation script from Python 3.12.
+
+ - Backported a bugfix in the invocation of ensurepip from Python 3.11.
 
  - Activation scripts do not provide "deactivate" and do not modify the
    prompt, since we only ever use these venvs in automated builds that
    don't need those features.
-
 """
 
 
@@ -182,14 +179,6 @@ class CustomEnvBuilder(venv.EnvBuilder):
         env_dir = os.path.normcase(os.path.realpath(env_dir))
         context = super().ensure_directories(env_dir)
 
-        # we always want <env>/bin, not <env>/scripts
-        if context.bin_name != "bin":
-            corrected_bin_path = os.path.join(context.env_dir, 'bin')
-            os.rename(context.bin_path, corrected_bin_path)
-
-            context.bin_name = "bin"
-            context.bin_path = corrected_bin_path
-
         # no matter what the interpreter is called outside the environment,
         # it should be called 'python3' inside the environment
         if context.python_exe.endswith(".exe"):
@@ -264,6 +253,16 @@ class CustomEnvBuilder(venv.EnvBuilder):
             "-m", "ensurepip", "--upgrade", "--default-pip"
         ], **kwargs)
 
+    def _install_scripts_in_dir(self, context, scripts, dir):
+        os.makedirs(dir, exist_ok=True)
+        for name, contents in scripts:
+            path = os.path.join(dir, name)
+            with open(path, "xt") as fp:
+                fp.write(contents.format(
+                    __VENV_DIR__ = context.env_dir,
+                    __VENV_BIN_NAME__ = context.bin_name,
+                ))
+
     def setup_scripts(self, context):
         sys.stderr.write("setting up scripts...\n")
         # always install the sh activation script; on windows also
@@ -272,13 +271,13 @@ class CustomEnvBuilder(venv.EnvBuilder):
         if os.name == 'nt':
             scripts.append(("activate.bat", BAT_ACTIVATE))
 
-        for name, contents in scripts:
-            path = os.path.join(context.bin_path, name)
-            with open(path, "xt") as fp:
-                fp.write(contents.format(
-                    __VENV_DIR__ = context.env_dir,
-                    __VENV_BIN_NAME__ = context.bin_name,
-                ))
+        self._install_scripts_in_dir(context, scripts, context.bin_path)
+        if not context.bin_path.endswith("bin"):
+            # Also install the scripts in "bin" for the sake of being
+            # able to do "source venv/bin/activate" regardless of whether
+            # we are on Windows.
+            self._install_scripts_in_dir(context, scripts,
+                                         os.path.join(context.env_dir, "bin"))
 
 
 def main():
