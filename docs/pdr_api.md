@@ -361,9 +361,9 @@
     options:
         heading_level: 3
 
-### pilutils
+### pil_utils
 
-::: pdr.pilutils
+::: pdr.pil_utils
     options:
         heading_level: 3
 
