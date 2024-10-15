@@ -197,7 +197,7 @@ kernels in combination with JPL Horizons).
     notionally supported.*
 #### IUE
   - Raw and extracted spectra
-  - Most image products
+  - Image products
 #### Juno
   - FGM tables
   - Gravity Science tables (EDR, RSR, and TNF)
@@ -643,9 +643,6 @@ kernels in combination with JPL Horizons).
   - SSN 2D spectral products with SPECTRAL_IMAGE_QUBE pointers (support planned)
   - SSN 2D spectral products with typos in their filenames (support not planned)
   - RSN UV visibility products (support planned)
-#### IUE
-  - A handful of the image products do not open because of a typo in their 
-    labels. The QUALITY_IMAGE object is written as QUALITY_QUALITY_IMAGE. (support planned)
 #### Juno
   - JADE Ion sensor housekeeping data prior to arrival at Jupiter (support not planned)
   - UVS (support planned)

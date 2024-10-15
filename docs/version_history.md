@@ -12,6 +12,7 @@
 - MGS MOLA PEDR (a special case fixes non-standard STRUCTURE pointer names and
   'ROWS = "UNK"' from the labels)
 - LRO LAMP EDR and most RDR table/image pointers
+- additional IUE images 
 
 #### Other
 - Our [JOSS paper](https://joss.theoj.org/papers/10.21105/joss.07256) was accepted for publication! :tada: A pdf of our JOSS 
@@ -31,7 +32,8 @@ and shipped with pdr
 - `pdr.pilutils` renamed to `pdr.pil_utils` for consistency
 - `Data.get_scaled` and functions that use it (like `Data.dump_browse`) now also
   mask nonfinite values (inf, -inf, and nan)
-- `pdr` no longer greedily heads files when looking for PVL labels  
+- `pdr` no longer greedily heads files when looking for PVL labels
+- Added a `check_special_block()` call to `Data.get_scaled`
 
 ### Fixed
 - updated docs/LICENSE.md to match LICENSE.md
