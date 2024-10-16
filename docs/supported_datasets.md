@@ -57,6 +57,7 @@ kernels in combination with JPL Horizons).
     - BUG soil reflectance tables
     - Apollo 15, 16, and 17 Metric Camera images
     - Apollo 17 Traverse Gravimeter Experiment
+    - Lunar Sample Photographs
 #### Cassini
   - CAPS EDRs, RDRs, and DDRs
   - CDA
@@ -596,8 +597,6 @@ kernels in combination with JPL Horizons).
       'romap_calhk.fmt' file.*
 
 ## Known Unsupported Datasets
-#### Apollo
-  - Lunar Sample Photographs (support planned; low priority)
 #### Cassini
   - CIRS variable-length '.VAR' tables (support not planned)
   - ISS prefix tables (support planned)

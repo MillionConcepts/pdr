@@ -13,6 +13,7 @@
   'ROWS = "UNK"' from the labels)
 - LRO LAMP EDR and most RDR table/image pointers
 - additional IUE images 
+- Apollo Lunar Sample Photographs
 
 #### Other
 - Our [JOSS paper](https://joss.theoj.org/papers/10.21105/joss.07256) was accepted for publication! :tada: A pdf of our JOSS 
