@@ -705,13 +705,26 @@ class Data:
         obj = self.loaders[pointer](
             self, pointer, tracker=self.tracker, **load_kwargs
         )
-        # FITS arrays are scaled by default
+        # FITS arrays are scaled by default, and most 'desktop' images never
+        # require scaling. we currently treat GeoTIFFs and JP2 as the only
+        # exceptions.
+        # TODO: assess whether there are non-GeoTIFF TIFFs floating around in
+        #  the PDS that might still require scaling.
         unwrap = loader.func.__self__ if self.debug is True else loader
         if (
             (unwrap.__class__.__name__ == "ReadFits")
             and (obj[pointer].__class__.__name__ == "ndarray")
         ):
             self._scaleflags[pointer] = True
+        if (
+            (unwrap.__class__.__name__ == 'ReadCompressedImage')
+            and (obj[pointer].__class__.__name__ == "ndarray")
+        ):
+            from pdr.loaders.handlers import _check_prescaled_desktop
+
+            self._scaleflags[pointer] = _check_prescaled_desktop(
+                self.file_mapping[pointer]
+            )
         if self.debug is True and len(loader.errors) > 0:
             warnings.warn(
                 f"Unable to load {pointer}: {loader.errors[-1]['exception']}"

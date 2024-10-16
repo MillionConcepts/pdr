@@ -175,6 +175,21 @@ def handle_compressed_image(
     return image
 
 
+def _check_prescaled_desktop(fn: Union[str, Path]):
+    """
+    Check whether a desktop-format image -- i.e., one we loaded with pillow --
+    might need scaling / masking / etc. Currently we treat this as true for
+    JP2 and GeoTIFF and False otherwise. There might be other heuristics.
+    """
+    from pdr.pil_utils import skim_image_data
+
+    meta = skim_image_data(fn)
+    if any('GeoKey' in k for k in meta.keys()):
+        return False
+    if meta['format'] == 'JPEG2000':
+        return False
+    return True
+
 def handle_fits_header(
     hdulist: HDUList,
     hdu_ix: int,
