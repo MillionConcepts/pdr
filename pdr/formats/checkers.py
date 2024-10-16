@@ -801,6 +801,11 @@ def check_special_block(
         and "TABLE" in name
     ):
         return True, formats.mgs.mola_pedr_special_block(data, name, identifiers)
+    if (
+        identifiers["DATA_SET_ID"] == "IUE-C-SWP-3-EDR-IUECDB-V1.0"
+        and name == "QUALITY_IMAGE"
+    ):
+        return formats.iue.get_special_block(data, name)
     return False, None
 
 
