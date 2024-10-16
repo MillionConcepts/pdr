@@ -50,7 +50,9 @@ jobs:
     runs-on: ${{matrix.os}}-latest
     defaults:
       run:
-        shell: bash -l -e -u -o pipefail {0}
+        # -l is required for conda autoactivation
+        # conda's activation script is incompatible with -u
+        shell: bash -l -e -o pipefail {0}
     steps:
       - name: Check out source tree
         uses: actions/checkout@v4

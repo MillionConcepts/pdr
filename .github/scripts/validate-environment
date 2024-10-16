@@ -150,20 +150,26 @@ def log_venv(ofp):
         ofp.write("\n")
 
         if venv_root is not None:
-            exe_path_0 = P.normcase(P.realpath(exe_path[0]))
-            mod_path_0 = P.normcase(P.realpath(mod_path[0]))
-
             venv_bin = P.normcase(P.realpath(P.join(venv_root, 'bin')))
             venv_scr = P.normcase(P.realpath(P.join(venv_root, 'Scripts')))
             venv_lib = P.normcase(P.realpath(P.join(venv_root, 'lib')))
 
+            exe_path_0 = P.normcase(P.realpath(exe_path[0]))
             if exe_path_0 not in (venv_bin, venv_scr):
                 ofp.write(f"::error::PATH[0] is {quote_str(exe_path_0)},"
                           f" not {quote_str(venv_bin)} or {quote_str(venv_scr)}\n")
                 bad_exe_path = True
 
-            if not mod_path_0.startswith(venv_lib):
-                ofp.write(f"::error::sys.path[0] is {quote_str(mod_path_0)},"
+            # conda puts the virtualenv's lib directory first in sys.path, but
+            # the venv module puts it last.
+            if venv_type == "conda":
+                vm_idx = 0
+            else:
+                vm_idx = -1
+            venv_modpath = P.normcase(P.realpath(mod_path[vm_idx]))
+
+            if not venv_modpath.startswith(venv_lib):
+                ofp.write(f"::error::sys.path[{vm_idx}] is {quote_str(venv_modpath)},"
                           f" which doesn't start with {quote_str(venv_lib)}\n")
                 bad_mod_path = True
 
