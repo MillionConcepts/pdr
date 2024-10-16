@@ -14,7 +14,7 @@ from multidict import MultiDict
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from pdr.loaders.astrowrap import fits
+    from pdr.loaders.astrowrap import BinTableHDU, HDUList
     import numpy as np
     import pandas as pd
     from pdr.pdrtypes import DataIdentifiers
@@ -46,7 +46,7 @@ def handle_fits_file(
     fn: str,
     name: str,
     hdu_id: Union[str, int, tuple[int, int]],
-    hdulist: Optional[HDUList] = None,
+    hdulist: Optional[fits.HDUList] = None,
     hdu_id_is_index: bool = False,
 ) -> dict[str, Union[MultiDict, pd.DataFrame, np.ndarray]]:
     """
@@ -190,8 +190,9 @@ def _check_prescaled_desktop(fn: Union[str, Path]):
         return False
     return True
 
+
 def handle_fits_header(
-    hdulist: HDUList,
+    hdulist: fits.HDUList,
     hdu_ix: int,
     skip_bad_cards: bool = False
 ) -> MultiDict:
@@ -260,7 +261,7 @@ def add_bit_column_info(
 
 
 def unpack_fits_headers(
-    filename: Union[str, Path], hdulist: Optional[HDUList] = None
+    filename: Union[str, Path], hdulist: Optional[fits.HDUList] = None
 ) -> tuple[MultiDict, list[str], dict[str, int]]:
     """
     Unpack all headers in a FITS file into a MultiDict and flattened list of
