@@ -16,11 +16,14 @@ import subprocess
 import sys
 
 
-#: Print sys.path to stdout as a sequence of NUL-terminated strings
+#: Print sys.path to stdout as a sequence of NUL-separated strings
 #: (like `find -0`) except skip the first entry if it's the empty string.
 DUMP_SYS_PATH = r"""import sys
-modpath = sys.path[1:] if sys.path[0] == "" else sys.path
-sys.stdout.write("\x00".join(modpath) + "\x00")
+def main():
+    modpath = sys.path[1:] if sys.path[0] == "" else sys.path
+    with sys.stdout as ofp:
+        ofp.write("\x00".join(modpath))
+main()
 """
 
 #: Exit successfully if and only if the version of the Python interpreter
@@ -138,9 +141,9 @@ def log_venv(ofp):
         # also analyze sys.path as seen by the inner python
         output = subprocess.run(
             [ "python3", "-c", DUMP_SYS_PATH ],
-            stdout=subprocess.PIPE, stderr=None, text=True, check=True,
+            stdout=subprocess.PIPE, stderr=None, check=True,
         )
-        mod_path = output.stdout.rstrip('\x00').split('\x00')
+        mod_path = [os.fsdecode(p) for p in output.stdout.split(b'\x00')]
         bad_mod_path = False
         for i, p in enumerate(mod_path):
             ofp.write(f"sys.path[{i}] = {quote_str(p)}\n")
