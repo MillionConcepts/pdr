@@ -640,6 +640,7 @@ def check_special_bit_start_case(
         )
     return False, None
 
+
 def check_special_bit_format(
     obj: dict,
     definition: MultiDict,
@@ -661,6 +662,17 @@ def check_special_bit_format(
     ):
         return formats.galileo.ssi_telemetry_bit_col_format(definition)
     return False, None
+
+
+def specialblock(data: PDRLike, name: str):
+    """
+    Special-purpose wrapper for check_special_block() intended for use
+    outside of the query workflow.
+    """
+    is_special, block = check_special_block(name, data, data.identifiers)
+    if is_special is True:
+        return block
+    return data.metablock_(name)
 
 
 def check_special_block(
