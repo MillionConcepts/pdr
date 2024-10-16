@@ -706,8 +706,9 @@ class Data:
             self, pointer, tracker=self.tracker, **load_kwargs
         )
         # FITS arrays are scaled by default
+        unwrap = loader.func.__self__ if self.debug is True else loader
         if (
-            (loader.__class__.__name__ == "ReadFits")
+            (unwrap.__class__.__name__ == "ReadFits")
             and (obj[pointer].__class__.__name__ == "ndarray")
         ):
             self._scaleflags[pointer] = True
