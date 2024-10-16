@@ -1,5 +1,3 @@
-import sys
-
 try:
     from astropy.io import fits
     from astropy.io.fits import HDUList
