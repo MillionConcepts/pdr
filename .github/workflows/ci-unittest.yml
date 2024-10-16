@@ -90,7 +90,7 @@ jobs:
         # comprehensively.
         os: [ubuntu, macos, windows]
         deps: [minimal, full]
-        python: ["3.9", "3.10", "3.11", "3.12"]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     needs: build-package
     runs-on: "${{ matrix.os }}-latest"
@@ -189,11 +189,9 @@ jobs:
         # for pip-based installs are accurate, and this should not be
         # drastically affected by which python we have, so we don't
         # test all the python versions in the support range, just the
-        # ends.  Also, this is our opportunity to test against the
-        # upcoming python 3.13, which is not available via conda yet,
-        # but _is_ available from github's own snake collection.
+        # ends.
         os: [ubuntu, macos, windows]
-        python: ["3.9", "3.12", "3.13-dev"]
+        python: ["3.9", "3.12"]
         deps: [minimal, full]
     runs-on: "${{ matrix.os }}-latest"
     defaults:
