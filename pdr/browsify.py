@@ -123,9 +123,12 @@ def eightbit(
     percentiles. if inplace is True, normalization may transform the original
     array, with attendant memory savings and destructiveness.
     """
-    return np.round(
-        normalize_range(array, (0, 255), clip, inplace, nice_clip)
-    ).astype(np.uint8)
+    with warnings.catch_warnings():
+        # we do not care about masked out-of-bounds values; it's why we masked
+        warnings.filterwarnings(action="ignore", message=".*invalid value en*")
+        return np.round(
+            normalize_range(array, (0, 255), clip, inplace, nice_clip)
+        ).astype(np.uint8)
 
 
 def colorfill_maskedarray(
