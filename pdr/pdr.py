@@ -90,6 +90,7 @@ class Metadata(MultiDict):
         self.fieldcounts = countby(identity, params)
         self.standard = standard
         self.refresh_cache()
+        self.identifiers = self._init_identifiers()
 
     # note that 'directly' caching these methods can result in recursive
     # reference chains behind the lru_cache API that can prevent the
@@ -171,6 +172,21 @@ class Metadata(MultiDict):
     def metablock_(self, text: str) -> Optional[Mapping]:
         """quiet-by-default version of metablock"""
         return self.metablock(text, False)
+
+    def _init_identifiers(self) -> DataIdentifiers:
+        """
+        Initializes common PDS3 data identifiers for use in special-case
+        checks.
+        """
+        identifiers = {
+            field: self.metaget_(field, "")
+            for field in get_annotations(DataIdentifiers)
+        }
+        # it never does us any favors to have tuples or sets in here
+        for k, v in identifiers.items():
+            if isinstance(v, (tuple, set)):
+                identifiers[k] = str(v)
+        return identifiers
 
     def __str__(self):
         """"""
@@ -288,14 +304,7 @@ class Data:
         # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
-        self.identifiers = {
-            field: self.metaget_(field, "")
-            for field in get_annotations(DataIdentifiers)
-        }
-        # it never does us any favors to have tuples or sets in here
-        for k, v in self.identifiers.items():
-            if isinstance(v, (tuple, set)):
-                self.identifiers[k] = str(v)
+        self.identifiers = self.metadata.identifiers
 
     # noinspection PyProtectedMember
     def load_metadata_changes(self):
