@@ -8,8 +8,8 @@ on:
       - main
 
 jobs:
-  pip-windows-venv-setup-debugging:
-    name: "Test creation of ${{matrix.python}} virtualenv on ${{matrix.os}}"
+  pip-venv-setup-debugging:
+    name: "Test creation of ${{matrix.python}} pip-based virtualenv on ${{matrix.os}}"
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +40,32 @@ jobs:
           source venv/bin/activate
           python3 src/.github/scripts/validate-environment ${{matrix.python}}
 
+  conda-venv-setup-debugging:
+    name: "Test creation of ${{matrix.python}} conda-based virtualenv on ${{matrix.os}}"
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [windows, ubuntu, macos]
+    runs-on: ${{matrix.os}}-latest
+    defaults:
+      run:
+        shell: bash -l -e -u -o pipefail {0}
+    steps:
+      - name: Check out source tree
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Install Python using miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python }}
+          channels: conda-forge
+
+      - name: Validate the environment
+        run: |
+          python3 src/.github/scripts/validate-environment ${{matrix.python}}
 
   # Inspired by https://github.com/hynek/build-and-inspect-python-package/
   # but revised for our needs.  In particular, we have some auxiliary

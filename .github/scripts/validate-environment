@@ -16,6 +16,22 @@ import subprocess
 import sys
 
 
+#: Print sys.path to stdout as a sequence of NUL-terminated strings
+#: (like `find -0`) except skip the first entry if it's the empty string.
+DUMP_SYS_PATH = r"""import sys
+modpath = sys.path[1:] if sys.path[0] == "" else sys.path
+sys.stdout.write("\x00".join(modpath) + "\x00")
+"""
+
+#: Exit successfully if and only if the version of the Python interpreter
+#: matches the expected version supplied as argv[1].
+CHECK_EXPECTED_PYVER = r"""import sys
+expected_version = tuple(int(x) for x in sys.argv[1].split("."))
+actual_version = sys.version_info[:len(expected_version)]
+sys.exit(0 if expected_version == actual_version else 1)
+"""
+
+
 def quote_str(s):
     r"""
     Return s with all shell metacharacters quoted and all unprintable
@@ -35,11 +51,18 @@ def quote_str(s):
 
 def log_environment(ofp):
     ofp.write("::group::Environment variables\n")
+    trouble = {}
     for key, value in sorted(os.environ.items()):
         # Spacing here prevents the runner from redacting the name of
         # any environment variable whose value is a masked secret.
-        ofp.write("{} = {}\n".format(quote_str(key), quote_str(value)))
+        ofp.write(f"{quote_str(key)} = {quote_str(value)}\n")
+        if key.startswith("PYTHON"):
+            trouble[key] = value
     ofp.write("\n")
+    if trouble:
+        ofp.write("::warning::potentially troublesome environment variables:\n")
+        for key, value in sorted(trouble.items()):
+            ofp.write(f"::warning::{quote_str(key)} = {quote_str(value)}\n")
 
 
 def log_dir_contents(ofp, path):
@@ -74,47 +97,102 @@ def log_cwd(ofp):
 
 def log_venv(ofp):
     P = os.path
+
     try:
         ofp.write("::group::Python virtualenv\n")
-        venv_root = os.environ.get("VIRTUAL_ENV", None)
-        if venv_root is None:
-            ofp.write("::error::No virtualenv detected\n")
-            return 1
-        ofp.write(f"VIRTUAL_ENV={quote_str(venv_root)}\n")
+        venv_venv_root = os.environ.get("VIRTUAL_ENV", None)
+        conda_venv_root = os.environ.get("CONDA_PREFIX", None)
 
+        if venv_venv_root is None and conda_venv_root is not None:
+            venv_root = conda_venv_root
+            venv_type = "conda"
+            ofp.write(f"conda-type virtualenv detected\n"
+                      f"CONDA_PREFIX = {quote_str(venv_root)}\n")
+        elif conda_venv_root is None and venv_venv_root is not None:
+            venv_root = venv_venv_root
+            venv_type = "venv"
+            ofp.write(f"venv-type virtualenv detected\n"
+                      f"VIRTUAL_ENV = {quote_str(venv_root)}\n")
+        elif conda_venv_root is not None and venv_venv_root is not None:
+            ofp.write(f"::error::clashing conda- and venv-type virtualenvs detected\n"
+                      f"CONDA_PREFIX = {quote_str(venv_root)}\n"
+                      f"VIRTUAL_ENV  = {quote_str(venv_root)}\n")
+            venv_root = None
+            venv_type = "clashing"
+        else: # both are None
+            ofp.write("::error::no virtualenv detected\n")
+            venv_root = None
+            venv_type = "none"
+        ofp.write("\n")
+
+        # proceed to analyze $PATH even if we didn't detect a virtualenv
         exe_path = os.environ.get("PATH", os.defpath).split(os.pathsep)
-        ok = True
+        bad_exe_path = False
         for i, p in enumerate(exe_path):
-            ofp.write(f"PATH[{i}]={quote_str(p)}\n")
+            ofp.write(f"PATH[{i}] = {quote_str(p)}\n")
             if not P.isabs(p):
                 ofp.write(f"::error::PATH entry {i} is not absolute\n")
-                ok = False
-        if not ok:
-            return 1
-
-        path_0 = P.normcase(P.realpath(exe_path[0]))
-        venv_bin = P.normcase(P.realpath(P.join(venv_root, 'bin')))
-        venv_scr = P.normcase(P.realpath(P.join(venv_root, 'Scripts')))
-        if path_0 not in (venv_bin, venv_scr):
-            ofp.write(f"::error::PATH[0] is {quote_str(path_0)},"
-                      f" not {quote_str(venv_bin)} or {quote_str(venv_scr)}\n")
-            return 1
-
+                bad_exe_path = True
         ofp.write("\n")
-        log_dir_contents(ofp, venv_root)
+
+        # also analyze sys.path as seen by the inner python
+        output = subprocess.run(
+            [ "python3", "-c", DUMP_SYS_PATH ],
+            stdout=subprocess.PIPE, stderr=None, text=True, check=True,
+        )
+        mod_path = output.stdout.rstrip('\x00').split('\x00')
+        bad_mod_path = False
+        for i, p in enumerate(mod_path):
+            ofp.write(f"sys.path[{i}] = {quote_str(p)}\n")
+            if not P.isabs(p):
+                ofp.write(f"::error::sys.path entry {i} is not absolute\n")
+                bad_mod_path = True
         ofp.write("\n")
-        if P.isdir(venv_bin):
-            log_dir_contents(ofp, venv_bin)
+
+        if venv_root is not None:
+            exe_path_0 = P.normcase(P.realpath(exe_path[0]))
+            mod_path_0 = P.normcase(P.realpath(mod_path[0]))
+
+            venv_bin = P.normcase(P.realpath(P.join(venv_root, 'bin')))
+            venv_scr = P.normcase(P.realpath(P.join(venv_root, 'Scripts')))
+            venv_lib = P.normcase(P.realpath(P.join(venv_root, 'lib')))
+
+            if exe_path_0 not in (venv_bin, venv_scr):
+                ofp.write(f"::error::PATH[0] is {quote_str(exe_path_0)},"
+                          f" not {quote_str(venv_bin)} or {quote_str(venv_scr)}\n")
+                bad_exe_path = True
+
+            if not mod_path_0.startswith(venv_lib):
+                ofp.write(f"::error::sys.path[0] is {quote_str(mod_path_0)},"
+                          f" which doesn't start with {quote_str(venv_lib)}\n")
+                bad_mod_path = True
+
+            log_dir_contents(ofp, venv_root)
             ofp.write("\n")
-        if P.isdir(venv_scr):
-            log_dir_contents(ofp, venv_scr)
-            ofp.write("\n")
-        log_file_contents(ofp, P.join(venv_root, 'pyvenv.cfg'))
-        return 0
+            if P.isdir(venv_bin):
+                log_dir_contents(ofp, venv_bin)
+                ofp.write("\n")
+            if P.isdir(venv_scr):
+                log_dir_contents(ofp, venv_scr)
+                ofp.write("\n")
+            if P.isdir(venv_lib):
+                log_dir_contents(ofp, venv_lib)
+                ofp.write("\n")
+
+        if bad_exe_path:
+            venv_type += " (bad PATH)"
+        if bad_mod_path:
+            venv_type += " (bad sys.path)"
+
+        return venv_type
 
     except OSError as e:
         ofp.write(f"::error::{e.strerror} {quote_str(e.filename)}\n")
-        return 1
+        return "oserror"
+
+    except subprocess.SubprocessError as e:
+        ofp.write(f"::error:: {e}\n")
+        return "oserror"
 
 
 def log_sysinfo(ofp):
@@ -141,8 +219,7 @@ def log_sysinfo(ofp):
     ofp.write("\n")
 
 
-def log_commands(ofp, expected_pyver):
-    status = 0
+def log_commands(ofp, expected_pyver, venv_type):
     def report_exit(program, rc, exp_rc=None):
         nonlocal status
 
@@ -178,6 +255,10 @@ def log_commands(ofp, expected_pyver):
         "pip",
     ]
 
+    # if the venv_type isn't "conda" or "venv", a serious problem has
+    # already been detected
+    status = 0 if venv_type in ("conda", "venv") else 1
+
     programs = []
     for cmd in commands:
         for bin_dir in bin_path:
@@ -206,6 +287,7 @@ def log_commands(ofp, expected_pyver):
 
         ofp.write(f"{cmd} is {quote_str(program)}\n")
 
+        have_pip = False
         try:
             if cmd == "pip":
                 # Just log the version.
@@ -214,10 +296,13 @@ def log_commands(ofp, expected_pyver):
                 subprocess.run([program, "--version"],
                                check=True, timeout=1,
                                stdout=ofp, stderr=subprocess.STDOUT)
+                have_pip = True
 
-            elif cmd == "python":
-                # If this command exists, it should error out for
-                # everything (see make-venv).
+            elif cmd == "python" and venv_type == "venv":
+                # If this command exists in a venv-type virtualenv,
+                # it should error out for everything (see make-venv).
+                # In a conda-type virtualenv, however, it is expected
+                # to be the same as python3.
                 ofp.write("> python --version # should fail\n")
                 ofp.flush()
                 result = subprocess.run([program, "--version"],
@@ -228,16 +313,14 @@ def log_commands(ofp, expected_pyver):
             else:
                 ofp.write(f"> {cmd} --version\n")
                 ofp.flush()
-                subprocess.run([program, "--version"],
-                               check=True, timeout=1,
-                               stdout=ofp, stderr=subprocess.STDOUT)
-                result = subprocess.run([
-                    program, "-c",
-                    "import sys\n"
-                    "sys.exit(0 if sys.version.split('.')[:2]"
-                    " == sys.argv[1].split('.') else 1)",
-                    expected_pyver
-                ], timeout=1, stdout=ofp, stderr=subprocess.STDOUT)
+                subprocess.run(
+                    [ program, "--version" ],
+                    check=True, timeout=1, stdout=ofp, stderr=subprocess.STDOUT
+                )
+                result = subprocess.run(
+                    [ program, "-c", CHECK_EXPECTED_PYVER, expected_pyver ],
+                    timeout=1, stdout=ofp, stderr=subprocess.STDOUT
+                )
                 if result.returncode == 1:
                     ofp.write(
                         f"::error::wrong version for {cmd}"
@@ -262,12 +345,20 @@ def log_commands(ofp, expected_pyver):
 
         ofp.write("\n")
 
-    if status == 0:
+    if have_pip:
         ofp.write("::group::pip debug\n")
         ofp.flush()
         result = subprocess.run(["pip", "debug"], stdout=ofp,
                                 stderr=subprocess.STDOUT)
         report_exit("pip", result.returncode, 0)
+        ofp.write("\n")
+
+    if venv_type == "conda":
+        ofp.write("::group::conda info\n")
+        ofp.flush()
+        result = subprocess.run(["conda", "info"], stdout=ofp,
+                                stderr=subprocess.STDOUT)
+        report_exit("conda", result.returncode, 0)
 
     return status
 
@@ -281,15 +372,15 @@ def main():
     )
     args = ap.parse_args()
 
-    status = 0
     with sys.stdout as ofp:
         log_sysinfo(ofp)
         log_environment(ofp)
         log_cwd(ofp)
-        status |= log_venv(ofp)
-        status |= log_commands(ofp, args.expected_python_version)
+        venv_type = log_venv(ofp)
+        status = log_commands(ofp, args.expected_python_version, venv_type)
 
     sys.exit(status)
+
 
 # This is at the bottom because it's long and uninteresting.
 # Watch out that there's a call to main() below it!
