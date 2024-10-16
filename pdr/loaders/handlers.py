@@ -46,7 +46,7 @@ def handle_fits_file(
     fn: str,
     name: str,
     hdu_id: Union[str, int, tuple[int, int]],
-    hdulist: Optional[fits.HDUList] = None,
+    hdulist: Optional[HDUList] = None,
     hdu_id_is_index: bool = False,
 ) -> dict[str, Union[MultiDict, pd.DataFrame, np.ndarray]]:
     """
@@ -113,13 +113,17 @@ def handle_fits_file(
     elif isinstance(body, fits.fitsrec.FITS_rec):
         # This case is a FITS table, binary or ASCII. For type consistency, we
         # want to return a pandas DataFrame, not a FITS_rec.
+        import numpy as np
         import pandas as pd
-        from pdr.pd_utils import structured_array_to_df
-        try:
-            body = pd.DataFrame.from_records(body)
-        except ValueError:
-            import numpy as np
 
+        from pdr.pd_utils import structured_array_to_df
+
+        body = np.asarray(body)
+        try:
+            body = pd.DataFrame.from_records(
+                body.byteswap().view(body.dtype.newbyteorder('='))
+            )
+        except ValueError:
             # These are generally nested arrays. We don't do this by default,
             # because it requires us to 'reassemble' the array twice, and
             # because pd.DataFrame.from_records() fails very quickly on nested
@@ -192,7 +196,7 @@ def _check_prescaled_desktop(fn: Union[str, Path]):
 
 
 def handle_fits_header(
-    hdulist: fits.HDUList,
+    hdulist: HDUList,
     hdu_ix: int,
     skip_bad_cards: bool = False
 ) -> MultiDict:
@@ -261,7 +265,7 @@ def add_bit_column_info(
 
 
 def unpack_fits_headers(
-    filename: Union[str, Path], hdulist: Optional[fits.HDUList] = None
+    filename: Union[str, Path], hdulist: Optional[HDUList] = None
 ) -> tuple[MultiDict, list[str], dict[str, int]]:
     """
     Unpack all headers in a FITS file into a MultiDict and flattened list of
