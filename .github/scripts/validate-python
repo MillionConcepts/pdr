@@ -1,0 +1,142 @@
+# -*- python -*-
+"""
+Validate our expectations of a specific Python interpreter.
+Subroutine of validate-environment.
+This script intentionally does not have a #! line; it's to be run by
+explicitly specifying the interpreter program you want to validate.
+"""
+
+import argparse
+import os
+import sys
+
+
+def path_canon(path):
+    return os.path.normcase(os.path.realpath(path))
+
+
+def report():
+    # Indentation here is because the parent script runs this script
+    # several times with different lead-ins.
+    sys.stdout.write(
+        f"  sys.executable       = {sys.executable!r}\n"
+        f"  sys.version          = {sys.version.replace('\n', '  ')!r}\n"
+        f"  sys.path             = {os.pathsep.join(sys.path)!r}\n"
+        f"  sys.prefix           = {sys.prefix!r}\n"
+        f"  sys.base_prefix      = {sys.base_prefix!r}\n"
+        f"  sys.exec_prefix      = {sys.exec_prefix!r}\n"
+        f"  sys.base_exec_prefix = {sys.base_exec_prefix!r}\n"
+    )
+
+def check_version(expected_version_s):
+    expected_version = tuple(int(x) for x in expected_version_s.split("."))
+    actual_version = sys.version_info[:len(expected_version)]
+    if expected_version == actual_version:
+        return 0
+
+    actual_version_s = ".".join(str(x) for x in actual_version)
+    sys.stdout.write(
+        f"::error:: expected version {expected_version_s},"
+        f" have {actual_version_s}\n"
+    )
+    return 1
+
+
+def check_virtualenv(exp_venv):
+    # We do a bunch of pathname comparisons in this function; they should
+    # always be canonicalized first.
+    exp_venv = path_canon(exp_venv)
+    prefix = path_canon(sys.prefix)
+    cwd = path_canon(os.getcwd())
+
+    status = 0
+
+    # No matter what type of virtualenv this is, exp_venv should
+    # match sys.prefix.
+    if prefix != exp_venv:
+        sys.stdout.write(
+            f"::error:: sys.prefix {prefix!r}\n"
+            f"::error::         != {exp_venv!r}\n"
+        )
+        status = 1
+
+    # No matter what type of virtualenv this is, somewhere on sys.path
+    # there should be a directory named 'site-packages' that is
+    # beneath exp_venv.  Entries for the current working
+    # directory do not count.
+    found = False
+    for entry in sys.path:
+        if entry == "" or entry == ".":
+            continue
+        if os.path.normcase(os.path.basename(entry)) != "site-packages":
+            continue
+        entry = path_canon(entry)
+        if entry == cwd:
+            continue
+        if entry.startswith(exp_venv):
+            found = True
+            break
+    if not found:
+        sys.stdout.write(
+            f"::error:: sys.path does not include a site-packages dir\n"
+            f"::error::          below {exp_venv!r}\n"
+        )
+        status = 1
+
+    if os.path.isfile(os.path.join(prefix, "pyvenv.cfg")):
+        # venv-style virtualenv, VIRTUAL_ENV should be set
+        VIRTUAL_ENV = os.environ.get("VIRTUAL_ENV", None)
+        if VIRTUAL_ENV is None:
+            sys.stdout.write("warning: VIRTUAL_ENV is not set\n")
+        else:
+            VIRTUAL_ENV = path_canon(VIRTUAL_ENV)
+            if VIRTUAL_ENV != prefix:
+                sys.stdout.write(
+                    f"::error::   VIRTUAL_ENV = {VIRTUAL_ENV!r}\n"
+                    f"::error:: != sys.prefix = {prefix!r}\n"
+                )
+                status = 1
+
+    elif os.path.isdir(os.path.join(prefix, "conda-meta")):
+        # conda-style virtualenv, CONDA_PREFIX should be set
+        CONDA_PREFIX = os.environ.get("CONDA_PREFIX", None)
+        if CONDA_PREFIX is None:
+            sys.stdout.write("warning: CONDA_PREFIX is not set\n")
+        else:
+            CONDA_PREFIX = path_canon(CONDA_PREFIX)
+            if CONDA_PREFIX != prefix:
+                sys.stdout.write(
+                    f"::error::  CONDA_PREFIX = {CONDA_PREFIX!r}\n"
+                    f"::error:: != sys.prefix = {prefix!r}\n"
+                )
+                status = 1
+    else:
+        sys.stdout.write(
+            f"::error:: {prefix!r} does not appear to be a virtualenv\n"
+        )
+        status = 1
+
+    return status
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("expected_version",
+                    help="Expected version of Python")
+    ap.add_argument("expected_virtualenv", nargs="?",
+                    help="If supplied, the path to the virtualenv that's"
+                    " expected to be active")
+
+    args = ap.parse_args()
+    status = 0
+    report()
+    try:
+        status |= check_version(args.expected_version)
+        if args.expected_virtualenv is not None:
+            status |= check_virtualenv(args.expected_virtualenv)
+        sys.exit(status)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+main()

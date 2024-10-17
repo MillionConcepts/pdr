@@ -9,7 +9,7 @@ on:
 
 jobs:
   pip-venv-setup-debugging:
-    name: "Test creation of ${{matrix.python}} pip-based virtualenv on ${{matrix.os}}"
+    name: "pip ${{matrix.python}} ${{matrix.os}} virtualenv creation test"
     strategy:
       fail-fast: false
       matrix:
@@ -41,7 +41,7 @@ jobs:
           python3 src/.github/scripts/validate-environment ${{matrix.python}}
 
   conda-venv-setup-debugging:
-    name: "Test creation of ${{matrix.python}} conda-based virtualenv on ${{matrix.os}}"
+    name: "conda ${{matrix.python}} ${{matrix.os}} virtualenv creation test"
     strategy:
       fail-fast: false
       matrix:
