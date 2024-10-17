@@ -119,22 +119,20 @@ def handle_fits_file(
         from pdr.pd_utils import structured_array_to_df
 
         if max(map(len, body.dtype.descr)) > 2:
-            a = 1
             body = structured_array_to_df(
                 np.rec.fromarrays(
                     [body[k] for k in body.dtype.names], dtype=body.dtype
                 )
             )
         elif isinstance(hdu, BinTableHDU):
-            a = 1
-            body = pd.DataFrame(
-                {
-                    c: body[c].byteswap().view(body[c].dtype.newbyteorder('='))
-                    for c in body.dtype.names
-                }
-            )
+            fields = {c: body[c] for c in body.dtype.names}
+            for k, v in fields.items():
+                if not v.dtype.isnative:
+                    fields[k] = fields[k].byteswap().view(
+                        fields[k].dtype.newbyteorder('=')
+                    )
+            body = pd.DataFrame(fields)
         else:
-            a = 1
             body = pd.DataFrame.from_records(body)
     return output | {name: body}
 
