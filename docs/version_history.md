@@ -23,7 +23,7 @@
 ### Changed
 - DESCRIPTION pointers will now be deduplicated and print with indexes in the 
 keys list (e.g. DESCRIPTION_0, DESCRIPTION_1, etc.). No warning will be triggered.
-- unit tests have been moved inside the pdr/ folder and will now be packaged
+- Unit tests have been moved inside the pdr/ folder and will now be packaged
 and shipped with pdr
 - Previously only pointers named exactly "^STRUCTURE" or "^PDS_OBJECT" skipped
   deduplication. Now all pointers with "STRUCTURE" in the name skip deduplication,
@@ -48,6 +48,8 @@ and shipped with pdr
   internal software tools and do not refer to unique data objects.
 - The text of our JOSS paper publication on pdr has been removed from
   `joss_paper/paper.md`. Please refer instead to the pdf under `docs/pdr_joss_paper.pdf`
+- A warning is no longer raised for out-of-bounds values on converting to 8-bit
+for browsification
 
 
 ## [1.2.3] - 2024-09-30
