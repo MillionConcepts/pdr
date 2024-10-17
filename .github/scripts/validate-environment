@@ -229,7 +229,7 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
     for cmd, program in sorted(programs):
         ofp.write(f"{cmd} is {quote_str(program)}\n")
 
-        if venv_root is not None and not cmd.startswith(venv_root):
+        if venv_root is not None and not program.startswith(venv_root):
             ofp.write(f"::error::{cmd} not provided by virtualenv\n")
             status = 1
 
