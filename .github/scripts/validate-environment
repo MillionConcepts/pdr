@@ -197,6 +197,7 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
         "python3",
         "python" + expected_pyver,
         "pip",
+        "conda",
     ))
     programs = []
 
@@ -226,11 +227,17 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
 
     # commands is now a set of _missing_ commands
     for missing in commands:
-        if missing == "python":
+        if (
+                missing == "python"
+                or (missing == "conda" and venv_type != "conda")
+        ):
             ofp.write(f"{missing} not found\n")
         else:
             ofp.write(f"::error::{missing} not found\n")
             status = 1
+
+    have_pip = ("pip" not in missing)
+    have_conda = ("conda" not in missing)
 
     for cmd, program in sorted(programs):
         ofp.write(f"{cmd} is {quote_str(program)}\n")
@@ -238,8 +245,6 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
         if venv_root is not None and not program.startswith(venv_root):
             ofp.write(f"::error::{cmd} not provided by virtualenv\n")
             status = 1
-
-        have_pip = False
         try:
             if not cmd.startswith("python"):
                 # Just log the version.
@@ -248,7 +253,6 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
                 subprocess.run([program, "--version"],
                                check=True, timeout=1,
                                stdout=ofp, stderr=subprocess.STDOUT)
-                have_pip = True
 
             else:
                 ofp.flush()
@@ -291,7 +295,7 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
         report_exit("pip", result.returncode, 0)
         ofp.write("\n")
 
-    if venv_type == "conda":
+    if venv_type == "conda" and have_conda:
         ofp.write("::group::conda info\n")
         ofp.flush()
         result = subprocess.run(["conda", "info"], stdout=ofp,

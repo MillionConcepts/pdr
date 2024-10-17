@@ -79,7 +79,7 @@ def check_virtualenv(exp_venv):
             break
     if not found:
         sys.stdout.write(
-            f"::error:: sys.path does not include a site-packages dir\n"
+            f"::error:: sys.path does not include a site-packages dir"
             f" below {exp_venv!r}\n"
         )
         status = 1
