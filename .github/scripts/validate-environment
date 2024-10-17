@@ -201,8 +201,7 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
     if venv_type == "conda":
         commands.add("conda")
 
-    programs = []
-
+    programs = {}
     bin_path = os.environ.get("PATH", os.defpath).split(os.pathsep)
 
     for i, dir in enumerate(bin_path):
@@ -221,7 +220,7 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
             for suffix in ("", ".exe", ".bat"):
                 xpath = path + suffix
                 if os.path.isfile(xpath):
-                    programs.append((cmd, xpath))
+                    programs[cmd] = xpath
                     found = True
                     break
             if found:
@@ -235,10 +234,7 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
             ofp.write(f"::error::{missing} not found\n")
             status = 1
 
-    have_pip = ("pip" not in commands)
-    have_conda = (venv_type == "conda" and "conda" not in commands)
-
-    for cmd, program in sorted(programs):
+    for cmd, program in sorted(programs.items()):
         ofp.write(f"{cmd} is {quote_str(program)}\n")
 
         if (
@@ -290,18 +286,18 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
 
         ofp.write("\n")
 
-    if have_pip:
+    if "pip" in programs:
         ofp.write("::group::pip debug\n")
         ofp.flush()
-        result = subprocess.run(["pip", "debug"], stdout=ofp,
+        result = subprocess.run([programs["pip"], "debug"], stdout=ofp,
                                 stderr=subprocess.STDOUT)
         report_exit("pip", result.returncode, 0)
         ofp.write("\n")
 
-    if venv_type == "conda" and have_conda:
+    if "conda" in programs:
         ofp.write("::group::conda info\n")
         ofp.flush()
-        result = subprocess.run(["conda", "info"], stdout=ofp,
+        result = subprocess.run([programs["conda"], "info"], stdout=ofp,
                                 stderr=subprocess.STDOUT)
         report_exit("conda", result.returncode, 0)
 
