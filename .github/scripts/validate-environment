@@ -236,8 +236,8 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
             ofp.write(f"::error::{missing} not found\n")
             status = 1
 
-    have_pip = ("pip" not in missing)
-    have_conda = ("conda" not in missing)
+    have_pip = ("pip" not in commands)
+    have_conda = ("conda" not in commands)
 
     for cmd, program in sorted(programs):
         ofp.write(f"{cmd} is {quote_str(program)}\n")
