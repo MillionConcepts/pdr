@@ -109,37 +109,19 @@ def log_venv(ofp):
             venv_type = "none"
         ofp.write("\n")
 
-        # proceed to analyze $PATH even if we didn't detect a virtualenv
-        exe_path = os.environ.get("PATH", os.defpath).split(os.pathsep)
-        bad_exe_path = False
-        for i, p in enumerate(exe_path):
-            ofp.write(f"PATH[{i}] = {quote_str(p)}\n")
-            if not P.isabs(p):
-                ofp.write(f"::error::PATH entry {i} is not absolute\n")
-                bad_exe_path = True
-        ofp.write("\n")
-
         if venv_root is not None:
-            venv_bin = P.normcase(P.realpath(P.join(venv_root, 'bin')))
-            venv_scr = P.normcase(P.realpath(P.join(venv_root, 'Scripts')))
-
-            exe_path_0 = P.normcase(P.realpath(exe_path[0]))
-            if exe_path_0 not in (venv_bin, venv_scr):
-                ofp.write(f"::error::PATH[0] is {quote_str(exe_path_0)},"
-                          f" not {quote_str(venv_bin)} or {quote_str(venv_scr)}\n")
-                bad_exe_path = True
-
             log_dir_contents(ofp, venv_root)
             ofp.write("\n")
+
+            venv_bin = P.join(venv_root, 'bin')
+            venv_scr = P.join(venv_root, 'Scripts')
+
             if P.isdir(venv_bin):
                 log_dir_contents(ofp, venv_bin)
                 ofp.write("\n")
             if P.isdir(venv_scr):
                 log_dir_contents(ofp, venv_scr)
                 ofp.write("\n")
-
-        if bad_exe_path:
-            venv_type += " (not in PATH)"
 
         return (venv_type, venv_root)
 
@@ -191,15 +173,6 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
 
     ofp.write("::group::Interpreter and utilities\n")
 
-    bin_path = os.environ.get("PATH", os.defpath).split(os.pathsep)
-
-    commands = [
-        "python",
-        "python3",
-        "python" + expected_pyver,
-        "pip",
-    ]
-
     validate_python_args = [
         os.path.join(os.path.dirname(__file__), "validate-python"),
         expected_pyver,
@@ -213,10 +186,28 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
     else:
         validate_python_args.append(venv_root)
 
+    commands = set((
+        "python",
+        "python3",
+        "python" + expected_pyver,
+        "pip",
+    ))
     programs = []
-    for cmd in commands:
-        for bin_dir in bin_path:
-            path = os.path.join(os.path.realpath(bin_dir), cmd)
+
+    bin_path = os.environ.get("PATH", os.defpath).split(os.pathsep)
+
+    for i, dir in enumerate(bin_path):
+        ofp.write(f"PATH[{i}] = {quote_str(dir)}\n")
+        if not os.path.isabs(dir):
+            ofp.write(f"::error::PATH entry {i} is not absolute\n")
+            status = 1
+            continue
+        if not commands:
+            continue
+        dir = os.path.normcase(os.path.realpath(dir))
+        # the list() is because we might remove entries from commands
+        for cmd in list(commands):
+            path = os.path.join(dir, cmd)
             found = False
             for suffix in ("", ".exe", ".bat"):
                 xpath = path + suffix
@@ -225,21 +216,22 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
                     found = True
                     break
             if found:
-                break
+                commands.remove(cmd)
 
+    # commands is now a set of _missing_ commands
+    for missing in commands:
+        if missing == "python":
+            ofp.write(f"{missing} not found\n")
         else:
-            programs.append((cmd, None))
+            ofp.write(f"::error::{missing} not found\n")
+            status = 1
 
-    for cmd, program in programs:
-        if program is None:
-            if cmd == "python":
-                ofp.write(f"{cmd} not found\n")
-            else:
-                ofp.write(f"::error::{cmd} not found\n")
-                status = 1
-            continue
-
+    for cmd, program in sorted(programs):
         ofp.write(f"{cmd} is {quote_str(program)}\n")
+
+        if venv_root is not None and not cmd.startswith(venv_root):
+            ofp.write(f"::error::{cmd} not provided by virtualenv\n")
+            status = 1
 
         have_pip = False
         try:

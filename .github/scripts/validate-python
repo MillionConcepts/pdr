@@ -57,8 +57,7 @@ def check_virtualenv(exp_venv):
     # match sys.prefix.
     if prefix != exp_venv:
         sys.stdout.write(
-            f"::error:: sys.prefix {prefix!r}\n"
-            f"::error::         != {exp_venv!r}\n"
+            f"::error:: sys.prefix {prefix!r} != {exp_venv!r}\n"
         )
         status = 1
 
@@ -81,7 +80,7 @@ def check_virtualenv(exp_venv):
     if not found:
         sys.stdout.write(
             f"::error:: sys.path does not include a site-packages dir\n"
-            f"::error::          below {exp_venv!r}\n"
+            f" below {exp_venv!r}\n"
         )
         status = 1
 
@@ -94,8 +93,8 @@ def check_virtualenv(exp_venv):
             VIRTUAL_ENV = path_canon(VIRTUAL_ENV)
             if VIRTUAL_ENV != prefix:
                 sys.stdout.write(
-                    f"::error::   VIRTUAL_ENV = {VIRTUAL_ENV!r}\n"
-                    f"::error:: != sys.prefix = {prefix!r}\n"
+                    f"::error::   VIRTUAL_ENV = {VIRTUAL_ENV!r}"
+                    f" != sys.prefix = {prefix!r}\n"
                 )
                 status = 1
 
@@ -108,8 +107,8 @@ def check_virtualenv(exp_venv):
             CONDA_PREFIX = path_canon(CONDA_PREFIX)
             if CONDA_PREFIX != prefix:
                 sys.stdout.write(
-                    f"::error::  CONDA_PREFIX = {CONDA_PREFIX!r}\n"
-                    f"::error:: != sys.prefix = {prefix!r}\n"
+                    f"::error::  CONDA_PREFIX = {CONDA_PREFIX!r}"
+                    f" != sys.prefix = {prefix!r}\n"
                 )
                 status = 1
     else:
