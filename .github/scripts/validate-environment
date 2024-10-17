@@ -197,8 +197,10 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
         "python3",
         "python" + expected_pyver,
         "pip",
-        "conda",
     ))
+    if venv_type == "conda":
+        commands.add("conda")
+
     programs = []
 
     bin_path = os.environ.get("PATH", os.defpath).split(os.pathsep)
@@ -227,10 +229,7 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
 
     # commands is now a set of _missing_ commands
     for missing in commands:
-        if (
-                missing == "python"
-                or (missing == "conda" and venv_type != "conda")
-        ):
+        if missing == "python":
             ofp.write(f"{missing} not found\n")
         else:
             ofp.write(f"::error::{missing} not found\n")
@@ -242,7 +241,11 @@ def log_commands(ofp, expected_pyver, venv_type, venv_root):
     for cmd, program in sorted(programs):
         ofp.write(f"{cmd} is {quote_str(program)}\n")
 
-        if venv_root is not None and not program.startswith(venv_root):
+        if (
+                venv_root is not None
+                and cmd != "conda" # conda is normally not from the active env
+                and not program.startswith(venv_root)
+        ):
             ofp.write(f"::error::{cmd} not provided by virtualenv\n")
             status = 1
         try:
