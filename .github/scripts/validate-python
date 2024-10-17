@@ -18,10 +18,12 @@ def path_canon(path):
 def report():
     # Indentation here is because the parent script runs this script
     # several times with different lead-ins.
+    sys_version = sys.version.replace("\n", "  ")
+    sys_path = os.pathsep.join(sys.path)
     sys.stdout.write(
         f"  sys.executable       = {sys.executable!r}\n"
-        f"  sys.version          = {sys.version.replace('\n', '  ')!r}\n"
-        f"  sys.path             = {os.pathsep.join(sys.path)!r}\n"
+        f"  sys.version          = {sys_version!r}\n"
+        f"  sys.path             = {sys_path!r}\n"
         f"  sys.prefix           = {sys.prefix!r}\n"
         f"  sys.base_prefix      = {sys.base_prefix!r}\n"
         f"  sys.exec_prefix      = {sys.exec_prefix!r}\n"
