@@ -88,19 +88,25 @@ def log_venv(ofp):
         conda_venv_root = os.environ.get("CONDA_PREFIX", None)
 
         if venv_venv_root is None and conda_venv_root is not None:
-            venv_root = conda_venv_root
+            if not os.path.isabs(conda_venv_root):
+                ofp.write(f"::warning::CONDA_PREFIX = {conda_venv_root}"
+                          f" was not an absolute path\n")
+            venv_root = os.path.normcase(os.path.realpath(conda_venv_root))
             venv_type = "conda"
             ofp.write(f"conda-type virtualenv detected\n"
                       f"CONDA_PREFIX = {quote_str(venv_root)}\n")
         elif conda_venv_root is None and venv_venv_root is not None:
-            venv_root = venv_venv_root
+            if not os.path.isabs(venv_venv_root):
+                ofp.write(f"::warning::VIRTUAL_ENV = {venv_venv_root}"
+                          f" was not an absolute path\n")
+            venv_root = os.path.normcase(os.path.realpath(venv_venv_root))
             venv_type = "venv"
             ofp.write(f"venv-type virtualenv detected\n"
                       f"VIRTUAL_ENV = {quote_str(venv_root)}\n")
         elif conda_venv_root is not None and venv_venv_root is not None:
             ofp.write(f"::error::clashing conda- and venv-type virtualenvs detected\n"
-                      f"CONDA_PREFIX = {quote_str(venv_root)}\n"
-                      f"VIRTUAL_ENV  = {quote_str(venv_root)}\n")
+                      f"CONDA_PREFIX = {quote_str(conda_venv_root)}\n"
+                      f"VIRTUAL_ENV  = {quote_str(venv_venv_root)}\n")
             venv_root = None
             venv_type = "clashing"
         else: # both are None
