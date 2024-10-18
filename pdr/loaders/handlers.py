@@ -115,24 +115,25 @@ def handle_fits_file(
         # want to return a pandas DataFrame, not a FITS_rec.
         import numpy as np
         import pandas as pd
-
+        from pdr.loaders.astrowrap import BinTableHDU
         from pdr.pd_utils import structured_array_to_df
 
-        body = np.asarray(body)
-        try:
-            body = pd.DataFrame.from_records(
-                body.byteswap().view(body.dtype.newbyteorder('='))
-            )
-        except ValueError:
-            # These are generally nested arrays. We don't do this by default,
-            # because it requires us to 'reassemble' the array twice, and
-            # because pd.DataFrame.from_records() fails very quickly on nested
-            # dtypes, it's much more efficient to just try it first.
+        if max(map(len, body.dtype.descr)) > 2:
             body = structured_array_to_df(
                 np.rec.fromarrays(
                     [body[k] for k in body.dtype.names], dtype=body.dtype
                 )
             )
+        elif isinstance(hdu, BinTableHDU):
+            fields = {c: body[c] for c in body.dtype.names}
+            for k, v in fields.items():
+                if not v.dtype.isnative:
+                    fields[k] = fields[k].byteswap().view(
+                        fields[k].dtype.newbyteorder('=')
+                    )
+            body = pd.DataFrame(fields)
+        else:
+            body = pd.DataFrame.from_records(body)
     return output | {name: body}
 
 
