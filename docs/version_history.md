@@ -1,6 +1,6 @@
 # Version History
 
-## [X.X.X] - 202X-XX-XX
+## [1.3.0] - 2024-10-18
 ### Added
 
 #### Features
