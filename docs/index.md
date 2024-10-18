@@ -59,6 +59,8 @@ dependencies:
 pip install pdr[fits, pillow]
 ```
 
+#### NOTE: `pdr` is not currently compatible with python 3.13 when installed with `pip`, it can be used with python 3.13 through `conda`
+
 ### Usage
 
 You can check out our example Notebook on a JupyterLite server for a 
