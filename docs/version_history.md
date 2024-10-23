@@ -13,7 +13,11 @@
 
 
 ### Fixed
-
+- numpy >= 2.0 no longer automatically upcasts integer dtypes in cases like
+  `np.int16(0) + 1000000`. In some unusual cases, this can cause an 
+  `OverflowError` when applying scaling factors / offsets (MOLA MEGDRs formed
+  the motivating example). `Data.get_scaled()` will now catch these errors and
+  automatically typecast arrays in response.
 
 ### Removed
 
