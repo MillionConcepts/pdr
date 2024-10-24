@@ -11,6 +11,7 @@ def mssso_cal_start_byte(name, hdulist):
         return 0
     return hdulist.fileinfo(0)['datLoc']
 
+
 def wff_atm_special_block(data, name):
     """
     One WFF/ATM DEM image opens fine (BBMESA2X2), the other two (SCHOONER2X2 

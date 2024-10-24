@@ -1,7 +1,3 @@
-from pdr.datatypes import sample_types
-from pdr.loaders.queries import read_table_structure, check_array_for_subobject
-
-
 def get_structure(block, name, filename, data, identifiers):
     """
     "Encounter data" tables miscount the last column's START_BYTE by 1
@@ -10,6 +6,7 @@ def get_structure(block, name, filename, data, identifiers):
     * vega
         * ducma
     """
+    from pdr.loaders.queries import read_table_structure
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -28,6 +25,10 @@ def fix_array_structure(name, block, fn, data, identifiers):
     * vega
         * puma_mode
     """
+    from pdr.datatypes import sample_types
+    from pdr.loaders.queries import read_table_structure, \
+        check_array_for_subobject
+
     if not block.get("INTERCHANGE_FORMAT") == "BINARY":
         return None, None
     has_sub = check_array_for_subobject(block)

@@ -11,6 +11,7 @@ from pdr.tests.objects import (
     STUB_DSV_TABLE_LABEL,
 )
 
+
 @pytest.fixture(scope="session")
 def tracker_factory(tmp_path_factory):
     tracker_log_dir = tmp_path_factory.mktemp("tracker_logs", numbered=False)

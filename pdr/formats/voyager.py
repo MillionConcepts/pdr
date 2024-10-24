@@ -129,6 +129,7 @@ def lecp_table_loader(filename, fmtdef_dt):
     table.columns = col_names
     return table
 
+
 def lecp_vg1_sat_table_loader(filename, fmtdef_dt):
     """
     VG1 Saturn RDR step products have an extra header row partway through their 

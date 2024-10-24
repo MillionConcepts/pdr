@@ -461,7 +461,7 @@ def table_position(
     definition and other previously-determined information.
 
     In the returned `dict`, if as_rows is True, the table is a delimiter-
-    separated ASCII table with no explicitly-defined row length, and both
+    seperated ASCII table with no explicitly-defined row length, and both
     "start" and "length" should be interpreted as rows; otherwise, both "start"
     and "length" should be interpreted as bytes. If length is None, the table
     occupies the entirety of the file including and after "start".

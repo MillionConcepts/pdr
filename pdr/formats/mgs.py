@@ -1,9 +1,9 @@
 from pdr.loaders.queries import read_table_structure
-from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
 
 
 def get_odf_structure(block, name, filename, data, identifiers):
     """"""
+    from pdr.pd_utils import insert_sample_types_into_df
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -20,6 +20,7 @@ def get_ecs_structure(block, name, filename, data, identifiers):
     * mgs_rss_raw
         * ecs
     """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )

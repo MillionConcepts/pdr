@@ -1,8 +1,3 @@
-from pdr.loaders.queries import read_table_structure, _extract_table_records
-from pdr.loaders._helpers import count_from_bottom_of_file
-from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
-
-
 def elec_em6_structure(block, name, filename, data, identifiers):
     """
     ELEC EDR em6/TBL tables: All the START_BYTEs in TBL_0_STATE_DATA.FMT
@@ -12,6 +7,8 @@ def elec_em6_structure(block, name, filename, data, identifiers):
     * phoenix
         * elec_edr (partial)
     """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+    from pdr.loaders.queries import read_table_structure
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -32,6 +29,7 @@ def afm_rdr_structure(block, name, filename, data, identifiers):
     * phoenix
         * afm_rdr
     """
+    from pdr.loaders.queries import read_table_structure
     fmtdef = read_table_structure(block, name, filename, data, identifiers)
     fmtdef.insert(1, 'NAME', fmtdef.pop('NAME'))
     for line in range(0, len(fmtdef)):
@@ -94,7 +92,7 @@ def phxao_header_position(identifiers, block, target, name, start_byte):
     * phoenix
        * atm_phxao
     """
-    
+    from pdr.loaders.queries import _extract_table_records
     return {
         "as_rows": True,
         "start": 0,
@@ -112,7 +110,7 @@ def phxao_table_offset(filename, identifiers):
     * phoenix
        * atm_phxao
     """
-    
+    from pdr.loaders._helpers import count_from_bottom_of_file
     rows = identifiers["ROWS"]
     row_bytes = identifiers["ROW_BYTES"]
     start_byte = count_from_bottom_of_file(
@@ -149,6 +147,7 @@ def wcl_rdr_offset(data, name):
     start_byte = target[-1] - 1
     return True, start_byte
 
+
 def led_edr_structure(block, name, filename, data, identifiers):
     """
     TEGA_LED.FMT: the CONTAINER's REPETITIONS should be 1000, not 1010
@@ -157,6 +156,9 @@ def led_edr_structure(block, name, filename, data, identifiers):
     * phoenix
         * lededr
     """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+    from pdr.loaders.queries import read_table_structure
+
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -171,6 +173,7 @@ def led_edr_structure(block, name, filename, data, identifiers):
     fmtdef = compute_offsets(fmtdef)
     return insert_sample_types_into_df(fmtdef, identifiers)
 
+
 def sc_rdr_structure(block, name, filename, data, identifiers):
     """
     TEGA_SCRDR.FMT: most of the START_BYTEs are off by 4 because column 2 
@@ -180,6 +183,9 @@ def sc_rdr_structure(block, name, filename, data, identifiers):
     * phoenix
         * scrdr
     """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+    from pdr.loaders.queries import read_table_structure
+
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
