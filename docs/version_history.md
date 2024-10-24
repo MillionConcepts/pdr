@@ -18,6 +18,8 @@
   `OverflowError` when applying scaling factors / offsets (MOLA MEGDRs formed
   the motivating example). `Data.get_scaled()` will now catch these errors and
   automatically typecast arrays in response.
+- glitch reading headers from PDS4-labeled FITS files without unique local 
+  references for said headers
 
 ### Removed
 

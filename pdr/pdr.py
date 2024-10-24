@@ -631,8 +631,7 @@ class Data:
             )
             if structure.is_header() is True:
                 return self._add_loaded_objects(result)
-            if f"{object_name}_HEADER" not in self.index:
-                hid = self._find_fits_header_pds4_id(offset)
+            if (hid := self._find_fits_header_pds4_id(offset)) is not None:
                 result[hid] = result.pop(f"{object_name}_HEADER")
             if structure.is_array() is True:
                 self._scaleflags[object_name] = True
