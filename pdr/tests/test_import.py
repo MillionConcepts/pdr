@@ -1,4 +1,5 @@
 import subprocess
+import ast
 
 
 def test_delayed_import():
@@ -6,7 +7,7 @@ def test_delayed_import():
     commands = f"import sys; import pdr; " \
                f"print(not any(module in sys.modules for module in {imports_to_delay}))"
     out = run_isolated(commands)
-    assert eval(out)
+    assert ast.literal_eval(out)
 
 
 def run_isolated(commands_for_interpreter):
