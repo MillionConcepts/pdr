@@ -677,7 +677,7 @@ def read_format_block(
         f"BLOCK_REPETITIONS": block.get("REPETITIONS", 1),
         f"BLOCK_BYTES": block.get("BYTES")
     }
-    while "^STRUCTURE" in [obj[0] for obj in format_block]:
+    while "^LINE_PREFIX_STRUCTURE" in [obj[0] for obj in format_block]:
         format_block = inject_format_files(format_block, object_name, fn, data)
     fields, needs_placeholder, add_placeholder, reps = [], False, False, None
     for item_type, definition in format_block:
@@ -694,7 +694,7 @@ def read_format_block(
             #  and then immediately casting `definition` back to `dict`,
             #  discarding any duplicate keys we took such care to retain? What
             #  nightmarish class of cases does this catch?
-            if "^STRUCTURE" in definition:
+            if "^LINE_PREFIX_STRUCTURE" in definition:
                 definition_l = inject_format_files(
                     list(definition.items()), object_name, fn, data
                 )
@@ -784,7 +784,7 @@ def inject_format_files(
     them, and insert them into the referencing definition.
     """
     format_fns = {
-        ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
+        ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^LINE_PREFIX_STRUCTURE"
     }
     # make sure to insert the structure blocks in the correct order --
     # and remember that keys are not unique, so we have to use the index

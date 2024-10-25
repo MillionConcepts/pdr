@@ -606,6 +606,10 @@ def check_special_sample_type(
         and identifiers["PRODUCT_ID"].endswith("BIN")
     ):
         return formats.ulysses.get_sample_type(base_samp_info)
+    if re.match(
+        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
+    ):
+        return formats.cassini.line_prefix_sample_type(base_samp_info)
     return False, None
 
 
@@ -850,11 +854,11 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
         pointer in ("HEADER", "HISTORY")
     ):
         return formats.themis.trivial_themis_geo_loader(pointer)
-    if re.match(
-        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
-    ):
-        if pointer == "LINE_PREFIX_TABLE":
-            return formats.cassini.trivial_loader(pointer)
+    # if re.match(
+    #     r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
+    # ):
+    #     if pointer == "LINE_PREFIX_TABLE":
+    #         return formats.cassini.trivial_loader(pointer)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
         and (fn.endswith(".img") or fn.endswith(".ibg"))

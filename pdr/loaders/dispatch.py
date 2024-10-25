@@ -73,8 +73,8 @@ def pointer_to_loader(pointer: str, data: Data) -> Loader:
         return ReadText()
     if "ARRAY" in pointer:
         return ReadArray()
-    if "LINE_PREFIX_TABLE" in pointer:
-        return TBD()
+    # if "LINE_PREFIX_TABLE" in pointer:
+    #     return TBD()
     table_words = ["TABLE", "SPREADSHEET", "CONTAINER",
                    "SERIES", "SPECTRUM", "HISTOGRAM"]
     if (

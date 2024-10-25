@@ -243,3 +243,28 @@ def iss_calib_da_special_block(data, name):
         del block["LINE_PREFIX_BYTES"]
         return True, block
     return False, block
+
+
+def line_prefix_sample_type(base_samp_info):
+    """
+    Each time byte order is specified for these products it is LSB, so this
+    assumes BIT_STRING refers to LSB_BIT_STRING. N/A samples are read as
+    CHARACTER
+
+    HITS
+    * cassini_iss
+        * calib
+        * calib_atm
+        * edr_evj
+        * edr_sat
+    """
+    from pdr.datatypes import sample_types
+
+    sample_type = base_samp_info["SAMPLE_TYPE"]
+    sample_bytes = base_samp_info["BYTES_PER_PIXEL"]
+    if "N/A" in sample_type:
+        sample_type = "VOID"
+        return True, sample_types(
+            sample_type, int(sample_bytes), for_numpy=True
+        )
+    return False, None
