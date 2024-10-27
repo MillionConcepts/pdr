@@ -34,9 +34,6 @@ def get_ecs_structure(block, name, filename, data, identifiers):
 
 def mola_pedr_special_block(data, name, identifiers):
     """
-    Pointers to the format files have non-standard names, e.g. ^FIRST_STRUCTURE
-    instead of ^STRUCTURE.
-
     Fix for FILE_RECORDS = "UNK" and ROWS = "UNK" in the MOLA PEDR labels.
     This special case calculates ROWS using the count_from_bottom_of_file()
     logic in reverse.
