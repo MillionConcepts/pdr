@@ -10,6 +10,7 @@ from functools import reduce
 from itertools import chain, product
 from numbers import Number
 from pathlib import Path
+import re
 from types import MappingProxyType
 from typing import (
     Any, Collection, Mapping, Optional, Sequence, TYPE_CHECKING, Union
@@ -647,8 +648,12 @@ PDS3_STRUCTURED_DATA_PARAMETERS = (
     "ELEMENT",
     "FIELD",
     "PRIMITIVE_ARRAY",
+    # TODO: should "STRUCTURE" be here?
     "STRUCTURE",
 )
+
+STRUCTUREPAT = re.compile(r"\^(?:(?:\w|_)+_)?STRUCTURE$")
+"""regex pattern for format file pointers"""
 
 
 def read_format_block(
@@ -677,7 +682,7 @@ def read_format_block(
         f"BLOCK_REPETITIONS": block.get("REPETITIONS", 1),
         f"BLOCK_BYTES": block.get("BYTES")
     }
-    while "^LINE_PREFIX_STRUCTURE" in [obj[0] for obj in format_block]:
+    while any(STRUCTUREPAT.match(obj[0]) for obj in format_block):
         format_block = inject_format_files(format_block, object_name, fn, data)
     fields, needs_placeholder, add_placeholder, reps = [], False, False, None
     for item_type, definition in format_block:
@@ -688,13 +693,13 @@ def read_format_block(
             if not check_array_for_subobject(definition):
                 item_type = "PRIMITIVE_ARRAY"
         if item_type in ("COLUMN", "FIELD", "ELEMENT", "PRIMITIVE_ARRAY"):
-            # TODO: this `if "^STRUCTURE"...` block smells incredibly bad. Why
+            # TODO: this STRUCTUREPAT.match... block smells incredibly bad. Why
             #  is it guarded by the COLUMN/FIELD/ELEMENT/PRIMITIVE_ARRAY
             #  contitional? Why are we scrupulously calling MultiDict.add()
             #  and then immediately casting `definition` back to `dict`,
             #  discarding any duplicate keys we took such care to retain? What
             #  nightmarish class of cases does this catch?
-            if "^LINE_PREFIX_STRUCTURE" in definition:
+            if "^STRUCTURE" in definition:
                 definition_l = inject_format_files(
                     list(definition.items()), object_name, fn, data
                 )
@@ -784,7 +789,7 @@ def inject_format_files(
     them, and insert them into the referencing definition.
     """
     format_fns = {
-        ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^LINE_PREFIX_STRUCTURE"
+        ix: kv[1] for ix, kv in enumerate(block) if STRUCTUREPAT.match(kv[0])
     }
     # make sure to insert the structure blocks in the correct order --
     # and remember that keys are not unique, so we have to use the index
