@@ -53,6 +53,7 @@ from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     read_pvl,
+    STRUCTUREPAT
 )
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
@@ -258,9 +259,12 @@ class Data:
         # cache for hdulist, for primary FITS files -- this is primarily
         # an optimization for compressed files
         self._hdulist = None
-        # dict of [str, int] for cases in which we need to reindex duplicate
-        # HDU names in primary FITS files
+        # dict of [str, int] for HDU name / position in primary FITS files,
+        # for reindexing duplicates and efficiency
         self._hdumap = None
+        # data structure recording interleaved PDS3 objects not defined at top
+        # level, intended for things like axplanes and line prefix tables
+        self._interleaved_objects = {}
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
             self.filename, label_fn, skip_existence_check
@@ -340,7 +344,11 @@ class Data:
     def _find_objects(self):
         """
         Add all top-level data objects mentioned in the label to this object's
-        index, except for 'trivial' one (see `loaders.utility.is_trivial()`).
+        index, except for 'trivial' ones (see `loaders.utility.is_trivial()`).
+        Also check for interleaved objects not defined at top level (such as
+        some line prefix tables).
+
+        TODO: check for ISIS-style axplane objects.
         """
         from pdr.loaders.utility import is_trivial
 
@@ -350,6 +358,24 @@ class Data:
             if is_trivial(object_name):
                 continue
             self.index.append(object_name)
+        # check for implicitly-defined line prefix tables
+        for object_name in tuple(filter(lambda n: "IMAGE" in n, self.index)):
+            block = self.metablock_(object_name)
+            if len(spointers := tuple(filter(STRUCTUREPAT.match, block))) == 0:
+                continue
+            elif len(spointers) > 1:
+                # hopefully this never happens
+                raise NotImplementedError(
+                    "Multiple implicitly-defined line prefix tables within a "
+                    "single object are not supported."
+                )
+            # TODO, maybe: technically this could be a line suffix table,
+            #  although we have never found them. We could add a check.
+            fixname = f'{object_name}_LINE_PREFIX_TABLE'
+            self._interleaved_objects[fixname] = {
+                'parent': object_name, 'type': 'line_prefix_table'
+            }
+            self.index.append(fixname)
 
     def _object_to_filename(
         self, object_name: str

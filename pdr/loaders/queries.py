@@ -10,7 +10,6 @@ from functools import reduce
 from itertools import chain, product
 from numbers import Number
 from pathlib import Path
-import re
 from types import MappingProxyType
 from typing import (
     Any, Collection, Mapping, Optional, Sequence, TYPE_CHECKING, Union
@@ -29,7 +28,7 @@ from pdr.loaders._helpers import (
     _check_delimiter_stream,
 )
 from pdr.loaders.handlers import add_bit_column_info
-from pdr.parselabel.pds3 import pointerize, read_pvl
+from pdr.parselabel.pds3 import pointerize, read_pvl, STRUCTUREPAT
 from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
@@ -282,7 +281,12 @@ def get_array_num_items(block: MultiDict) -> int:
 
 
 def get_block(data: PDRLike, name: str) -> Optional[MultiDict]:
-    """query wrapper for `pdr.Data.metablock_()`"""
+    """
+    query wrapper for `pdr.Data.metablock_()`. also checks for interleaved
+    objects.
+    """
+    if name in data._interleaved_objects.keys():
+        return data.metablock_(data._interleaved_objects[name]['parent'])
     return data.metablock_(name)
 
 
@@ -297,8 +301,11 @@ def get_target(data: PDRLike, name: str) -> PhysicalTarget:
     """
     Attempt to get the 'target' of a PDS3 pointer or other physical data
     location marker for `name`. This typically becomes the `target` argument
-    of `data_start_byte()` and/or `table_position()`.
+    of `data_start_byte()` and/or `table_position()`. Also redirects for
+    interleaved objects.
     """
+    if name in data._interleaved_objects.keys():
+        name = data._interleaved_objects[name]['parent']
     target = data.metaget_(name)
     if isinstance(target, Mapping) or target is None:
         target = data.metaget_(pointerize(name))
@@ -651,9 +658,6 @@ PDS3_STRUCTURED_DATA_PARAMETERS = (
     # TODO: should "STRUCTURE" be here?
     "STRUCTURE",
 )
-
-STRUCTUREPAT = re.compile(r"\^(?:(?:\w|_)+_)?STRUCTURE$")
-"""regex pattern for format file pointers"""
 
 
 def read_format_block(
