@@ -247,9 +247,10 @@ def iss_calib_da_special_block(data, name):
 
 def line_prefix_sample_type(base_samp_info):
     """
-    Each time byte order is specified for these products it is LSB, so this
-    assumes BIT_STRING refers to LSB_BIT_STRING. N/A samples are read as
-    CHARACTER
+    Each time byte order is specified for these products it is LSB. However,
+    for columns whose values can be verified, it is always actually MSB. This
+    special case forces all such types to MSB, and assumes BIT_STRING refers to
+    MSB_BIT_STRING. "N/A" samples are treated as CHARACTER / void.
 
     HITS
     * cassini_iss
@@ -264,7 +265,10 @@ def line_prefix_sample_type(base_samp_info):
     sample_bytes = base_samp_info["BYTES_PER_PIXEL"]
     if "N/A" in sample_type:
         sample_type = "VOID"
-        return True, sample_types(
-            sample_type, int(sample_bytes), for_numpy=True
-        )
-    return False, None
+    elif "LSB" in sample_type:
+        sample_type = sample_type.replace("LSB", "MSB")
+    elif sample_type == "BIT_STRING":
+        sample_type = "MSB_BIT_STRING"
+    else:
+        return False, None
+    return True, sample_types(sample_type, int(sample_bytes), for_numpy=True)
