@@ -52,11 +52,6 @@ def mola_pedr_special_block(data, name, identifiers):
     from pdr.loaders.queries import data_start_byte
 
     block = data.metablock_(name)
-    block.add("^STRUCTURE", block.pop("^FIRST_STRUCTURE"))
-    frame = name.split('_')[2]
-    block.add("^STRUCTURE", block.pop(f"^FR_{frame}_ENG_STRUCTURE"))
-    block.add("^STRUCTURE", block.pop("^THIRD_STRUCTURE"))
-
     target = data.metaget_("^"+name)
     start_byte = data_start_byte(identifiers, block, target, data.filename)
 
