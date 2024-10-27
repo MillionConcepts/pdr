@@ -280,13 +280,43 @@ def get_array_num_items(block: MultiDict) -> int:
     raise TypeError("can't interpret this item number specification")
 
 
+def _fix_up_line_prefix_table_block(
+    data: PDRLike, name: str, parent_block: MultiDict
+):
+    """
+    Deal with assorted quirks of underspecified line prefix table definitions
+    that will stymie the primary table format interpretation workflow.
+    """
+    # TODO:  we have to unpack nested structure definitions
+    #  here in order to get properties like ROWS and ROW_SUFFIX_BYTES
+    #  into the block. This is very ugly, and perhaps should be reworked.
+    format_block = inject_format_files(
+        # TODO: will need to modify this simple check of data.file_mapping if
+        #  we ever have a case of this type where the filename must be
+        #  specialized. Hopefully that does not happen as it will require
+        #  mutating the signature of get_block().
+        list(parent_block.items()), name, data.file_mapping[name], data
+    )
+    block = MultiDict(format_block)
+    if "ROWS" not in block.keys():
+        block["ROWS"] = block["LINES"]
+    if "ROW_SUFFIX_BYTES" not in block.keys():
+        block['ROW_SUFFIX_BYTES'] = (
+            block['SAMPLE_BITS'] // 8 * block['LINE_SAMPLES']
+        )
+    return block
+
+
 def get_block(data: PDRLike, name: str) -> Optional[MultiDict]:
     """
     query wrapper for `pdr.Data.metablock_()`. also checks for interleaved
     objects.
     """
     if name in data._interleaved_objects.keys():
-        return data.metablock_(data._interleaved_objects[name]['parent'])
+        parent = data.metablock_(data._interleaved_objects[name]['parent'])
+        if data._interleaved_objects[name]['type'] == 'line_prefix_table':
+            return _fix_up_line_prefix_table_block(data, name, parent)
+        return parent
     return data.metablock_(name)
 
 
@@ -801,6 +831,10 @@ def inject_format_files(
     last_ix = 0
     for ix, format_fn in format_fns.items():
         fmt = list(load_format_file(data, format_fn, name, fn).items())
+        # if the block is itself a TABLE, assume that it's intended to unpack
+        # into a parent object, like a LINE_PREFIX_TABLE on an image
+        if len(fmt) == 1 and "TABLE" in fmt[0][0]:
+            fmt = list(fmt[0][1].items())
         assembled_structure += block[last_ix:ix] + fmt
         last_ix = ix + 1
     assembled_structure += block[last_ix:]
@@ -850,13 +884,43 @@ def get_none() -> None:
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
-        {
-            "identifiers": get_identifiers,
-            "block": specialize(get_block, check_special_block),
-            "fn": get_file_mapping,
-            "target": get_target,
-            "start_byte": specialize(data_start_byte, check_special_offset),
-            "debug": get_debug,
-            "return_default": get_return_default,
-        }
+    {
+        "identifiers": get_identifiers,
+        "block": specialize(get_block, check_special_block),
+        "fn": get_file_mapping,
+        "target": get_target,
+        "start_byte": specialize(data_start_byte, check_special_offset),
+        "debug": get_debug,
+        "return_default": get_return_default,
+    }
+)
+"""Queries common to most Loaders."""
+
+START_BYTE_QUERIES = MappingProxyType(
+    {
+        "identifiers": get_identifiers,
+        "block": specialize(get_block, check_special_block),
+        "fn": get_file_mapping,
+        "target": get_target,
+        "start_byte": specialize(data_start_byte, check_special_offset),
+    }
+)
+"""
+Queries for simply finding an object's start byte and containing file. Used 
+for the standalone_start_byte() 'a la carte' function below, designed to 
+support implicit object association.
+"""
+
+
+def standalone_start_byte(
+    data: PDRLike, object_name: str
+) -> tuple[Union[str, Path], int]:
+    from pdr.func import softquery
+
+    data._target_path(object_name)
+    result = softquery(
+        lambda fn, start_byte: None,
+        START_BYTE_QUERIES,
+        kwargdict={"data": data, "name": "IMAGE"},
     )
+    return result['fn'], result['start_byte']

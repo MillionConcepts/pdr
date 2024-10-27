@@ -301,6 +301,7 @@ class Data:
         if primary_format is not None:
             self._init_primary_format()
             return
+        self.identifiers = self.metadata.identifiers
         self.pointers = get_pds3_pointers(self.metadata)
         # if self.pointers is None, we've probably got a weird edge case where
         # someone directly opened a PVL file that's not an individual product
@@ -308,7 +309,6 @@ class Data:
         # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
-        self.identifiers = self.metadata.identifiers
 
     # noinspection PyProtectedMember
     def load_metadata_changes(self):
@@ -341,6 +341,48 @@ class Data:
                 return str(Path(self.getattr(target)).absolute().parent)
         raise FileNotFoundError
 
+    def _associate_prefix_tables(self, imname, preobjs):
+        """
+        Check for underspecified line prefix table objects associated with a
+        PDS3 image specification.
+        """
+        block = self.metablock_(imname)
+        # TODO, maybe: do a special case check against the name. This is only
+        #  important if we ever have a special object name case that is
+        #  relevant. (currently we do not.)
+        if block is None:
+            return
+        if len(spointers := tuple(filter(STRUCTUREPAT.match, block))) == 0:
+            return
+        elif len(spointers) > 1:
+            # hopefully this never happens. we will handle it if so
+            raise NotImplementedError(
+                "Multiple implicitly-defined line prefix tables within a "
+                "single object are not supported."
+            )
+        # check for a matching prefix table defined at top level with no
+        # explicit block
+        if len(preobjs) > 0:
+            from pdr.loaders.queries import standalone_start_byte
+
+            im_fn_byte = standalone_start_byte(self, imname)
+            found = False
+            for pre in preobjs:
+                if standalone_start_byte(self, pre) == im_fn_byte:
+                    self._interleaved_objects[pre] = {
+                        'parent': imname, 'type': 'line_prefix_table'
+                    }
+                    found = True
+            if found is True:
+                return
+        # TODO, maybe: technically this could be a line suffix table,
+        #  although we have never found them. We could add a check.
+        fixname = f'{imname}_LINE_PREFIX_TABLE'
+        self._interleaved_objects[fixname] = {
+            'parent': imname, 'type': 'line_prefix_table'
+        }
+        self.index.append(fixname)
+
     def _find_objects(self):
         """
         Add all top-level data objects mentioned in the label to this object's
@@ -354,28 +396,21 @@ class Data:
 
         # TODO: make this not add objects again if called multiple times
         for pointer in self.pointers:
-            object_name = depointerize(pointer)
-            if is_trivial(object_name):
+            imname = depointerize(pointer)
+            if is_trivial(imname):
                 continue
-            self.index.append(object_name)
-        # check for implicitly-defined line prefix tables
-        for object_name in tuple(filter(lambda n: "IMAGE" in n, self.index)):
-            block = self.metablock_(object_name)
-            if len(spointers := tuple(filter(STRUCTUREPAT.match, block))) == 0:
-                continue
-            elif len(spointers) > 1:
-                # hopefully this never happens
-                raise NotImplementedError(
-                    "Multiple implicitly-defined line prefix tables within a "
-                    "single object are not supported."
-                )
-            # TODO, maybe: technically this could be a line suffix table,
-            #  although we have never found them. We could add a check.
-            fixname = f'{object_name}_LINE_PREFIX_TABLE'
-            self._interleaved_objects[fixname] = {
-                'parent': object_name, 'type': 'line_prefix_table'
-            }
-            self.index.append(fixname)
+            self.index.append(imname)
+        # check for poorly / implicitly-defined line prefix tables
+        # top-level line prefix objects with no blocks of their own
+        preobjs = [
+            n for n in self.index
+            if "LINE_PREFIX" in n and self.metablock_(n) is None
+        ]
+        for imname in tuple(
+            # greedily consuming the filter so that we can mutate self.index
+            filter(lambda n: "IMAGE" in n and "TABLE" not in n, self.index)
+        ):
+            self._associate_prefix_tables(imname, preobjs)
 
     def _object_to_filename(
         self, object_name: str
