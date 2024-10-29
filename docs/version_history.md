@@ -8,6 +8,7 @@
 #### Dataset Support
 - additional LRO LAMP RDR table/image pointers
 - raw images of 9P/TEMPEL 1 from the Keck Observatory
+- Deep Space 1 safed MICAS and PEPE datasets
 
 ### Changed
 

@@ -129,6 +129,7 @@ kernels in combination with JPL Horizons).
 #### Deep Space 1
   - IDS RDRs
   - MICAS DEM, images, and matrices
+  - MICAS EDRs and RDRs, and most PEPE EDRs (*note: these datasets are 'safed', use with caution*)
 #### EPOXI
   - HRI-IR raw and calibrated spectra
   - HRI-VIS raw and calibrated images
@@ -615,6 +616,8 @@ kernels in combination with JPL Horizons).
 #### Deep Impact
   - Movies of 9P/Tempel 1 approach and encounter (support not planned; not an 
     archive-compliant format)
+#### Deep Space 1
+  - PEPE EDR binary housekeeping files (support not planned; 'safed' dataset)
 #### Galileo
   - MAG summary tables (other tables supported, support not planned)
   - NIMS Jupiter EDRs and cubes (support planned)
