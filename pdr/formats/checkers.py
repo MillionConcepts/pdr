@@ -306,6 +306,12 @@ def check_special_table_reader(
         and name == "WEAREC_TABLE"
     ):
         return True, formats.lro.wea_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "LUNAR PROSPECTOR"
+        and identifiers["PRODUCT_ID"] == "OUTAGES"
+        and name == "TABLE"
+    ):
+        return True, formats.lp.ancillary_table_loader(fn, fmtdef_dt)
     return False, None
 
 

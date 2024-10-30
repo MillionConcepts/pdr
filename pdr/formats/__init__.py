@@ -18,6 +18,7 @@ import pdr.formats.ground as ground
 import pdr.formats.ihw as ihw
 import pdr.formats.iue as iue
 import pdr.formats.juno as juno
+import pdr.formats.lp as lp
 import pdr.formats.lroc as lroc
 import pdr.formats.lro as lro
 import pdr.formats.mariner as mariner
