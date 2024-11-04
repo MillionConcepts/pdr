@@ -275,13 +275,3 @@ def check_primary_fmt(data_filename: str):
             )
         return standard
     return None
-
-
-def catch_return_default(debug: bool, return_default, exception: Exception):
-    """
-    if we are in debug mode, reraise an exception. otherwise, return
-    the default only.
-    """
-    if debug is True:
-        raise exception
-    return return_default

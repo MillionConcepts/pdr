@@ -59,7 +59,6 @@ from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
 from pdr.pdrtypes import DataIdentifiers
 from pdr.utils import (
     associate_label_file,
-    catch_return_default,
     check_cases,
     check_primary_fmt,
     prettify_multidict,
@@ -422,7 +421,10 @@ class Data:
             return self.file_mapping[object_name]
         try:
             if isinstance(object_name, set):
-                file_list = [self._target_path(obj) for obj in object_name]
+                file_list = [
+                    self._target_path(obj, cached=cached, raise_missing=raise_missing)
+                    for obj in object_name
+                ]
                 self.file_mapping[object_name] = file_list
                 return file_list
             path = check_cases(self._object_to_filename(object_name))
@@ -527,15 +529,15 @@ class Data:
 
     def _file_not_found(self, object_name: str):
         """Implements default file-not-found behavior."""
-        warnings.warn(
+        message = (
             f"{object_name} file {self._object_to_filename(object_name)} "
             f"not found in path."
         )
-        return_default = self.metaget_(object_name)
-        maybe = catch_return_default(
-            self.debug, return_default, FileNotFoundError()
-        )
-        setattr(self, object_name, maybe)
+        if self.debug:
+            raise FileNotFoundError(message)
+        else:
+            warnings.warn(message)
+        setattr(self, object_name, self.metaget_(object_name))
 
     def _load_primary_fits(
         self, object_name: str
