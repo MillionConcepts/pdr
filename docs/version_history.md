@@ -10,6 +10,10 @@
 - raw images of 9P/TEMPEL 1 from the Keck Observatory
 - Deep Space 1 safed MICAS and PEPE datasets
 - Lunar Prospector ancillary ascii tables
+- VG1/VG2 safed MAG solar wind and POS cruise phase tables
+- safed Stardust datasets from the mission's early cruise phase
+- New Horizons Pluto encounter ALICE stellar occultation data (updated from
+  'known unsupported' to 'notionally supported')
 
 ### Changed
 

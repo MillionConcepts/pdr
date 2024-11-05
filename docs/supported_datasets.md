@@ -585,6 +585,8 @@ kernels in combination with JPL Horizons).
     - Pancam color mosaics
 #### MSL
   - CheMin Film EDRs (have efm in filename)
+#### New Horizons
+  - Pluto encounter derived data: ALICE stellar occultation data
 #### Phoenix
   - TEGA LED EDRs
 #### Rosetta
@@ -711,8 +713,6 @@ kernels in combination with JPL Horizons).
     compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
   - RAD EDRs and RDRs (support planned)
-#### New Horizons
-  - Pluto encounter derived data: ALICE stellar occultation data
 #### Pioneer Venus Orbiter
   - ORPA raw data (support not planned)
   - ORSE ODRs (support not planned)
