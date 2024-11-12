@@ -86,8 +86,9 @@ kernels in combination with JPL Horizons).
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*)
 #### Clementine
-  - Map-projected Basemap, HiRes, NIR, and UVVIS mosaics
-    - These have been migrated to PDS4, pending archive approval.
+  - Imaging Bundle (PDS4 at IMG)
+    - EDRs (HiRes, LWIR, NIR, UVVIS and star trackers)
+    - Map-projected Basemap, HiRes, NIR, and UVVIS mosaics
   - Gravity and topography derived products
   - LWIR RDRs
   - RSS bistatic radar RDRs
@@ -608,8 +609,6 @@ kernels in combination with JPL Horizons).
   - VIMS EDR cubes (PDS3 labels; support not planned--open with PDS4 labels)
   - Huygens Probe DISR IR tables (support planned; low priority )
 #### Clementine
-  - Imaging EDRs (basemap, HiRes, NIR, and UVVIS) (support not planned)
-  - LWIR EDRs (support not planned)
   - RSS EDRs (support not planned)
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
   - Galileo SSI REDR line-prefix tables (support planned)
@@ -644,7 +643,6 @@ kernels in combination with JPL Horizons).
   - IRSN Halley v1.0 spectroscopy and filter response curve tables (support planned)
   - LSPN compressed images in the Halley V1.0 and Giacobini-Zinner datasets (support not planned)
   - SSN 2D spectral products with SPECTRAL_IMAGE_QUBE pointers (support planned)
-  - SSN 2D spectral products with typos in their filenames (support not planned)
   - RSN UV visibility products (support planned)
 #### Juno
   - JADE Ion sensor housekeeping data prior to arrival at Jupiter (support not planned)

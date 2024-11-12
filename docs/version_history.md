@@ -14,6 +14,9 @@
 - safed Stardust datasets from the mission's early cruise phase
 - New Horizons Pluto encounter ALICE stellar occultation data (updated from
   'known unsupported' to 'notionally supported')
+- MGS RSS USO tables
+- PVO ORPA and ORSE misc ancillary tables
+- JUNO Waves EDR housekeeping tables
 
 ### Changed
 
