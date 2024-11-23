@@ -32,3 +32,19 @@ def wff_atm_special_block(data, name):
         return True, block
     
     return False, block
+
+def ebrocc_geom_get_position(identifiers, block, target, name, start_byte):
+    """
+    ROW_BYTES = 45 in the labels, but it should be 47
+
+    HITS
+    * ground_based
+        * ring_occ_1989_geometry
+    """
+    from pdr.loaders.queries import table_position
+
+    table_props = table_position(identifiers, block, target, name, start_byte)
+    n_rows = block["ROWS"]
+    row_bytes = block["ROW_BYTES"] + 2
+    table_props["length"] = n_rows * row_bytes
+    return table_props

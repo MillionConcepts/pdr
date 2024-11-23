@@ -572,6 +572,18 @@ def check_special_position(
         return True, formats.mex.mrs_get_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] in ("ESO1M-SR-APPH-4-OCC-V1.0",
+                                       "ESO22M-SR-APPH-4-OCC-V1.0",
+                                       "IRTF-SR-URAC-4-OCC-V1.0",
+                                       "PAL200-SR-CIRC-4-OCC-V1.0",
+                                       "MCD27M-SR-IIRAR-4-OCC-V1.0")
+        and "GEOM" in identifiers["PRODUCT_ID"]
+        and name == "SERIES"
+    ):
+        return True, formats.ground.ebrocc_geom_get_position(
+            identifiers, block, target, name, start_byte
+        )
     return False, None
 
 

@@ -17,6 +17,8 @@
 - MGS RSS USO tables
 - PVO ORPA and ORSE misc ancillary tables
 - JUNO Waves EDR housekeeping tables
+- Earth-based ring occultation (EBROCC_0001) ancillary data
+- Voyager ring profiles ancillary data
 
 ### Changed
 
