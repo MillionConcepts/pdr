@@ -48,9 +48,8 @@ def generic_qube_properties(
     props = {}
     use_block = block if "CORE" not in block.keys() else block["CORE"]
     props["BYTES_PER_PIXEL"] = int(use_block["CORE_ITEM_BYTES"])  # / 8)
-    # TODO: this should probably have for_numpy set to True
     props["sample_type"] = sample_types(
-        use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"]
+        use_block["CORE_ITEM_TYPE"], props["BYTES_PER_PIXEL"], True
     )
     props["is_vax_real"] = use_block["CORE_ITEM_TYPE"] == "VAX_REAL"
     if "AXIS_NAME" in set(block.keys()).union(use_block.keys()):
