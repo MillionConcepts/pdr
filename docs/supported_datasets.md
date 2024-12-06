@@ -697,6 +697,7 @@ kernels in combination with JPL Horizons).
     PDS3-style files exists in the archive.*)
 #### MRO
   - RSS .tnf (support not planned)
+  - RSS products in the 'ancillary' directory (support not planned)
   - MCS DDRs (support not planned)
   - HiRISE EDR line prefix tables (support planned)
 #### MSL

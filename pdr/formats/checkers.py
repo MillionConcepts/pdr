@@ -584,6 +584,14 @@ def check_special_position(
         return True, formats.ground.ebrocc_geom_get_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "MRO-M-CRISM-5-RDR-MULTISPECTRAL-V1.0"
+        and "MRRWV" in identifiers["PRODUCT_ID"]
+        and name == "TABLE"
+    ):
+        return True, formats.mro.crism_mrdr_ancill_position(
+            identifiers, block, target, name, start_byte
+        )
     return False, None
 
 
