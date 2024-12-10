@@ -368,11 +368,13 @@ def data_start_byte(
     if isinstance(target, (list, tuple)):
         target = target[-1]
     if isinstance(target, int):
-        if record_bytes not in [None, ""]:
+        if target == 1:
+            start_byte = 0
+        elif record_bytes not in [None, ""]:
             start_byte = record_bytes * max(target - 1, 0)
-        else:
-            rows = identifiers["ROWS"]
-            row_bytes = identifiers["ROW_BYTES"]
+        elif "ROWS" in block.keys():
+            rows = block["ROWS"]
+            row_bytes = block["ROW_BYTES"]
             start_byte = max(0, count_from_bottom_of_file(fn, rows, row_bytes))
     elif isinstance(target, dict):
         start_byte = quantity_start_byte(target, record_bytes)
