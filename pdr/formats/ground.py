@@ -1,3 +1,5 @@
+import warnings
+
 def mssso_cal_start_byte(name, hdulist):
     """
     A small subset of MSSSO CASPIR calibration images have the wrong start byte 
@@ -48,3 +50,17 @@ def ebrocc_geom_get_position(identifiers, block, target, name, start_byte):
     row_bytes = block["ROW_BYTES"] + 2
     table_props["length"] = n_rows * row_bytes
     return table_props
+
+def trivial_header_loader():
+    """
+    The HEADER pointer is just the SPREADSHEET table's header row, and it does 
+    not open because "BYTES = UNK"
+
+    HITS
+    * apollo
+        * BUG
+    """
+    warnings.warn(
+        f"This product's HEADER pointer is not currently supported."
+    )
+    return True

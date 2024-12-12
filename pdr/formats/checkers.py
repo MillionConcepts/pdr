@@ -592,6 +592,13 @@ def check_special_position(
         return True, formats.mro.crism_mrdr_ancill_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] == "MSX-L-SPIRIT3-2/4-V1.0"
+        and name == "ENVI_HEADER"
+    ):
+        return True, formats.msx.cube_envi_header_position(
+            identifiers, block, target, name, start_byte, fn
+        )
     return False, None
 
 
@@ -905,6 +912,16 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
         and pointer == "SAMPLE_SPECTRUM_QUBE"
     ):
         return formats.galileo.nims_sample_spectral_qube_trivial_loader()
+    if (
+        identifiers["DATA_SET_ID"] == "BUGLAB-L-BUG-4-APOLLO-SAMPLES-V1.0"
+        and pointer == "HEADER"
+    ):
+        return formats.ground.trivial_header_loader()
+    if (
+        identifiers["DATA_SET_ID"] == "MSL-M-APXS-4/5-RDR-V1.0"
+        and pointer == "HEADER"
+    ):
+        return formats.msl_apxs.trivial_header_loader()
     return False
 
 
