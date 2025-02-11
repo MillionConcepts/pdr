@@ -375,6 +375,15 @@ class Data:
                     found = True
             if found is True:
                 return
+        # TODO: unclear if this should be a special case or a general fix. Need 
+        # more examples to know for sure; Galileo SSI-4-REDR IMAGE objects are 
+        # the current known example.
+        # For cases when ^LINE_PREFIX_STRUCTURE = "" 
+        if (
+            "^LINE_PREFIX_STRUCTURE" in block 
+            and block["^LINE_PREFIX_STRUCTURE"] == ""
+        ):
+            return
         # TODO, maybe: technically this could be a line suffix table,
         #  although we have never found them. We could add a check.
         fixname = f'{imname}_LINE_PREFIX_TABLE'

@@ -481,6 +481,14 @@ def check_special_structure(
         return True, formats.rosetta.fix_pad_length_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] in ("SOLID_STATE_IMAGING", 
+                                               "SOLID STATE IMAGING SYSTEM")
+    ):
+        return formats.galileo.ssi_redr_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
@@ -662,9 +670,10 @@ def check_special_bit_format(
         return formats.cassini.iss_telemetry_bit_col_format(obj, definition)
     if (
         identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
-        and identifiers["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING"
+        and identifiers["INSTRUMENT_NAME"] in ("SOLID_STATE_IMAGING", 
+                                               "SOLID STATE IMAGING SYSTEM")
     ):
-        return formats.galileo.ssi_telemetry_bit_col_format(definition)
+        return formats.galileo.ssi_redr_bit_col_format(definition)
     return False, None
 
 
@@ -822,6 +831,12 @@ def check_special_block(
         and name == "QUALITY_IMAGE"
     ):
         return formats.iue.get_special_block(data, name)
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "SOLID STATE IMAGING SYSTEM"
+        and name == "LINE_PREFIX_TABLE"
+    ):
+        return True, formats.galileo.ssi_prefix_block(data, name)
     return False, None
 
 
