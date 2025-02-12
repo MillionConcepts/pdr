@@ -948,6 +948,12 @@ def check_special_fn(
         and object_name == "SPREADSHEET"
     ):
         return formats.nh.get_fn(data)
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING"
+        and object_name == "IMAGE_LINE_PREFIX_TABLE"
+    ):
+        return formats.galileo.ssi_redr_prefix_fn(data)
     return False, None
 
 

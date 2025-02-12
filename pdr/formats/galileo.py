@@ -259,3 +259,21 @@ def ssi_prefix_block(data, name):
         ):
                 item[1]["DATA_TYPE"] = "CHARACTER"
     return block
+
+
+def ssi_redr_prefix_fn(data):
+    """
+    For the early-mission (volumes go_0002-go_0006) SSI REDR line prefix tables.
+    Calling pdr.read() on the .lbl file instead of the .img outputs a different 
+    table; it tries to populate with data from the label. 
+    TODO: Keep an eye out for more under specified line prefix tables with this 
+    issue, in case it is more comman than just a few special cases
+
+    HITS
+    * gal_ssi
+        * redr_early
+    """
+    target = data.filename
+    target = target.replace(".lbl",".img")
+    target = target.replace(".LBL",".IMG")
+    return True, target
