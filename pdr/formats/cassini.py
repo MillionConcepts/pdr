@@ -232,17 +232,56 @@ def iss_telemetry_bit_col_format(obj, definition):
 def iss_calib_da_special_block(data, name):
     """
     The labels for some Cassini ISS calibration images with a .DA filename 
-    extension incorrectly use ROW_PREFIX_BYTES.
+    extension incorrectly use LINE_PREFIX_BYTES.
+    A subset of calibration images with a .IMG filename extension are formatted 
+    like the .DA products, and also incorrectly reference LINE_PREFIX_BYTES
 
     HITS
     * cassini_iss
         * calib_da
+        * calib (partial)
     """
     block = data.metablock_(name)
     if "LINE_PREFIX_BYTES" in block:
         del block["LINE_PREFIX_BYTES"]
         return True, block
     return False, block
+
+
+def iss_edr_special_block(data, name):
+    """
+    Some of the ISS EDR and calibration products give their ^STRUCTURE and 
+    ^LINE_PREFIX_STRUCTURE filenames in the format: "../../label/prefix3.fmt"
+
+    HITS
+    * cassini_iss
+        * edr_sat
+        * edr_evj
+        * calib (partial)
+    """
+    block = data.metablock_(name)
+    if name == "LINE_PREFIX_TABLE" and "/" in block["^LINE_PREFIX_STRUCTURE"]:
+        block["^LINE_PREFIX_STRUCTURE"] = block["^LINE_PREFIX_STRUCTURE"].split("/")[-1]
+        return True, block
+    elif name == "TELEMETRY_TABLE" and "/" in block["^STRUCTURE"]:
+        block["^STRUCTURE"] = block["^STRUCTURE"].split("/")[-1]
+        return True, block
+    return False, block
+
+
+def iss_cal_trivial_loader(pointer):
+    """
+    A subset of the ISS calibration images (those with "FILE_RECORDS = 1025") 
+    appear to not actually have LINE_PREFIX_TABLEs or TELEMETRY_TABLEs
+
+    HITS
+    * cassini_iss
+        * calib (partial)
+    """
+    warnings.warn(
+        f"This product's {pointer} does not appear to exist."
+    )
+    return True
 
 
 def line_prefix_sample_type(base_samp_info):
@@ -272,3 +311,21 @@ def line_prefix_sample_type(base_samp_info):
     else:
         return False, None
     return True, sample_types(sample_type, int(sample_bytes), for_numpy=True)
+
+
+def coiss_1006_offset(data, name, identifiers):
+    """
+    Start bytes (given in RECORD_BYTEs) are off by 1 for products from volume 
+    coiss_1006. ("Range (SCLK): 1359362956 - 1363539029")
+    Easy to validate: if the TELEMETRY_TABLE's NULL_PADDING column is not 0, 
+    then start_byte is off for all that product's pointers except IMAGE_HEADER
+
+    HITS:
+    * cassini_iss
+        * calib_evj (partial)
+    """
+    if name == "IMAGE_HEADER":
+        return False, None
+    start_byte = identifiers["RECORD_BYTES"] * (data.metaget(f"^{name}")[1] - 2)
+    return True, start_byte
+

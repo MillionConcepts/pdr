@@ -82,6 +82,12 @@ def check_special_offset(
     ):
         return formats.cassini.get_offset(fn, identifiers)
     if (
+        identifiers["DATA_SET_ID"] == "CO-E/V/J-ISSNA/ISSWA-2-EDR-V1.0"
+        and 1359362956 <= float(data.metaget_("SPACECRAFT_CLOCK_STOP_COUNT"))
+        and float(data.metaget_("SPACECRAFT_CLOCK_STOP_COUNT")) <= 1363539029
+    ):
+        return formats.cassini.coiss_1006_offset(data, name, identifiers)
+    if (
         identifiers["INSTRUMENT_ID"] == "CRAT"
         and identifiers["PRODUCT_TYPE"] == "EDR"
         and name == "TABLE_1"
@@ -818,9 +824,18 @@ def check_special_block(
     if (
         identifiers["DATA_SET_ID"] == "CO-CAL-ISS-2-V1.0"
         and name == "IMAGE"
-        and ".DA" in data.metaget_("^IMAGE")[0]
+        and (".DA" in data.metaget_("^IMAGE")[0] 
+             or identifiers["FILE_RECORDS"] == 1025)
     ):
         return formats.cassini.iss_calib_da_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] in ("CO-S-ISSNA/ISSWA-2-EDR-V1.0",
+                                       "CO-E/V/J-ISSNA/ISSWA-2-EDR-V1.0",
+                                       "CO-CAL-ISSNA/ISSWA-2-EDR-V1.0")
+        and name in ("LINE_PREFIX_TABLE",
+                     "TELEMETRY_TABLE")
+    ):
+        return formats.cassini.iss_edr_special_block(data, name)
     if (
         identifiers["DATA_SET_ID"] == "MGS-M-MOLA-3-PEDR-L1A-V1.0"
         and "TABLE" in name
@@ -874,6 +889,13 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
     # ):
     #     if pointer == "LINE_PREFIX_TABLE":
     #         return formats.cassini.trivial_loader(pointer)
+    if (
+        identifiers["DATA_SET_ID"] == "CO-CAL-ISS-2-V1.0"
+        and pointer in ("TELEMETRY_TABLE",
+                        "LINE_PREFIX_TABLE")
+        and identifiers["FILE_RECORDS"] == 1025
+    ):
+        return formats.cassini.iss_cal_trivial_loader(pointer)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
         and (fn.endswith(".img") or fn.endswith(".ibg"))
