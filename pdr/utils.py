@@ -247,11 +247,15 @@ def check_primary_fmt(data_filename: str):
     from pdr.loaders.utility import (
         DESKTOP_IMAGE_EXTENSIONS,
         FITS_EXTENSIONS,
+        PARQUET_EXTENSIONS,
         looks_like_this_kind_of_file,
         DESKTOP_IMAGE_STANDARDS
     )
 
     lower = data_filename.lower()
+    for ext in PARQUET_EXTENSIONS:
+       if lower.endswith(ext):
+           return "PARQUET"
     for ext in FITS_EXTENSIONS:
         if lower.endswith(ext):
             return "FITS"

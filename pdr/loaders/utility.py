@@ -16,6 +16,7 @@ from multidict import MultiDict
 LABEL_EXTENSIONS = (".xml", ".lbl")
 IMAGE_EXTENSIONS = (".img", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
+PARQUET_EXTENSIONS = (".parquet",)
 TEXT_EXTENSIONS = (".txt", ".md")
 FITS_EXTENSIONS = (".fits", ".fit", ".fits.gz", ".fit.gz", ".fz")
 BMP_EXTENSIONS = (".bmp",)

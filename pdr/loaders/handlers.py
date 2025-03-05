@@ -300,3 +300,18 @@ def unpack_fits_headers(
         for field in headerdict[hdu_name].keys():
             params.append(field)
     return headerdict, params, hdumap
+
+
+def unpack_parquet_metadata(fn: Union[Path, str]):
+    import json
+    from pyarrow import parquet as pq
+
+    parquet_meta = pq.read_metadata(fn)
+    metadict = {
+        k.decode('utf-8'): json.loads(v.decode('utf-8'))
+        for k, v in parquet_meta.metadata.items()
+        if k != b'ARROW:schema'
+    }
+    metadict['row_groups'] = parquet_meta.num_row_groups
+    metadict['rows'] = parquet_meta.num_rows
+    return metadict, tuple(metadict.keys())

@@ -460,6 +460,11 @@ class Data:
             )
         if self.standard == "PDS4":
             return self._load_pds4(name)
+        if self.standard == "PARQUET":
+            self._add_loaded_objects(
+                {name: self._load_primary_parquet(name, **load_kwargs)}
+            )
+            return
         if self.standard == "FITS":
             self._add_loaded_objects(self._load_primary_fits(name))
             return
@@ -539,6 +544,22 @@ class Data:
             warnings.warn(message)
         setattr(self, object_name, self.metaget_(object_name))
 
+    def _load_primary_parquet(self, object_name: str, as_pandas: bool = True):
+        from pyarrow import parquet as pq
+
+        if object_name == "TABLE":
+            tab = pq.read_table(self.filename)
+            if as_pandas is True:
+                return tab.to_pandas().convert_dtypes()
+            return tab
+        elif object_name == "LABEL":
+            return pq.read_metadata(self.filename)
+        elif object_name == "SCHEMA":
+            return pq.read_schema(self.filename)
+        raise NotImplementedError(
+            "Don't know how to handle this parquet component"
+        )
+
     def _load_primary_fits(
         self, object_name: str
     ) -> Union[np.ndarray, pd.DataFrame, None]:
@@ -568,6 +589,9 @@ class Data:
             return
         elif self.standard in DESKTOP_IMAGE_STANDARDS:
             return self._add_compressed_image_objects()
+        elif self.standard == "PARQUET":
+            self.index += ["TABLE", "LABEL", "SCHEMA"]
+            return
         raise NotImplementedError(f"unrecognized standard {self.standard}")
 
     def _add_compressed_image_objects(self):
@@ -668,6 +692,12 @@ class Data:
         Then, construct a Metadata object from whatever we loaded and add all
         the objects it implies to our index.
         """
+        if self.standard == "PARQUET":
+            from pdr.loaders.handlers import unpack_parquet_metadata
+
+            return Metadata(
+                unpack_parquet_metadata(self.filename), standard="PARQUET"
+            )
         if self.standard == "FITS":
             from pdr.loaders.handlers import unpack_fits_headers
 
