@@ -178,14 +178,18 @@ def nims_sample_spectral_qube_trivial_loader():
                   'due to their use of nibble pixels.')
     return True
 
-def ssi_telemetry_bit_col_format(definition):
+
+def ssi_redr_bit_col_format(definition):
     """
-    One of the bit columns defined in the Galileo SSI telemetry table format 
-    file has multiple items, but ITEM_BITS is mislabled as BITS
+    Some of the bit columns defined in the Galileo SSI telemetry and line 
+    prefix table format files have multiple items, but their ITEM_BITS are 
+    mislabled as BITS.
 
     HITS:
     * gal_ssi
-        * redr
+        * redr_early
+        * redr_mid
+        * redr_late
     * sl9_jupiter_impact
         * go_ssi
     """
@@ -193,6 +197,83 @@ def ssi_telemetry_bit_col_format(definition):
     for column in iter(definition.items()):
         if "BIT_COLUMN" in column:
             if "ITEMS" in column[1] and "ITEM_BITS" not in column[1]:
-                column[1].add("ITEM_BITS", 1)
+                if "BITS" in column[1]:
+                    column[1].add("ITEM_BITS", column[1]["BITS"])
+                else:
+                    column[1].add("ITEM_BITS", 1)
     # return nothing because nothing modifies `obj`
     return False, None
+
+
+def ssi_redr_structure(block, name, filename, data, identifiers):
+    """
+    Similar to the ssi_redr_bit_col_format() special case above. Columns with 
+    multiple ITEMS in the telemetry and line prefix table format files define 
+    BYTES but leave out ITEM_BYTES.
+
+    HITS
+    * gal_ssi
+        * redr_early
+        * redr_mid
+        * redr_late
+    * sl9_jupiter_impact
+        * go_ssi
+    """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+    import math
+
+    fmtdef = pdr.loaders.queries.read_table_structure(
+        block, name, filename, data, identifiers
+    )
+    if "ITEMS" in fmtdef:
+        fmtdef["ITEM_BYTES"] = None
+        # the line prefix tables have row suffix bytes (telemetry tables do not)
+        if "ROW_SUFFIX_BYTES" in block:
+            fmtdef["ROW_SUFFIX_BYTES"] = block["ROW_SUFFIX_BYTES"]
+        # columns with ITEMS in the format file mislabel ITEM_BYTES as BYTES
+        for row in range(0,len(fmtdef)):
+            if not math.isnan(fmtdef.at[row, "ITEMS"]):
+                fmtdef.at[row, "ITEM_BYTES"] = fmtdef.at[row, "BYTES"]
+        fmtdef = compute_offsets(fmtdef)
+        return True, insert_sample_types_into_df(fmtdef, identifiers)
+    return False, None
+
+
+def ssi_prefix_block(data, name):
+    """
+    These are binary tables, but the format file has one column with "DATA_TYPE 
+    = ASCII_REAL". This special case changes it to CHARACTER because the 
+    column's DESCRIPTION calls it a "Real number represented as an ascii string 
+    in the form 123.12"
+
+    HITS
+    * gal_ssi
+        * redr_late
+    """
+    block = pdr.loaders.queries.get_block(data, name)
+    for item in iter(block.items()):
+        if (
+            "COLUMN" in item
+            and item[1]["NAME"] == "COMPRESSION_RATIO" 
+            and "ASCII" in item[1]["DATA_TYPE"]
+        ):
+                item[1]["DATA_TYPE"] = "CHARACTER"
+    return block
+
+
+def ssi_redr_prefix_fn(data):
+    """
+    For the early-mission (volumes go_0002-go_0006) SSI REDR line prefix tables.
+    Calling pdr.read() on the .lbl file instead of the .img outputs a different 
+    table; it tries to populate with data from the label. 
+    TODO: Keep an eye out for more under specified line prefix tables with this 
+    issue, in case it is more comman than just a few special cases
+
+    HITS
+    * gal_ssi
+        * redr_early
+    """
+    target = data.filename
+    target = target.replace(".lbl",".img")
+    target = target.replace(".LBL",".IMG")
+    return True, target
