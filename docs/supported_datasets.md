@@ -91,7 +91,7 @@ kernels in combination with JPL Horizons).
     - Map-projected Basemap, HiRes, NIR, and UVVIS mosaics
   - Gravity and topography derived products
   - LWIR RDRs
-  - RSS bistatic radar RDRs
+  - RSS bistatic radar RDRs (except a subset of image products; see 'Known Unsupported' below)
   - LIDAR data *note: This is a saved PDS data set, not a regular PDS archive, 
     but it can be opened with `pdr`*
 #### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
@@ -110,7 +110,7 @@ kernels in combination with JPL Horizons).
   - Galileo Orbiter
     - NIMS tables
     - PPR EDRs
-    - SSI REDRs (except line prefix tables)
+    - SSI REDRs
     - UVS EDRs and RDRs
 #### Dawn
   - Framing Camera: EDRs, RDRs, mosaics, shape models, and most calibration images
@@ -153,7 +153,7 @@ kernels in combination with JPL Horizons).
   - SSD: derived electron flux data
   - SSI: 
     - Calibration images
-    - REDRs (except line prefix tables)
+    - REDRs
     - Ida/Gaspra specific data products at SBN
   - UV: UVS and EUV *note: They open correctly from their PDS4 labels, but the 
     PDS3 labels are currently unsupported.*
@@ -256,9 +256,6 @@ kernels in combination with JPL Horizons).
 #### Magellan
   - FMAPs
   - Stereo-Derived Topography
-  - C-BIDR images *note: `pdr` reads these correctly according to the 
-    specifications in the labels, but there are unaccounted-for offsets in the
-    images.*
   - F-MIDR and C-MIDR
   - GxDR: GTDR, GEDR, GSDR, and GREDR
   - GVDR
@@ -602,7 +599,8 @@ kernels in combination with JPL Horizons).
 ## Known Unsupported Datasets
 #### Cassini
   - CIRS variable-length '.VAR' tables (support not planned)
-  - ISS prefix tables (support planned)
+  - ISS volume coiss_0011 v4.3 at the IMG JPL and ATM nodes (support not 
+    planned; v3.0 at IMG USGS is supported)
   - MAG error count housekeeping data
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
@@ -610,8 +608,7 @@ kernels in combination with JPL Horizons).
   - Huygens Probe DISR IR tables (support planned; low priority )
 #### Clementine
   - RSS EDRs (support not planned)
-#### Comet D/Shoemaker-Levy 9/Jupiter Impact Observing Campaign
-  - Galileo SSI REDR line-prefix tables (support planned)
+  - RSS bistatic radar RDR images in the CL_2108 volume's 'sort' directory (support planned)
 #### Dawn
   - Framing camera: a handful of calibration images
 #### Deep Impact
@@ -622,7 +619,6 @@ kernels in combination with JPL Horizons).
 #### Galileo
   - MAG summary tables (other tables supported, support not planned)
   - NIMS Jupiter EDRs and cubes (support planned)
-  - SSI REDR line-prefix tables (support planned)
   - PLS EDRs (support not planned)
   - PWS EDRs, binary REDRs, and REFDRs (support planned)
 #### Giotto
@@ -656,7 +652,10 @@ kernels in combination with JPL Horizons).
   - CRaTER EDR primary science data (support not planned)
   - Mini-RF raw SAR products (support not planned)
 #### Magellan
-  - C-BIDR ancillary tables (support not planned)
+  - C-BIDR (support not planned) 
+    - *note: `pdr` reads the image products correctly according to the specifications
+       in the labels, but there are offsets in the images due to underdefined header 
+       rows at the start of each data record.*
   - F-BIDR (support not planned)
   - ALT-EDR (support not planned)
   - ARCDR (support planned)
@@ -699,7 +698,6 @@ kernels in combination with JPL Horizons).
   - RSS .tnf (support not planned)
   - RSS products in the 'ancillary' directory (support not planned)
   - MCS DDRs (support not planned)
-  - HiRISE EDR line prefix tables (support planned)
 #### MSL
   - Malin Space Science Systems (MSSS) Camera EDRs: "Raw" (EDR) data from the
     Mars Science Laboratory's MSSS-produced cameras (Mastcam, MAHLI, and

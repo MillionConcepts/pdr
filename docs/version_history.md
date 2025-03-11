@@ -3,7 +3,7 @@
 ### Added
 
 #### Features
-
+- Support for line prefix tables
 
 #### Dataset Support
 - additional LRO LAMP RDR table/image pointers
@@ -21,6 +21,11 @@
 - Voyager ring profiles ancillary data
 - ground-based MAHL images
 - CRISM ancillary tables
+- Clementine BSR RDR sorted/aggregated tables (CL_2108)
+- Line prefix tables
+  - Galileo SSI REDR
+  - Cassini ISS
+  - HiRISE EDR
 
 ### Changed
 
