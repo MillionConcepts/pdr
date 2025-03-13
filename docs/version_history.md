@@ -1,9 +1,10 @@
 # Version History
-## [X.X.X] - 202X-XX-XX
+## [1.4.0] - 2025-03-13
 ### Added
 
 #### Features
 - Support for line prefix tables
+- Useful messages for missing files in debug mode
 
 #### Dataset Support
 - additional LRO LAMP RDR table/image pointers
