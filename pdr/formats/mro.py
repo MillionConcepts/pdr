@@ -48,3 +48,20 @@ def mcs_ddr_table_loader(fmtdef_dt, block, filename, start_byte):
 
     table.columns = fmtdef.NAME.tolist()
     return table
+
+def crism_mrdr_ancill_position(identifiers, block, target, name, start_byte):
+    """
+    ROW_BYTES = 14 in the labels, but it should be 16 (the RECORD_BYTES)
+
+    HITS
+    * crism
+        * ancil_mrdr
+    """
+    from pdr.loaders.queries import table_position
+    
+    table_props = table_position(identifiers, block, target, name, start_byte)
+    n_rows = block["ROWS"]
+    row_bytes = identifiers["RECORD_BYTES"]
+    table_props["length"] = n_rows * row_bytes
+    return table_props
+

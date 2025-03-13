@@ -191,7 +191,8 @@ def softquery(
     for qname in querydict:
         if qname not in args_to_get.intersection(querydict):
             continue
-        kwargdict["tracker"].track(querydict[qname])
+        if "tracker" in kwargdict.keys():
+            kwargdict["tracker"].track(querydict[qname])
         kwargdict[qname] = call_kwargfiltered(querydict[qname], **kwargdict)
     return kwargdict
 

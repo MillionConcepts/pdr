@@ -1,9 +1,9 @@
 from pdr.loaders.queries import read_table_structure
-from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
 
 
 def get_odf_structure(block, name, filename, data, identifiers):
     """"""
+    from pdr.pd_utils import insert_sample_types_into_df
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -20,6 +20,7 @@ def get_ecs_structure(block, name, filename, data, identifiers):
     * mgs_rss_raw
         * ecs
     """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )
@@ -33,9 +34,6 @@ def get_ecs_structure(block, name, filename, data, identifiers):
 
 def mola_pedr_special_block(data, name, identifiers):
     """
-    Pointers to the format files have non-standard names, e.g. ^FIRST_STRUCTURE
-    instead of ^STRUCTURE.
-
     Fix for FILE_RECORDS = "UNK" and ROWS = "UNK" in the MOLA PEDR labels.
     This special case calculates ROWS using the count_from_bottom_of_file()
     logic in reverse.
@@ -51,11 +49,6 @@ def mola_pedr_special_block(data, name, identifiers):
     from pdr.loaders.queries import data_start_byte
 
     block = data.metablock_(name)
-    block.add("^STRUCTURE", block.pop("^FIRST_STRUCTURE"))
-    frame = name.split('_')[2]
-    block.add("^STRUCTURE", block.pop(f"^FR_{frame}_ENG_STRUCTURE"))
-    block.add("^STRUCTURE", block.pop("^THIRD_STRUCTURE"))
-
     target = data.metaget_("^"+name)
     start_byte = data_start_byte(identifiers, block, target, data.filename)
 

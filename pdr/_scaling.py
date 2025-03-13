@@ -1,5 +1,8 @@
-from numbers import Number
-from typing import Optional, Sequence
+import warnings
+from functools import wraps
+from itertools import product
+from numbers import Integral, Number, Real
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -59,6 +62,73 @@ def mask_specials(obj, specials):
     return obj
 
 
+def fit_to_scale(
+    arr: np.ndarray,
+    scale: Union[Integral, Real],
+    offset: Union[Integral, Real]
+) -> np.ndarray:
+    """
+    Return a version of `arr` cast to the minimum dtype that will hold its
+    range of values after multiplying by `offset` and adding `scale`.
+
+    Supports:
+
+    float32, float64, uint8, int8, uint16, int16, uint32, int32, uint64, int64.
+    """
+    if arr.dtype.char not in 'bBhHiIlLqQnNpPf':
+        raise TypeError(f"This function does not support {arr.dtype.name}")
+    if arr.dtype.char in 'fd' or int(scale + offset) != scale + offset:
+        bases, widths, infofunc = ('f',), (4, 8), np.finfo
+    else:
+        bases, widths, infofunc = ('u', 'i'), (1, 2, 4, 8), np.iinfo
+    amin, amax = map(int, (arr.min(), arr.max()))
+    smin, smax = amin * scale + offset, amax * scale + offset
+    for base, width in product(bases, widths):
+        candidate = np.dtype(f'{base}{width}')
+        cinfo = infofunc(candidate)
+        if smin >= cinfo.min and smax <= cinfo.max:
+            return arr.astype(candidate)
+    raise TypeError("Unable to find a suitable data type for scaling.")
+
+
+def overflow_wrap(array_func):
+    @wraps(array_func)
+    def with_upcasting(arr, scale, offset, *args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error", message=".*overflow enc.*")
+            try:
+                return array_func(arr, scale, offset, *args, **kwargs)
+            except (OverflowError, RuntimeWarning):
+                arr = fit_to_scale(arr, scale, offset)
+                return array_func(arr, scale, offset, *args, **kwargs)
+
+    return with_upcasting
+
+
+def _copy_scale(obj, offset, scale):
+    try:
+        # TODO: we should also be doing this per-plane scaling in inplace case
+        if len(obj) == len(scale) == len(offset) > 1:
+            planes = [
+                obj[ix] * scale[ix] + offset[ix] for ix in range(len(scale))
+            ]
+            stacked = np.rollaxis(np.ma.dstack(planes), 2)
+            return stacked
+    except TypeError:
+        pass  # len() is not usable on a float object
+    return obj * scale + offset
+
+
+def _inplace_scale(obj, offset, scale):
+    if len(obj) == len(scale) == len(offset) > 1:
+        for ix, _ in enumerate(scale):
+            obj[ix] = obj[ix] * scale[ix] + offset[ix]
+    else:
+        obj *= scale
+        obj += offset
+    return obj
+
+
 def scale_array(
     meta: PDRLike,
     obj: np.ndarray,
@@ -86,28 +156,13 @@ def scale_array(
     # we're casting to float, we can't
     # TODO: detect rollover cases, etc.
     if inplace is True and not casting_to_float(obj, scale, offset):
-        if len(obj) == len(scale) == len(offset) > 1:
-            for ix, _ in enumerate(scale):
-                obj[ix] = obj[ix] * scale[ix] + offset[ix]
-        else:
-            obj *= scale
-            obj += offset
-        return obj
+        return overflow_wrap(_inplace_scale)(obj, offset, scale)
     # if we're casting to float, permit specification of dtype
     # prior to operation (float64 is numpy's default and often excessive)
     if casting_to_float(obj, scale, offset):
         if float_dtype is not None:
             obj = obj.astype(float_dtype)
-    try:
-        if len(obj) == len(scale) == len(offset) > 1:
-            planes = [
-                obj[ix] * scale[ix] + offset[ix] for ix in range(len(scale))
-            ]
-            stacked = np.rollaxis(np.ma.dstack(planes), 2)
-            return stacked
-    except TypeError:
-        pass  # len() is not usable on a float object
-    return obj * scale + offset
+    return overflow_wrap(_copy_scale)(obj, offset, scale)
 
 
 # TODO: shake this out much more vigorously

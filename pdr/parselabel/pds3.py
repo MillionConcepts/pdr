@@ -1,4 +1,6 @@
 """Parsing utilities for PDS3 labels."""
+from __future__ import annotations
+
 import re
 import warnings
 from ast import literal_eval
@@ -22,6 +24,9 @@ PVL_BLOCK_INITIALS = ("OBJECT", "GROUP", "BEGIN_OBJECT", "BEGIN_GROUP")
 PVL_BLOCK_TERMINAL = re.compile(r"END(_OBJECT|$)")
 PVL_QUANTITY_VALUE = re.compile(r"((\d|\.|-)+([eE]-?\d+)?)|NULL|UNK|N/A")
 PVL_QUANTITY_UNITS = re.compile(r"<(.*)>")
+
+STRUCTUREPAT = re.compile(r"\^(?:(?:\w|_)+_)?STRUCTURE$")
+"""regex pattern for format file pointers"""
 
 
 def extract_pvl_block_terminal(line: str) -> Optional[str]:
@@ -344,8 +349,8 @@ def get_pds3_pointers(
     attempt to get all PDS3 "pointers" -- PVL parameters starting with "^" --
     from a MultiDict generated from a PDS3 label. These typically specify
     physical data locations, and in most cases correspond to data object
-    definitions later in the label (common exceptions include "^STRUCTURE" and
-    "^DATA_SET_MAP_PROJECTION").
+    definitions later in the label (common exceptions include "^STRUCTURE"-type
+    pointers and "^DATA_SET_MAP_PROJECTION").
     """
     return dig_for_keys(
         label, lambda k, _: k.startswith("^"), mtypes=(dict, MultiDict)

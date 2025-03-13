@@ -18,6 +18,7 @@ import pdr.formats.ground as ground
 import pdr.formats.ihw as ihw
 import pdr.formats.iue as iue
 import pdr.formats.juno as juno
+import pdr.formats.lp as lp
 import pdr.formats.lroc as lroc
 import pdr.formats.lro as lro
 import pdr.formats.mariner as mariner
@@ -31,6 +32,7 @@ import pdr.formats.msl_cmn as msl_cmn
 import pdr.formats.msl_ccam as msl_ccam
 import pdr.formats.msl_places as msl_places
 import pdr.formats.msl_rems as msl_rems
+import pdr.formats.msx as msx
 import pdr.formats.nh as nh
 import pdr.formats.odyssey as odyssey
 import pdr.formats.phoenix as phoenix

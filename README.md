@@ -86,6 +86,7 @@ us first, so we can expect your contributions and make sure they will be within
 scope.
 
 If you need general support you can find us on [OpenPlanetary Slack](https://app.slack.com/client/T04CWPQL9/C04CWPQM5)
+(available to [OpenPlanetary members](https://www.openplanetary.org/join))
 or feel free to [email](mailto:sierra@millionconcepts.com) the team.
 
 ---

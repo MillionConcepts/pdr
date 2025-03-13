@@ -28,7 +28,7 @@ from pdr.loaders._helpers import (
     _check_delimiter_stream,
 )
 from pdr.loaders.handlers import add_bit_column_info
-from pdr.parselabel.pds3 import pointerize, read_pvl
+from pdr.parselabel.pds3 import pointerize, read_pvl, STRUCTUREPAT
 from pdr.utils import append_repeated_object, check_cases, find_repository_root
 
 if TYPE_CHECKING:
@@ -280,8 +280,43 @@ def get_array_num_items(block: MultiDict) -> int:
     raise TypeError("can't interpret this item number specification")
 
 
+def _fix_up_line_prefix_table_block(
+    data: PDRLike, name: str, parent_block: MultiDict
+):
+    """
+    Deal with assorted quirks of underspecified line prefix table definitions
+    that will stymie the primary table format interpretation workflow.
+    """
+    # TODO:  we have to unpack nested structure definitions
+    #  here in order to get properties like ROWS and ROW_SUFFIX_BYTES
+    #  into the block. This is very ugly, and perhaps should be reworked.
+    format_block = inject_format_files(
+        # TODO: will need to modify this simple check of data.file_mapping if
+        #  we ever have a case of this type where the filename must be
+        #  specialized. Hopefully that does not happen as it will require
+        #  mutating the signature of get_block().
+        list(parent_block.items()), name, data.file_mapping[name], data
+    )
+    block = MultiDict(format_block)
+    if "ROWS" not in block.keys():
+        block["ROWS"] = block["LINES"]
+    if "ROW_SUFFIX_BYTES" not in block.keys():
+        block['ROW_SUFFIX_BYTES'] = (
+            block['SAMPLE_BITS'] // 8 * block['LINE_SAMPLES']
+        )
+    return block
+
+
 def get_block(data: PDRLike, name: str) -> Optional[MultiDict]:
-    """query wrapper for `pdr.Data.metablock_()`"""
+    """
+    query wrapper for `pdr.Data.metablock_()`. also checks for interleaved
+    objects.
+    """
+    if name in data._interleaved_objects.keys():
+        parent = data.metablock_(data._interleaved_objects[name]['parent'])
+        if data._interleaved_objects[name]['type'] == 'line_prefix_table':
+            return _fix_up_line_prefix_table_block(data, name, parent)
+        return parent
     return data.metablock_(name)
 
 
@@ -296,8 +331,11 @@ def get_target(data: PDRLike, name: str) -> PhysicalTarget:
     """
     Attempt to get the 'target' of a PDS3 pointer or other physical data
     location marker for `name`. This typically becomes the `target` argument
-    of `data_start_byte()` and/or `table_position()`.
+    of `data_start_byte()` and/or `table_position()`. Also redirects for
+    interleaved objects.
     """
+    if name in data._interleaved_objects.keys():
+        name = data._interleaved_objects[name]['parent']
     target = data.metaget_(name)
     if isinstance(target, Mapping) or target is None:
         target = data.metaget_(pointerize(name))
@@ -368,11 +406,13 @@ def data_start_byte(
     if isinstance(target, (list, tuple)):
         target = target[-1]
     if isinstance(target, int):
-        if record_bytes not in [None, ""]:
+        if target == 1:
+            start_byte = 0
+        elif record_bytes not in [None, ""]:
             start_byte = record_bytes * max(target - 1, 0)
-        else:
-            rows = identifiers["ROWS"]
-            row_bytes = identifiers["ROW_BYTES"]
+        elif "ROWS" in block.keys():
+            rows = block["ROWS"]
+            row_bytes = block["ROW_BYTES"]
             start_byte = max(0, count_from_bottom_of_file(fn, rows, row_bytes))
     elif isinstance(target, dict):
         start_byte = quantity_start_byte(target, record_bytes)
@@ -461,7 +501,7 @@ def table_position(
     definition and other previously-determined information.
 
     In the returned `dict`, if as_rows is True, the table is a delimiter-
-    separated ASCII table with no explicitly-defined row length, and both
+    seperated ASCII table with no explicitly-defined row length, and both
     "start" and "length" should be interpreted as rows; otherwise, both "start"
     and "length" should be interpreted as bytes. If length is None, the table
     occupies the entirety of the file including and after "start".
@@ -647,6 +687,7 @@ PDS3_STRUCTURED_DATA_PARAMETERS = (
     "ELEMENT",
     "FIELD",
     "PRIMITIVE_ARRAY",
+    # TODO: should "STRUCTURE" be here?
     "STRUCTURE",
 )
 
@@ -677,7 +718,7 @@ def read_format_block(
         f"BLOCK_REPETITIONS": block.get("REPETITIONS", 1),
         f"BLOCK_BYTES": block.get("BYTES")
     }
-    while "^STRUCTURE" in [obj[0] for obj in format_block]:
+    while any(STRUCTUREPAT.match(obj[0]) for obj in format_block):
         format_block = inject_format_files(format_block, object_name, fn, data)
     fields, needs_placeholder, add_placeholder, reps = [], False, False, None
     for item_type, definition in format_block:
@@ -688,7 +729,7 @@ def read_format_block(
             if not check_array_for_subobject(definition):
                 item_type = "PRIMITIVE_ARRAY"
         if item_type in ("COLUMN", "FIELD", "ELEMENT", "PRIMITIVE_ARRAY"):
-            # TODO: this `if "^STRUCTURE"...` block smells incredibly bad. Why
+            # TODO: this STRUCTUREPAT.match... block smells incredibly bad. Why
             #  is it guarded by the COLUMN/FIELD/ELEMENT/PRIMITIVE_ARRAY
             #  contitional? Why are we scrupulously calling MultiDict.add()
             #  and then immediately casting `definition` back to `dict`,
@@ -784,7 +825,7 @@ def inject_format_files(
     them, and insert them into the referencing definition.
     """
     format_fns = {
-        ix: kv[1] for ix, kv in enumerate(block) if kv[0] == "^STRUCTURE"
+        ix: kv[1] for ix, kv in enumerate(block) if STRUCTUREPAT.match(kv[0])
     }
     # make sure to insert the structure blocks in the correct order --
     # and remember that keys are not unique, so we have to use the index
@@ -792,6 +833,10 @@ def inject_format_files(
     last_ix = 0
     for ix, format_fn in format_fns.items():
         fmt = list(load_format_file(data, format_fn, name, fn).items())
+        # if the block is itself a TABLE, assume that it's intended to unpack
+        # into a parent object, like a LINE_PREFIX_TABLE on an image
+        if len(fmt) == 1 and "TABLE" in fmt[0][0]:
+            fmt = list(fmt[0][1].items())
         assembled_structure += block[last_ix:ix] + fmt
         last_ix = ix + 1
     assembled_structure += block[last_ix:]
@@ -841,13 +886,43 @@ def get_none() -> None:
 
 
 DEFAULT_DATA_QUERIES = MappingProxyType(
-        {
-            "identifiers": get_identifiers,
-            "block": specialize(get_block, check_special_block),
-            "fn": get_file_mapping,
-            "target": get_target,
-            "start_byte": specialize(data_start_byte, check_special_offset),
-            "debug": get_debug,
-            "return_default": get_return_default,
-        }
+    {
+        "identifiers": get_identifiers,
+        "block": specialize(get_block, check_special_block),
+        "fn": get_file_mapping,
+        "target": get_target,
+        "start_byte": specialize(data_start_byte, check_special_offset),
+        "debug": get_debug,
+        "return_default": get_return_default,
+    }
+)
+"""Queries common to most Loaders."""
+
+START_BYTE_QUERIES = MappingProxyType(
+    {
+        "identifiers": get_identifiers,
+        "block": specialize(get_block, check_special_block),
+        "fn": get_file_mapping,
+        "target": get_target,
+        "start_byte": specialize(data_start_byte, check_special_offset),
+    }
+)
+"""
+Queries for simply finding an object's start byte and containing file. Used 
+for the standalone_start_byte() 'a la carte' function below, designed to 
+support implicit object association.
+"""
+
+
+def standalone_start_byte(
+    data: PDRLike, object_name: str
+) -> tuple[Union[str, Path], int]:
+    from pdr.func import softquery
+
+    data._target_path(object_name)
+    result = softquery(
+        lambda fn, start_byte: None,
+        START_BYTE_QUERIES,
+        kwargdict={"data": data, "name": "IMAGE"},
     )
+    return result['fn'], result['start_byte']

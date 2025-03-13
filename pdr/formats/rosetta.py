@@ -1,6 +1,3 @@
-from pdr.loaders.queries import read_table_structure
-from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
-
 def rosetta_table_loader(filename, fmtdef_dt):
     """
     HITS
@@ -13,6 +10,7 @@ def rosetta_table_loader(filename, fmtdef_dt):
     fmtdef, dt = fmtdef_dt
     table.columns = fmtdef["NAME"].to_list()
     return table
+
 
 def midas_rdr_sps_structure(block, name, filename, data, identifiers):
     """
@@ -28,6 +26,8 @@ def midas_rdr_sps_structure(block, name, filename, data, identifiers):
     * rosetta_dust
         * RDR_midas_sps
     """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+    from pdr.loaders.queries import read_table_structure
     import pandas as pd
 
     fmtdef = read_table_structure(
@@ -57,6 +57,7 @@ def midas_rdr_sps_structure(block, name, filename, data, identifiers):
     fmtdef = compute_offsets(fmtdef)
     return insert_sample_types_into_df(fmtdef, identifiers)
 
+
 def fix_pad_length_structure(block, name, filename, data, identifiers):
     """
     The MIDAS FSC tables and several CONSERT ptypes have ROW_PREFIX_BYTES, 
@@ -78,6 +79,8 @@ def fix_pad_length_structure(block, name, filename, data, identifiers):
     * rosetta_dust
         * RDR_midas_fsc
     """
+    from pdr.pd_utils import insert_sample_types_into_df, compute_offsets
+    from pdr.loaders.queries import read_table_structure
     fmtdef = read_table_structure(
         block, name, filename, data, identifiers
     )

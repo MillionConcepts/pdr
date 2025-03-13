@@ -116,6 +116,8 @@ def _interpret_as_binary(fn, fmtdef, dt, block, start_byte):
     #  perspective; it's perfectly stable) for tables defined as
     #  a single row with tens or hundreds of thousands of columns
     count = block.get("ROWS")
+    # TODO: what is this a fallback for? it could produce incorrect
+    #  behavior in some cases
     count = count if count is not None else 1
     with decompress(fn) as f:
         table = np_from_buffered_io(

@@ -53,13 +53,13 @@ from pdr.parselabel.pds3 import (
     get_pds3_pointers,
     pointerize,
     read_pvl,
+    STRUCTUREPAT
 )
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 from pdr.parselabel.utils import DEFAULT_PVL_LIMIT
 from pdr.pdrtypes import DataIdentifiers
 from pdr.utils import (
     associate_label_file,
-    catch_return_default,
     check_cases,
     check_primary_fmt,
     prettify_multidict,
@@ -258,9 +258,12 @@ class Data:
         # cache for hdulist, for primary FITS files -- this is primarily
         # an optimization for compressed files
         self._hdulist = None
-        # dict of [str, int] for cases in which we need to reindex duplicate
-        # HDU names in primary FITS files
+        # dict of [str, int] for HDU name / position in primary FITS files,
+        # for reindexing duplicates and efficiency
         self._hdumap = None
+        # data structure recording interleaved PDS3 objects not defined at top
+        # level, intended for things like axplanes and line prefix tables
+        self._interleaved_objects = {}
         # Attempt to identify and assign a label file
         self.labelname = associate_label_file(
             self.filename, label_fn, skip_existence_check
@@ -297,6 +300,7 @@ class Data:
         if primary_format is not None:
             self._init_primary_format()
             return
+        self.identifiers = self.metadata.identifiers
         self.pointers = get_pds3_pointers(self.metadata)
         # if self.pointers is None, we've probably got a weird edge case where
         # someone directly opened a PVL file that's not an individual product
@@ -304,7 +308,6 @@ class Data:
         # reason to not allow them to use PDR as a PVL parser.
         if self.pointers is not None:
             self._find_objects()
-        self.identifiers = self.metadata.identifiers
 
     # noinspection PyProtectedMember
     def load_metadata_changes(self):
@@ -337,19 +340,85 @@ class Data:
                 return str(Path(self.getattr(target)).absolute().parent)
         raise FileNotFoundError
 
+    def _associate_prefix_tables(self, imname, preobjs):
+        """
+        Check for underspecified line prefix table objects associated with a
+        PDS3 image specification.
+        """
+        block = self.metablock_(imname)
+        # TODO, maybe: do a special case check against the name. This is only
+        #  important if we ever have a special object name case that is
+        #  relevant. (currently we do not.)
+        if block is None:
+            return
+        if len(spointers := tuple(filter(STRUCTUREPAT.match, block))) == 0:
+            return
+        elif len(spointers) > 1:
+            # hopefully this never happens. we will handle it if so
+            raise NotImplementedError(
+                "Multiple implicitly-defined line prefix tables within a "
+                "single object are not supported."
+            )
+        # check for a matching prefix table defined at top level with no
+        # explicit block
+        if len(preobjs) > 0:
+            from pdr.loaders.queries import standalone_start_byte
+
+            im_fn_byte = standalone_start_byte(self, imname)
+            found = False
+            for pre in preobjs:
+                if standalone_start_byte(self, pre) == im_fn_byte:
+                    self._interleaved_objects[pre] = {
+                        'parent': imname, 'type': 'line_prefix_table'
+                    }
+                    found = True
+            if found is True:
+                return
+        # TODO: unclear if this should be a special case or a general fix. Need 
+        # more examples to know for sure; Galileo SSI-4-REDR IMAGE objects are 
+        # the current known example.
+        # For cases when ^LINE_PREFIX_STRUCTURE = "" 
+        if (
+            "^LINE_PREFIX_STRUCTURE" in block 
+            and block["^LINE_PREFIX_STRUCTURE"] == ""
+        ):
+            return
+        # TODO, maybe: technically this could be a line suffix table,
+        #  although we have never found them. We could add a check.
+        fixname = f'{imname}_LINE_PREFIX_TABLE'
+        self._interleaved_objects[fixname] = {
+            'parent': imname, 'type': 'line_prefix_table'
+        }
+        self.index.append(fixname)
+
     def _find_objects(self):
         """
         Add all top-level data objects mentioned in the label to this object's
-        index, except for 'trivial' one (see `loaders.utility.is_trivial()`).
+        index, except for 'trivial' ones (see `loaders.utility.is_trivial()`).
+        Also check for interleaved objects not defined at top level (such as
+        some line prefix tables).
+
+        TODO: check for ISIS-style axplane objects.
         """
         from pdr.loaders.utility import is_trivial
 
         # TODO: make this not add objects again if called multiple times
         for pointer in self.pointers:
-            object_name = depointerize(pointer)
-            if is_trivial(object_name):
+            imname = depointerize(pointer)
+            if is_trivial(imname):
                 continue
-            self.index.append(object_name)
+            self.index.append(imname)
+        # check for poorly / implicitly-defined line prefix tables
+        # top-level line prefix objects with no blocks of their own
+        preobjs = [
+            n for n in self.index
+            if "LINE_PREFIX" in n and self.metablock_(n) is None
+        ]
+        for imname in tuple(
+            # greedily consuming the filter so that we can mutate self.index
+            filter(lambda n: "IMAGE" in n and "TABLE" not in n, self.index)
+        ):
+            self._associate_prefix_tables(imname, preobjs)
 
     def _object_to_filename(
         self, object_name: str
@@ -422,7 +491,10 @@ class Data:
             return self.file_mapping[object_name]
         try:
             if isinstance(object_name, set):
-                file_list = [self._target_path(obj) for obj in object_name]
+                file_list = [
+                    self._target_path(obj, cached=cached, raise_missing=raise_missing)
+                    for obj in object_name
+                ]
                 self.file_mapping[object_name] = file_list
                 return file_list
             path = check_cases(self._object_to_filename(object_name))
@@ -527,15 +599,15 @@ class Data:
 
     def _file_not_found(self, object_name: str):
         """Implements default file-not-found behavior."""
-        warnings.warn(
+        message = (
             f"{object_name} file {self._object_to_filename(object_name)} "
             f"not found in path."
         )
-        return_default = self.metaget_(object_name)
-        maybe = catch_return_default(
-            self.debug, return_default, FileNotFoundError()
-        )
-        setattr(self, object_name, maybe)
+        if self.debug:
+            raise FileNotFoundError(message)
+        else:
+            warnings.warn(message)
+        setattr(self, object_name, self.metaget_(object_name))
 
     def _load_primary_fits(
         self, object_name: str
@@ -631,8 +703,7 @@ class Data:
             )
             if structure.is_header() is True:
                 return self._add_loaded_objects(result)
-            if f"{object_name}_HEADER" not in self.index:
-                hid = self._find_fits_header_pds4_id(offset)
+            if (hid := self._find_fits_header_pds4_id(offset)) is not None:
                 result[hid] = result.pop(f"{object_name}_HEADER")
             if structure.is_array() is True:
                 self._scaleflags[object_name] = True

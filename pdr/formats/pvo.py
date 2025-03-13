@@ -15,7 +15,7 @@ def orpa_low_res_loader(data, name):
 
 def oims_12s_loader(data, name):
     """
-    OIMS 12 second averages: all labels say 'ROWS = 42' reglardless of the
+    OIMS 12 second averages: all labels say 'ROWS = 42' regardless of the
     data's actual length
 
     HITS

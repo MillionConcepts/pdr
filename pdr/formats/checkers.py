@@ -82,6 +82,12 @@ def check_special_offset(
     ):
         return formats.cassini.get_offset(fn, identifiers)
     if (
+        identifiers["DATA_SET_ID"] == "CO-E/V/J-ISSNA/ISSWA-2-EDR-V1.0"
+        and 1359362956 <= float(data.metaget_("SPACECRAFT_CLOCK_STOP_COUNT"))
+        and float(data.metaget_("SPACECRAFT_CLOCK_STOP_COUNT")) <= 1363539029
+    ):
+        return formats.cassini.coiss_1006_offset(data, name, identifiers)
+    if (
         identifiers["INSTRUMENT_ID"] == "CRAT"
         and identifiers["PRODUCT_TYPE"] == "EDR"
         and name == "TABLE_1"
@@ -306,6 +312,12 @@ def check_special_table_reader(
         and name == "WEAREC_TABLE"
     ):
         return True, formats.lro.wea_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "LUNAR PROSPECTOR"
+        and identifiers["PRODUCT_ID"] == "OUTAGES"
+        and name == "TABLE"
+    ):
+        return True, formats.lp.ancillary_table_loader(fn, fmtdef_dt)
     return False, None
 
 
@@ -481,6 +493,14 @@ def check_special_structure(
         return True, formats.rosetta.fix_pad_length_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] in ("SOLID_STATE_IMAGING", 
+                                               "SOLID STATE IMAGING SYSTEM")
+    ):
+        return formats.galileo.ssi_redr_structure(
+            block, name, fn, data, identifiers
+        )
     return False, None
 
 
@@ -566,6 +586,33 @@ def check_special_position(
         return True, formats.mex.mrs_get_position(
             identifiers, block, target, name, start_byte
         )
+    if (
+        identifiers["DATA_SET_ID"] in ("ESO1M-SR-APPH-4-OCC-V1.0",
+                                       "ESO22M-SR-APPH-4-OCC-V1.0",
+                                       "IRTF-SR-URAC-4-OCC-V1.0",
+                                       "PAL200-SR-CIRC-4-OCC-V1.0",
+                                       "MCD27M-SR-IIRAR-4-OCC-V1.0")
+        and "GEOM" in identifiers["PRODUCT_ID"]
+        and name == "SERIES"
+    ):
+        return True, formats.ground.ebrocc_geom_get_position(
+            identifiers, block, target, name, start_byte
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "MRO-M-CRISM-5-RDR-MULTISPECTRAL-V1.0"
+        and "MRRWV" in identifiers["PRODUCT_ID"]
+        and name == "TABLE"
+    ):
+        return True, formats.mro.crism_mrdr_ancill_position(
+            identifiers, block, target, name, start_byte
+        )
+    if (
+        identifiers["DATA_SET_ID"] == "MSX-L-SPIRIT3-2/4-V1.0"
+        and name == "ENVI_HEADER"
+    ):
+        return True, formats.msx.cube_envi_header_position(
+            identifiers, block, target, name, start_byte, fn
+        )
     return False, None
 
 
@@ -606,6 +653,10 @@ def check_special_sample_type(
         and identifiers["PRODUCT_ID"].endswith("BIN")
     ):
         return formats.ulysses.get_sample_type(base_samp_info)
+    if re.match(
+        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
+    ):
+        return formats.cassini.line_prefix_sample_type(base_samp_info)
     return False, None
 
 
@@ -658,9 +709,10 @@ def check_special_bit_format(
         return formats.cassini.iss_telemetry_bit_col_format(obj, definition)
     if (
         identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
-        and identifiers["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING"
+        and identifiers["INSTRUMENT_NAME"] in ("SOLID_STATE_IMAGING", 
+                                               "SOLID STATE IMAGING SYSTEM")
     ):
-        return formats.galileo.ssi_telemetry_bit_col_format(definition)
+        return formats.galileo.ssi_redr_bit_col_format(definition)
     return False, None
 
 
@@ -805,9 +857,18 @@ def check_special_block(
     if (
         identifiers["DATA_SET_ID"] == "CO-CAL-ISS-2-V1.0"
         and name == "IMAGE"
-        and ".DA" in data.metaget_("^IMAGE")[0]
+        and (".DA" in data.metaget_("^IMAGE")[0] 
+             or identifiers["FILE_RECORDS"] == 1025)
     ):
         return formats.cassini.iss_calib_da_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] in ("CO-S-ISSNA/ISSWA-2-EDR-V1.0",
+                                       "CO-E/V/J-ISSNA/ISSWA-2-EDR-V1.0",
+                                       "CO-CAL-ISSNA/ISSWA-2-EDR-V1.0")
+        and name in ("LINE_PREFIX_TABLE",
+                     "TELEMETRY_TABLE")
+    ):
+        return formats.cassini.iss_edr_special_block(data, name)
     if (
         identifiers["DATA_SET_ID"] == "MGS-M-MOLA-3-PEDR-L1A-V1.0"
         and "TABLE" in name
@@ -818,6 +879,12 @@ def check_special_block(
         and name == "QUALITY_IMAGE"
     ):
         return formats.iue.get_special_block(data, name)
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "SOLID STATE IMAGING SYSTEM"
+        and name == "LINE_PREFIX_TABLE"
+    ):
+        return True, formats.galileo.ssi_prefix_block(data, name)
     return False, None
 
 
@@ -850,11 +917,18 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
         pointer in ("HEADER", "HISTORY")
     ):
         return formats.themis.trivial_themis_geo_loader(pointer)
-    if re.match(
-        r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
+    # if re.match(
+    #     r"CO-(CAL-ISS|[S/EVJ-]+ISSNA/ISSWA-2)", identifiers["DATA_SET_ID"]
+    # ):
+    #     if pointer == "LINE_PREFIX_TABLE":
+    #         return formats.cassini.trivial_loader(pointer)
+    if (
+        identifiers["DATA_SET_ID"] == "CO-CAL-ISS-2-V1.0"
+        and pointer in ("TELEMETRY_TABLE",
+                        "LINE_PREFIX_TABLE")
+        and identifiers["FILE_RECORDS"] == 1025
     ):
-        if pointer == "LINE_PREFIX_TABLE":
-            return formats.cassini.trivial_loader(pointer)
+        return formats.cassini.iss_cal_trivial_loader(pointer)
     if (
         identifiers["SPACECRAFT_NAME"] == "MAGELLAN"
         and (fn.endswith(".img") or fn.endswith(".ibg"))
@@ -879,6 +953,16 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
         and pointer == "SAMPLE_SPECTRUM_QUBE"
     ):
         return formats.galileo.nims_sample_spectral_qube_trivial_loader()
+    if (
+        identifiers["DATA_SET_ID"] == "BUGLAB-L-BUG-4-APOLLO-SAMPLES-V1.0"
+        and pointer == "HEADER"
+    ):
+        return formats.ground.trivial_header_loader()
+    if (
+        identifiers["DATA_SET_ID"] == "MSL-M-APXS-4/5-RDR-V1.0"
+        and pointer == "HEADER"
+    ):
+        return formats.msl_apxs.trivial_header_loader()
     return False
 
 
@@ -929,6 +1013,12 @@ def check_special_fn(
         and object_name == "SPREADSHEET"
     ):
         return formats.nh.get_fn(data)
+    if (
+        identifiers["SPACECRAFT_NAME"] == "GALILEO ORBITER"
+        and identifiers["INSTRUMENT_NAME"] == "SOLID_STATE_IMAGING"
+        and object_name == "IMAGE_LINE_PREFIX_TABLE"
+    ):
+        return formats.galileo.ssi_redr_prefix_fn(data)
     return False, None
 
 

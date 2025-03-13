@@ -1,4 +1,48 @@
 # Version History
+## [1.4.0] - 2025-03-13
+### Added
+
+#### Features
+- Support for line prefix tables
+- Useful messages for missing files in debug mode
+
+#### Dataset Support
+- additional LRO LAMP RDR table/image pointers
+- raw images of 9P/TEMPEL 1 from the Keck Observatory
+- Deep Space 1 safed MICAS and PEPE datasets
+- Lunar Prospector ancillary ascii tables
+- VG1/VG2 safed MAG solar wind and POS cruise phase tables
+- safed Stardust datasets from the mission's early cruise phase
+- New Horizons Pluto encounter ALICE stellar occultation data (updated from
+  'known unsupported' to 'notionally supported')
+- MGS RSS USO tables
+- PVO ORPA and ORSE misc ancillary tables
+- JUNO Waves EDR housekeeping tables
+- Earth-based ring occultation (EBROCC_0001) ancillary data
+- Voyager ring profiles ancillary data
+- ground-based MAHL images
+- CRISM ancillary tables
+- Clementine BSR RDR sorted/aggregated tables (CL_2108)
+- Line prefix tables
+  - Galileo SSI REDR
+  - Cassini ISS
+  - HiRISE EDR
+
+### Changed
+
+
+### Fixed
+- numpy >= 2.0 no longer automatically upcasts integer dtypes in cases like
+  `np.int16(0) + 1000000`. In some unusual cases, this can cause an 
+  `OverflowError` when applying scaling factors / offsets (MOLA MEGDRs formed
+  the motivating example). `Data.get_scaled()` will now catch these errors and
+  automatically typecast arrays in response.
+- glitch reading headers from PDS4-labeled FITS files without unique local 
+  references for said headers
+
+### Removed
+
+
 
 ## [1.3.0] - 2024-10-18
 ### Added

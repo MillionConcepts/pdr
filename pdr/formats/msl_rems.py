@@ -23,6 +23,7 @@ def edr_table_loader(filename, fmtdef_dt, block, start_byte):
     table.columns = col_names
     return table
 
+
 def edr_offset(data, name):
     """
     HITS:
@@ -32,6 +33,7 @@ def edr_offset(data, name):
     """
     start_byte = data.metaget_("^"+name)[1] - 1
     return True, start_byte
+
 
 def rdr_table_loader(filename, fmtdef_dt):
     """
