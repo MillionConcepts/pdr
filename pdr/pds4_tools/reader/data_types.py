@@ -323,7 +323,7 @@ def numpy_to_pds_type(dtype, ascii_numerics=False):
     if np.issubdtype(dtype, np_unicode):
         data_type = 'UTF8_String'
 
-    elif np.issubdtype(dtype, np.string_):
+    elif np.issubdtype(dtype, np.bytes_):
         data_type = 'ASCII_String'
 
     # For datetime dtypes
