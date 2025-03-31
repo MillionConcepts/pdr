@@ -4,7 +4,7 @@ from typing import Union, IO
 
 
 KNOWN_LABEL_ENDINGS = (
-    re.compile(b"\nEND {0,2}(\r| {8})"),  # common PVL convention
+    re.compile(b"\nEND {0,8}(\r| {8})"),  # common PVL convention
     re.compile(b"\x00{3}"),  # just null bytes, for odder cases
 )
 """
@@ -29,7 +29,7 @@ def _scan_to_end_of_label(
         if (chunk := buf.read(50 * 1024)) == b'':
             break
         for ending in KNOWN_LABEL_ENDINGS:
-            if (endmatch := re.search(ending, text[:-15] + chunk)) is not None:
+            if (endmatch := re.search(ending, chunk)) is not None:
                 return text + chunk[: endmatch.span()[1]]
         text, length = text + chunk, length + 50 * 1024
     if raise_no_ending is True:
