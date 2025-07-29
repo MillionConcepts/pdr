@@ -1019,6 +1019,11 @@ def check_special_fn(
         and object_name == "IMAGE_LINE_PREFIX_TABLE"
     ):
         return formats.galileo.ssi_redr_prefix_fn(data)
+    if (identifiers["DATA_SET_ID"] == "VG2-SR/UR/NR-PPS-2/4-OCC-V1.0" 
+        and identifiers["PRODUCT_TYPE"] == "JITTER" 
+        and object_name == "SERIES"
+    ):
+        return formats.voyager.get_fn(data)
     return False, None
 
 
