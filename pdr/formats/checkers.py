@@ -318,6 +318,13 @@ def check_special_table_reader(
         and name == "TABLE"
     ):
         return True, formats.lp.ancillary_table_loader(fn, fmtdef_dt)
+    if (
+        identifiers["DATA_SET_ID"] == "ODY-M-GRS-2-EDR-V1.0"
+        and identifiers["PRODUCT_TYPE"] == "E_KERNEL"
+        and ".txt" in fn.lower()
+    ):
+        return formats.odyssey.grs_e_kernel_loader(name, fn)
+    
     return False, None
 
 
@@ -501,6 +508,12 @@ def check_special_structure(
         return formats.galileo.ssi_redr_structure(
             block, name, fn, data, identifiers
         )
+    if (
+        identifiers["DATA_SET_ID"] == "ODY-M-GRS-2-EDR-V1.0"
+        and identifiers["PRODUCT_TYPE"] == "E_KERNEL"
+        and ".txt" in fn.lower()
+    ):
+        return formats.odyssey.grs_e_kernel_structure()
     return False, None
 
 
