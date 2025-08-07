@@ -242,6 +242,7 @@ kernels in combination with JPL Horizons).
     - NAC EDR, CDR, and raw image data (NACR and NACL in image name)
     - NAC DTM
     - WAC Derived products: EMP, HAPKE, HAPKE PARAMMAP, ORBITS, POLE ILL, TIO2
+    - Anaglyphs
   - Mini-RF
     - Bistatic Radar EDR, RDR, and DDR
     - Global mosaics
@@ -565,11 +566,6 @@ kernels in combination with JPL Horizons).
     spectroscopy data), LSPN (subsampled images only), NNSN, and PPN
   - NNSN Halley images version 1.0 and 2.0 (excluding the V1.0 addenda dataset, 
     which is officially supported)
-#### LROC
-  - Anaglyphs
-  - NAC DTM without labels (under EXTRAS folder at LROC mission node)
-  - WAC derived tif files without labels (under EXTRAS folder at LROC
-  mission node)
 #### Mars Express
   - HRSC derived clouds data
   - PFS derived water vapor maps

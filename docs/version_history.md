@@ -1,4 +1,29 @@
 # Version History
+## [X.X.X] - 202X-XX-XX
+### Added
+
+#### Features
+
+
+#### Dataset Support
+- misc additional products from:
+  - Stardust and Stardust-NEXT
+  - Rosetta
+  - Dawn
+  - NEAR
+  - Mars Odyssey
+  - Voyager
+
+### Changed
+
+
+### Fixed
+
+
+### Removed
+
+
+# Version History
 ## [1.4.0] - 2025-03-13
 ### Added
 
