@@ -420,7 +420,8 @@ def index_duplicate_pointers(
                         key_editor=True,
                     )
                     params.append(indexed_depointer)
-                    params.remove(depointer)
+                    if depointer in params:
+                        params.remove(depointer)
 
     return mapping, params
 
