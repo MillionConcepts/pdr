@@ -19,6 +19,7 @@ def spreadsheet_loader(filename, fmtdef_dt, data_set_id):
         * rdr_inca
         * rdr_lemms_avg
         * rdr_lemms_fullres
+        * rdr_ancil
     * cassini_radar
         * asum
     * cassini_rpws
@@ -126,6 +127,23 @@ def get_position(identifiers, block, target, name, filename, start_byte):
         start = 0
         table_props["start"] = start
     table_props["length"] = length
+    return table_props
+
+def rpws_ancil_position(identifiers, block, target, name, start_byte):
+    """
+    Most of the labels have the wrong ROWS value. This special case uses the 
+    FILE_RECORDS instead.
+
+    HITS:
+    * cassini_rwps
+        * ancil_tol
+    """
+    table_props = table_position(identifiers, block, target, name, start_byte)
+
+    n_records = identifiers["FILE_RECORDS"]
+    record_bytes = identifiers["ROW_BYTES"]
+
+    table_props["length"] = n_records * record_bytes
     return table_props
 
 

@@ -134,6 +134,14 @@ def check_special_table_reader(
         return True, formats.cassini.spreadsheet_loader(
             fn, fmtdef_dt, identifiers["DATA_SET_ID"]
         )
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "CASSINI ORBITER"
+        and identifiers["PRODUCT_TYPE"] == "ANCILLARY"
+        and "CO-S-MIMI-4-" in identifiers["DATA_SET_ID"]
+    ):
+        return True, formats.cassini.spreadsheet_loader(
+            fn, fmtdef_dt, identifiers["DATA_SET_ID"]
+        )
     if identifiers["INSTRUMENT_ID"] == "CHEMIN" and ("SPREADSHEET" in name):
         # mangled object names + positions
         return True, formats.msl_cmn.spreadsheet_loader(fn)
@@ -551,6 +559,14 @@ def check_special_position(
     ):
         return True, formats.cassini.get_position(
             identifiers, block, target, name, fn, start_byte
+        )
+    if (
+        "CO-V/E/J/S/SS-RPWS-" in identifiers["DATA_SET_ID"]
+        and identifiers["PRODUCT_TYPE"] == "ANCILLARY"
+        and name == "RPWS_TIME_ORDERED_TABLE"
+    ):
+        return True, formats.cassini.rpws_ancil_position(
+            identifiers, block, target, name, start_byte
         )
     if (
         identifiers["DATA_SET_ID"] == "LRO-L-RSS-1-TRACKING-V1.0"
