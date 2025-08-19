@@ -278,7 +278,7 @@ kernels in combination with JPL Horizons).
 #### Mars Express
   - MARSIS EDRs and RDRs
   - ASPERA EDRs, RDRs, and DDRs
-  - HRSC REFDRs, and SRC RDRs
+  - HRSC REFDRs, and RDRs
   - PFS raw interferograms, and housekeeping tables
   - SPICAM UV and IR RDRs
   - MRS L1B and L2 products, and derived profiles
@@ -601,7 +601,7 @@ kernels in combination with JPL Horizons).
   - RPWS telemetry data
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
   - VIMS EDR cubes (PDS3 labels; support not planned--open with PDS4 labels)
-  - Huygens Probe DISR IR tables (support planned; low priority )
+  - Huygens Probe DISR IR tables (PDS3 labels, support not planned; open with PDS4 labels instead)
 #### Clementine
   - RSS EDRs (support not planned)
   - RSS bistatic radar RDR images in the CL_2108 volume's 'sort' directory (support planned)
@@ -662,7 +662,6 @@ kernels in combination with JPL Horizons).
 #### Mariner 10
   - Image EDRs (support planned; low priority)
 #### Mars Express
-  - HRSC RDRs (support planned)
   - PFS calibrated radiance spectra (support not planned)
   - SPICAM UV and IR EDRs (support planned)
   - MRS most L1A closed loop products: ICL, TCL, TNF, and some ODF products with incomplete labels (support not planned)
