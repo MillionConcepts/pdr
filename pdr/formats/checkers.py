@@ -46,6 +46,7 @@ from multidict import MultiDict
 
 from pdr import formats
 from pdr.loaders.utility import is_trivial
+from pdr.pdrtypes import ImageProps, DataIdentifiers
 
 if TYPE_CHECKING:
     from pdr.loaders.astrowrap import HDUList
@@ -112,6 +113,12 @@ def check_special_offset(
              "HSREG__" in identifiers["PRODUCT_ID"])
     ):
         return formats.msl_rems.edr_offset(data, name)
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+            and "EDR" in identifiers["DATA_SET_ID"]
+    ):
+        return formats.msl_edr.edr_offset()
     return False, None
 
 
@@ -332,7 +339,7 @@ def check_special_table_reader(
         and ".txt" in fn.lower()
     ):
         return formats.odyssey.grs_e_kernel_loader(name, fn)
-    
+
     return False, None
 
 
@@ -914,6 +921,13 @@ def check_special_block(
         and name == "LINE_PREFIX_TABLE"
     ):
         return True, formats.galileo.ssi_prefix_block(data, name)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+        and "EDR" in identifiers["DATA_SET_ID"]
+        and name == "IMAGE"
+    ):
+        return True, formats.msl_edr.get_special_block(data, name)
     return False, None
 
 
@@ -1048,11 +1062,17 @@ def check_special_fn(
         and object_name == "IMAGE_LINE_PREFIX_TABLE"
     ):
         return formats.galileo.ssi_redr_prefix_fn(data)
-    if (identifiers["DATA_SET_ID"] == "VG2-SR/UR/NR-PPS-2/4-OCC-V1.0" 
-        and identifiers["PRODUCT_TYPE"] == "JITTER" 
+    if (identifiers["DATA_SET_ID"] == "VG2-SR/UR/NR-PPS-2/4-OCC-V1.0"
+        and identifiers["PRODUCT_TYPE"] == "JITTER"
         and object_name == "SERIES"
     ):
         return formats.voyager.get_fn(data)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+        and "EDR" in identifiers["DATA_SET_ID"]
+    ):
+        return formats.msl_edr.msl_msss_edr_prefix_fn(data)
     return False, None
 
 
@@ -1105,4 +1125,30 @@ def check_special_fits_start_byte(
         identifiers["DATA_SET_ID"] == "LRO-L-LAMP-3-RDR-V1.0" 
     ):
         return formats.lro.lamp_rdr_hdu_start_byte(name, hdulist)
+    return False, None
+
+
+def check_special_objects(identifiers):
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+            and "EDR" in identifiers["DATA_SET_ID"]
+    ):
+        # a consequence of this is the the geometry file and miniheader objects
+        # denoted in the label for the edrs
+        return True, ['IMAGE']
+    return False, None
+
+
+def check_special_compressed_file_reader(
+        identifiers,
+        fn,
+):
+    """ Distribute to correct specialized image loader, otherwise return False/None. """
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+            and "EDR" in identifiers["DATA_SET_ID"]
+    ):
+        return True, formats.msl_edr.msl_edr_image_loader(fn)
     return False, None

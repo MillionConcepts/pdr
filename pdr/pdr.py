@@ -401,6 +401,12 @@ class Data:
         TODO: check for ISIS-style axplane objects.
         """
         from pdr.loaders.utility import is_trivial
+        from pdr.formats.checkers import check_special_objects
+
+        is_special, special_objects = check_special_objects(self.identifiers)
+        if is_special is True:
+            self.index += special_objects
+            return
 
         # TODO: make this not add objects again if called multiple times
         for pointer in self.pointers:

@@ -10,7 +10,7 @@ from pdr.formats import (
     check_special_position,
     check_special_structure,
     check_special_table_reader,
-    check_special_fits_start_byte
+    check_special_fits_start_byte,
 )
 from pdr.func import get_argnames, softquery, specialize, call_kwargfiltered
 from pdr.parselabel.pds3 import depointerize
@@ -76,6 +76,7 @@ class ReadImage(Loader):
     """wrapper for read_image"""
 
     def __init__(self):
+        from pdr.formats import check_special_compressed_file_reader
         from pdr.loaders.image import read_image
         from pdr.loaders.queries import (
             base_sample_info,
@@ -84,8 +85,7 @@ class ReadImage(Loader):
             get_qube_band_storage_type,
             generic_image_properties,
         )
-
-        super().__init__(read_image)
+        super().__init__(specialize(read_image, check_special_compressed_file_reader))
         self.queries = DEFAULT_DATA_QUERIES | {
             "base_samp_info": base_sample_info,
             "sample_type": specialize(

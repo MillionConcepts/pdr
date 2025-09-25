@@ -10,13 +10,17 @@ import vax
 
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import make_c_contiguous, np_from_buffered_io
-from pdr.pdrtypes import ImageProps
+from pdr.pdrtypes import ImageProps, DataIdentifiers
 from pdr.utils import decompress
 
 
 def read_image(
-    name: str, gen_props: ImageProps, fn: str, start_byte: int
-) -> np.ndarray:
+    identifiers: DataIdentifiers,
+    name: str,
+    gen_props: ImageProps,
+    fn: str,
+    start_byte: int
+):
     """Read an IMAGE object and return it as a numpy array."""
     props = get_image_properties(gen_props)
     f = decompress(fn)  # seamlessly deal with compression
