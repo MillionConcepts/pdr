@@ -364,6 +364,7 @@ kernels in combination with JPL Horizons).
   - Hazcam EDR and RDR (including ops parameter maps)
   - Navcam EDR and RDR (including ops parameter maps)
   - Mastcam, MAHLI, and MARDI RDRs
+  - Mastcam, MAHLI, and MARDI EDRs
   - CCAM LIBS EDR, L1B, and L2; CCAM RMI EDR and RDR
   - APXS EDR and RDR (*note: the EDR checksum suffix is not supported*)
   - Chemin L1B and L2 RDRs, and EDRs

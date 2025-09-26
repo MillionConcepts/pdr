@@ -3,7 +3,7 @@
 ### Added
 
 #### Features
-
+- Decompression module for MSSS DAT files
 
 #### Dataset Support
 - misc additional products from:
@@ -13,6 +13,7 @@
   - NEAR
   - Mars Odyssey
   - Voyager
+- MSL Mastcam, MAHLI, and MARDI EDRs
 
 ### Changed
 
