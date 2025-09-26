@@ -26,7 +26,7 @@ DEBUG = 0  # kind of a relic atp
 PREDSYNC = 0xffff0000
 
 
-def edr_offset():
+def edr_offset(data, name):
     """
     We need a start byte value for the ReadImage wrapper to work correctly,
     and usually the image does start after 64 bytes. start_byte is used by
@@ -87,7 +87,8 @@ def edr_offset():
 
 def msl_msss_edr_prefix_fn(data):
     """
-    The compressed image info is stored in a .dat file, not .img.
+    The compressed image info is stored in a .dat file, not .img. We
+    only want this for the IMAGE object, not MODEL_DESC.
     HITS
     * msl_mst_edr
         * C
@@ -268,7 +269,7 @@ def read_header(fd):
             # then it's probably not valid
             return None
         # what htonl did in C
-        raw_hdr = list(struct.unpack(">16I", data))
+        raw_hdr = list(struct.unpack(">16I", header))
         # if last thing in list is header magic,
         # we have found a valid header
         if raw_hdr[15] == HEADER_MAGIC1:
@@ -756,7 +757,11 @@ def msl_edr_image_loader(infile):
         else:
             image = image.reshape((dat_hdr.height, dat_hdr.width, dat_hdr.bands,))
         os.close(fd)
-        return image
+        # we have to return a C-contiguous array (it's not contiguous after
+        # transposing) purely for the hashing during ix test to work properly.
+        # I think the PRED are test examples are fine without it? but this is
+        # just to match below.
+        return np.ascontiguousarray(image)
     # reshape so bands are first for PDR, but doesn't otherwise matter for
     # looking at the array with other libraries like matploblib.
     # we only want to do this if there are multiple bands though, otherwise
@@ -770,4 +775,8 @@ def msl_edr_image_loader(infile):
             # then we want to ditch the first axis if it's only 1
             image = np.squeeze(image, axis=0)
     os.close(fd)
-    return image
+    # we have to return a C-contiguous array (it's not contiguous after
+    # transposing) purely for the hashing during ix test to work properly.
+    # maybe the transpose could be avoided by redesigning elsewhere in
+    # the decompanding code? but this works.
+    return np.ascontiguousarray(image)

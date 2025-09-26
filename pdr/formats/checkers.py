@@ -118,7 +118,7 @@ def check_special_offset(
             and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
             and "EDR" in identifiers["DATA_SET_ID"]
     ):
-        return formats.msl_edr.edr_offset()
+        return formats.msl_edr.edr_offset(data, name)
     return False, None
 
 
@@ -1070,7 +1070,7 @@ def check_special_fn(
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
         and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
-        and "EDR" in identifiers["DATA_SET_ID"]
+        and "EDR" in identifiers["DATA_SET_ID"] and object_name == "IMAGE"
     ):
         return formats.msl_edr.msl_msss_edr_prefix_fn(data)
     return False, None
@@ -1136,7 +1136,7 @@ def check_special_objects(identifiers):
     ):
         # a consequence of this is the the geometry file and miniheader objects
         # denoted in the label for the edrs
-        return True, ['IMAGE']
+        return True, ['IMAGE', 'MODEL_DESC']
     return False, None
 
 
