@@ -1,11 +1,11 @@
+import enum
 import io
-import numpy as np
 import os
-from PIL import Image, ImageFile
+from pathlib import Path
 import struct
-import sys
-from typing import Optional, Tuple
 
+import numpy as np
+from PIL import Image, ImageFile
 
 # constants
 HEADER_MAGIC0 = 0xff00f0ca
@@ -14,9 +14,11 @@ JPEG_SOI = b'\xff\xd8'
 
 # file type translations stored in .DAT in-file header
 # this number determines how the image is decompanded
-RAW = 0
-PRED = 1
-JPEG = 2
+
+class DATFiletype(enum.Enum):
+    RAW = 0
+    PRED = 1
+    JPEG = 2
 
 MISSING_CONSTANT = 0  # for truncated data
 
@@ -26,7 +28,7 @@ DEBUG = 0  # kind of a relic atp
 PREDSYNC = 0xffff0000
 
 
-def edr_offset(data, name):
+def edr_offset(_data, _name):
     """
     We need a start byte value for the ReadImage wrapper to work correctly,
     and usually the image does start after 64 bytes. start_byte is used by
@@ -34,53 +36,11 @@ def edr_offset(data, name):
      are redirected to msl_edr_image_loader by specialize() in ReadImage.
     HITS
     * msl_mst_edr
-        * C
-        * H
-        * I
-        * E
-        * D
-        * B
-        * F
-        * Q
-        * L
-        * K
-        * M
-        * R
-        * T
-        * S
-        * U
+        * all
     * msl_mhl_edr
-        * B
-        * J
-        * E
-        * G
-        * I
-        * Q
-        * M
-        * R
-        * T
-        * S
-        * C
-        * H
-        * A
-        * U
-        * O
-        * P
-        * N
-        * D
-        * K
-        * F
+        * all
     * msl_mrd
-        * C
-        * H
-        * K
-        * P
-        * J
-        * Q
-        * E
-        * I
-        * M
-        * B
+        * all
     """
     return True, 64
 
@@ -91,53 +51,11 @@ def msl_msss_edr_prefix_fn(data):
     only want this for the IMAGE object, not MODEL_DESC.
     HITS
     * msl_mst_edr
-        * C
-        * H
-        * I
-        * E
-        * D
-        * B
-        * F
-        * Q
-        * L
-        * K
-        * M
-        * R
-        * T
-        * S
-        * U
+        * all
     * msl_mhl_edr
-        * B
-        * J
-        * E
-        * G
-        * I
-        * Q
-        * M
-        * R
-        * T
-        * S
-        * C
-        * H
-        * A
-        * U
-        * O
-        * P
-        * N
-        * D
-        * K
-        * F
+        * all
     * msl_mrd
-        * C
-        * H
-        * K
-        * P
-        * J
-        * Q
-        * E
-        * I
-        * M
-        * B
+        * all
     """
     target = data.filename
     target = target.replace(".img", ".dat")
@@ -156,53 +74,11 @@ def get_special_block(data, name):
 
     HITS
     * msl_mst_edr
-        * C
-        * H
-        * I
-        * E
-        * D
-        * B
-        * F
-        * Q
-        * L
-        * K
-        * M
-        * R
-        * T
-        * S
-        * U
+        * all
     * msl_mhl_edr
-        * B
-        * J
-        * E
-        * G
-        * I
-        * Q
-        * M
-        * R
-        * T
-        * S
-        * C
-        * H
-        * A
-        * U
-        * O
-        * P
-        * N
-        * D
-        * K
-        * F
+        * all
     * msl_mrd
-        * C
-        * H
-        * K
-        * P
-        * J
-        * Q
-        * E
-        * I
-        * M
-        * B
+        * all
     """
 
     block = data.metablock_(name)
@@ -222,18 +98,23 @@ Most everything below is rewritten in Python from the original C code for the
 program dat2img to allow PDR to read MSL Mastcam Experiment Data Record (EDR)
 .dat files into images. The original program decompressed an image and wrote 
 to an .img alongside a new label. It has been modified to return only a numpy
-array of the image to be PDR compatible. Currently it does not return the header 
-info used in decompanding and stored in the .dat file, although it does decode it. 
+array of the image to be PDR compatible. Currently it does not return the 
+header info used in decompanding and stored in the .dat file, although it does 
+decode it. 
 
-dat2img was originally written by Malin Space Science Systems (MSSS) with contributions
-by Tobias Thierer and Michael Caplinger. It was then archived alongside MSL mission
-data in the PDS. The contents below are from dat2img.c, the main decompression code, 
-and pdecom_msl.c, for decompressing lossless compressed images. 
-Some comments are carried over from the original C code, these are marked with "msss". 
+dat2img was originally written by Malin Space Science Systems (MSSS) with 
+contributions by Tobias Thierer and Michael Caplinger. It was then archived 
+alongside MSL mission data in the PDS. The contents below are from dat2img.c,
+the main decompression code, and pdecom_msl.c, for decompressing "lossless" 
+compressed images. 
+
+Some comments are carried over verbatim from the original C code. These are 
+marked with "-msss".  
+
 Most function names are the same.
 
-Some of the functions retain the MSSS debugging functionality but it isn't 
-wired into PDR right now. 
+Some of the functions retain MSSS debugging hooks, but this isn't wired into 
+PDR right now. 
 """
 
 
@@ -252,15 +133,14 @@ class Header:
         self.depth = 0
         self.bands = 0
         self.thumbnail = 0
-        self.image_type = RAW
+        self.image_type = DATFiletype.RAW
 
 
-def read_header(fd):
+def read_header(fd: int) -> list[int] | None:
     """
     Search for magic number in first 1000 bytes -msss.
     Beginning will be marked by "HEADER_MAGIC1".
     """
-
     for offset in range(1000):
         os.lseek(fd, offset, os.SEEK_SET)
         header = os.read(fd, 64)
@@ -277,12 +157,11 @@ def read_header(fd):
     return None
 
 
-def decode_dat_header(fd):
+def decode_dat_header(fd: int):
     """
     Find header and decode raw header format, putting
     important info about the file in a Header object.
     """
-
     raw_hdr = read_header(fd)
     if raw_hdr is None:
         os.close(fd)
@@ -301,17 +180,17 @@ def decode_dat_header(fd):
     hdr.row_offset = ((raw_hdr[5] >> 16) & 0xff) * 8
     if (raw_hdr[8] & 0xff) == 0:
         if raw_hdr[8] & 0xff00:
-            hdr.image_type = PRED
+            hdr.image_type = DATFiletype.PRED
         else:
-            hdr.image_type = RAW
+            hdr.image_type = DATFiletype.RAW
     else:
-        hdr.image_type = JPEG
+        hdr.image_type = DATFiletype.JPEG
     hdr.thumbnail = (raw_hdr[0] >> 24) & 0x8
     hdr.bands = 1
-    if hdr.image_type != JPEG and raw_hdr[9] == 255:
+    if hdr.image_type != DATFiletype.JPEG and raw_hdr[9] == 255:
         hdr.bits_per_element = 16
         hdr.depth = 2
-    elif hdr.image_type == JPEG and (raw_hdr[8] & 0xff00):
+    elif hdr.image_type == DATFiletype.JPEG and (raw_hdr[8] & 0xff00):
         hdr.bits_per_element = 8
         hdr.depth = 1
         hdr.bands = 3
@@ -321,7 +200,9 @@ def decode_dat_header(fd):
     return hdr
 
 
-def read_raw_image(fd, dat_hdr, max_image_bytes):
+def read_raw_image(
+    fd: int, dat_hdr: Header, max_image_bytes: int
+) -> np.ndarray:
     """
     Read in a raw / uncompressed file and return numpy array.
     """
@@ -337,11 +218,12 @@ def read_raw_image(fd, dat_hdr, max_image_bytes):
         for i in range(0, bytes_read - 1, 2):
             outbuf[i], outbuf[i+1] = outbuf[i+1], outbuf[i]
     # If the image is a raw thumbnail, the height and width in the header may
-    # not match the actual image (since the stored values have been divided by eight).
-    # Try to find height and width that match the data. -msss
+    # not match the actual image (since the stored values have been divided
+    # by eight). Try to find height and width that match the data. -msss
     if bytes_read != image_bytes and dat_hdr.thumbnail:
-        # Another complication.  There is extra padding in the IMG to a complete record
-        # size (64 bytes). These are the two cases we have found so far. -msss
+        # Another complication.  There is extra padding in the IMG to a
+        # complete record size (64 bytes). These are the two cases we have
+        # found so far. -msss
         test_1 = bytes_read - 32
         test_2 = bytes_read - 56
         fixed = False  # was 0 in C
@@ -375,7 +257,7 @@ def read_raw_image(fd, dat_hdr, max_image_bytes):
     return arr
 
 
-def read_jpeg_image(fp, dat_hdr):
+def read_jpeg_image(fp, dat_hdr) -> tuple[np.ndarray, int, int]:
     """
     Decompress jpeg image and return array.
     Was called "jpeg_decom" in C code.
@@ -383,9 +265,9 @@ def read_jpeg_image(fp, dat_hdr):
     fp.seek(64)
     save_pos = fp.tell()  # save beginning of image -msss
     jpeg_data = fp.read()
-    # they don't really do this in the OG code explicitly, but we have to find
-    # the starting bytes after the header and then use pillow for loading truncated
-    # images (where there are multiple images)
+    # they don't really do this in the OG code explicitly, but we have to
+    # find the starting bytes after the header and then use pillow for
+    # loading truncated images (where there are multiple images)
     soi = jpeg_data.find(JPEG_SOI)
     if soi == -1:
         raise ValueError("Could not find JPEG start or end markers.")
@@ -394,11 +276,10 @@ def read_jpeg_image(fp, dat_hdr):
     img = Image.open(io.BytesIO(jpeg_bytes))
     bands = len(img.getbands())
     if bands != dat_hdr.bands:
-        # when there's a mismatch between number of bands in header and the image
-        # we use the number in the image
+        # when there's a mismatch between number of bands in header and the
+        # image we use the number in the image
         dat_hdr.bands = bands
-    # changes to pixel interleaved (do we want it to be band interleaved? does it matter?)
-    # L is grayscale for 1 band
+    # changes to pixel interleaved or L / grayscale for 1 band
     img = img.convert('RGB') if bands == 3 else img.convert('L')
     arr = np.array(img)
     if bands == 1:
@@ -435,21 +316,16 @@ class InputBits:
     def __init__(self, fd):
         self.fd = fd  # original class didn't save fd
         self.p = 0
-        self.byte = 0
         self.bit = 0
-        self.length = 0  # file length -msss
+        # file length -msss
+        self.length = os.lseek(self.fd, 0, os.SEEK_END)
+        # and reset to the beginning of the file -msss
+        os.lseek(self.fd, 0, os.SEEK_SET)
+        raw = os.read(self.fd, 1)
+        self.byte = raw[0] if raw else 0  # from read(fd, &s->byte, 1);
 
 
-def bits_init(s):
-    s.length = os.lseek(s.fd, 0, os.SEEK_END)  # store the file length -msss
-    os.lseek(s.fd, 0, os.SEEK_SET)  # and reset to the beginning of the file -msss
-    s.p = 0
-    s.bit = 0
-    raw = os.read(s.fd, 1)
-    s.byte = raw[0] if raw else 0  # from  read(fd, &s->byte, 1);
-
-
-def next_bit(s):
+def next_bit(s: InputBits) -> int:
     """
     return the next bit from the input -msss
     """
@@ -465,7 +341,7 @@ def next_bit(s):
     return cbit
 
 
-def rewind_bytes(s, n_bytes):
+def rewind_bytes(s: InputBits, n_bytes: int):
     """
     back up by x bytes and reset s -msss
     """
@@ -484,7 +360,7 @@ def rewind_bytes(s, n_bytes):
     the tree; if it's clear, left is a leaf and contains the decoded value.
     RIGHT is handled similarly. -msss
 """
-data = bytes([0x03, 0x03, 0x03, 0x01, 0x03, 0x01, 0x01, 0x03, 0x02, 0x02, 0x00, 0x01, 0x01, 0x03, 0x01, 0x00,
+tree = bytes([0x03, 0x03, 0x03, 0x01, 0x03, 0x01, 0x01, 0x03, 0x02, 0x02, 0x00, 0x01, 0x01, 0x03, 0x01, 0x00,
               0x02, 0x01, 0x01, 0x00, 0x02, 0x02, 0x00, 0x00, 0x03, 0x03, 0x00, 0x03, 0x01, 0x01, 0x03, 0x02,
               0x02, 0x00, 0x01, 0x01, 0x03, 0x00, 0x01, 0x02, 0x02, 0x00, 0x02, 0x02, 0x00, 0x00, 0x03, 0x03,
               0x03, 0x01, 0x01, 0x01, 0x03, 0x02, 0x02, 0x00, 0x03, 0x03, 0x03, 0x02, 0x03, 0x03, 0x00, 0x00,
@@ -533,14 +409,15 @@ data = bytes([0x03, 0x03, 0x03, 0x01, 0x03, 0x01, 0x01, 0x03, 0x02, 0x02, 0x00, 
               0x29, 0x80, 0xe6, 0xdb, 0xda, 0xd6, 0x03, 0xfe, 0xfb, 0xf9, 0xf5, 0xf1, 0xef, 0xf0, 0xe6, 0x13,
               0xe9, 0xf5, 0xe2, 0xf7, 0x22, 0xfa, 0xf9, 0xd5, 0x27, 0xfc, 0xfd, 0x0f, 0xfc])
 
-flags = data[0:]  # points to the start
-left = data[255:]  # points to byte 255 onward
-right = data[255 * 2:]  # points to byte 510 onward
+flags = tree[0:]  # points to the start
+left = tree[255:]  # points to byte 255 onward
+right = tree[255 * 2:]  # points to byte 510 onward
+
 LEFT = 1
 RIGHT = 2
 
 
-def next_value(s):
+def next_value(s: InputBits) -> int:
     node = 0  # start at the root -msss
     while True:
         bit = next_bit(s)
@@ -560,7 +437,7 @@ def next_value(s):
                 return right[node]
 
 
-def find_sync(s, debug=False):
+def find_sync(s: InputBits, debug: bool = False) -> bool:
     """
     the logic of find_sync was originally part of decode_x (below)
     in dat2img, but that was getting messy
@@ -579,25 +456,27 @@ def find_sync(s, debug=False):
             return True
         else:
             # back up three bytes, reset and try again to find the sync -msss
-            # the og comment says 3 but their code says 4?
+            # the og comment says 3 but their code says 4. However, backing up
+            # 4 bytes here obviously causes an infinite loop on failed sync
             rewind_bytes(s, 3)
             if debug:
                 print(f"bad sync at offset {start_pos}, retrying")
 
 
-def decode_x(fd, width, out, p_offset, s, debug=False):
+def decode_x(
+    width: int,
+    out: bytearray,
+    p_offset: int,
+    s: InputBits,
+    debug: bool = False
+):
     if not find_sync(s, debug=debug):
-        print("reached end of file before finding sync")
-        return 1
+        raise IOError("reached end of file before finding sync")
     prev = 0
-    # lseek(fd, 0, SEEK_CUR), should we reset here?
-    # this is why fd is in function inputs, but could
-    # take it out
     for i in range(width):
         val = next_value(s)
         if val == -1:
-            print("end of file reached during decode_x")
-            return 1
+            raise IOError("end of file reached during decode_x")
         temp = val & 0xFF
         prev = (prev + temp) & 0xFF
         out[p_offset + i] = prev
@@ -605,10 +484,9 @@ def decode_x(fd, width, out, p_offset, s, debug=False):
         next_bit(s)
     while s.p & 3:
         next_bit(s)
-    return 0
 
 
-def pdecom(fd, width, height, outbuf):
+def pdecom(fd: int, width: int, height: int, outbuf: bytearray) -> bytearray:
     """
     main lossless decompression function for 'PRED' files.
     """
@@ -616,10 +494,8 @@ def pdecom(fd, width, height, outbuf):
     os.lseek(fd, 64, os.SEEK_SET)
     block = bytearray(2048*8)
     chunk = bytearray(2048*8)
-    dointerleave = True
     bytes_read = 0
     s = InputBits(fd)
-    bits_init(s)
     offset = 8*width//4  # used / in the C code
     for j in range(height // 8):
         if os.lseek(fd, 0, os.SEEK_CUR) >= s.length:
@@ -632,36 +508,34 @@ def pdecom(fd, width, height, outbuf):
         # in decode_x block == out
         p_offset = 0
         for i in range(4):
-            if decode_x(fd, offset, block, p_offset, s) != 0:
-                break  # unexpected end of file -msss
+            decode_x(offset, block, p_offset, s)
             p_offset += offset
-        if dointerleave:
-            # we slice up block here instead of computing pointers
-            # like they did in dat2img
-            pa = block[0 * offset:1 * offset]
-            pb = block[1 * offset:2 * offset]
-            pc = block[2 * offset:3 * offset]
-            pd = block[3 * offset:4 * offset]
-            z = 0
+        # we slice up block here instead of computing pointers
+        # like they did in dat2img
+        pa = block[0 * offset:1 * offset]
+        pb = block[1 * offset:2 * offset]
+        pc = block[2 * offset:3 * offset]
+        pd = block[3 * offset:4 * offset]
+        z = 0
 
-            # a0 b0 a1 b1 a2 b2 ... aN bN -msss
-            # c0 d0 c1 d1 c2 d1 ... cN dN -msss
-            for y in range(0, 8, 2):
-                row_a = y * width
-                row_c = (y + 1) * width
-                for x in range(0, width, 2):
-                    chunk[row_a + x] = pa[z]
-                    chunk[row_a + x + 1] = pb[z]
-                    chunk[row_c + x] = pc[z]
-                    chunk[row_c + x + 1] = pd[z]
-                    z += 1
-            # copy results to outbuf, they used memcpy for this
-            outbuf[bytes_read:bytes_read + 8 * width] = chunk[0:8 * width]
-            bytes_read += 8 * width
+        # a0 b0 a1 b1 a2 b2 ... aN bN -msss
+        # c0 d0 c1 d1 c2 d1 ... cN dN -msss
+        for y in range(0, 8, 2):
+            row_a = y * width
+            row_c = (y + 1) * width
+            for x in range(0, width, 2):
+                chunk[row_a + x] = pa[z]
+                chunk[row_a + x + 1] = pb[z]
+                chunk[row_c + x] = pc[z]
+                chunk[row_c + x + 1] = pd[z]
+                z += 1
+        # copy results to outbuf, they used memcpy for this
+        outbuf[bytes_read:bytes_read + 8 * width] = chunk[0:8 * width]
+        bytes_read += 8 * width
     return outbuf[:height * width]
 
 
-def msl_edr_image_loader(infile):
+def msl_edr_image_loader(infile: str | Path) -> np.ndarray:
     """
     main function for processing .dat file: reads .dat header,
     sends to appropriate decompression method (for jpeg, raw, or pred)
@@ -670,113 +544,66 @@ def msl_edr_image_loader(infile):
 
     HITS
     * msl_mst_edr
-        * C
-        * H
-        * I
-        * E
-        * D
-        * B
-        * F
-        * Q
-        * L
-        * K
-        * M
-        * R
-        * T
-        * S
-        * U
+        * all
     * msl_mhl_edr
-        * B
-        * J
-        * E
-        * G
-        * I
-        * Q
-        * M
-        * R
-        * T
-        * S
-        * C
-        * H
-        * A
-        * U
-        * O
-        * P
-        * N
-        * D
-        * K
-        * F
+        * all
     * msl_mrd
-        * C
-        * H
-        * K
-        * P
-        * J
-        * Q
-        * E
-        * I
-        * M
-        * B
+        * all
     """
+    fd = os.open(infile, os.O_RDONLY)
     try:
-        fd = os.open(infile, os.O_RDONLY)
-    except OSError:
-        sys.stderr.write(f"Error: unable to open input file {infile}\n")
-        return None, None
-
-    dat_hdr = decode_dat_header(fd)
-    if dat_hdr is None:
-        sys.stderr.write(f"Error: unable to decode header for {infile}\n")
-        os.close(fd)
-        return None, None
-
-    # allocate image buffer. If multiple images in JPEG, they will all have
-    # the same size  as specified by the header -msss
-    image_bytes = dat_hdr.width * dat_hdr.height * dat_hdr.depth * dat_hdr.bands
-    max_image_bytes = image_bytes
-    if dat_hdr.image_type == RAW and dat_hdr.thumbnail:  # maximum image size may be greater -msss
-        max_image_bytes = (dat_hdr.width + 7) * (dat_hdr.height + 7) * dat_hdr.depth * dat_hdr.bands
-    image = None
-    if dat_hdr.image_type == RAW:
-        # this did not originally have its own function, the processing was
-        # all in main
-        image = read_raw_image(fd, dat_hdr, max_image_bytes)
-    elif dat_hdr.image_type == JPEG:
-        with open(infile, 'rb') as fp:
-            # was called jpeg_decom
-            image, dat_hdr.bands, _ = read_jpeg_image(fp, dat_hdr)
-    elif dat_hdr.image_type == PRED:
-        # always a single image in a pred file -msss
-        outbuf = bytearray(dat_hdr.width * dat_hdr.height * dat_hdr.bands)
-        # originally in pdecom_msl.c
-        pdecom(fd, dat_hdr.width, dat_hdr.height, outbuf)
-        dtype = np.uint16 if dat_hdr.depth == 2 else np.uint8
-        image = np.frombuffer(outbuf, dtype=dtype)
-        if dat_hdr.bands == 1:
-            image = image.reshape((dat_hdr.height, dat_hdr.width))
+        dat_hdr = decode_dat_header(fd)
+        if dat_hdr is None:
+            raise IOError(f"Unable to decode header for {infile}\n")
+        # allocate image buffer. If multiple images in JPEG, they will all have
+        # the same size as specified by the header -msss
+        # NOTE: unclear if the "multiple image" condition ever actually happens
+        image_bytes = (
+            dat_hdr.width * dat_hdr.height * dat_hdr.depth * dat_hdr.bands
+        )
+        max_image_bytes = image_bytes
+        # maximum image size may be greater -msss
+        if dat_hdr.image_type == DATFiletype.RAW and dat_hdr.thumbnail:
+            max_image_bytes = (
+                (dat_hdr.width + 7)
+                * (dat_hdr.height + 7)
+                * dat_hdr.depth
+                * dat_hdr.bands
+            )
+        if dat_hdr.image_type == DATFiletype.RAW:
+            # this did not originally have its own function, the processing was
+            # all in main
+            image = read_raw_image(fd, dat_hdr, max_image_bytes)
+        elif dat_hdr.image_type == DATFiletype.JPEG:
+            with open(infile, 'rb') as fp:
+                # was called jpeg_decom
+                image, dat_hdr.bands, _ = read_jpeg_image(fp, dat_hdr)
+        elif dat_hdr.image_type == DATFiletype.PRED:
+            # always a single image in a pred file -msss
+            outbuf = bytearray(dat_hdr.width * dat_hdr.height * dat_hdr.bands)
+            # originally in pdecom_msl.c
+            pdecom(fd, dat_hdr.width, dat_hdr.height, outbuf)
+            dtype = np.uint16 if dat_hdr.depth == 2 else np.uint8
+            image = np.frombuffer(outbuf, dtype=dtype)
+            if dat_hdr.bands == 1:
+                image = image.reshape((dat_hdr.height, dat_hdr.width))
+            else:
+                image = image.reshape(
+                    (dat_hdr.height, dat_hdr.width, dat_hdr.bands,)
+                )
+            return np.ascontiguousarray(image)
         else:
-            image = image.reshape((dat_hdr.height, dat_hdr.width, dat_hdr.bands,))
-        os.close(fd)
-        # we have to return a C-contiguous array (it's not contiguous after
-        # transposing) purely for the hashing during ix test to work properly.
-        # I think the PRED are test examples are fine without it? but this is
-        # just to match below.
+            raise ValueError(
+                f"Unsupported image type {dat_hdr.image_type}. This should "
+                f"not be able to happen."
+            )
+        if image.ndim == 3:
+            # really at this point I think they should all have dim 3
+            image = np.transpose(image, (2, 0, 1))
+            if image.shape[0] == 1:
+                # then we want to ditch the first axis if it's only 1
+                image = np.squeeze(image, axis=0)
         return np.ascontiguousarray(image)
-    # reshape so bands are first for PDR, but doesn't otherwise matter for
-    # looking at the array with other libraries like matploblib.
-    # we only want to do this if there are multiple bands though, otherwise
-    # PDR gets confused and tries to display as a multidim array, which then
-    # throws warnings about "not all bands being displayed" when that's not
-    # really the case.
-    if image.ndim == 3:
-        # really at this point I think they should all have dim 3
-        image = np.transpose(image, (2, 0, 1))
-        if image.shape[0] == 1:
-            # then we want to ditch the first axis if it's only 1
-            image = np.squeeze(image, axis=0)
-    os.close(fd)
-    # we have to return a C-contiguous array (it's not contiguous after
-    # transposing) purely for the hashing during ix test to work properly.
-    # maybe the transpose could be avoided by redesigning elsewhere in
-    # the decompanding code? but this works.
-    return np.ascontiguousarray(image)
+    finally:
+        os.close(fd)
+
