@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import enum
 import io
 import os
 from pathlib import Path
 import struct
+from typing import TYPE_CHECKING
 
-import numpy as np
-from PIL import Image, ImageFile
+if TYPE_CHECKING:
+    from numpy import ndarray
+
 
 # constants
 HEADER_MAGIC0 = 0xff00f0ca
@@ -202,10 +206,12 @@ def decode_dat_header(fd: int):
 
 def read_raw_image(
     fd: int, dat_hdr: Header, max_image_bytes: int
-) -> np.ndarray:
+) -> "ndarray":
     """
     Read in a raw / uncompressed file and return numpy array.
     """
+    import numpy as np
+
     # there is always a single image in raw image file -msss
     image_bytes = dat_hdr.width * dat_hdr.height * dat_hdr.depth
     os.lseek(fd, 64, os.SEEK_SET)
@@ -257,11 +263,20 @@ def read_raw_image(
     return arr
 
 
-def read_jpeg_image(fp, dat_hdr) -> tuple[np.ndarray, int, int]:
+def read_jpeg_image(fp, dat_hdr) -> tuple["ndarray", int, int]:
     """
     Decompress jpeg image and return array.
     Was called "jpeg_decom" in C code.
     """
+    try:
+        from PIL import Image, ImageFile
+    except ImportError:
+        raise ImportError(
+            "The 'pillow' library is required to open JPEG-based MSL EDRs. "
+            "Please install this library and try again."
+        )
+    import numpy as np
+
     fp.seek(64)
     save_pos = fp.tell()  # save beginning of image -msss
     jpeg_data = fp.read()
@@ -535,7 +550,7 @@ def pdecom(fd: int, width: int, height: int, outbuf: bytearray) -> bytearray:
     return outbuf[:height * width]
 
 
-def msl_edr_image_loader(infile: str | Path) -> np.ndarray:
+def msl_edr_image_loader(infile: str | Path) -> "ndarray":
     """
     main function for processing .dat file: reads .dat header,
     sends to appropriate decompression method (for jpeg, raw, or pred)
@@ -551,6 +566,8 @@ def msl_edr_image_loader(infile: str | Path) -> np.ndarray:
         * all
     """
     fd = os.open(infile, os.O_RDONLY)
+    import numpy as np
+
     try:
         dat_hdr = decode_dat_header(fd)
         if dat_hdr is None:

@@ -114,9 +114,9 @@ def check_special_offset(
     ):
         return formats.msl_rems.edr_offset(data, name)
     if (
-            identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
-            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
-            and "EDR" in identifiers["DATA_SET_ID"]
+        identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
+        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+        and "EDR" in identifiers["DATA_SET_ID"]
     ):
         return formats.msl_edr.edr_offset(data, name)
     return False, None
@@ -1140,10 +1140,7 @@ def check_special_objects(identifiers):
     return False, None
 
 
-def check_special_compressed_file_reader(
-        identifiers,
-        fn,
-):
+def check_special_compressed_file_reader(identifiers, fn):
     """ Distribute to correct specialized image loader, otherwise return False/None. """
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"

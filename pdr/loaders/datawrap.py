@@ -85,7 +85,9 @@ class ReadImage(Loader):
             get_qube_band_storage_type,
             generic_image_properties,
         )
-        super().__init__(specialize(read_image, check_special_compressed_file_reader))
+        super().__init__(
+            specialize(read_image, check_special_compressed_file_reader)
+        )
         self.queries = DEFAULT_DATA_QUERIES | {
             "base_samp_info": base_sample_info,
             "sample_type": specialize(

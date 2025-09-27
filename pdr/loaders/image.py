@@ -15,12 +15,8 @@ from pdr.utils import decompress
 
 
 def read_image(
-    identifiers: DataIdentifiers,
-    name: str,
-    gen_props: ImageProps,
-    fn: str,
-    start_byte: int
-):
+    name: str, gen_props: ImageProps, fn: str, start_byte: int
+) -> np.ndarray:
     """Read an IMAGE object and return it as a numpy array."""
     props = get_image_properties(gen_props)
     f = decompress(fn)  # seamlessly deal with compression
