@@ -270,11 +270,11 @@ def read_jpeg_image(fp, dat_hdr) -> tuple["ndarray", int, int]:
     """
     try:
         from PIL import Image, ImageFile
-    except ImportError:
+    except ImportError as e:
         raise ImportError(
             "The 'pillow' library is required to open JPEG-based MSL EDRs. "
             "Please install this library and try again."
-        )
+        ) from e
     import numpy as np
 
     fp.seek(64)
