@@ -13,6 +13,7 @@
   - NEAR
   - Mars Odyssey
   - Voyager
+  - MRO
 - MSL Mastcam, MAHLI, and MARDI EDRs
 
 ### Changed

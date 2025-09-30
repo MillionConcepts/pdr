@@ -222,6 +222,13 @@ def check_special_table_reader(
             fmtdef_dt, block, fn, start_byte
         )
     if (
+        identifiers["INSTRUMENT_ID"] == "CRISM"
+        and identifiers["PRODUCT_TYPE"] == "ANCILLARY"
+        and "OBS" in identifiers["PRODUCT_ID"]
+        and name == "TABLE"
+    ):
+        return True, formats.mro.ancil_table_loader(fn, fmtdef_dt)
+    if (
         identifiers["DATA_SET_ID"] == "IHW-C-IRFCURV-3-EDR-HALLEY-V2.0"
         and name == "TABLE"
     ):

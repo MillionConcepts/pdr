@@ -65,3 +65,24 @@ def crism_mrdr_ancill_position(identifiers, block, target, name, start_byte):
     table_props["length"] = n_rows * row_bytes
     return table_props
 
+def ancil_table_loader(filename, fmtdef_dt):
+    """
+    In the CRISM ancillary OBS tables, missing values are variations of "N/A", 
+    which causes mixed dtype warnings when the first row contains N/A's.
+
+    HITS
+    * crism
+        * extras_obs
+    """
+    import pandas as pd
+
+    missing_const = ['N/A  ', 'N/A   ', 'N/A             ', 
+                     'N/A                       ',]
+    table = pd.read_csv(filename, header=None,
+                        na_values=missing_const,
+                        dtype={0:str, 44:str, 46:str, 47:str, 48:str})
+
+    col_names = [c for c in fmtdef_dt[0]['NAME'] if "PLACEHOLDER" not in c]
+    assert len(table.columns) == len(col_names), "mismatched column count"
+    table.columns = col_names
+    return table
