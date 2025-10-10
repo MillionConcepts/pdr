@@ -1,5 +1,4 @@
 *ipynb*
-!/user_guides/*ipynb
 *pycache*
 /test_files
 /output_files
@@ -26,3 +25,6 @@ meta.yaml
 /.pytest_cache/
 /htmlcov/
 six_old.py
+
+/user_guides/
+!/user_guides/*ipynb
