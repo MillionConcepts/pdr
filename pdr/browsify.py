@@ -212,6 +212,7 @@ def _browsify_array(
     override_rgba: bool = False,
     image_format: str = "jpg",
     slice_axis: int = 0,
+    rgb_channels: Optional[tuple[int, int, int]] = None,
     **_,
 ) -> 'Union[Image.Image, list[Optional[Image.Image]]]':
     """
@@ -221,7 +222,9 @@ def _browsify_array(
     nice_clip = image_clip is None
     image_clip = (1, 1) if image_clip is None else image_clip
     if len(obj.shape) == 3:
-        obj = _format_multiband_image(obj, band_ix, override_rgba, slice_axis)
+        obj = _format_multiband_image(
+            obj, band_ix, override_rgba, slice_axis, rgb_channels
+        )
     if not isinstance(obj, tuple):
         return _render_array(
             obj,
@@ -301,21 +304,42 @@ def _render_array(
     image.save(f"{outbase}.{image_format}")
 
 
-def _format_as_rgb(obj):
+def _format_as_rgb(obj, rgb_channels):
     """"""
+    if rgb_channels is not None:
+        if isinstance(obj, np.ma.MaskedArray):
+            return np.ma.dstack([
+                obj[rgb_channels[0]], 
+                obj[rgb_channels[1]], 
+                obj[rgb_channels[2]]
+            ])
+        else:
+            return np.dstack([
+                obj[rgb_channels[0]], 
+                obj[rgb_channels[1]], 
+                obj[rgb_channels[2]]
+            ])
     if isinstance(obj, np.ma.MaskedArray):
         return np.ma.dstack([channel for channel in obj[0:3]])
     else:
         return np.dstack([channel for channel in obj[0:3]])
 
 
-def _format_multiband_image(obj, band_ix, override_rgba, slice_axis):
+def _format_multiband_image(
+    obj, 
+    band_ix, 
+    override_rgba, 
+    slice_axis, 
+    rgb_channels
+):
     """
     helper function for _browsify_array -- truncate, stack, or burst
     multiband images and send for further processing.
     """
     if slice_axis != 0:
         obj = obj.swapaxes(0, slice_axis)
+    if rgb_channels is not None:
+        return _format_as_rgb(obj, rgb_channels)
     if (obj.shape[0] not in (3, 4)) or (override_rgba is True):
         if band_ix == "burst":
             return tuple([obj[ix] for ix in range(obj.shape[0])])
@@ -330,7 +354,7 @@ def _format_multiband_image(obj, band_ix, override_rgba, slice_axis):
         warnings.warn(
             "transparency not supported, removing 4th (alpha) channel"
         )
-    return _format_as_rgb(obj)
+    return _format_as_rgb(obj, rgb_channels)
 
 
 def _format_as_single_band(band_ix, obj):

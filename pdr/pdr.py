@@ -1038,6 +1038,16 @@ class Data:
             dump_browse image. The default slices at axis 0 (which is usually
             the axis labelled "BAND").
 
+        - rgb_channels: Optional[tuple[int, int, int]] = None
+            Allows specification of the bands used to create an RGB image. By 
+            default the first three bands of a 3-4 band image are used for the 
+            red, green, and blue channels respectively (equivalent to manually 
+            specifying rgb_channels=(0,1,2)).
+
+            If this argument is used, band_ix and override_rgba are ignored. It 
+            can also be used on multiband images with >4 bands to output an RGB 
+            image.
+
         """
         if prefix is None:
             prefix = Path(self.filename).stem
