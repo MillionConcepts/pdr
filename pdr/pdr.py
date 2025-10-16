@@ -682,6 +682,8 @@ class Data:
         """
         for k, v in self._pds4_structures.items():
             meta = v.meta_data
+            if 'object_length' not in meta.keys():
+                continue
             if meta['offset'] + meta['object_length'] == start_byte:
                 if 'name' not in meta.keys():
                     return None
