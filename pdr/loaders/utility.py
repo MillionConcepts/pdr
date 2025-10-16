@@ -13,7 +13,7 @@ from multidict import MultiDict
 # TODO, maybe: I think we should keep these somewhere else; they're certainly
 #  not used exclusively in loaders
 
-LABEL_EXTENSIONS = (".xml", ".lbl")
+LABEL_EXTENSIONS = (".xml", ".lbl", ".lblx")
 IMAGE_EXTENSIONS = (".img", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")
