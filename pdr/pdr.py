@@ -282,7 +282,10 @@ class Data:
 
                 # TODO: bad. need to not leave this open, although inefficient
                 self._hdulist = fits.open(self.filename)
-        elif str(self.labelname).endswith(".xml"):
+        elif (
+            str(self.labelname).endswith(".xml") 
+            or str(self.labelname).endswith(".lblx")
+        ):
             self.standard = "PDS4"
             self._pds4_structures = {}
             self._init_pds4()
