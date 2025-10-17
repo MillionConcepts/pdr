@@ -26,6 +26,7 @@ import pdr.formats.mer as mer
 import pdr.formats.mex as mex
 import pdr.formats.mgn as mgn
 import pdr.formats.mgs as mgs
+import pdr.formats.mgs_moc as mgs_moc
 import pdr.formats.mro as mro
 import pdr.formats.msl_apxs as msl_apxs
 import pdr.formats.msl_cmn as msl_cmn

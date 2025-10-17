@@ -1148,11 +1148,20 @@ def check_special_objects(identifiers):
 
 
 def check_special_compressed_file_reader(identifiers, fn):
-    """ Distribute to correct specialized image loader, otherwise return False/None. """
+    """
+    Distribute to correct specialized image loader, otherwise return
+    False/None.
+    """
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
             and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
             and "EDR" in identifiers["DATA_SET_ID"]
     ):
         return True, formats.msl_edr.msl_edr_image_loader(fn)
+    if (
+            identifiers["SPACECRAFT_NAME"] == "MARS_GLOBAL_SURVEYOR"
+            and identifiers["INSTRUMENT_ID"] in ["MOC-NA", "MOC-WA"]
+            and "IMQ" in identifiers["FILE_NAME"]
+    ):
+        return True, formats.mgs_moc.mgs_moc_comp_image_loader(fn)
     return False, None
