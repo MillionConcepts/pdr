@@ -74,6 +74,7 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
         print(f"Processing fragment {h.fragment}, len {h.length}")
 
         if (h.compression[0] & 3) == 1:
+            print("PRED")
             # PRED / predictive decompression
             if first_loop:
                 # could initiate outside the loop, but we only need it
@@ -87,17 +88,18 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
             if h.status & 2:
                 # indicates all fragments have been collected
                 image = make_pred_image(h, collected_frags)
+                print("making image")
                 infile.close()
                 return image
 
         elif (h.compression[0] >> 2) & 3 != 0:
             # XFORM / transform
+            print("TRANSFORM")
             if first_loop:
                 image = []
                 first_loop = False
             indat = infile.read(h.length)
             imagepart = decompress_transform_image(h, indat)
-            print(np.shape(imagepart))
             image.append(imagepart.copy())
 
         elif ((h.compression[0] >> 2) & 3 == 1) & (
@@ -115,7 +117,8 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
 
     infile.close()
     # transform compressed images are a list of images
-    return np.vstack(image)
+    print("v stack running")
+    return np.ascontiguousarray(np.vstack(image))
 
 
 """
@@ -169,6 +172,13 @@ class BitStruct:
         self.data = data
         self.bit_queue = data[0] if len(data) > 0 else 0
 
+"""
+RAW
+"""
+
+def read_raw_image(h, indat):
+    image = np.ndarray(0,0)
+    return image
 
 """
 PREDICTIVE DECOMPRESSION
@@ -188,16 +198,20 @@ def make_pred_image(h: MSDPHeader, collected_frags: bytearray) -> np.ndarray:
     if len(image_data) == 0:
         raise ValueError("No image data decompressed")
 
-    image_array = np.frombuffer(image_data, dtype=np.uint32)
+    image_array = np.frombuffer(image_data, dtype=np.uint8).copy()
 
     width = h.edit_length * 16
     actual_height = len(image_array) // width
-
+    print(actual_height)
+    print(width)
+    print(len(image_array))
+    print(np.shape(image_array))
     if width > 0 and height > 0:
         image_array = image_array[:actual_height * width].reshape(
             actual_height, width)
+    print(np.shape(image_array))
 
-    return image_array
+    return np.ascontiguousarray(image_array)
 
 
 def pred_decode(
