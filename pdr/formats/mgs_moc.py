@@ -87,7 +87,8 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
             if h.status & 2:
                 # indicates all fragments have been collected
                 image = make_pred_image(h, collected_frags)
-                break
+                infile.close()
+                return image
 
         elif (h.compression[0] >> 2) & 3 != 0:
             # XFORM / transform
@@ -96,6 +97,7 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
                 first_loop = False
             indat = infile.read(h.length)
             imagepart = decompress_transform_image(h, indat)
+            print(np.shape(imagepart))
             image.append(imagepart.copy())
 
         elif ((h.compression[0] >> 2) & 3 == 1) & (
@@ -112,11 +114,8 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
         total = total + MSDPHeader.HEADER_SIZE + h.length + 1
 
     infile.close()
-
-    if (h.compression[0] >> 2) & 3 != 0:
-        return np.hstack(image)
-    # image can be a list of images if it's transform compressed...
-    return image
+    # transform compressed images are a list of images
+    return np.vstack(image)
 
 
 """
