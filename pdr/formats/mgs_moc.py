@@ -56,13 +56,13 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
         # fragments to a buffer until last fragment (PRED) and then
         # decompressing at once
 
-        infile.seek(total + 2048,
-                    0)  # 2048 is the length of the PDS label at top
+        infile.seek(total + 2048, 0)  # 2048 is the length of the PDS label
 
         header_data = infile.read(MSDPHeader.HEADER_SIZE)
 
         if len(header_data) < MSDPHeader.HEADER_SIZE:
             # give a useful error message here
+            print("len header less than header size")
             break
 
         h = MSDPHeader(header_data)
@@ -79,6 +79,7 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
             if first_loop:
                 # could initiate outside the loop, but we only need it
                 # if the image is pred compression
+                first_h = h
                 collected_frags = bytearray()
                 first_loop = False
 
@@ -108,14 +109,31 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
 
         else:
             # RAW / not compressed
+            print("RAW")
+            if first_loop:
+                collected_frags = bytearray()
+                first_loop = False
             indat = infile.read(h.length)
-            image = read_raw_image(h, indat)
-            break
+            collected_frags.extend(indat)
+            if h.status & 2:
+                # indicates all fragments have been collected
+                print("making image")
+                image = make_pred_image(h, collected_frags)
+                infile.close()
+                return image
 
         infile.seek(1, 1)  # skip checksum byte, seems useless atp
         total = total + MSDPHeader.HEADER_SIZE + h.length + 1
 
     infile.close()
+
+    if (first_h.compression[0] & 3) == 1:
+        # for the situation in which the data may be messed up and the EOF
+        # marker wasn't found, we resort to first header and what frags we do
+        # have
+        image = make_pred_image(first_h, collected_frags)
+        return image
+
     # transform compressed images are a list of images
     print("v stack running")
     return np.ascontiguousarray(np.vstack(image))
@@ -172,16 +190,10 @@ class BitStruct:
         self.data = data
         self.bit_queue = data[0] if len(data) > 0 else 0
 
-"""
-RAW
-"""
-
-def read_raw_image(h, indat):
-    image = np.ndarray(0,0)
-    return image
 
 """
 PREDICTIVE DECOMPRESSION
+(also raw)
 """
 
 
@@ -228,7 +240,6 @@ def pred_decode(
     height = h.down_total * 16
     width = h.edit_length * 16
     length = width * height
-
     prev_line = bytearray(width)
     for i in range(width):
         prev_line[i] = 0
@@ -238,21 +249,20 @@ def pred_decode(
     pcomp = h.compression[0] & 3
     xpred = pcomp & 1
     ypred = (pcomp & 2) >> 1
-    comp_type = 0
+    comp_type = NONE
 
     if xpred:
         comp_type |= XPRED
     if ypred:
         comp_type |= YPRED
-
     bit_stuff = BitStruct(data)
-
     last_sync_pos = 0
     sync = 0xf0ca
 
     for y in range(height):
         # we are automatically doing sync, was optional in moc_sun
-        if y % 128 == 0:
+        # I don't understand why, but syncing with MOC NONE is broken?
+        if y % 128 == 0 and comp_type != NONE:
             # looking for sync & relocating to it, then decompressing that line
             if bit_stuff.bit_count != 0:
                 bit_stuff.bit_count = 0
@@ -271,6 +281,9 @@ def pred_decode(
                                              sync)
                     if found_offset is None:
                         return bytes(result[:y * width]), y
+                    # if found_offset is None:
+                    #     print("no offset found")
+                    #     return bytes(result[:y * width]), y
                     else:
                         bit_stuff.output = search_start + found_offset
                 else:
@@ -316,7 +329,6 @@ def pred_line_decompressor(cur_line: bytearray,
     """
     Send each line to correct decompression 'node' (xpred, ypred etc)
     """
-
     if comp_type == NONE:
         decomp_none(cur_line, width, code_table, left_table, right_table,
                     bit_stuff)
@@ -331,6 +343,8 @@ def pred_line_decompressor(cur_line: bytearray,
                            right_table, bit_stuff)
     elif comp_type in [SYNC, XPRED | SYNC, YPRED | SYNC, XPRED | YPRED | SYNC]:
         decomp_sync(cur_line, prev_line, width, bit_stuff)
+    else:
+        raise ValueError("No comp type identified for the line.")
 
 
 def delta_ok(data: bytes, offset: int, max_delta: int = 64) -> bool:
