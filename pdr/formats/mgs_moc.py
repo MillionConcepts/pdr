@@ -67,6 +67,14 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
 
         h = MSDPHeader(header_data)
 
+        if first_loop:
+            # could initiate outside the loop, but we only need it
+            # if the image is pred compression
+            first_h = h
+            collected_frags = bytearray()
+            image = []
+            first_loop = False
+
         if h.length == 0:
             # no data in this fragment
             break
@@ -76,12 +84,6 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
         if (h.compression[0] & 3) == 1:
             print("PRED")
             # PRED / predictive decompression
-            if first_loop:
-                # could initiate outside the loop, but we only need it
-                # if the image is pred compression
-                first_h = h
-                collected_frags = bytearray()
-                first_loop = False
 
             indat = infile.read(h.length)
             collected_frags.extend(indat)
@@ -96,9 +98,6 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
         elif (h.compression[0] >> 2) & 3 != 0:
             # XFORM / transform
             print("TRANSFORM")
-            if first_loop:
-                image = []
-                first_loop = False
             indat = infile.read(h.length)
             imagepart = decompress_transform_image(h, indat)
             image.append(imagepart.copy())
