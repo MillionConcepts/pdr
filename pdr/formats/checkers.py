@@ -1163,5 +1163,5 @@ def check_special_compressed_file_reader(identifiers, fn):
             and identifiers["INSTRUMENT_ID"] in ["MOC-NA", "MOC-WA"]
             and "IMQ" in identifiers["FILE_NAME"]
     ):
-        return True, formats.mgs_moc.mgs_moc_comp_image_loader(fn)
+        return True, formats.mgs_moc.mgs_moc_comp_image_loader(fn, identifiers)
     return False, None

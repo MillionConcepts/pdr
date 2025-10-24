@@ -32,7 +32,7 @@ LARGE_NEGATIVE = 0x1000000
 LARGE_POSITIVE = 0x2000000
 
 
-def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
+def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
     """
     Read in an MGS MOC SDP .imq file, decode header, collect fragments, and
     send them to the proper decompressor.
@@ -44,7 +44,12 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
 
     The decompressed image is returned as an array.
     """
-    print("made it to the reader")
+
+    if identifiers['DATA_QUALITY_DESC'] != 'OK':
+        print(f"Data Quality for this image is listed as: "
+              f"'{identifiers['DATA_QUALITY_DESC']}'. Output image may have "
+              f"errors, be incomplete, or not decompress at all.")
+
     infile = open(filename, 'rb')
 
     total = 0  # track location fragment to fragment
@@ -76,7 +81,9 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
             first_loop = False
 
         if h.length == 0:
-            # no data in this fragment
+            print(f"No data recorded in fragment {h.fragment}, skipping."
+                  f" Fragment number may be incorrect if real header "
+                  f"not scanned. Header states length is {h.length}.")
             break
 
         print(f"Processing fragment {h.fragment}, len {h.length}")
@@ -84,14 +91,12 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
         if (h.compression[0] & 3) == 1:
             print("PRED")
             # PRED / predictive decompression
-
             indat = infile.read(h.length)
             collected_frags.extend(indat)
 
             if h.status & 2:
                 # indicates all fragments have been collected
                 image = make_pred_image(h, collected_frags)
-                print("making image")
                 infile.close()
                 return image
 
@@ -109,14 +114,10 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
         else:
             # RAW / not compressed
             print("RAW")
-            if first_loop:
-                collected_frags = bytearray()
-                first_loop = False
             indat = infile.read(h.length)
             collected_frags.extend(indat)
             if h.status & 2:
                 # indicates all fragments have been collected
-                print("making image")
                 image = make_pred_image(h, collected_frags)
                 infile.close()
                 return image
@@ -126,15 +127,16 @@ def mgs_moc_comp_image_loader(filename: str) -> np.ndarray:
 
     infile.close()
 
-    if (first_h.compression[0] & 3) == 1:
+    if (first_h.compression[0] >> 2) & 3 == 0:
         # for the situation in which the data may be messed up and the EOF
         # marker wasn't found, we resort to first header and what frags we do
         # have
+        print("End of file reached without EOF marker in final fragment. "
+              "Output image may be incomplete or have other errors.")
         image = make_pred_image(first_h, collected_frags)
         return image
 
     # transform compressed images are a list of images
-    print("v stack running")
     return np.ascontiguousarray(np.vstack(image))
 
 
@@ -213,14 +215,9 @@ def make_pred_image(h: MSDPHeader, collected_frags: bytearray) -> np.ndarray:
 
     width = h.edit_length * 16
     actual_height = len(image_array) // width
-    print(actual_height)
-    print(width)
-    print(len(image_array))
-    print(np.shape(image_array))
     if width > 0 and height > 0:
         image_array = image_array[:actual_height * width].reshape(
             actual_height, width)
-    print(np.shape(image_array))
 
     return np.ascontiguousarray(image_array)
 
@@ -695,36 +692,45 @@ class TransformDecompressor:
                       f" > {num_levels - 1}")
                 return image.reshape(height, width)
             occ[groups[block]] += 1
+        try:
+            for level in range(num_levels):
+                if occ[level] != 0:
+                    min_dc = read_bits(16, bit_stuff)
+                    max_dc = read_bits(16, bit_stuff)
+                    range_dc = max_dc - min_dc
 
-        for level in range(num_levels):
-            if occ[level] != 0:
-                min_dc = read_bits(16, bit_stuff)
-                max_dc = read_bits(16, bit_stuff)
-                range_dc = max_dc - min_dc
+                    var = np.zeros(256, dtype=np.uint32)
+                    var[0] = 0
+                    for i in range(1, 256):
+                        var[i] = read_bits(3, bit_stuff)
 
-                var = np.zeros(256, dtype=np.uint32)
-                var[0] = 0
-                for i in range(1, 256):
-                    var[i] = read_bits(3, bit_stuff)
-
-                block_idx = 0
-                for x in range(0, x_size, 16):
-                    for y in range(0, y_size, 16):
-                        if groups[block_idx] == level:
-                            read_block(
-                                transform,
-                                spacing,
-                                min_dc,
-                                range_dc,
-                                var,
-                                x,
-                                y,
-                                x_size,
-                                image,
-                                bit_stuff,
-                                self.encode_trees
-                            )
-                        block_idx += 1
+                    block_idx = 0
+                    for x in range(0, x_size, 16):
+                        for y in range(0, y_size, 16):
+                            if groups[block_idx] == level:
+                                read_block(
+                                    transform,
+                                    spacing,
+                                    min_dc,
+                                    range_dc,
+                                    var,
+                                    x,
+                                    y,
+                                    x_size,
+                                    image,
+                                    bit_stuff,
+                                    self.encode_trees
+                                )
+                            block_idx += 1
+        except:
+            print(f"Transform decompression failed during block {block_idx}."
+                  f"Padding remaining expected image area with 0.")
+            size = height * width
+            if image.size < size:
+                padded = np.zeros(size, dtype=image.dtype)
+                padded[:image.size] = image
+                image = padded
+            return image.reshape(height, width)
         # they had a check for how much of the data was decompressed, comparing
         # byte_count to input dat length, which we haven't passed in here
         return image.reshape(height, width)
