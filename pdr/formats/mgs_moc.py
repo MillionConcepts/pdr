@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import struct
 from typing import Tuple, Optional
+import warnings
 
 import numpy as np
 
@@ -46,19 +47,21 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
     """
 
     if identifiers['DATA_QUALITY_DESC'] != 'OK':
-        print(f"Data Quality for this image is listed as: "
-              f"'{identifiers['DATA_QUALITY_DESC']}'. Output image may have "
-              f"errors, be incomplete, or not decompress at all.")
+        warnings.warn(f"Data Quality for this image is listed as: "
+                      f"'{identifiers['DATA_QUALITY_DESC']}'. Output image may"
+                      f" have errors or be incomplete.")
 
     infile = open(filename, 'rb')
 
-    total = 0  # track location fragment to fragment
-    first_loop = True
+    total = 0  # track file location fragment to fragment
+    collected_frags = bytearray()  # for PRED / RAW
+    image = []  # for TRANSFORM
+    first_h = None
 
     while True:
         # we iterate through fragments in the file, reading their headers and
-        # either decompressing fragment by fragment (RAW / XFORM) or adding
-        # fragments to a buffer until last fragment (PRED) and then
+        # either decompressing fragment by fragment (XFORM) or adding
+        # fragments to a buffer until last fragment (PRED / RAW) and then
         # decompressing at once
 
         infile.seek(total + 2048, 0)  # 2048 is the length of the PDS label
@@ -66,32 +69,22 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
         header_data = infile.read(MSDPHeader.HEADER_SIZE)
 
         if len(header_data) < MSDPHeader.HEADER_SIZE:
-            # give a useful error message here
-            print("len header less than header size")
             break
 
         h = MSDPHeader(header_data)
 
-        if first_loop:
-            # could initiate outside the loop, but we only need it
-            # if the image is pred compression
+        if first_h is None:
             first_h = h
-            collected_frags = bytearray()
-            image = []
-            first_loop = False
 
         if h.length == 0:
-            print(f"No data recorded in fragment {h.fragment}, skipping."
-                  f" Fragment number may be incorrect if real header "
-                  f"not scanned. Header states length is {h.length}.")
             break
 
         print(f"Processing fragment {h.fragment}, len {h.length}")
 
+        indat = infile.read(h.length)
+
         if (h.compression[0] & 3) == 1:
-            print("PRED")
             # PRED / predictive decompression
-            indat = infile.read(h.length)
             collected_frags.extend(indat)
 
             if h.status & 2:
@@ -102,19 +95,15 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
 
         elif (h.compression[0] >> 2) & 3 != 0:
             # XFORM / transform
-            print("TRANSFORM")
-            indat = infile.read(h.length)
-            imagepart = decompress_transform_image(h, indat)
-            image.append(imagepart.copy())
+            image_part = decompress_transform_image(h, indat)
+            image.append(image_part.copy())
 
         elif ((h.compression[0] >> 2) & 3 == 1) & (
                 (h.compression[0] & 3) == 1):
             raise ValueError("Error: Both pcomp and xcomp compression set.")
 
         else:
-            # RAW / not compressed
-            print("RAW")
-            indat = infile.read(h.length)
+            # RAW / MOC NONE
             collected_frags.extend(indat)
             if h.status & 2:
                 # indicates all fragments have been collected
@@ -129,10 +118,11 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
 
     if (first_h.compression[0] >> 2) & 3 == 0:
         # for the situation in which the data may be messed up and the EOF
-        # marker wasn't found, we resort to first header and what frags we do
-        # have
-        print("End of file reached without EOF marker in final fragment. "
-              "Output image may be incomplete or have other errors.")
+        # marker wasn't found, we resort to using the first header and what
+        # fragments we do have
+        warnings.warn("End of file reached without EOF marker in final"
+                      " fragment. Output image may be incomplete or have"
+                      " other errors.")
         image = make_pred_image(first_h, collected_frags)
         return image
 
@@ -194,13 +184,13 @@ class BitStruct:
 
 """
 PREDICTIVE DECOMPRESSION
-(also raw)
+(also RAW/MOC NONE)
 """
 
 
 def make_pred_image(h: MSDPHeader, collected_frags: bytearray) -> np.ndarray:
     """
-    Manage decompression of buffer of all fragment data and return image.
+    Manage decompression of all fragment data and return image.
     """
     huffman_table_id = h.compression[1] & 0x0f
 
@@ -209,7 +199,7 @@ def make_pred_image(h: MSDPHeader, collected_frags: bytearray) -> np.ndarray:
     image_data, height = pred_decode(h, collected_frags, code, left, right)
 
     if len(image_data) == 0:
-        raise ValueError("No image data decompressed")
+        raise IOError("No image data decompressed.")
 
     image_array = np.frombuffer(image_data, dtype=np.uint8).copy()
 
@@ -257,29 +247,34 @@ def pred_decode(
 
     for y in range(height):
         # we are automatically doing sync, was optional in moc_sun
-        # I don't understand why, but syncing with MOC NONE is broken?
         if y % 128 == 0 and comp_type != NONE:
+            # for some reason MOC NONE doesn't seem syncable?
             # looking for sync & relocating to it, then decompressing that line
             if bit_stuff.bit_count != 0:
                 bit_stuff.bit_count = 0
                 bit_stuff.output += 1
+
             if (bit_stuff.output & 0x1) == 0x1:
                 bit_stuff.output += 1
+
             if bit_stuff.output + 1 >= len(data):
+                warnings.warn("Exceeded length of data while decompressing.")
                 return bytes(result[:y * width]), y
+
             if bit_stuff.output + 1 < len(data):
                 got_sync = data[bit_stuff.output] | (
                         data[bit_stuff.output + 1] << 8)
+
                 if got_sync != sync:
                     search_start = last_sync_pos
                     search_len = length - search_start
                     found_offset = find_sync(data[search_start:], search_len,
                                              sync)
                     if found_offset is None:
+                        warnings.warn("Unable to sync properly during"
+                                      " decompression.")
                         return bytes(result[:y * width]), y
-                    # if found_offset is None:
-                    #     print("no offset found")
-                    #     return bytes(result[:y * width]), y
+
                     else:
                         bit_stuff.output = search_start + found_offset
                 else:
@@ -292,7 +287,6 @@ def pred_decode(
                                    code,
                                    left,
                                    right,
-                                   sync,
                                    bit_stuff)
         else:
             pred_line_decompressor(cur_line,
@@ -302,7 +296,6 @@ def pred_decode(
                                    code,
                                    left,
                                    right,
-                                   sync,
                                    bit_stuff)
 
         result[y * width:(y + 1) * width] = cur_line
@@ -320,7 +313,6 @@ def pred_line_decompressor(cur_line: bytearray,
                            code_table: bytearray,
                            left_table: bytearray,
                            right_table: bytearray,
-                           sync: int,
                            bit_stuff: BitStruct) -> None:
     """
     Send each line to correct decompression 'node' (xpred, ypred etc)
@@ -340,7 +332,7 @@ def pred_line_decompressor(cur_line: bytearray,
     elif comp_type in [SYNC, XPRED | SYNC, YPRED | SYNC, XPRED | YPRED | SYNC]:
         decomp_sync(cur_line, prev_line, width, bit_stuff)
     else:
-        raise ValueError("No comp type identified for the line.")
+        raise ValueError("No compression type identified for the fragment.")
 
 
 def delta_ok(data: bytes, offset: int, max_delta: int = 64) -> bool:
@@ -591,11 +583,10 @@ def make_huffman_tree(huff_id: int) -> Tuple[bytearray, bytearray, bytearray]:
     Make huffman tables, original code had the option to load your own,
     but that is not really applicable to PDR.
     """
-    code = bytearray(256)
-    left = bytearray(256)
-    right = bytearray(256)
+    flags = bytearray(256)
+    zero = bytearray(256)
+    one = bytearray(256)
 
-    # below lists reference tables copied directly from moc_sun in the PDS
     code_bits_vec = [code0_bits, code1_bits, code2_bits, code3_bits,
                      code4_bits, code5_bits, code6_bits, code7_bits]
 
@@ -607,22 +598,11 @@ def make_huffman_tree(huff_id: int) -> Tuple[bytearray, bytearray, bytearray]:
                         code_ident_requant, code_ident_requant,
                         code_ident_requant, code7_requant]
 
-    tree = ht_tree_gen(huff_id,
-                       code_bits_vec,
-                       code_len_vec,
-                       code_requant_vec)
+    tree = ht_tree_gen(huff_id, code_bits_vec, code_len_vec, code_requant_vec)
 
-    flags = bytearray(256)
-    zero_arr = bytearray(256)
-    one_arr = bytearray(256)
+    ht_tablefy(tree, flags, zero, one, 0)
 
-    ht_tablefy(tree, flags, zero_arr, one_arr, 0)
-
-    code[:] = flags
-    left[:] = zero_arr
-    right[:] = one_arr
-
-    return code, left, right
+    return flags, zero, one
 
 
 """
@@ -688,8 +668,8 @@ class TransformDecompressor:
 
         for block in range(num_blocks):
             if groups[block] >= num_levels:
-                print(f"Group lvl too large: {groups[block]}"
-                      f" > {num_levels - 1}")
+                warnings.warn(f"Group lvl too large: {groups[block]}"
+                              f" > {num_levels - 1}")
                 return image.reshape(height, width)
             occ[groups[block]] += 1
         try:
@@ -722,23 +702,21 @@ class TransformDecompressor:
                                     self.encode_trees
                                 )
                             block_idx += 1
-        except:
-            print(f"Transform decompression failed during block {block_idx}."
-                  f"Padding remaining expected image area with 0.")
+        except Exception:
+            warnings.warn(f"Unable to decompress entire fragment."
+                          f" Padding remainder of fragment with 0.")
             size = height * width
-            if image.size < size:
-                padded = np.zeros(size, dtype=image.dtype)
-                padded[:image.size] = image
-                image = padded
-            return image.reshape(height, width)
+            image = np.pad(image, (0, max(0, size - image.size)),
+                           constant_values=0)
+            return image[:size].reshape(height, width)
+
         # they had a check for how much of the data was decompressed, comparing
         # byte_count to input dat length, which we haven't passed in here
         return image.reshape(height, width)
 
 
 def bit_reverse(num: int) -> int:
-    # different method than og code but works
-    # the same, this is faster
+    # different method than original code but works the same, this is faster
     return int(f"{num:032b}"[::-1], 2)
 
 
@@ -796,12 +774,12 @@ def make_tree(trees, start_idx, size, bit):
     return cur
 
 
-def init_block(sizes, counts, encodings):
+def init_block(sizes_f, counts_f, encodings_f):
     encode_trees = []
     for which in range(MAXCODES):
-        size = int(sizes[which])
-        count = counts[which]
-        encoding = encodings[which]
+        size = int(sizes_f[which])
+        count = counts_f[which]
+        encoding = encodings_f[which]
 
         trees = []
         for n in range(size):
@@ -1003,11 +981,39 @@ def inv_fdct_16x16(inp, out):
 
 
 """
-* 	This module calculates a "sequency" ordered, two dimensional
-* 	inverse Walsh-Hadamard transform (WHT) on 16 x 16 blocks of
-* 	data.  It is done as two one dimensional transforms (one of the
-* 	rows followed by one of the columns).  Each one dimensional
-* 	transform is implemented as a 16 point, 4 stage "butterfly".
+This module calculates a "sequency" ordered, two dimensional
+inverse Walsh-Hadamard transform (WHT) on 16 x 16 blocks of
+data.  It is done as two one dimensional transforms (one of the
+rows followed by one of the columns).  Each one dimensional
+transform is implemented as a 16 point, 4 stage "butterfly".
+
+This defines a four input (and output), two stage "butterfly"
+calculation done completely in registers (once the data is read from
+memory.  Four input and two stages was picked to maximize the use of
+the 32000's registers.  Eight of these are required to do a 16 point,
+one dimensional WHT.  The "simple" formulas for this "butterfly" are:
+
+*	n0 = i0 + i1
+*	n1 = i0 - i1	First stage
+*	n2 = i2 + i3
+*	n3 = i2 - i3
+*
+*	o0 = n0 + n2
+*	o1 = n1 + n3	Second stage
+*	o2 = n0 - n2
+*	o3 = n1 - n3
+
+All data (in and out) is assumed to be 16 bit integers.  "in" is the
+base address of the input data array and "ii" is the scaling factor to
+use on the next four indexes into "in" (this allows moving by rows or
+columns through a two dimensional array stored as a one dimensional set
+of numbers).  "i0", "i1", "i2", and "i3" are the unscaled indexes into
+"in".  "out" is the base address of the output data array and "oi" is
+the scaling factor to use on the next four indexes into "out" (this
+allows moving by rows or columns through a two dimensional array stored
+as a one dimensional set of numbers).  "o0", "o1", "o2", and "o3" are
+the unscaled indexes into "out".
+- msss
 """
 
 
@@ -1034,6 +1040,12 @@ def butterfly4(inp, ii, i0, i1, i2, i3, out, oi, o0, o1, o2, o3):
 
 
 def inv_fwht16_row(inp, out):
+    """
+    This function does a 16 point, one dimensional inverse WHT on 16, 32-bit
+    integers stored as a vector (as in the rows of a two-dimensional
+    array) and puts the results in a 32-bit integer vector.  The transform
+    is not normalized but is in "sequency" order. -msss
+    """
     data = np.zeros(32, dtype=np.int32)
 
     butterfly4(inp, 1, 0, 1, 2, 3, data, 1, 0, 1, 2, 3)
@@ -1048,12 +1060,23 @@ def inv_fwht16_row(inp, out):
 
 
 def inv_fwht16_col(inp, out):
+    """
+    This function does a 16 point, one dimensional inverse WHT on 16, 32-bit
+    integers stored as a vector in every 16th location (as in the
+    columns of a two-dimensional array stored as a one dimensional array by
+    rows) and puts the results out in a similar manner.  The transform is
+    not normalized but is in "sequency" order. -msss
+    """
     data = np.zeros(16, dtype=np.int32)
 
+    # Perform first two stages of 16 point butterfly
     butterfly4(inp, 16, 0, 1, 2, 3, data, 1, 0, 1, 2, 3)
     butterfly4(inp, 16, 4, 5, 6, 7, data, 1, 4, 5, 6, 7)
     butterfly4(inp, 16, 8, 9, 10, 11, data, 1, 8, 9, 10, 11)
     butterfly4(inp, 16, 12, 13, 14, 15, data, 1, 12, 13, 14, 15)
+
+    # Perform last two stages of 16 point butterfly and store in
+    # "sequency" order -msss
 
     butterfly4(data, 1, 0, 4, 8, 12, out, 16, 0, 3, 1, 2)
     butterfly4(data, 1, 1, 5, 9, 13, out, 16, 15, 12, 14, 13)
@@ -1062,19 +1085,32 @@ def inv_fwht16_col(inp, out):
 
 
 def inv_fwht_16x16(inp, out):
+    """
+    This function does a "sequency" ordered WHT on a 16 x 16 array of data
+    (stored as 16-bit integers) stored in 256 contiguous locations. The
+    transform is normalized. The input is assumed to be 16-bit signed
+    integers EXCEPT for the DC entry which is to be treated as UNSIGNED. The
+    result is stored in a 16 x 16 array of the same structure. The output
+    is all 8 bit, unsigned integers. -msss
+    """
     data = np.zeros(256, dtype=np.int32)
-
     data[0] = np.uint16(inp[0])
+
     for i in range(1, 256):
         data[i] = inp[i]
 
+    # Pass each row in "data" array (as a vector of size 16) to the
+    # 16 point, 1D inverse WHT and store the results in contiguous
+    # 16 point locations in "data".  At completion all rows have been
+    # inverse transformed in one dimension. -msss
     for i in range(16):
         row = data[i * 16:(i + 1) * 16]
         inv_fwht16_row(row, row)
         data[i * 16:(i + 1) * 16] = row
 
+    # Inverse transform each column in the 16 x 16 block stored by rows
+    # as a 256 point vector. -msss
     for i in range(16):
-        col = data[i::16]
         inv_fwht16_col(data[i:], data[i:])
 
     for i in range(256):
