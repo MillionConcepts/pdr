@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import enum
 import io
 import os
 import struct
 from pathlib import Path
 import warnings
-from typing import Tuple, Optional
+from typing import Tuple, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from numpy import ndarray
@@ -114,6 +116,7 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
         * sdp
 
     """
+    import numpy as np
 
     if identifiers['DATA_QUALITY_DESC'] != 'OK':
         warnings.warn(f"Data Quality for this image is listed as: "
@@ -272,6 +275,8 @@ def make_pred_image(h: MSDPHeader, collected_frags: bytearray) -> np.ndarray:
     """
     Manage decompression of all fragment data and return image.
     """
+    import numpy as np
+
     huffman_table_id = h.compression[1] & 0x0f
 
     code, left, right = make_huffman_tree(huffman_table_id)
@@ -796,16 +801,27 @@ class BitTree:
 
 
 class TransformDecompressor:
+
     def __init__(self):
         self.encode_trees = init_block(sizes, counts, encodings)
 
-    def decompress(self, data, width, height, transform, spacing, num_levels):
+    def decompress(self,
+                   data: bytearray,
+                   width: int,
+                   height: int,
+                   transform: int,
+                   spacing: int,
+                   num_levels: int,
+                   ) -> bytearray:
         """
+        Decompresses DCT and WHT fragments.
 
         Translated from C in MOC_SUN, where it was written by Mike Caplinger
         (MOC GDS Design Scientist with MSSS) which was itself adapted from a
          version by Terry Ligocki with SCCS.
         """
+        import numpy as np
+
         x_size = width
         y_size = height
 
@@ -907,7 +923,11 @@ def read_bits(bit_count: int, bit_stuff: BitStruct):
     return bits
 
 
-def make_tree(trees, start_idx, size, bit):
+def make_tree(trees: List["BitTree"],
+              start_idx: int,
+              size: int,
+              bit,
+              ) -> BitTree:
     if size == 1:
         return trees[start_idx]
     count = 0
@@ -924,7 +944,10 @@ def make_tree(trees, start_idx, size, bit):
     return cur
 
 
-def init_block(sizes_f, counts_f, encodings_f):
+def init_block(sizes_f: np.ndarray[np.uint16],
+               counts_f: np.ndarray,
+               encodings_f: np.ndarray,
+               ) -> List["BitTree"]:
     encode_trees = []
     for which in range(MAXCODES):
         size = int(sizes_f[which])
@@ -956,8 +979,9 @@ def init_block(sizes_f, counts_f, encodings_f):
     return encode_trees
 
 
-def read_coef(encoding, bit_stuff):
+def read_coef(encoding: np.ndarray, bit_stuff: "BitStruct") -> np.int32:
     # traverse tree until it hits a leaf node
+    import numpy as np
     while encoding.zero is not None:
         if read_bits(1, bit_stuff) == 0:
             encoding = encoding.zero
@@ -980,15 +1004,19 @@ def read_coef(encoding, bit_stuff):
     return np.int32(coef)
 
 
-def reorder(block):
+def reorder(block: np.ndarray) -> None:
     # much simpler way of writing this than what they had!
+    import numpy as np
+
     temp = np.zeros(256, dtype=np.int32)
     for i in range(256):
         temp[i] = block[trans[i]]
     block[:] = temp
 
 
-def dct_inv16_double(inp, out):
+def dct_inv16_double(inp: np.ndarray, out: np.ndarray) -> None:
+    import numpy as np
+
     tmp = np.zeros(16, dtype=np.float64)
 
     tmp[0] = inp[0]
@@ -1103,7 +1131,9 @@ def dct_inv16_double(inp, out):
     out[15] = -tmp[15] + tmp[0]
 
 
-def inv_fdct_16x16(inp, out):
+def inv_fdct_16x16(inp: np.ndarray, out: np.ndarray) -> None:
+    import numpy as np
+
     data = np.zeros(256, dtype=np.float64)
 
     data[0] = np.uint16(inp[0])
@@ -1130,44 +1160,55 @@ def inv_fdct_16x16(inp, out):
         out[i] = cur
 
 
-"""
-This module calculates a "sequency" ordered, two dimensional
-inverse Walsh-Hadamard transform (WHT) on 16 x 16 blocks of
-data.  It is done as two one dimensional transforms (one of the
-rows followed by one of the columns).  Each one dimensional
-transform is implemented as a 16 point, 4 stage "butterfly".
+def butterfly4(inp: np.ndarray,
+               ii: int,
+               i0: int,
+               i1: int,
+               i2: int,
+               i3: int,
+               out: np.ndarray,
+               oi: int,
+               o0: int,
+               o1: int,
+               o2: int,
+               o3: int,
+               ) -> None:
+    """
+    This module calculates a "sequency" ordered, two dimensional
+    inverse Walsh-Hadamard transform (WHT) on 16 x 16 blocks of
+    data.  It is done as two one dimensional transforms (one of the
+    rows followed by one of the columns).  Each one dimensional
+    transform is implemented as a 16 point, 4 stage "butterfly".
 
-This defines a four input (and output), two stage "butterfly"
-calculation done completely in registers (once the data is read from
-memory.  Four input and two stages was picked to maximize the use of
-the 32000's registers.  Eight of these are required to do a 16 point,
-one dimensional WHT.  The "simple" formulas for this "butterfly" are:
+    This defines a four input (and output), two stage "butterfly"
+    calculation done completely in registers (once the data is read from
+    memory).  Four input and two stages was picked to maximize the use of
+    the 32000's registers.  Eight of these are required to do a 16 point,
+    one dimensional WHT.  The "simple" formulas for this "butterfly" are:
 
-*	n0 = i0 + i1
-*	n1 = i0 - i1	First stage
-*	n2 = i2 + i3
-*	n3 = i2 - i3
-*
-*	o0 = n0 + n2
-*	o1 = n1 + n3	Second stage
-*	o2 = n0 - n2
-*	o3 = n1 - n3
+    *	n0 = i0 + i1
+    *	n1 = i0 - i1	First stage
+    *	n2 = i2 + i3
+    *	n3 = i2 - i3
+    *
+    *	o0 = n0 + n2
+    *	o1 = n1 + n3	Second stage
+    *	o2 = n0 - n2
+    *	o3 = n1 - n3
 
-All data (in and out) is assumed to be 16 bit integers.  "in" is the
-base address of the input data array and "ii" is the scaling factor to
-use on the next four indexes into "in" (this allows moving by rows or
-columns through a two dimensional array stored as a one dimensional set
-of numbers).  "i0", "i1", "i2", and "i3" are the unscaled indexes into
-"in".  "out" is the base address of the output data array and "oi" is
-the scaling factor to use on the next four indexes into "out" (this
-allows moving by rows or columns through a two dimensional array stored
-as a one dimensional set of numbers).  "o0", "o1", "o2", and "o3" are
-the unscaled indexes into "out".
-- msss
-"""
+    All data (in and out) is assumed to be 16-bit integers.  "in" is the
+    base address of the input data array and "ii" is the scaling factor to
+    use on the next four indexes into "in" (this allows moving by rows or
+    columns through a two-dimensional array stored as a one dimensional set
+    of numbers).  "i0", "i1", "i2", and "i3" are the unscaled indexes into
+    "in".  "out" is the base address of the output data array and "oi" is
+    the scaling factor to use on the next four indexes into "out" (this
+    allows moving by rows or columns through a two-dimensional array stored
+    as a one dimensional set of numbers).  "o0", "o1", "o2", and "o3" are
+    the unscaled indexes into "out".
+    - msss
+    """
 
-
-def butterfly4(inp, ii, i0, i1, i2, i3, out, oi, o0, o1, o2, o3):
     t0 = inp[ii * i0]
     t1 = inp[ii * i1]
     t2 = inp[ii * i2]
@@ -1189,13 +1230,15 @@ def butterfly4(inp, ii, i0, i1, i2, i3, out, oi, o0, o1, o2, o3):
     out[oi * o3] = t0
 
 
-def inv_fwht16_row(inp, out):
+def inv_fwht16_row(inp: np.ndarray, out: np.ndarray) -> None:
     """
     This function does a 16 point, one dimensional inverse WHT on 16, 32-bit
     integers stored as a vector (as in the rows of a two-dimensional
     array) and puts the results in a 32-bit integer vector.  The transform
     is not normalized but is in "sequency" order. -msss
     """
+    import numpy as np
+
     data = np.zeros(32, dtype=np.int32)
 
     butterfly4(inp, 1, 0, 1, 2, 3, data, 1, 0, 1, 2, 3)
@@ -1209,7 +1252,7 @@ def inv_fwht16_row(inp, out):
     butterfly4(data, 1, 3, 7, 11, 15, out, 1, 8, 11, 9, 10)
 
 
-def inv_fwht16_col(inp, out):
+def inv_fwht16_col(inp: np.ndarray, out: np.ndarray) -> None:
     """
     This function does a 16 point, one dimensional inverse WHT on 16, 32-bit
     integers stored as a vector in every 16th location (as in the
@@ -1217,6 +1260,8 @@ def inv_fwht16_col(inp, out):
     rows) and puts the results out in a similar manner.  The transform is
     not normalized but is in "sequency" order. -msss
     """
+    import numpy as np
+
     data = np.zeros(16, dtype=np.int32)
 
     # Perform first two stages of 16 point butterfly
@@ -1234,7 +1279,7 @@ def inv_fwht16_col(inp, out):
     butterfly4(data, 1, 3, 7, 11, 15, out, 16, 8, 11, 9, 10)
 
 
-def inv_fwht_16x16(inp, out):
+def inv_fwht_16x16(inp: np.ndarray, out: np.ndarray) -> None:
     """
     This function does a "sequency" ordered WHT on a 16 x 16 array of data
     (stored as 16-bit integers) stored in 256 contiguous locations. The
@@ -1243,6 +1288,8 @@ def inv_fwht_16x16(inp, out):
     result is stored in a 16 x 16 array of the same structure. The output
     is all 8 bit, unsigned integers. -msss
     """
+    import numpy as np
+
     data = np.zeros(256, dtype=np.int32)
     data[0] = np.uint16(inp[0])
 
@@ -1269,15 +1316,34 @@ def inv_fwht_16x16(inp, out):
         out[i] = cur
 
 
-def read_groups(num_blocks, bit_stuff):
+def read_groups(num_blocks: int, bit_stuff: "BitStruct") -> np.ndarray:
+    """ Breaks a group up into blocks for transform decompression. """
+    import numpy as np
+
     groups = np.zeros(num_blocks, dtype=np.uint32)
     for block in range(num_blocks):
         groups[block] = read_bits(3, bit_stuff)
     return groups
 
 
-def read_block(transform, spacing, min_dc, range_dc, var, x, y, x_size, image,
-               bit_stuff, encode_trees):
+def read_block(transform: int,
+               spacing: int,
+               min_dc: int,
+               range_dc: int,
+               var: np.ndarray,
+               x: int,
+               y: int,
+               x_size: int,
+               image: np.ndarray,
+               bit_stuff: "BitStruct",
+               encode_trees: List["BitTree"]
+               ) -> None:
+    """
+    Read & decode 16 x 16 pixel block of the image using the correct
+    transformation: Walsh-Hadamard or DCT.
+    """
+    import numpy as np
+
     block = np.zeros(256, dtype=np.int32)
 
     dc = read_bits(8, bit_stuff)
@@ -1292,8 +1358,10 @@ def read_block(transform, spacing, min_dc, range_dc, var, x, y, x_size, image,
     reorder(block)
 
     if transform == 0:
+        # Walsh-Hadamard transform
         inv_fwht_16x16(block, block)
     elif transform == 1:
+        # discrete cosine transform
         inv_fdct_16x16(block, block)
 
     for y0 in range(16):
@@ -1810,7 +1878,7 @@ TRANSFORM DECOMPRESSION TABLES
 """
 # Translation table for going from row ordered vector to radially
 # order vector -msss
-trans = np.array([
+trans = [
     0, 1, 4, 9, 15, 22, 33, 43, 56, 71, 86, 104, 121, 142, 166, 189,
     2, 3, 6, 11, 17, 26, 35, 45, 58, 73, 90, 106, 123, 146, 168, 193,
     5, 7, 8, 13, 20, 28, 37, 50, 62, 75, 92, 108, 129, 150, 170, 195,
@@ -1832,10 +1900,10 @@ trans = np.array([
     253,
     192, 194, 196, 202, 204, 213, 217, 223, 228, 234, 240, 245, 249, 252, 254,
     255,
-], dtype=np.uint8)
+]
 
 # cosine coefficients
-cosineDouble = np.array([
+cosineDouble = [
     1.00000000000000000000e+00,
     9.95184726672196890000e-01,
     9.80785280403230440000e-01,
@@ -1852,20 +1920,20 @@ cosineDouble = np.array([
     2.90284677254462360000e-01,
     1.95090322016128270000e-01,
     9.80171403295606040000e-02,
-])
+]
 
 # Number of valid bits (LSBs) in each entry in "code0" -msss
 # uint8 num0[25]
-num0 = np.array([
+num0 = [
     24, 23, 20, 19, 16, 14, 13, 10,
     8, 6, 5, 3, 1, 2, 4, 7,
     9, 11, 12, 15, 17, 18, 21, 22,
     24,
-], dtype=np.uint8)
+]
 
 # Huffman code for encoding scheme 0, zero's code is index 12 -msss
 # uint32 code0[25]
-code0 = np.array([
+code0 = [
     0xffffff, 0x3fffff, 0x07ffff, 0x03ffff, 0x007fff, 0x001fff, 0x000fff,
     0x0001ff,
     0x00007f, 0x00001f, 0x00000f, 0x000003, 0x000000, 0x000001, 0x000007,
@@ -1873,22 +1941,22 @@ code0 = np.array([
     0x0000ff, 0x0003ff, 0x0007ff, 0x003fff, 0x00ffff, 0x01ffff, 0x0fffff,
     0x1fffff,
     0x7fffff,
-], dtype=np.uint32)
+]
 
 # Number of valid bits (LSBs) in each entry in "code1" -msss
 # uint8 num1[47]
-num1 = np.array([
+num1 = [
     24, 24, 23, 22, 21, 20, 19, 18,
     17, 16, 15, 14, 13, 12, 11, 10,
     9, 8, 7, 6, 5, 4, 2, 2,
     2, 4, 5, 6, 7, 8, 9, 10,
     11, 12, 13, 14, 15, 16, 17, 18,
     19, 20, 21, 22, 23, 24, 24,
-], dtype=np.uint8)
+]
 
 # Huffman code for encoding scheme 1, zero's code is index 23 -msss
 # uint32 code1[47]
-code1 = np.array([
+code1 = [
     0xffffff, 0xbfffff, 0x5fffff, 0x2fffff, 0x17ffff, 0x0bffff, 0x05ffff,
     0x02ffff,
     0x017fff, 0x00bfff, 0x005fff, 0x002fff, 0x0017ff, 0x000bff, 0x0005ff,
@@ -1900,12 +1968,11 @@ code1 = np.array([
     0x0001ff, 0x0003ff, 0x0007ff, 0x000fff, 0x001fff, 0x003fff, 0x007fff,
     0x00ffff,
     0x01ffff, 0x03ffff, 0x07ffff, 0x0fffff, 0x1fffff, 0x3fffff, 0x7fffff,
-], dtype=np.uint32)
+]
 
 # Number of valid bits (LSBs) in each entry in "code2" -msss
 # uint8 num2[69]
-num2 = np.array([
-
+num2 = [
     24, 24, 23, 23, 22, 22, 21, 20,
     19, 19, 18, 17, 17, 16, 16, 15,
     14, 14, 13, 12, 11, 11, 10, 9,
@@ -1915,11 +1982,11 @@ num2 = np.array([
     12, 12, 13, 13, 14, 15, 15, 16,
     17, 18, 18, 19, 20, 20, 21, 21,
     22, 23, 23, 24, 24,
-], dtype=np.uint8)
+]
 
 # Huffman code for encoding scheme 2, zero's code is index 34 -msss
 # uint32 code2[69]
-code2 = np.array([
+code2 = [
     0xffffff, 0xfffffd, 0x7ffffe, 0x3ffffd, 0x1ffffe, 0x1fffff, 0x0fffff,
     0x07fffe,
     0x03fffe, 0x03ffff, 0x01fffd, 0x00fffe, 0x00ffff, 0x007ffe, 0x007fff,
@@ -1937,11 +2004,11 @@ code2 = np.array([
     0x00fffd, 0x01ffff, 0x01fffe, 0x03fffd, 0x07ffff, 0x07fffd, 0x0ffffd,
     0x0ffffe,
     0x1ffffd, 0x3fffff, 0x3ffffe, 0x7ffffd, 0x7fffff,
-], dtype=np.uint32)
+]
 
 # Number of valid bits (LSBs) in each entry in "code3" -msss
 # uint8 num3[109] = {
-num3 = np.array([
+num3 = [
     23, 24, 24, 23, 23, 22, 22, 22,
     21, 21, 21, 20, 20, 19, 19, 18,
     18, 18, 17, 17, 16, 16, 16, 15,
@@ -1956,11 +2023,11 @@ num3 = np.array([
     17, 17, 17, 18, 18, 19, 19, 19,
     20, 20, 20, 21, 21, 22, 22, 22,
     23, 23, 24, 24, 23,
-], dtype=np.uint8)
+]
 
 # Huffman code for encoding scheme 3, zero's code is index 54  -msss
 #  uint32 code3[109]
-code3 = np.array([
+code3 = [
     0x7fffff, 0xfffffd, 0xdfffff, 0x7ffffe, 0x3ffffd, 0x3ffffc, 0x1ffffe,
     0x3ffffb,
     0x0ffffe, 0x0ffffd, 0x0ffffb, 0x07fffd, 0x07ffff, 0x03fffc, 0x03ffff,
@@ -1988,11 +2055,11 @@ code3 = np.array([
     0x07fffb, 0x07fffe, 0x07fffc, 0x0fffff, 0x0ffffc, 0x1ffffb, 0x1ffffd,
     0x1ffffc,
     0x1fffff, 0x3ffffe, 0x5fffff, 0x7ffffd, 0x3fffff,
-], dtype=np.uint32)
+]
 
 # Number of valid bits (LSBs) in each entry in "code4"  -msss
 # num4[169]
-num4 = np.array([
+num4 = [
     22, 24, 24, 24, 24, 23, 23, 23,
     23, 22, 22, 22, 22, 21, 21, 21,
     21, 20, 20, 20, 20, 19, 19, 19,
@@ -2015,11 +2082,11 @@ num4 = np.array([
     21, 21, 21, 21, 22, 22, 22, 22,
     23, 23, 23, 23, 24, 24, 24, 24,
     22,
-], dtype=np.uint8)
+]
 
 #  Huffman code for encoding scheme 4, zero's code is index 84  -msss
 # code4[169]
-code4 = np.array([
+code4 = [
     0x3fffff, 0xf7ffff, 0xe7ffff, 0xfdffff, 0xfffffe, 0x27ffff, 0x7bffff,
     0x3dffff,
     0x5ffffe, 0x17ffff, 0x1bffff, 0x3ffffc, 0x2ffffe, 0x0bffff, 0x0dffff,
@@ -2063,11 +2130,11 @@ code4 = np.array([
     0x1ffffe, 0x3ffffe, 0x3bffff, 0x37ffff, 0x7ffffe, 0x7dffff, 0x67ffff,
     0x77ffff,
     0x1fffff,
-], dtype=np.uint32)
+]
 
 # Number of valid bits (LSBs) in each entry in "code5"  -msss
 # num5[247]
-num5 = np.array([
+num5 = [
     21, 24, 24, 24, 24, 24, 24, 23,
     23, 23, 23, 23, 23, 22, 22, 22,
     22, 22, 22, 22, 21, 21, 21, 21,
@@ -2099,11 +2166,11 @@ num5 = np.array([
     21, 21, 21, 21, 22, 22, 22, 22,
     22, 22, 23, 23, 23, 23, 23, 23,
     24, 24, 24, 24, 24, 24, 21,
-], dtype=np.uint8)
+]
 
 # Huffman code for encoding scheme 5, zero's code is index 123  -msss
 # code5[247]
-code5 = np.array([
+code5 = [
     0x1fffff, 0xfffffd, 0xfffffe, 0xfffffa, 0xff7ffa, 0xfffffc, 0xfffff8,
     0x5ffffd,
     0x3ffffd, 0x7fbffe, 0x3f7ffa, 0x5ffffc, 0x3ffffc, 0x37ffff, 0x3fdffd,
@@ -2165,11 +2232,11 @@ code5 = np.array([
     0x1fdffd, 0x17ffff, 0x3ffff8, 0x1ffffc, 0x3ffffa, 0x3fbffe, 0x3ffffe,
     0x1ffffd,
     0x7ffff8, 0x7ffffc, 0x7f7ffa, 0x7ffffa, 0x7ffffe, 0x7ffffd, 0x0fffff,
-], dtype=np.uint32)
+]
 
 # Number of valid bits (LSBs) in each entry in "code6"  -msss
 # num6[395]
-num6 = np.array([
+num6 = [
     21, 24, 24, 24, 24, 24, 24, 24,
     24, 24, 23, 23, 23, 23, 23, 23,
     23, 23, 23, 23, 22, 22, 22, 22,
@@ -2220,11 +2287,11 @@ num6 = np.array([
     23, 23, 23, 23, 23, 23, 23, 23,
     23, 24, 24, 24, 24, 24, 24, 24,
     24, 24, 21,
-], dtype=np.uint8)
+]
 
 # Huffman code for encoding scheme 6, zero's code is index 197  -msss
 # code6[395]
-code6 = np.array([
+code6 = [
     0x1fffff, 0xfffffe, 0xfffffc, 0xfffff8, 0xffbff8, 0xfffffd, 0xfffff9,
     0xfffffb,
     0xfffff3, 0xfffff7, 0x7ffffa, 0x5ffffe, 0x3ffffc, 0x7fdffc, 0x3ffff8,
@@ -2324,11 +2391,11 @@ code6 = np.array([
     0x3ffffa, 0x7ffff7, 0x7ffff3, 0x7ffffb, 0x7ffff9, 0x7ffffd, 0x7fbff8,
     0x7ffff8,
     0x7ffffc, 0x7ffffe, 0x0fffff,
-], dtype=np.uint32)
+]
 
 # Number of valid bits (LSBs) in each entry in "code7"  -msss
 # num7[609]
-num7 = np.array([
+num7 = [
     20, 24, 24, 24, 24, 24, 24, 24,
     24, 24, 24, 24, 24, 24, 24, 24,
     24, 23, 23, 23, 23, 23, 23, 23,
@@ -2406,11 +2473,11 @@ num7 = np.array([
     24, 24, 24, 24, 24, 24, 24, 24,
     24, 24, 24, 24, 24, 24, 24, 24,
     20,
-], dtype=np.uint8)
+]
 
 #  Huffman code for encoding scheme 7, zero's code is index 304  -msss
 # code7[609]
-code7 = np.array([
+code7 = [
     0x0fffff, 0xfffffd, 0xeffffd, 0xfffff5, 0xfffff9, 0xfffff1, 0xfffffb,
     0xfffff3,
     0xfffff7, 0xfdffff, 0xedffff, 0xfffffe, 0xfffffa, 0xfffffc, 0xf7fffc,
@@ -2564,7 +2631,7 @@ code7 = np.array([
     0x7ffff7, 0x7ffff3, 0x7ffffb, 0x7ffff1, 0x7ffff9, 0x7ffff5, 0x6ffffd,
     0x7ffffd,
     0x07ffff,
-], dtype=np.uint32)
+]
 
 
 ###############################################################################
@@ -2572,13 +2639,11 @@ code7 = np.array([
 
 # size of each huffman encoding scheme -msss
 # was called sizes
-sizes = np.array([
+sizes = [
     25, 47, 69, 109, 169, 247, 395, 609,
-], dtype=np.uint16)
+]
 # Array of bit count array pointers for each encoding scheme -msss
-counts = np.array([num0, num1, num2, num3, num4, num5, num6, num7],
-                  dtype=object)
+counts = [num0, num1, num2, num3, num4, num5, num6, num7]
 
 # Array of Huffman code array pointers for each encoding scheme  -msss
-encodings = np.array([code0, code1, code2, code3, code4, code5, code6, code7],
-                     dtype=object)
+encodings = [code0, code1, code2, code3, code4, code5, code6, code7]
