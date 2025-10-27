@@ -1,12 +1,72 @@
 import enum
 import io
 import os
-from pathlib import Path
 import struct
-from typing import Tuple, Optional
+from pathlib import Path
 import warnings
+from typing import Tuple, Optional
 
-import numpy as np
+if TYPE_CHECKING:
+    from numpy import ndarray
+
+"""
+Most everything below is rewritten in Python from the original C code for the
+program MOC_SUN to allow PDR to read MGS Mars Orbiter Camera (MOC) Standard 
+Data Products (SDP) in their uncompressed but not calibrated form.  
+
+MOC_SUN was originally written by Malin Space Science Systems (MSSS) with
+contributions by Michael Caplinger. It was then archived  alongside MGS mission 
+data in the PDS. 
+
+Some comments are carried over verbatim from the original C code. These are 
+marked with "-msss".  
+
+Most function and variable names are similar to the originals, although 
+stylistically now Python. 
+
+Standard Data Products are images saved as .imq files. They are structured as
+follows: 
+
+[PDS3 Label] (2048 char)
+[Header] [63 chars] 
+[ (Usually) Compressed Fragment Data] 
+[Header] [63 chars] 
+[ (Usually) Compressed Fragment Data] 
+and so on, until there are no more fragments. Some fragments have an EOF marker 
+identifying them as the last fragment. 
+
+In both the Label and each Header, a compression method is identified: 
+
+1) MOC-NONE: Not predictively compressed data, also referred to as 'RAW.' Each 
+pixel is encoded via Huffman tables, but is not related to surrounding pixels. 
+
+2) MOC-PRED-X-5: Predictively Compressed. The X means the prediction happens 
+along a row of pixels, where the next pixel is based on the previous. The 5 
+refers to the Huffman tree used during compression. The original software 
+indicates there may be other variants of predictively compressed  data. An 
+example would be 'MOC-PRED-Y-4', where the next pixel is predicted using the 
+pixel vertically above it and a different Huffman tree. 
+However, I have not yet encountered a variant other than MOC-PRED-X-5 in the 
+PDS.
+
+3) MOC-DCT-NUMBER (where NUMBER is usually 1, 2, 3): Discrete Cosine Transform, 
+also referred to as 'transform.' The number refers to 'lossless, lossy, and 
+compression factors used.'
+
+4) "MOC-WHT-NUMBER": Walsh-Hadamard transform compression.
+
+For transform compressed images, the image is decompressed fragment by 
+fragment. For predictively compressed and uncompressed images (PRED & NONE), 
+all the fragments are collected until the EOF marker is reached (or there is no 
+more data to read) and then decompressed. 
+
+A data quality warning is issued if the file is marked as having ERRORS in the 
+label. Despite the errors, some or most of the image may be decompressed. 
+Examples of errors include: missing EOF markers or rest of fragments or a
+checkerboard pattern introduced during transmission from MGS. Missing data 
+errors usually get padded with 0 to maintain the correct image shape.  
+
+"""
 
 # CONSTANTS FOR ALL FORMATS
 NONE = 0x00
@@ -14,6 +74,7 @@ XPRED = 0x01
 YPRED = 0x02
 
 # PREDICTIVE DECOMPRESSION CONSTANTS
+# in TJL terminology, left is 0 and right is 1 -msss
 LEFT = 0x01
 RIGHT = 0x02
 SYNC = 0x04
@@ -33,6 +94,9 @@ LARGE_NEGATIVE = 0x1000000
 LARGE_POSITIVE = 0x2000000
 
 
+###############################################################################
+
+
 def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
     """
     Read in an MGS MOC SDP .imq file, decode header, collect fragments, and
@@ -40,10 +104,15 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
 
     There are 3 formats:
     1) PRED: predicitve decompression
-    2) RAW: not compressed, formats the data.
-    3) XFORM: transform decompression
+    2) RAW: also called MOC NONE.
+    3) XFORM: DCT / transform decompression
 
     The decompressed image is returned as an array.
+
+    HITS
+    * mgs_moc
+        * sdp
+
     """
 
     if identifiers['DATA_QUALITY_DESC'] != 'OK':
@@ -69,21 +138,31 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
         header_data = infile.read(MSDPHeader.HEADER_SIZE)
 
         if len(header_data) < MSDPHeader.HEADER_SIZE:
+            if first_h is None:
+                raise ValueError("Image does not have necessary header "
+                                 "information.")
             break
 
         h = MSDPHeader(header_data)
 
         if first_h is None:
+            # save first header for cases where last fragment's header is
+            # unreadable
             first_h = h
-
+            if h.length == 0:
+                raise ValueError("First fragment length is 0, no data to "
+                                 "decompress.")
         if h.length == 0:
+            # this will usually happen at the EOF when there are known errors
             break
-
-        print(f"Processing fragment {h.fragment}, len {h.length}")
 
         indat = infile.read(h.length)
 
-        if (h.compression[0] & 3) == 1:
+        if ((h.compression[0] >> 2) & 3 != 0) & (
+                (h.compression[0] & 3) == 1):
+            raise ValueError("Error: Both pcomp and xcomp compression set.")
+
+        elif (h.compression[0] & 3) == 1:
             # PRED / predictive decompression
             collected_frags.extend(indat)
 
@@ -95,23 +174,19 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
 
         elif (h.compression[0] >> 2) & 3 != 0:
             # XFORM / transform
+            # WHT & DCT
             image_part = decompress_transform_image(h, indat)
             image.append(image_part.copy())
-
-        elif ((h.compression[0] >> 2) & 3 == 1) & (
-                (h.compression[0] & 3) == 1):
-            raise ValueError("Error: Both pcomp and xcomp compression set.")
 
         else:
             # RAW / MOC NONE
             collected_frags.extend(indat)
             if h.status & 2:
-                # indicates all fragments have been collected
+                # EOF marker indicates all fragments have been collected
                 image = make_pred_image(h, collected_frags)
                 infile.close()
                 return image
 
-        infile.seek(1, 1)  # skip checksum byte, seems useless atp
         total = total + MSDPHeader.HEADER_SIZE + h.length + 1
 
     infile.close()
@@ -119,7 +194,7 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
     if (first_h.compression[0] >> 2) & 3 == 0:
         # for the situation in which the data may be messed up and the EOF
         # marker wasn't found, we resort to using the first header and what
-        # fragments we do have
+        # fragments we do have.
         warnings.warn("End of file reached without EOF marker in final"
                       " fragment. Output image may be incomplete or have"
                       " other errors.")
@@ -130,8 +205,11 @@ def mgs_moc_comp_image_loader(filename: str, identifiers) -> np.ndarray:
     return np.ascontiguousarray(np.vstack(image))
 
 
+###############################################################################
+
+
 """
-CLASSES USED BY ALL FORMATS 
+CLASSES USED BY ALL COMPRESSION TYPES 
 """
 
 
@@ -172,7 +250,6 @@ def make_long(byte_array: bytes) -> int:
 
 class BitStruct:
     def __init__(self, data: bytes):
-        # self.bit_queue = 0
         self.bit_count = 0
         self.byte_count = 0
         self.byte_queue = data
@@ -180,6 +257,9 @@ class BitStruct:
         self.output = 0
         self.data = data
         self.bit_queue = data[0] if len(data) > 0 else 0
+
+
+###############################################################################
 
 
 """
@@ -205,6 +285,11 @@ def make_pred_image(h: MSDPHeader, collected_frags: bytearray) -> np.ndarray:
 
     width = h.edit_length * 16
     actual_height = len(image_array) // width
+
+    if actual_height != height:
+        warnings.warn("Expected height of image not equal to actual "
+                      "decompressed height.")
+
     if width > 0 and height > 0:
         image_array = image_array[:actual_height * width].reshape(
             actual_height, width)
@@ -218,17 +303,19 @@ def pred_decode(
         code: bytearray,
         left: bytearray,
         right: bytearray
-):
+) -> Tuple[bytearray, int]:
     """
     Combined implementation of decode and predictive_decomp_main from moc_sun.
+    Decompresses all collected fragments.
+
+    Returns:
+        Tuple[bytearray, int]: The decoded data and number of bytes processed.
     """
 
     height = h.down_total * 16
     width = h.edit_length * 16
     length = width * height
     prev_line = bytearray(width)
-    for i in range(width):
-        prev_line[i] = 0
     cur_line = bytearray(width)
     result = bytearray(height * width)
 
@@ -241,6 +328,7 @@ def pred_decode(
         comp_type |= XPRED
     if ypred:
         comp_type |= YPRED
+
     bit_stuff = BitStruct(data)
     last_sync_pos = 0
     sync = 0xf0ca
@@ -248,7 +336,7 @@ def pred_decode(
     for y in range(height):
         # we are automatically doing sync, was optional in moc_sun
         if y % 128 == 0 and comp_type != NONE:
-            # for some reason MOC NONE doesn't seem syncable?
+            # for some reason MOC NONE doesn't seem to have sync markers?
             # looking for sync & relocating to it, then decompressing that line
             if bit_stuff.bit_count != 0:
                 bit_stuff.bit_count = 0
@@ -302,7 +390,6 @@ def pred_decode(
         prev_line[:] = cur_line
 
     got_height = height
-
     return bytes(result), got_height
 
 
@@ -315,7 +402,9 @@ def pred_line_decompressor(cur_line: bytearray,
                            right_table: bytearray,
                            bit_stuff: BitStruct) -> None:
     """
-    Send each line to correct decompression 'node' (xpred, ypred etc)
+    Send each line to correct decompression 'node' (xpred, ypred etc).
+    Most (all?) pred. comp. data seems to have been compressed with XPRED or
+    NONE.
     """
     if comp_type == NONE:
         decomp_none(cur_line, width, code_table, left_table, right_table,
@@ -336,6 +425,10 @@ def pred_line_decompressor(cur_line: bytearray,
 
 
 def delta_ok(data: bytes, offset: int, max_delta: int = 64) -> bool:
+    """
+    Check that the data after a sync marker don't vary significantly.
+    A quality check on whether a 'real' sync was found.
+    """
     md = 0
     for i in range(1, 32):
         if offset + i + 1 >= len(data):
@@ -347,6 +440,11 @@ def delta_ok(data: bytes, offset: int, max_delta: int = 64) -> bool:
 
 
 def find_sync(data: bytes, length: int, sync: int) -> Optional[int]:
+    """
+    Check for sync every 128 lines of predictively compressed images,
+    relocate to new location of sync, aka the 'offset'. If sync cannot
+    be found, return None.
+    """
     if length < 2:
         return None
     offset = 2
@@ -367,11 +465,21 @@ def next_value(code_table: bytearray,
                right_table: bytearray,
                bit_stuff: BitStruct,
                ) -> int:
-
+    """
+    Decodes a bit of the compressed data by traversing the Huffman tree until
+    a leaf node is reached and the decoded value is returned.
+    This function is called a lot during decompression.
+    """
+    # save locally to be a little faster
     index = 0
+    bit_queue = bit_stuff.bit_queue
+    bit_count = bit_stuff.bit_count
+    data = bit_stuff.data
+    output = bit_stuff.output
+    data_len = len(data)
 
     while True:
-        if (bit_stuff.bit_queue & 0x1) == 0x0:
+        if (bit_queue & 0x1) == 0x0:
             if (code_table[index] & LEFT) == 0:
                 value = left_table[index]
                 break
@@ -384,29 +492,33 @@ def next_value(code_table: bytearray,
             else:
                 index = right_table[index]
 
-        bit_stuff.bit_count += 1
+        bit_count += 1
 
-        if bit_stuff.bit_count > 7:
-            bit_stuff.bit_count = 0
-            bit_stuff.output += 1
-            if bit_stuff.output < len(bit_stuff.data):
-                bit_stuff.bit_queue = bit_stuff.data[bit_stuff.output]
+        if bit_count > 7:
+            bit_count = 0
+            output += 1
+            if output < data_len:
+                bit_queue = data[output]
             else:
-                bit_stuff.bit_queue = 0
+                bit_queue = 0
         else:
-            bit_stuff.bit_queue >>= 1
+            bit_queue >>= 1
 
-    bit_stuff.bit_count += 1
+    bit_count += 1
 
-    if bit_stuff.bit_count > 7:
-        bit_stuff.bit_count = 0
-        bit_stuff.output += 1
-        if bit_stuff.output < len(bit_stuff.data):
-            bit_stuff.bit_queue = bit_stuff.data[bit_stuff.output]
+    if bit_count > 7:
+        bit_count = 0
+        output += 1
+        if output < data_len:
+            bit_queue = data[output]
         else:
-            bit_stuff.bit_queue = 0
+            bit_queue = 0
     else:
-        bit_stuff.bit_queue >>= 1
+        bit_queue >>= 1
+
+    bit_stuff.bit_queue = bit_queue
+    bit_stuff.bit_count = bit_count
+    bit_stuff.output = output
 
     return value
 
@@ -418,6 +530,10 @@ def decomp_none(cur_line: bytearray,
                 right_table: bytearray,
                 bit_stuff: BitStruct,
                 ) -> None:
+    """
+    Pixel values are decoded from Huffman tables but are not dependent
+    on prior pixel values (i.e. no 'prediction').
+    """
     for i in range(size):
         cur_line[i] = next_value(code_table, left_table, right_table,
                                  bit_stuff)
@@ -430,6 +546,9 @@ def decomp_xpred(cur_line: bytearray,
                  right_table: bytearray,
                  bit_stuff: BitStruct,
                  ) -> None:
+    """
+    Compression in horizontal direction, uses pixel before in row.
+    """
     prev = 0
     for i in range(size):
         residual = next_value(code_table, left_table, right_table, bit_stuff)
@@ -445,6 +564,9 @@ def decomp_ypred(cur_line: bytearray,
                  right_table: bytearray,
                  bit_stuff: BitStruct,
                  ) -> None:
+    """
+    Compression in vertical direction aka next pixel based on pixel above it.
+    """
     for i in range(size):
         residual = next_value(code_table, left_table, right_table, bit_stuff)
         pixel = (residual + prev_line[i]) & 0xFF
@@ -460,6 +582,9 @@ def decomp_xpred_ypred(cur_line: bytearray,
                        right_table: bytearray,
                        bit_stuff: BitStruct,
                        ) -> None:
+    """
+    Predicts next pixel based on pixel above it and before it (x and y dirs).
+    """
     prev_diff = 0
     for i in range(size):
         residual = next_value(code_table, left_table, right_table, bit_stuff)
@@ -474,9 +599,14 @@ def decomp_sync(cur_line: bytearray,
                 size: int,
                 bit_stuff: BitStruct,
                 ) -> None:
+    """
+    Not predictively compressed row after sync marker (next_value is not
+    called). Copies data as is.
+    """
+    length = len(bit_stuff.data)
     bit_stuff.output += 2
     for i in range(size):
-        if bit_stuff.output < len(bit_stuff.data):
+        if bit_stuff.output < length:
             pixel = bit_stuff.data[bit_stuff.output]
             bit_stuff.output += 1
             cur_line[i] = pixel
@@ -485,8 +615,23 @@ def decomp_sync(cur_line: bytearray,
             cur_line[i] = 0
             prev_line[i] = 0
     bit_stuff.bit_count = 0
-    if bit_stuff.output < len(bit_stuff.data):
+    if bit_stuff.output < length:
         bit_stuff.bit_queue = bit_stuff.data[bit_stuff.output]
+
+
+###############################################################################
+
+"""
+ This module manages the Ligocki-style Huffman decoding trees for
+    the predictive decompressor.  It is a little roundabout in that
+    it builds a Huffman code tree in node form from the flight software
+    encoding tables and then "tablefies" it; that way, separate decoding
+    tables don't have to be maintained.  One can also just load an
+    existing decode file in (for testing.)
+
+    This will probably all go away if the clean canonical decompressor
+    is ever written. -msss
+"""
 
 
 class HuffmanNode:
@@ -526,7 +671,10 @@ def ht_tablefy(root: HuffmanNode,
                one: bytearray,
                index: int
                ) -> int:
-
+    """
+    Convert a Huffman tree to TJL table form. Call initially with index = 0.
+    -msss
+    """
     local_index = index
 
     if root.zero is not None:
@@ -605,12 +753,18 @@ def make_huffman_tree(huff_id: int) -> Tuple[bytearray, bytearray, bytearray]:
     return flags, zero, one
 
 
+###############################################################################
+
+
 """
 TRANSFORM DECOMPRESSION 
 """
 
 
 def decompress_transform_image(h: MSDPHeader, indat: bytearray) -> np.ndarray:
+    """
+    Decompress a transform (DCT) image fragment, returns as numpy array.
+    """
     transformer = TransformDecompressor()
 
     width = h.edit_length * 16
@@ -647,13 +801,10 @@ class TransformDecompressor:
 
     def decompress(self, data, width, height, transform, spacing, num_levels):
         """
-        From the c version in moc_sun:
-        MOC transform decompressor main routine
-        Mike Caplinger, MOC GDS Design Scientist
-        SCCS @(#)main.c	1.2 1/5/94
 
-        Adapted from a version by Terry Ligocki with SCCS
-        @(#)decompress.c (decompress.c) 1.6
+        Translated from C in MOC_SUN, where it was written by Mike Caplinger
+        (MOC GDS Design Scientist with MSSS) which was itself adapted from a
+         version by Terry Ligocki with SCCS.
         """
         x_size = width
         y_size = height
@@ -663,7 +814,6 @@ class TransformDecompressor:
         occ = np.zeros(num_levels, dtype=np.uint32)
 
         num_blocks = (x_size * y_size) >> 8
-
         groups = read_groups(num_blocks, bit_stuff)
 
         for block in range(num_blocks):
@@ -1149,6 +1299,9 @@ def read_block(transform, spacing, min_dc, range_dc, var, x, y, x_size, image,
     for y0 in range(16):
         for x0 in range(16):
             image[(y + y0) * x_size + (x + x0)] = block[y0 * 16 + x0]
+
+
+###############################################################################
 
 
 """
@@ -1647,6 +1800,10 @@ code_ident_requant = [
     240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254,
     255,
 ]
+
+
+###############################################################################
+
 
 """
 TRANSFORM DECOMPRESSION TABLES
@@ -2408,6 +2565,10 @@ code7 = np.array([
     0x7ffffd,
     0x07ffff,
 ], dtype=np.uint32)
+
+
+###############################################################################
+
 
 # size of each huffman encoding scheme -msss
 # was called sizes
