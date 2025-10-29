@@ -51,11 +51,15 @@ pixel vertically above it and a different Huffman tree.
 However, I have not yet encountered a variant other than MOC-PRED-X-5 in the 
 PDS.
 
-3) MOC-DCT-NUMBER (where NUMBER is usually 1, 2, 3): Discrete Cosine Transform, 
+3) MOC-PRED-Y-1: Predictively compressed in Y direction. Only around 70 of 
+these type of image exist in the PDS. 
+
+4) MOC-DCT-NUMBER (where NUMBER is usually 1, 2, 3): Discrete Cosine Transform, 
 also referred to as 'transform.' The number refers to 'lossless, lossy, and 
 compression factors used.'
 
-4) "MOC-WHT-NUMBER": Walsh-Hadamard transform compression.
+5) "MOC-WHT-NUMBER": Walsh-Hadamard transform compression. Does not appear
+to have ever been used. 
 
 For transform compressed images, the image is decompressed fragment by 
 fragment. For predictively compressed and uncompressed images (PRED & NONE), 
@@ -420,9 +424,6 @@ def pred_line_decompressor(cur_line: bytearray,
     elif comp_type == YPRED:
         decomp_ypred(cur_line, prev_line, width, code_table, left_table,
                      right_table, bit_stuff)
-    elif comp_type == (XPRED | YPRED):
-        decomp_xpred_ypred(cur_line, prev_line, width, code_table, left_table,
-                           right_table, bit_stuff)
     elif comp_type in [SYNC, XPRED | SYNC, YPRED | SYNC, XPRED | YPRED | SYNC]:
         decomp_sync(cur_line, prev_line, width, bit_stuff)
     else:
@@ -575,26 +576,6 @@ def decomp_ypred(cur_line: bytearray,
     for i in range(size):
         residual = next_value(code_table, left_table, right_table, bit_stuff)
         pixel = (residual + prev_line[i]) & 0xFF
-        cur_line[i] = pixel
-        prev_line[i] = pixel
-
-
-def decomp_xpred_ypred(cur_line: bytearray,
-                       prev_line: bytearray,
-                       size: int,
-                       code_table: bytearray,
-                       left_table: bytearray,
-                       right_table: bytearray,
-                       bit_stuff: BitStruct,
-                       ) -> None:
-    """
-    Predicts next pixel based on pixel above it and before it (x and y dirs).
-    """
-    prev_diff = 0
-    for i in range(size):
-        residual = next_value(code_table, left_table, right_table, bit_stuff)
-        prev_diff = (prev_diff + residual) & 0xFF
-        pixel = (prev_line[i] + prev_diff) & 0xFF
         cur_line[i] = pixel
         prev_line[i] = pixel
 
@@ -948,6 +929,11 @@ def init_block(sizes_f: np.ndarray[np.uint16],
                counts_f: np.ndarray,
                encodings_f: np.ndarray,
                ) -> List["BitTree"]:
+    """
+    Nothing about this function is unique to the image, so if someone
+    wanted to decompress lots of DCT images at once, you should probably
+    reconfigure the code to build the tree only one time.
+    """
     encode_trees = []
     for which in range(MAXCODES):
         size = int(sizes_f[which])
@@ -980,8 +966,11 @@ def init_block(sizes_f: np.ndarray[np.uint16],
 
 
 def read_coef(encoding: np.ndarray, bit_stuff: "BitStruct") -> np.int32:
-    # traverse tree until it hits a leaf node
+    """
+    traverse tree until it hits a leaf node
+    """
     import numpy as np
+
     while encoding.zero is not None:
         if read_bits(1, bit_stuff) == 0:
             encoding = encoding.zero
@@ -1005,7 +994,6 @@ def read_coef(encoding: np.ndarray, bit_stuff: "BitStruct") -> np.int32:
 
 
 def reorder(block: np.ndarray) -> None:
-    # much simpler way of writing this than what they had!
     import numpy as np
 
     temp = np.zeros(256, dtype=np.int32)
@@ -1160,162 +1148,6 @@ def inv_fdct_16x16(inp: np.ndarray, out: np.ndarray) -> None:
         out[i] = cur
 
 
-def butterfly4(inp: np.ndarray,
-               ii: int,
-               i0: int,
-               i1: int,
-               i2: int,
-               i3: int,
-               out: np.ndarray,
-               oi: int,
-               o0: int,
-               o1: int,
-               o2: int,
-               o3: int,
-               ) -> None:
-    """
-    This module calculates a "sequency" ordered, two dimensional
-    inverse Walsh-Hadamard transform (WHT) on 16 x 16 blocks of
-    data.  It is done as two one dimensional transforms (one of the
-    rows followed by one of the columns).  Each one dimensional
-    transform is implemented as a 16 point, 4 stage "butterfly".
-
-    This defines a four input (and output), two stage "butterfly"
-    calculation done completely in registers (once the data is read from
-    memory).  Four input and two stages was picked to maximize the use of
-    the 32000's registers.  Eight of these are required to do a 16 point,
-    one dimensional WHT.  The "simple" formulas for this "butterfly" are:
-
-    *	n0 = i0 + i1
-    *	n1 = i0 - i1	First stage
-    *	n2 = i2 + i3
-    *	n3 = i2 - i3
-    *
-    *	o0 = n0 + n2
-    *	o1 = n1 + n3	Second stage
-    *	o2 = n0 - n2
-    *	o3 = n1 - n3
-
-    All data (in and out) is assumed to be 16-bit integers.  "in" is the
-    base address of the input data array and "ii" is the scaling factor to
-    use on the next four indexes into "in" (this allows moving by rows or
-    columns through a two-dimensional array stored as a one dimensional set
-    of numbers).  "i0", "i1", "i2", and "i3" are the unscaled indexes into
-    "in".  "out" is the base address of the output data array and "oi" is
-    the scaling factor to use on the next four indexes into "out" (this
-    allows moving by rows or columns through a two-dimensional array stored
-    as a one dimensional set of numbers).  "o0", "o1", "o2", and "o3" are
-    the unscaled indexes into "out".
-    - msss
-    """
-
-    t0 = inp[ii * i0]
-    t1 = inp[ii * i1]
-    t2 = inp[ii * i2]
-    t3 = inp[ii * i3]
-
-    t4 = t0 + t1
-    t0 = t0 - t1
-    t1 = t2 + t3
-    t2 = t2 - t3
-
-    t3 = t4 + t1
-    t4 = t4 - t1
-    t1 = t0 + t2
-    t0 = t0 - t2
-
-    out[oi * o0] = t3
-    out[oi * o1] = t1
-    out[oi * o2] = t4
-    out[oi * o3] = t0
-
-
-def inv_fwht16_row(inp: np.ndarray, out: np.ndarray) -> None:
-    """
-    This function does a 16 point, one dimensional inverse WHT on 16, 32-bit
-    integers stored as a vector (as in the rows of a two-dimensional
-    array) and puts the results in a 32-bit integer vector.  The transform
-    is not normalized but is in "sequency" order. -msss
-    """
-    import numpy as np
-
-    data = np.zeros(32, dtype=np.int32)
-
-    butterfly4(inp, 1, 0, 1, 2, 3, data, 1, 0, 1, 2, 3)
-    butterfly4(inp, 1, 4, 5, 6, 7, data, 1, 4, 5, 6, 7)
-    butterfly4(inp, 1, 8, 9, 10, 11, data, 1, 8, 9, 10, 11)
-    butterfly4(inp, 1, 12, 13, 14, 15, data, 1, 12, 13, 14, 15)
-
-    butterfly4(data, 1, 0, 4, 8, 12, out, 1, 0, 3, 1, 2)
-    butterfly4(data, 1, 1, 5, 9, 13, out, 1, 15, 12, 14, 13)
-    butterfly4(data, 1, 2, 6, 10, 14, out, 1, 7, 4, 6, 5)
-    butterfly4(data, 1, 3, 7, 11, 15, out, 1, 8, 11, 9, 10)
-
-
-def inv_fwht16_col(inp: np.ndarray, out: np.ndarray) -> None:
-    """
-    This function does a 16 point, one dimensional inverse WHT on 16, 32-bit
-    integers stored as a vector in every 16th location (as in the
-    columns of a two-dimensional array stored as a one dimensional array by
-    rows) and puts the results out in a similar manner.  The transform is
-    not normalized but is in "sequency" order. -msss
-    """
-    import numpy as np
-
-    data = np.zeros(16, dtype=np.int32)
-
-    # Perform first two stages of 16 point butterfly
-    butterfly4(inp, 16, 0, 1, 2, 3, data, 1, 0, 1, 2, 3)
-    butterfly4(inp, 16, 4, 5, 6, 7, data, 1, 4, 5, 6, 7)
-    butterfly4(inp, 16, 8, 9, 10, 11, data, 1, 8, 9, 10, 11)
-    butterfly4(inp, 16, 12, 13, 14, 15, data, 1, 12, 13, 14, 15)
-
-    # Perform last two stages of 16 point butterfly and store in
-    # "sequency" order -msss
-
-    butterfly4(data, 1, 0, 4, 8, 12, out, 16, 0, 3, 1, 2)
-    butterfly4(data, 1, 1, 5, 9, 13, out, 16, 15, 12, 14, 13)
-    butterfly4(data, 1, 2, 6, 10, 14, out, 16, 7, 4, 6, 5)
-    butterfly4(data, 1, 3, 7, 11, 15, out, 16, 8, 11, 9, 10)
-
-
-def inv_fwht_16x16(inp: np.ndarray, out: np.ndarray) -> None:
-    """
-    This function does a "sequency" ordered WHT on a 16 x 16 array of data
-    (stored as 16-bit integers) stored in 256 contiguous locations. The
-    transform is normalized. The input is assumed to be 16-bit signed
-    integers EXCEPT for the DC entry which is to be treated as UNSIGNED. The
-    result is stored in a 16 x 16 array of the same structure. The output
-    is all 8 bit, unsigned integers. -msss
-    """
-    import numpy as np
-
-    data = np.zeros(256, dtype=np.int32)
-    data[0] = np.uint16(inp[0])
-
-    for i in range(1, 256):
-        data[i] = inp[i]
-
-    # Pass each row in "data" array (as a vector of size 16) to the
-    # 16 point, 1D inverse WHT and store the results in contiguous
-    # 16 point locations in "data".  At completion all rows have been
-    # inverse transformed in one dimension. -msss
-    for i in range(16):
-        row = data[i * 16:(i + 1) * 16]
-        inv_fwht16_row(row, row)
-        data[i * 16:(i + 1) * 16] = row
-
-    # Inverse transform each column in the 16 x 16 block stored by rows
-    # as a 256 point vector. -msss
-    for i in range(16):
-        inv_fwht16_col(data[i:], data[i:])
-
-    for i in range(256):
-        cur = data[i] >> 8
-        cur = max(0, min(255, cur))
-        out[i] = cur
-
-
 def read_groups(num_blocks: int, bit_stuff: "BitStruct") -> np.ndarray:
     """ Breaks a group up into blocks for transform decompression. """
     import numpy as np
@@ -1339,8 +1171,9 @@ def read_block(transform: int,
                encode_trees: List["BitTree"]
                ) -> None:
     """
-    Read & decode 16 x 16 pixel block of the image using the correct
-    transformation: Walsh-Hadamard or DCT.
+    Read & decode 16 x 16 pixel block of the image using the DCT.
+    Used to include the WHT but that doesn't appear to have ever been in
+    use, so it has been removed.
     """
     import numpy as np
 
@@ -1357,12 +1190,12 @@ def read_block(transform: int,
 
     reorder(block)
 
-    if transform == 0:
-        # Walsh-Hadamard transform
-        inv_fwht_16x16(block, block)
-    elif transform == 1:
+    if transform == 1:
         # discrete cosine transform
         inv_fdct_16x16(block, block)
+    else:
+        raise ValueError("Transform does not have expected value of 1 in "
+                         "read_block.")
 
     for y0 in range(16):
         for x0 in range(16):
@@ -1838,7 +1671,7 @@ code7_requant = [
     246, 246, 246, 246, 246, 246, 246, 246, 246, 246, 246, 255, 255, 255, 255,
     255,
 ]
-
+#
 # /* dumped from 'default.requant' */
 # /* REFINE this could be calculated instead of put into PROM (obviously) */
 code_ident_requant = [
