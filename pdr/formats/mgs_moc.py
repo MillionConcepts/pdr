@@ -1180,6 +1180,9 @@ def read_block(transform: int,
     block = np.zeros(256, dtype=np.int32)
 
     dc = read_bits(8, bit_stuff)
+
+    # (uint16)((double)dc * rangeDC / 255.0 + minDC) ISIS implementation
+    # diff from MOC-SUN
     block[0] = int(dc * range_dc / 255.0 + min_dc)
 
     num_zeros = read_bits(8, bit_stuff)
