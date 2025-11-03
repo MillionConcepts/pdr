@@ -3,8 +3,8 @@ from __future__ import annotations
 import enum
 import io
 import os
-import struct
 from pathlib import Path
+import struct
 import warnings
 from typing import Tuple, Optional, TYPE_CHECKING
 
@@ -316,9 +316,6 @@ def pred_decode(
     """
     Combined implementation of decode and predictive_decomp_main from moc_sun.
     Decompresses all collected fragments.
-
-    Returns:
-        Tuple[bytearray, int]: The decoded data and number of bytes processed.
     """
 
     height = h.down_total * 16
@@ -413,7 +410,8 @@ def pred_line_decompressor(cur_line: bytearray,
     """
     Send each line to correct decompression 'node' (xpred, ypred etc).
     Most (all?) pred. comp. data seems to have been compressed with XPRED or
-    NONE.
+    NONE. There are a few YPRED. Original code had XYPRED as an option, but
+    the cumulative index table of MOC SDPs indicates that was never used.
     """
     if comp_type == NONE:
         decomp_none(cur_line, width, code_table, left_table, right_table,
@@ -632,6 +630,10 @@ def ht_insert(root: Optional[HuffmanNode],
               code: int,
               length: int
               ) -> HuffmanNode:
+    """
+    Helper function for building Huffman tree which inserts a value at the
+    correct leaf position.
+    """
     if root is None:
         root = HuffmanNode()
 
@@ -691,6 +693,10 @@ def ht_tree_gen(table_index: int,
                 code_len_vec: list,
                 code_requant_vec: list,
                 ) -> HuffmanNode:
+    """
+    Huffman tree-building for predictive decompression.
+
+    """
     tree = None
 
     code_bits = code_bits_vec[table_index]
@@ -795,7 +801,8 @@ class TransformDecompressor:
                    num_levels: int,
                    ) -> bytearray:
         """
-        Decompresses DCT and WHT fragments.
+        Decompresses DCT fragments. Originally also intended for WHT fragments,
+        but that was never used (AFAICT).
 
         Translated from C in MOC_SUN, where it was written by Mike Caplinger
         (MOC GDS Design Scientist with MSSS) which was itself adapted from a
@@ -868,7 +875,9 @@ def bit_reverse(num: int) -> int:
 
 
 def read_bits(bit_count: int, bit_stuff: BitStruct):
-    """Read specified number of bits from bit stream"""
+    """
+    Read specified number of bits from bit stream.
+    """
     if bit_count > 24:
         raise ValueError(f"Asked for more than 24 bits: {bit_count}")
 
@@ -909,6 +918,9 @@ def make_tree(trees: List["BitTree"],
               size: int,
               bit,
               ) -> BitTree:
+    """
+    Make Huffman tree.
+    """
     if size == 1:
         return trees[start_idx]
     count = 0
@@ -967,7 +979,7 @@ def init_block(sizes_f: np.ndarray[np.uint16],
 
 def read_coef(encoding: np.ndarray, bit_stuff: "BitStruct") -> np.int32:
     """
-    traverse tree until it hits a leaf node
+    Traverse tree until it hits a leaf node.
     """
     import numpy as np
 
@@ -994,6 +1006,9 @@ def read_coef(encoding: np.ndarray, bit_stuff: "BitStruct") -> np.int32:
 
 
 def reorder(block: np.ndarray) -> None:
+    """
+    Rearranges image based on look-up array 'trans'
+    """
     import numpy as np
 
     temp = np.zeros(256, dtype=np.int32)
@@ -1003,6 +1018,9 @@ def reorder(block: np.ndarray) -> None:
 
 
 def dct_inv16_double(inp: np.ndarray, out: np.ndarray) -> None:
+    """
+    Inverse discrete cosine transform (DCT)
+    """
     import numpy as np
 
     tmp = np.zeros(16, dtype=np.float64)
@@ -1120,6 +1138,10 @@ def dct_inv16_double(inp: np.ndarray, out: np.ndarray) -> None:
 
 
 def inv_fdct_16x16(inp: np.ndarray, out: np.ndarray) -> None:
+    """
+    Inverse discrete cosine transform (DCT) on a 16x16 block of
+    image data.
+    """
     import numpy as np
 
     data = np.zeros(256, dtype=np.float64)
