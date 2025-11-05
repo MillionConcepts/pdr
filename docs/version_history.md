@@ -4,6 +4,10 @@
 
 #### Features
 - Decompression module for MSSS DAT files
+- Support for PDS4 labels with a ".lblx" filename extension
+- `Data.dump_browse()` and `Data.show()` now take an optional `rgb_channels`
+  keyword argument which allows for manual control over which bands of a
+  multiband image are used as the color channels when creating an RGB image.
 
 #### Dataset Support
 - misc additional products from:
