@@ -1,6 +1,7 @@
 # Version History
 ## [X.X.X] - 202X-XX-XX
 ### Added
+- A user guide for `Data.dump_browse()` and `Data.show()`
 
 #### Features
 - Decompression module for MSSS DAT files
