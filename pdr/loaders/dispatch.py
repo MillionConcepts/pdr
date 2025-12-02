@@ -74,11 +74,13 @@ def pointer_to_loader(pointer: str, data: Data) -> Loader:
     if "ARRAY" in pointer:
         return ReadArray()
     table_words = (
-        "TABLE", "SPREADSHEET", "CONTAINER", "SERIES", "SPECTRUM", "HISTOGRAM"
+        "TABLE", "SPREADSHEET", "CONTAINER", "SERIES", "SPECTRUM", "HISTOGRAM",
+        "FILE"
     )
     if (
         any(val in pointer for val in table_words)
         and not any(val+"_HEADER" in pointer for val in table_words)
+        and not any(val + "_NAME" in pointer for val in table_words)
         and "HISTOGRAM_IMAGE" not in pointer
     ):
         return ReadTable()

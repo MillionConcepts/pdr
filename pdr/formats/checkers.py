@@ -346,7 +346,14 @@ def check_special_table_reader(
         and ".txt" in fn.lower()
     ):
         return formats.odyssey.grs_e_kernel_loader(name, fn)
+    if (
+        identifiers["INSTRUMENT_HOST_NAME"] == "VENUS EXPRESS"
+        and identifiers["INSTRUMENT_ID"] in ["VRA"]
+        and identifiers['PRODUCT_TYPE'] == "UDR"
+        and ".RAW" in identifiers["PRODUCT_ID"]
 
+    ):
+        return True, formats.vex_vera.udr_table_loader(fn)
     return False, None
 
 
@@ -536,6 +543,13 @@ def check_special_structure(
         and ".txt" in fn.lower()
     ):
         return formats.odyssey.grs_e_kernel_structure()
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "VENUS EXPRESS"
+            and identifiers["INSTRUMENT_ID"] in ["VRA"]
+            and identifiers['PRODUCT_TYPE'] == "UDR"
+    ):
+        return formats.vex_vera.udr_table_structure()
+
     return False, None
 
 
@@ -656,6 +670,13 @@ def check_special_position(
         return True, formats.msx.cube_envi_header_position(
             identifiers, block, target, name, start_byte, fn
         )
+
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "VENUS EXPRESS"
+            and identifiers["INSTRUMENT_ID"] in ["VRA"]
+            and identifiers['PRODUCT_TYPE'] == "UDR"
+    ):
+        return formats.vex_vera.udr_table_special_position()
     return False, None
 
 
@@ -935,6 +956,12 @@ def check_special_block(
         and name == "IMAGE"
     ):
         return True, formats.msl_edr.get_special_block(data, name)
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "VENUS EXPRESS"
+            and identifiers["INSTRUMENT_ID"] in ["VRA"]
+            and "1B_RMP_" in identifiers["PRODUCT_ID"]
+    ):
+        return formats.vex_vera.get_special_block(data, name)
     return False, None
 
 
@@ -1013,6 +1040,18 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
         and pointer == "HEADER"
     ):
         return formats.msl_apxs.trivial_header_loader()
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "VENUS EXPRESS"
+            and identifiers["INSTRUMENT_ID"] in ["VRA"]
+            and "1A_TNF" in identifiers["PRODUCT_ID"]
+    ):
+        return formats.vex_vera.trvial_dsn_table()
+    if (
+            identifiers["INSTRUMENT_HOST_NAME"] == "VENUS EXPRESS"
+            and identifiers["INSTRUMENT_ID"] in ["VIRTIS"]
+            and pointer == "HISTORY"
+    ):
+        return formats.vex_virtis.trivial_history()
     return False
 
 
