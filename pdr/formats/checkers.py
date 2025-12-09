@@ -547,6 +547,9 @@ def check_special_structure(
             identifiers["INSTRUMENT_HOST_NAME"] == "VENUS EXPRESS"
             and identifiers["INSTRUMENT_ID"] in ["VRA"]
             and identifiers['PRODUCT_TYPE'] == "UDR"
+            and "ODF" not in fn
+            and "TNF" not in fn
+            and "RSR" not in fn
     ):
         return formats.vex_vera.udr_table_structure()
 
