@@ -87,7 +87,7 @@ scope.
 
 If you need general support you can find us on [OpenPlanetary Slack](https://app.slack.com/client/T04CWPQL9/C04CWPQM5)
 (available to [OpenPlanetary members](https://www.openplanetary.org/join))
-or feel free to [email](mailto:sierra@millionconcepts.com) the team.
+or feel free to [email](mailto:pdr@millionconcepts.com) the team.
 
 ---
 This work is supported by NASA grant No. 80NSSC21K0885.
