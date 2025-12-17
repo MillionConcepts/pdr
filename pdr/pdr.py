@@ -47,7 +47,11 @@ from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
 from pdr.formats import check_special_fn, special_image_constants
-from pdr.loaders.utility import DESKTOP_IMAGE_STANDARDS
+from pdr.loaders.utility import (
+    DESKTOP_IMAGE_STANDARDS,
+    FITS_EXTENSIONS,
+    looks_like_this_kind_of_file,
+)
 from pdr.parselabel.pds3 import (
     depointerize,
     get_pds3_pointers,
@@ -1069,7 +1073,12 @@ class Data:
                 self[obj].__class__.__name__ == "ndarray"
                 and len(self[obj].shape) != 1
             ):
-                if scaled == "both":
+                if looks_like_this_kind_of_file(self.filename, FITS_EXTENSIONS) \
+                        and (scaled == "both" or scaled is False):
+                    warnings.warn("Scaling for FITS files cannot be turned "
+                                  "off, dumping scaled products.")
+                    dump_it(self[obj], outfile + "_scaled")
+                elif scaled == "both":
                     dump_it(
                         self.get_scaled(obj, float_dtype=fdt),
                         outfile + "_scaled",
