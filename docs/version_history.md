@@ -19,10 +19,13 @@
   - Mars Odyssey
   - Voyager
   - MRO
+  - Venus Express
 - MSL Mastcam, MAHLI, and MARDI EDRs
+- MGS MOC compressed SDPs
 
 ### Changed
-
+-`Data.dump_browse()` no longer allows dumping of 'unscaled' FITS products because 
+FITS products are all automatically scaled.
 
 ### Fixed
 

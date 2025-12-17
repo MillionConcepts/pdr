@@ -346,6 +346,7 @@ kernels in combination with JPL Horizons).
     below for excluded products)
   - RSS electron density profiles
   - MOC decompressed standard data products
+  - MOC compressed Standard Data Products
   - MAG/ER fullword and high-res MAG data, omnidirectional and angular ER flux 
     data, and the derived magnetic field map
 #### MRO
@@ -524,6 +525,11 @@ kernels in combination with JPL Horizons).
   - LIR raw, calibrated, and geometry data
   - UVI raw, calibrated, and geometry data
   - RS doppler and temperature-pressure profiles
+#### Venus Express
+  - VERA most LV1A and all LV1B and LV2 data 
+  - SPICAV-SOIR LV2 & LV3 products 
+  - VMC GEOM & RDR products
+  - ASPERA EDR and RDR tables
 #### Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
@@ -687,23 +693,11 @@ kernels in combination with JPL Horizons).
     not planned)
   - RSS PostScript files from both Raw Data and Science Data Products (support 
     not planned)
-  - MOC Compressed Standard Data Products (*Note: much like the MSL MSSS Camera 
-    EDRs discussed below, software for converting these files to uncompressed 
-    PDS3-style files exists in the archive.*)
 #### MRO
   - RSS .tnf (support not planned)
   - RSS products in the 'ancillary' directory (support not planned)
   - MCS DDRs (support not planned)
 #### MSL
-  - Malin Space Science Systems (MSSS) Camera EDRs: "Raw" (EDR) data from the
-    Mars Science Laboratory's MSSS-produced cameras (Mastcam, MAHLI, and
-    MARDI), are archived in a bespoke compressed format. These images carry
-    the extension '.DAT'. Software for converting these files to PDS3-style
-    uncompressed raster .IMG files exists in the archive. We plan to either 
-    include / compile this code with the installation of this package or (much 
-    better) to port `dat2img` to pure Python. Help is welcomed with either of
-    these efforts! The MSL "calibrated" (RDR) files for these cameras are not 
-    compressed in this way.
   - ChemCam LIBS EDR tables (support not planned)
   - RAD EDRs and RDRs (support planned)
 #### Pioneer Venus Orbiter
@@ -722,6 +716,8 @@ kernels in combination with JPL Horizons).
   - GAS PostScript files (support not planned)
 #### Vega 1 and 2
   - PUMA raw and processed data (support not planned)
+#### Venus Express
+  - VERA LV1A Closed Loop DSN TNF files in DSN TRK-2-34 format (support not planned)
 #### Viking 1 and 2
   - Orbiter
     - IRTM 1989 version (support planned)
