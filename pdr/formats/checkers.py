@@ -215,11 +215,12 @@ def check_special_table_reader(
     ):
         return True, formats.ulysses.gas_table_loader(fn, fmtdef_dt)
     if (
-        identifiers["DATA_SET_ID"] == "MRO-M-MCS-5-DDR-V1.0"
+        "MRO-M-MCS-5-DDR" in identifiers["DATA_SET_ID"]
+        and "V1.0" not in identifiers["DATA_SET_ID"]
         and name == "TABLE"
     ):
         return True, formats.mro.mcs_ddr_table_loader(
-            fmtdef_dt, block, fn, start_byte
+            block, fn, start_byte
         )
     if (
         identifiers["INSTRUMENT_ID"] == "CRISM"
@@ -1055,6 +1056,11 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
             and pointer == "HISTORY"
     ):
         return formats.vex_virtis.trivial_history()
+    if (
+        "MRO-M-MCS-5-DDR" in identifiers["DATA_SET_ID"]
+        and "V1.0" in identifiers["DATA_SET_ID"]
+    ):
+        return True, formats.mro.mcs_ddr_oldformat_trivial()
     return False
 
 
