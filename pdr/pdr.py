@@ -684,7 +684,14 @@ class Data:
         distinct data object with a local identifier. If it is, return the
         PDS4 local identifier of that object. If not, return None.
         """
+        from pds4_tools.reader.header_objects import HeaderStructure
+
         for k, v in self._pds4_structures.items():
+            if not isinstance(v, HeaderStructure):
+                # we only require header objects to have the
+                # 'object_length' key. label objects also do not
+                # have meta_data
+                continue
             meta = v.meta_data
             if 'object_length' not in meta.keys():
                 continue
