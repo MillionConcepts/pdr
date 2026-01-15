@@ -20,6 +20,8 @@
   - Voyager
   - MRO
   - Venus Express
+  - Juno UVS
+  - Hayabusa
 - MSL Mastcam, MAHLI, and MARDI EDRs
 - MGS MOC compressed SDPs
 

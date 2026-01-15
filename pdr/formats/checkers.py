@@ -1180,6 +1180,16 @@ def check_special_fits_start_byte(
         identifiers["DATA_SET_ID"] == "LRO-L-LAMP-3-RDR-V1.0" 
     ):
         return formats.lro.lamp_rdr_hdu_start_byte(name, hdulist)
+    if (
+        identifiers['PRODUCT_TYPE'] == "RDR"
+        and "JNO-J-UVS-3-RDR-" in identifiers['DATA_SET_ID']
+    ):
+        return True, formats.juno.uvs_rdr_start_byte(name, hdulist)
+    if (
+        identifiers['PRODUCT_TYPE'] == "EDR"
+        and "JNO-J-UVS-2-EDR-" in identifiers['DATA_SET_ID']
+    ):
+        return True, formats.juno.uvs_edr_start_byte(name, hdulist)
     return False, None
 
 
