@@ -27,6 +27,9 @@ def mcs_ddr_oldformat_trivial():
     These files are outdated and have formatting issues that make the current
     table reader (mcs_ddr_table_loader below) not work.
 
+    The tables can be sometimes loaded by mcs_ddr_table_loader if you subtract
+    two from the start_byte, but this has not been exhaustively tested.
+
     HITS:
     * mro
         * mcs_ddr_v1
@@ -51,6 +54,10 @@ def mcs_ddr_table_loader(block, filename, start_byte):
     lines are added to the dataframe. This is because the metadata and data
     rows have different columns, so they can't be in the same table as
     alternating rows as in the .tab file structure.
+
+    The MCS DDR V1.0, which is now out of date at the node, doesn't quite work
+    with this code. If the start_byte is set to 2888 it seems to work on a few
+    cases, but this has not fully been tested via ix.
 
     HITS:
     * mro
