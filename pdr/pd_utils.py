@@ -12,7 +12,6 @@ from more_itertools import divide
 import numpy as np
 import pandas as pd
 import pandas.api.types
-from pandas.errors import SettingWithCopyWarning
 import vax
 
 from pdr.datatypes import sample_types
@@ -215,24 +214,21 @@ def construct_nested_array_format(fmtdef: pd.DataFrame) -> pd.DataFrame:
     ].unique()[1:]:
         if block_name == "":
             continue
-        fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
-        prior = fmtdef.loc[fmt_block.index[0] - 1]
+        block_ix = fmtdef.index[fmtdef["BLOCK_NAME"] == block_name]
+        prior = fmtdef.loc[block_ix[0] - 1]
+        fmt_block = fmtdef.loc[block_ix]
         if "AXIS_ITEMS" not in prior.keys():
             continue
         if np.isnan(axis_items := prior["AXIS_ITEMS"]):
             continue
-        with warnings.catch_warnings():
-            # TODO: We are intentionally setting with copy here. However, it
-            #  will start hard-failing in pandas 3.x and needs to be changed.
-            warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
-            fmt_block[
-                "SB_OFFSET"
-            ] = fmt_block["SB_OFFSET"] - prior["SB_OFFSET"]
+        fmtdef.loc[
+            block_ix, "SB_OFFSET",
+        ] = fmt_block["SB_OFFSET"] - prior["SB_OFFSET"]
         if isinstance(axis_items, float):
             axis_items = int(axis_items)
-        dt = fmtdef_to_dtype(fmt_block)
-        fmtdef.at[fmt_block.index[0] - 1, "dt"] = (dt, axis_items)
-        fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
+        dt = fmtdef_to_dtype(fmtdef.loc[block_ix])
+        fmtdef.at[block_ix[0], "dt"] = (dt, axis_items)
+        fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block["NAME"])]
     return fmtdef
 
 
