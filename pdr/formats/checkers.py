@@ -966,6 +966,38 @@ def check_special_block(
             and "1B_RMP_" in identifiers["PRODUCT_ID"]
     ):
         return formats.vex_vera.get_special_block(data, name)
+    if (
+        identifiers["DATA_SET_ID"] == 'SLN-L-GRS-5-NUCLIDE-MAP-V2.0'
+        and name == "TABLE"
+    ):
+        return True, formats.kaguya.get_special_block_grs_table(data, name)
+    if (
+        "SLN-L-SP" in identifiers['DATA_SET_ID']
+        and "LEVEL2B" in identifiers['DATA_SET_ID']
+        and name == "ANCILLARY_AND_SUPPLEMENT_DATA"
+    ):
+        return True, formats.kaguya.get_special_block_sp_2b_supp(data, name)
+    if(
+        "SLN-L-LMAG-5-MA-GRID" in identifiers['DATA_SET_ID']
+        and name == "TABLE"
+    ):
+        return True, formats.kaguya.get_special_grid_table_block(data, name)
+    if(
+        identifiers['DATA_SET_ID'] == "SLN-L-LMAG-5-1D-SIGMA-ECS-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.kaguya.get_special_1d_sigma_block()
+    if(
+        identifiers['DATA_SET_ID'] == "SLN-L-LMAG-3-MAG-TS-V1.0"
+        and name == "TABLE"
+    ):
+        return True, formats.kaguya.get_special_mag_ts_block(data)
+    if(
+        "SLN-L-RISE-5-TRAJ-" in identifiers['DATA_SET_ID']
+        and name == "TABLE"
+    ):
+        return True, formats.kaguya.rise_traj_special_block()
+
     return False, None
 
 
@@ -1061,6 +1093,26 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
         and "V1.0" in identifiers["DATA_SET_ID"]
     ):
         return True, formats.mro.mcs_ddr_oldformat_trivial()
+    if (
+        identifiers["DATA_SET_ID"] == 'SLN-L-PACE-3-PBF1-V3.0'
+        and pointer == 'TIME_SERIES'
+    ):
+        return formats.kaguya.pace_time_series_trivial()
+    if (
+            "SLN-L-SP" in identifiers['DATA_SET_ID']
+            and "L2D_RESULT_ARRAY" in pointer
+    ):
+        return True, formats.kaguya.sp_l2d_result_array_trivial()
+    if (
+        identifiers['DATA_SET_ID'] == "SLN-L-TC-4-DEM-ORTHO-V1.0"
+        and pointer == "QA_FILENAME"
+    ):
+        return True, formats.kaguya.sp_tc_filename_pointer_trivial()
+    if (
+        identifiers['DATA_SET_ID'] == "SLN-L-GRS-3-ENG-SPECTRUM-V1.0"
+        and pointer == "TABLE"
+    ):
+        return True, formats.kaguya.grs_eng_tables_trivial()
     return False
 
 

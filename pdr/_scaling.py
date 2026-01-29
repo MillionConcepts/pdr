@@ -145,10 +145,18 @@ def scale_array(
         scale = block["SCALING_FACTOR"]
         if isinstance(scale, dict):
             scale = scale["value"]
+        if isinstance(scale, str):
+            # this would be incorrect label formatting but catching here is
+            # better than lots of special cases
+            if scale.strip().upper() in {"NULL", "N/A", ""}:
+                scale = 1
     if "OFFSET" in block.keys():
         offset = block["OFFSET"]
         if isinstance(offset, dict):
             offset = offset["value"]
+        if isinstance(offset, str):
+            if offset.strip().upper() in {"NULL", "N/A", ""}:
+                offset = 0
     # meaningfully better for enormous unscaled arrays
     if (scale == 1) and (offset == 0):
         return obj

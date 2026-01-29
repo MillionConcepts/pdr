@@ -22,6 +22,7 @@
   - Venus Express
   - Juno UVS
   - Hayabusa
+  - Kaguya / Selene
 - MSL Mastcam, MAHLI, and MARDI EDRs
 - MGS MOC compressed SDPs
 

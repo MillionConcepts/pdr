@@ -217,7 +217,8 @@ kernels in combination with JPL Horizons).
   - Lunar Orbiter 1-5 EDRs 
 #### Kaguya/Selene
   - Spectral Profiler data
-  - other datasets have been migrated to PDS4 and are notionally supported
+  - Other datasets have been migrated to PDS4 and are notionally supported
+  - Many datasets on JAXA DARTS (ARD, GRS, LALT, MAG, SNDR, SP, TC, TEXI, TVIS)
 #### Lunar Prospector
   - PDS3 datasets that have not been deprecated by PDS4 versions. specifically:
     - LOSAPDR
@@ -648,6 +649,8 @@ kernels in combination with JPL Horizons).
   - UVS (support planned)
   - Waves EDR (support not planned) and RDR 'Survey' tables (support planned)
     - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
+#### Kaguya / Selene
+   - JAXA DARTS datasets in GEODYN (several RISE datasets) & CDF (LRS spectra) formats
 #### Lunar Prospector
   - Level 0: ephemeris and position (support not planned)
   - Level 0: sun pulse and merged telemetry (support planned; low priority)

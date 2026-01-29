@@ -48,6 +48,28 @@ def image_lib_dispatch(pointer: str, data: Data) -> Optional[Loader]:
     return None
 
 
+def special_pointer_dispatch(pointer, identifiers):
+    """
+    Some pointers are misleadingly named and the wrong loader is selected in
+    pointer_to_loader. To avoid making the pointer_to_loader logic too complex,
+    we check for those special cases here and return the correct loader.
+    """
+    # there is an ISIS program (kaguyasp2ascii) that will convert this data
+    # to an ASCII table, but the label presents it as image data, so that
+    # is how we load it.
+    if (
+            "SLN-L-SP" in identifiers['DATA_SET_ID']
+            and "SPECTRUM" in pointer
+    ):
+        return ReadImage()
+    if (
+            "SLN-L-SP" in identifiers['DATA_SET_ID']
+            and "ANCILLARY_AND_SUPPLEMENT_DATA" in pointer
+    ):
+        return ReadTable()
+    return None
+
+
 def pointer_to_loader(pointer: str, data: Data) -> Loader:
     """
     Attempt to select an appropriate Loader subclass based on a PDS3 object
@@ -63,10 +85,13 @@ def pointer_to_loader(pointer: str, data: Data) -> Loader:
         return ReadLabel()
     if image_lib_dispatch(pointer, data) is not None:
         return image_lib_dispatch(pointer, data)
+    if special_pointer_dispatch(pointer, data.identifiers) is not None:
+        return special_pointer_dispatch(pointer, data.identifiers)
     if (
         "TEXT" in pointer
         or "PDF" in pointer
         or "MAP_PROJECTION_CATALOG" in pointer
+        or "FILENAME" in pointer
     ):
         return ReadText()
     if "DESC" in pointer:  # probably points to a reference file
