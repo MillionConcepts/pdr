@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import pdr
 
@@ -19,9 +20,16 @@ def test_simple_dsv_table(dsv_table_product, tracker_factory):
     prod_name, fpath, lpath = dsv_table_product
     data = pdr.read(fpath, debug=True, tracker=tracker_factory(fpath))
     assert list(data.SPREADSHEET.columns) == ['X_0', 'Y', 'X_1']
-    assert list(data.SPREADSHEET.dtypes) == [
-        np.dtype('float64'), np.dtype('O'), np.dtype('int64')
-    ]
+    if int(pd.__version__[0]) < 3:
+        assert list(data.SPREADSHEET.dtypes) == [
+            np.dtype('float64'), np.dtype('O'), np.dtype('int64')
+        ]
+    else:
+        assert list(data.SPREADSHEET.dtypes) == [
+            np.dtype('float64'),
+            pd.StringDtype(na_value=np.nan),
+            np.dtype('int64')
+        ]
     assert np.isclose(data.SPREADSHEET.loc[0, 'X_0'], 5.5)
     assert data.SPREADSHEET.loc[5, 'Y'] == 'cat'
     assert data.SPREADSHEET.loc[9, "X_1"] == -12
