@@ -31,7 +31,7 @@ def not_optional(param: Parameter) -> bool:
 
     pstr = re.split("[:=]", str(param))
     pstr = pstr[0] if len(pstr) == 1 else pstr[1]
-    pstr = pstr.strip()
+    pstr = pstr.strip(" '")
     if (
         pstr.startswith("Optional[")
         or pstr.endswith(" | None")
