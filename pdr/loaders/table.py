@@ -152,7 +152,8 @@ def _read_as_delimited(
     if len(table.columns) + n_place != len(fmtdef.NAME.tolist()):
         raise IndexError("Mismatched column length.")
     for c, d in zip(table.columns, table.dtypes):
-        if d.name == "object":
+        # string data is "object" in pandas < 3 and "str" in pandas > 3
+        if d.name in ("object", 'str'):
             table[c] = table[c].str.strip(PAD_CHARACTERS)
     return table
 
