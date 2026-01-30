@@ -684,7 +684,7 @@ class Data:
         distinct data object with a local identifier. If it is, return the
         PDS4 local identifier of that object. If not, return None.
         """
-        from pds4_tools.reader.header_objects import HeaderStructure
+        from pdr.pds4_tools.reader.header_objects import HeaderStructure
 
         for k, v in self._pds4_structures.items():
             if not isinstance(v, HeaderStructure):
