@@ -226,7 +226,7 @@ def construct_nested_array_format(fmtdef: pd.DataFrame) -> pd.DataFrame:
         ] = fmt_block["SB_OFFSET"] - prior["SB_OFFSET"]
         if isinstance(axis_items, float):
             axis_items = int(axis_items)
-        dt = fmtdef_to_dtype(fmtdef.loc[block_ix])
+        dt = fmtdef_to_dtype(fmt_block)
         fmtdef.at[block_ix[0], "dt"] = (dt, axis_items)
         fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block["NAME"])]
     return fmtdef
