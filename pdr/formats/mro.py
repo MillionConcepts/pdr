@@ -92,13 +92,13 @@ def mcs_ddr_table_loader(block, filename, start_byte):
     ]
     dtypes = [
         "string", "string", "string", "float64", "float64", "float64",
-        "Int64", "Int64", "float64", "float64", "float64", "float64",
+        "int64", "int64", "float64", "float64", "float64", "float64",
         "float64", "float64", "float64", "float64", "float64", "float64",
         "float64", "float64", "float64", "float64", "float64", "float64",
         "float64", "float64", "float64", "float64", "float64", "float64",
         "float64", "float64", "float64", "float64", "float64", "float64",
-        "float64", "float64", "Int64", "Int64", "Int64", "Int64", "Int64",
-        "Int64", "Int64", "float64", "float64", "float64", "float64",
+        "float64", "float64", "int64", "int64", "int64", "int64", "int64",
+        "int64", "int64", "float64", "float64", "float64", "float64",
         "float64", "float64", "float64", "float64", "float64", "float64",
         "float64", "string", "string", "string", "string", "string",
         "string", "string", "string", "string", "string", "string", "string",
