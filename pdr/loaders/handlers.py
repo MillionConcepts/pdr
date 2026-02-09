@@ -14,9 +14,10 @@ from multidict import MultiDict
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from pdr.loaders.astrowrap import BinTableHDU, HDUList
+    from astropy.io import fits
     import numpy as np
     import pandas as pd
+    from pdr.loaders.astrowrap import BinTableHDU, HDUList
     from pdr.pdrtypes import DataIdentifiers
 
 
@@ -113,28 +114,51 @@ def handle_fits_file(
     elif isinstance(body, fits.fitsrec.FITS_rec):
         # This case is a FITS table, binary or ASCII. For type consistency, we
         # want to return a pandas DataFrame, not a FITS_rec.
-        import numpy as np
-        import pandas as pd
-        from pdr.loaders.astrowrap import BinTableHDU
-        from pdr.pd_utils import structured_array_to_df
-
-        if max(map(len, body.dtype.descr)) > 2:
-            body = structured_array_to_df(
-                np.rec.fromarrays(
-                    [body[k] for k in body.dtype.names], dtype=body.dtype
-                )
-            )
-        elif isinstance(hdu, BinTableHDU):
-            fields = {c: body[c] for c in body.dtype.names}
-            for k, v in fields.items():
-                if not v.dtype.isnative:
-                    fields[k] = fields[k].byteswap().view(
-                        fields[k].dtype.newbyteorder('=')
-                    )
-            body = pd.DataFrame(fields)
-        else:
-            body = pd.DataFrame.from_records(body)
+        body = _convert_fits_table_to_df(body, hdu)
     return output | {name: body}
+
+
+def _convert_fits_table_to_df(
+    body: fits.fitsrec.FITS_rec,
+    hdu: fits.hdu.BinTableHDU | fits.hdu.TableHDU
+) -> pd.DataFrame:
+    import numpy as np
+    import pandas as pd
+    from pdr.loaders.astrowrap import BinTableHDU
+    from pdr.pd_utils import structured_array_to_df
+    if max(map(len, body.dtype.descr)) > 2:
+        # have to explicitly perform the slice and reconstruct the dtype to
+        # get the guaranteed 'real' representation -- the outer FITS_rec
+        # object can lie about signedness (and maybe other things)?
+        arrays, dtype = [body[k] for k in body.dtype.names], []
+        for i, arr in enumerate(arrays):
+            if arr.ndim > 3 or arr.ndim == 0:
+                # This _should_ never happen, but...
+                raise NotImplementedError(
+                    f"FITS table fields of dimensionality {arr.ndim} not "
+                    f"supported"
+                )
+            if arr.ndim == 3:
+                dtype.append((body.dtype.names[i], arr.dtype, (arr.shape[1],
+                                                               arr.shape[2])))
+            if arr.ndim == 2:
+                dtype.append((body.dtype.names[i], arr.dtype, arr.shape[1]))
+            if arr.ndim == 1:
+                dtype.append((body.dtype.names[i], arr.dtype))
+        return structured_array_to_df(
+            np.rec.fromarrays(
+                [body[k] for k in body.dtype.names], dtype=np.dtype(dtype)
+            )
+        )
+    if isinstance(hdu, BinTableHDU):
+        fields = {c: body[c] for c in body.dtype.names}
+        for k, v in fields.items():
+            if not v.dtype.isnative:
+                fields[k] = fields[k].byteswap().view(
+                    fields[k].dtype.newbyteorder('=')
+                )
+        return pd.DataFrame(fields)
+    return pd.DataFrame.from_records(body)
 
 
 def reindex_dupe_names(hdu: BinTableHDU):
