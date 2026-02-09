@@ -44,9 +44,13 @@ def fix_array_structure(name, block, fn, data, identifiers):
         (specbytes - specstart + 1)
         / len(fmtdef.loc[fmtdef['BLOCK_NAME'].str.contains('SPECTRUM')])
     )
+    fmtdef.loc[fmtdef['NAME'] == 'PLACEHOLDER_SPECTRUM', 'NAME'] = 'SPECTRUM'
+    # this special flow leaves in all the placeholder columns, so cut them
+    fmtdef = fmtdef.loc[
+        ~fmtdef['NAME'].str.startswith('PLACEHOLDER')
+    ].copy().reset_index(drop=True)
     # Sometimes arrays define start_byte, sometimes their elements do
     if "START_BYTE" in fmtdef.columns:
         fmtdef['START_BYTE'] = fmtdef['START_BYTE'].fillna(1)
     from pdr.pd_utils import compute_offsets, insert_sample_types_into_df
-
     return insert_sample_types_into_df(compute_offsets(fmtdef), identifiers)
