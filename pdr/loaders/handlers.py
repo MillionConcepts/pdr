@@ -132,12 +132,15 @@ def _convert_fits_table_to_df(
         # object can lie about signedness (and maybe other things)?
         arrays, dtype = [body[k] for k in body.dtype.names], []
         for i, arr in enumerate(arrays):
-            if arr.ndim > 2 or arr.ndim == 0:
+            if arr.ndim > 3 or arr.ndim == 0:
                 # This _should_ never happen, but...
                 raise NotImplementedError(
                     f"FITS table fields of dimensionality {arr.ndim} not "
                     f"supported"
                 )
+            if arr.ndim == 3:
+                dtype.append((body.dtype.names[i], arr.dtype, (arr.shape[1],
+                                                               arr.shape[2])))
             if arr.ndim == 2:
                 dtype.append((body.dtype.names[i], arr.dtype, arr.shape[1]))
             if arr.ndim == 1:
