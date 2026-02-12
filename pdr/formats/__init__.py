@@ -45,6 +45,7 @@ import pdr.formats.phoenix as phoenix
 import pdr.formats.pvo as pvo
 import pdr.formats.rosetta as rosetta
 import pdr.formats.saturn_rpx as saturn_rpx
+import pdr.formats.smart1_esa as smart1_esa
 import pdr.formats.themis as themis
 import pdr.formats.ulysses as ulysses
 import pdr.formats.vega as vega
