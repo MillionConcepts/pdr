@@ -48,7 +48,7 @@ def image_lib_dispatch(pointer: str, data: Data) -> Optional[Loader]:
     return None
 
 
-def special_pointer_dispatch(pointer, identifiers):
+def special_pointer_dispatch(pointer: str, identifiers):
     """
     Some pointers are misleadingly named and the wrong loader is selected in
     pointer_to_loader. To avoid making the pointer_to_loader logic too complex,

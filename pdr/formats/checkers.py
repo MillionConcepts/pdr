@@ -1102,17 +1102,27 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
             "SLN-L-SP" in identifiers['DATA_SET_ID']
             and "L2D_RESULT_ARRAY" in pointer
     ):
-        return True, formats.kaguya.sp_l2d_result_array_trivial()
+        return formats.kaguya.sp_l2d_result_array_trivial()
     if (
         identifiers['DATA_SET_ID'] == "SLN-L-TC-4-DEM-ORTHO-V1.0"
         and pointer == "QA_FILENAME"
     ):
-        return True, formats.kaguya.sp_tc_filename_pointer_trivial()
+        return formats.kaguya.sp_tc_filename_pointer_trivial()
     if (
         identifiers['DATA_SET_ID'] == "SLN-L-GRS-3-ENG-SPECTRUM-V1.0"
         and pointer == "TABLE"
     ):
-        return True, formats.kaguya.grs_eng_tables_trivial()
+        return formats.kaguya.grs_eng_tables_trivial()
+    if (
+        "CE3_BMYK_VNIS-CC_SCI_" in fn
+        and pointer == "CAL_TARGET_DATA"
+    ):
+        return formats.change.cal_target_data_trivial()
+    if (
+        identifiers['SPACECRAFT_NAME'] == 'CE1'
+        and "IMAGE_PREFIX" in pointer
+    ):
+        return formats.change.image_prefix_trivial()
     return False
 
 
@@ -1245,7 +1255,7 @@ def check_special_fits_start_byte(
     return False, None
 
 
-def check_special_objects(identifiers):
+def check_special_objects(identifiers: DataIdentifiers):
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
             and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
@@ -1254,6 +1264,30 @@ def check_special_objects(identifiers):
         # a consequence of this is the the geometry file and miniheader objects
         # denoted in the label for the edrs
         return True, ['IMAGE', 'MODEL_DESC']
+    if (
+            identifiers["SPACECRAFT_NAME"] == "Chang'E-3 Rover"
+            and "CE3_BMYK_VNIS-CC_SCI_N" in identifiers["PRODUCT_ID"]
+            and ".2A" in identifiers["PRODUCT_ID"]
+    ):
+        # this would need to be modified if you could find the cal target data
+        # excel file and removed the bad characters from the label around it
+        return True, ['LABEL', 'IMAGE_PREFIX', 'IMAGE']
+    if (
+            identifiers["SPACECRAFT_NAME"] == "Chang'E-3 Rover"
+            and "CE3_BMYK_VNIS-SC_SCI_N_" in identifiers["PRODUCT_ID"]
+            and ".2A" in identifiers["PRODUCT_ID"]
+    ):
+        # this would need to be modified if you could find the cal target data
+        # excel file and removed the bad characters from the label around it
+        return True, ['LABEL', 'TABLE']
+    if (
+            identifiers["SPACECRAFT_NAME"] == "Chang'E-3 Rover"
+            and "CE3_BMYK_VNIS-SD_SCI_N_" in identifiers["PRODUCT_ID"]
+            and ".2A" in identifiers["PRODUCT_ID"]
+    ):
+        # this would need to be modified if you could find the cal target data
+        # excel file and removed the bad characters from the label around it
+        return True, ['LABEL', 'TABLE']
     return False, None
 
 
@@ -1275,3 +1309,73 @@ def check_special_compressed_file_reader(identifiers, fn):
     ):
         return True, formats.mgs_moc.mgs_moc_comp_image_loader(fn, identifiers)
     return False, None
+
+
+def check_special_pds4_cases(structure, filename, object_name):
+    """
+    Load objects from PDS4 files with known issues that do not currently work
+    with pds4_tools. Mostly utilized by datasets not verified by the PDS but
+    that have PDS4 labels (ISRO, ESA, CNSA etc).
+    """
+    if (
+            "CE6-L_GRAS_LMS-M" in filename and "SCI" in filename
+            and ".2B" in filename and object_name == "TABLE_0"
+    ):
+        return formats.change.read_change_fw_table(structure, filename)
+    if (
+            "CE6-L_GRAS_LMS-S" in filename and "SCI" in filename
+            and ".2B" in filename and object_name == "TABLE_0"
+    ):
+        return formats.change.read_change_fw_table(structure, filename)
+    if (
+            "CE6-L_GRAS_LMS-N" in filename and "SCI" in filename
+            and ".2B" in filename and object_name == "TABLE_0"
+    ):
+        return formats.change.read_change_fw_table(structure, filename)
+    if (
+            "CE5-L_GRAS_LMS-N" in filename and ".2B" in filename
+            and "SCI" in filename and object_name == "TABLE_0"
+    ):
+        return formats.change.read_change_fw_table(structure, filename)
+    if (
+            "CE5-L_GRAS_LMS-M" in filename and ".2B" in filename
+            and "SCI" in filename and object_name == "TABLE_0"
+    ):
+        return formats.change.read_change_fw_table(structure, filename)
+    if (
+            "CE4_GRAS_ASAN-SCI_SCI" in filename and ".2B" in filename
+            and object_name == "TABLE_0"
+    ):
+        return formats.change.read_table_using_spaces(structure, filename)
+    if (
+            "CE4_GRAS_LND-DPSL_SCI" in filename and ".2A" in filename
+            and object_name == "TABLE_0"
+    ):
+        return formats.change.read_table_using_spaces(structure, filename)
+    if (
+            "CE4_GRAS_LND-ThN_SCI" in filename and ".2A" in filename
+            and object_name == "TABLE_0"
+    ):
+        return formats.change.read_table_using_spaces(structure, filename)
+    if (
+            "CE4_GRAS_LND-TID_SCI" in filename and ".2A" in filename
+            and object_name == "TABLE_0"
+    ):
+        return formats.change.read_table_using_spaces(structure, filename)
+    # if (
+    #         "CE4_GRAS_VNIS-VD_SCI" in filename and ".2B" in filename
+    #         and object_name == "TABLE_0"
+    # ):
+    #this is a fixed width table, but it's not all UTF-8 so PD can't handle it
+    #    return formats.change.read_table_using_spaces(structure, filename)
+    if (
+            "CE4_GRAS_VNIS-SD_SCI" in filename and ".2B" in filename
+            and object_name == "TABLE_0"
+    ):
+        return formats.change.read_change_fw_table(structure, filename)
+    if (
+            "ch2_cla_l1_" in filename and ".fits" in filename
+            and (object_name == "header_Data" or object_name == "data")
+    ):
+        return formats.ch2_isro.read_class_fits_table(filename, object_name)
+    return None

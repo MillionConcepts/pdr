@@ -228,11 +228,15 @@ def associate_label_file(
     skip_check: bool = False,
 ) -> Optional[str]:
     """"""
-    from pdr.loaders.utility import LABEL_EXTENSIONS
-
+    from pdr.loaders.utility import LABEL_EXTENSIONS, CHANG_LBL_EXTENSIONS
     if label_filename is not None:
         return check_cases(Path(label_filename).absolute(), skip_check)
     elif data_filename.lower().endswith(LABEL_EXTENSIONS):
+        return check_cases(data_filename)
+    # a check for Chang'e labels, where the beginnings contain CEn with n
+    # being the mission number
+    elif any(f"ce{m}" in data_filename.lower() for m in "123456") and\
+            data_filename.lower().endswith(CHANG_LBL_EXTENSIONS):
         return check_cases(data_filename)
     for lext in LABEL_EXTENSIONS:
         try:

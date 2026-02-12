@@ -14,6 +14,7 @@ from multidict import MultiDict
 #  not used exclusively in loaders
 
 LABEL_EXTENSIONS = (".xml", ".lbl", ".lblx")
+CHANG_LBL_EXTENSIONS = (".2bl", ".2al", ".2cl", ".01l", ".3bl", ".3al", ".3cl")
 IMAGE_EXTENSIONS = (".img", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")

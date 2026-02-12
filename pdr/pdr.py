@@ -46,7 +46,11 @@ from dustgoggles.tracker import Tracker, TrivialTracker
 from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
-from pdr.formats import check_special_fn, special_image_constants
+from pdr.formats import (
+    check_special_fn,
+    special_image_constants,
+    check_special_pds4_cases
+)
 from pdr.loaders.utility import (
     DESKTOP_IMAGE_STANDARDS,
     FITS_EXTENSIONS,
@@ -289,6 +293,8 @@ class Data:
         elif (
             str(self.labelname).endswith(".xml") 
             or str(self.labelname).endswith(".lblx")
+            or ("CE" in str(self.labelname) and
+                str(self.labelname).endswith((".2BL", ".2AL", ".2CL", ".01L")))
         ):
             self.standard = "PDS4"
             self._pds4_structures = {}
@@ -716,6 +722,11 @@ class Data:
 
         if isinstance(structure, Label):
             setattr(self, "label", structure)
+        elif check_special_pds4_cases(structure, self.filename,
+                                      object_name) is not None:
+            result = check_special_pds4_cases(structure, self.filename,
+                                              object_name)
+            setattr(self, object_name, result)
         elif check_primary_fmt(structure.parent_filename) == "FITS":
             from pdr.loaders.handlers import handle_fits_file
 

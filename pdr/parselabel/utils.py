@@ -6,6 +6,7 @@ from typing import Union, IO
 KNOWN_LABEL_ENDINGS = (
     re.compile(b"\nEND {0,8}(\r| {8})"),  # common PVL convention
     re.compile(b"\x00{3}"),  # just null bytes, for odder cases
+    b"\nEND\n",  # mostly for Chang'e labels
 )
 """
 Fast regex patterns for generic PVL label endings. They work for almost all PVL 
@@ -62,4 +63,11 @@ def trim_label(
     try:
         return text.decode("utf-8", errors=policy)
     except UnicodeDecodeError:
-        raise InvalidAttachedLabel("Invalid characters in label.")
+        try:
+            # TODO: we could change above to just allow errors
+            # but the characters might look wrong.
+            # this may capture a wider variety of intended chars
+            # (gb18030 is a chinese standard for encoding)
+            return text.decode(encoding="gb18030", errors="replace")
+        except UnicodeDecodeError:
+            raise InvalidAttachedLabel("Invalid characters in label.")

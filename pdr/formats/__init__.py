@@ -9,6 +9,9 @@ submodules. See the documentation for `checkers` for details on this behavior.
 
 from .checkers import *
 import pdr.formats.cassini as cassini
+import pdr.formats.ch1_esa as ch1_esa
+import pdr.formats.ch2_isro as ch2_isro
+import pdr.formats.change as change
 import pdr.formats.clementine as clementine
 import pdr.formats.dawn as dawn
 import pdr.formats.diviner as diviner
