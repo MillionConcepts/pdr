@@ -9,6 +9,9 @@ def read_class_fits_table(filename, object):
         * cla_l1
     """
     from astropy.io import fits
+
+    if filename.endswith(".xml"):
+        filename = filename.split('.')[0]+".fits"
     hdu = fits.open(filename)
     if object == 'data':
         # returns a recarray

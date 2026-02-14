@@ -1389,7 +1389,7 @@ def check_special_pds4_cases(structure, filename, object_name):
     ):
         return formats.change.read_change_fw_table(structure, filename)
     if (
-            "ch2_cla_l1_" in filename and ".fits" in filename
+            "ch2_cla_l1_" in filename
             and (object_name == "header_Data" or object_name == "data")
     ):
         return formats.ch2_isro.read_class_fits_table(filename, object_name)
