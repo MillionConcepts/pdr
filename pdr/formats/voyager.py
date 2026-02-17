@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def mag_special_block(data, name):
     """
     ROW_BYTES are listed as 144 in the labels for Uranus and Neptune MAG RDRs.

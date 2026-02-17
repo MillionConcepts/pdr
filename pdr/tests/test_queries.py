@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pdr.parselabel.pds3 import parse_pvl, literalize_pvl
 from pdr.loaders.queries import (
     generic_image_properties,

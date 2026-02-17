@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def curve_table_loader(filename, fmtdef_dt):
     """
     The labels do not always count column bytes correctly.

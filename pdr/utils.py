@@ -1,5 +1,7 @@
 """generic i/o, parsing, and functional utilities."""
 
+from __future__ import annotations
+
 from io import BytesIO
 from itertools import chain
 from numbers import Number

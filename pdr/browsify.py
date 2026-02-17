@@ -1,4 +1,6 @@
 """functions for producing browse versions of products"""
+from __future__ import annotations
+
 from numbers import Number
 from pathlib import Path
 import pickle

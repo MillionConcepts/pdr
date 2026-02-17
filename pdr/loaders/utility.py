@@ -1,4 +1,5 @@
 """Support objects for 'utility' Loader subclasses."""
+from __future__ import annotations
 
 from functools import partial
 from itertools import chain

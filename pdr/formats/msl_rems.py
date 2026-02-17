@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def edr_table_loader(filename, fmtdef_dt, block, start_byte):
     """
     The ROW_SUFFIX_BYTES are either miscounted by a few bytes, or we don't 

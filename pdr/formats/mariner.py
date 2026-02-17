@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def get_special_block(data, name):
     """
     Mariner 9 IRIS tables have 316 ROW_PREFIX_BYTES followed by 1 column

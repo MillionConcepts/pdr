@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def get_structure(block, name, filename, data, identifiers):
     """
     "Encounter data" tables miscount the last column's START_BYTE by 1

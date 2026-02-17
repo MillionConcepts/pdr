@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def jiram_rdr_sample_type():
     """
     JIRAM RDRs, both images and tables, are labeled as MSB but

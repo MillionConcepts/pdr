@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def seis_table_loader(filepath, fmtdef_dt):
     """
     The Viking 2 seismometer tables have mangled labels. The raw data tables

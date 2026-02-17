@@ -1,4 +1,5 @@
 """Classes to wrap and manage complex data-loading workflows."""
+from __future__ import annotations
 from typing import Any
 
 from dustgoggles.dynamic import exc_report

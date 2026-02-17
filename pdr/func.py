@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import wraps, reduce
 # noinspection PyProtectedMember,PyUnresolvedReferences
 from inspect import signature, _empty, Signature, Parameter

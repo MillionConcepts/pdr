@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from itertools import product
 
 from pdr.datatypes import sample_types

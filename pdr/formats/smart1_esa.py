@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 
 def spede_plasma40_table_reader(fn):

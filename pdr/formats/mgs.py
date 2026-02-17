@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pdr.loaders.queries import read_table_structure
 
 

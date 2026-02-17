@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def spreadsheet_loader(filename):
     """
     HITS

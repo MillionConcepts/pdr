@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from itertools import product
 from pathlib import Path

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def rss_spreadsheet_loader(filename, fmtdef_dt):
     """
     The RSS UHFD labels have the wrong ROWS value for most products.

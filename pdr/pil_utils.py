@@ -4,6 +4,8 @@ Utilities for dealing with 'desktop'-format images using pillow.
 TODO: not all of this ultimately goes here. Also, we might want to use opencv
  for some things instead.
 """
+from __future__ import annotations
+
 from io import BytesIO
 import re
 from pathlib import Path

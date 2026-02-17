@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def rosetta_table_loader(filename, fmtdef_dt):
     """
     HITS

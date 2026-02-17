@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 def read_class_fits_table(filename, object):
     """

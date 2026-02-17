@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class AlreadyLoadedError(Exception):
     """
     We already loaded this object and haven't been instructed to reload it.

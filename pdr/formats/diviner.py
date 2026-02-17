@@ -3,6 +3,9 @@
 # turning some of their values into strings and some into float, throwing
 # warnings and making it obnoxious to work with them (users will randomly not
 # be able to, e.g., add two columns together without a data cleaning step).
+from __future__ import annotations
+
+
 def diviner_l4_table_loader(fmtdef_dt, filename):
     """
     because these can contain the value "NaN", combined with the fact that they

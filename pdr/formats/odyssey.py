@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def map_table_loader(filename, fmtdef_dt):
     """
     A few products open fine from their labels, but most do not. Seems like
