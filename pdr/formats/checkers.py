@@ -356,14 +356,15 @@ def check_special_table_reader(
 
     ):
         return True, formats.vex_vera.udr_table_loader(fn)
-    if (
-        identifiers["INSTRUMENT_ID"] == "MOLA"
-        and ".B" in identifiers["FILE_NAME"]
-        and "AEDR" in identifiers["DATA_SET_ID"]
-    ):
-        return True, formats.mgs.aedr_table_loader(fn, name, fmtdef_dt, block,
-                                                   start_byte,
-                                                   identifiers['RECORD_BYTES'])
+    # this doesn't exist yet
+    # if (
+    #     identifiers["INSTRUMENT_ID"] == "MOLA"
+    #     and ".B" in identifiers["FILE_NAME"]
+    #     and "AEDR" in identifiers["DATA_SET_ID"]
+    # ):
+    #     return True, formats.mgs.aedr_table_loader(fn, name, fmtdef_dt, block,
+    #                                                start_byte,
+    #                                                identifiers['RECORD_BYTES'])
     if (
         identifiers["INSTRUMENT_ID"] == "SPEDE"
         and "PD_40_" in identifiers["FILE_NAME"]

@@ -11,7 +11,7 @@
   multiband image are used as the color channels when creating an RGB image.
 
 #### Dataset Support
-- misc additional products from:
+- Miscellaneous additional products from:
   - Stardust and Stardust-NEXT
   - Rosetta
   - Dawn
@@ -19,21 +19,32 @@
   - Mars Odyssey
   - Voyager
   - MRO
-  - Venus Express
   - Juno UVS
   - Hayabusa
-  - Kaguya / Selene (JAXA)
-  - Chandraayan 2 & 3 (ISRO)
-  - Chang'e 1-6 
 - MSL Mastcam, MAHLI, and MARDI EDRs
 - MGS MOC compressed SDPs
+- Datasets with PDS 3 & 4 labels stored outside PDS nodes:
+  - Venus Express (ESA)
+  - BepiColombo (ESA)
+  - Kaguya / Selene (JAXA)
+  - Chandrayaan 1 (ESA)
+  - SMART-1 (ESA)
+- Preliminary support based on limited testing:
+  - Chang'e 1 (CNSA)
+  - Chang'e 2 (CNSA)
+  - Chang'e 3 (CNSA)
+  - Chang'e 4 (CNSA)
+  - Chang'e 5 (CNSA)
+  - Chang'e 6 (CNSA)
+  - Chandrayaan 2 (ISRO)
+  - Chandrayaan 3 (ISRO)
 
 ### Changed
--`Data.dump_browse()` no longer allows dumping of 'unscaled' FITS products because 
+- `Data.dump_browse()` no longer allows dumping of 'unscaled' FITS products because 
 FITS products are all automatically scaled.
 
 ### Fixed
-
+- Fixed data type error for some FITS tables.  
 
 ### Removed
 

@@ -46,6 +46,7 @@ files we recommend [spiceypy](https://github.com/AndrewAnnex/SpiceyPy) or
 [lhorizon](https://github.com/MillionConcepts/lhorizon) (which works with spice
 kernels in combination with JPL Horizons).
 
+
 ## Officially Supported Datasets:
 #### Apollo
   - all PDS3 datasets that have not been deprecated by PDS4 versions. 
@@ -58,6 +59,9 @@ kernels in combination with JPL Horizons).
     - Apollo 15, 16, and 17 Metric Camera images
     - Apollo 17 Traverse Gravimeter Experiment
     - Lunar Sample Photographs
+#### BepiColombo (ESA)
+  - MAG tables
+  - Raw CAM images
 #### Cassini
   - CAPS EDRs, RDRs, and DDRs
   - CDA
@@ -82,9 +86,12 @@ kernels in combination with JPL Horizons).
   - UVIS EUV, FUV, and HDAC products
   - VIMS EDR cubes (PDS4 labels only)
   - All Huygens Probe data except DISR IR tables
-#### Chandrayaan-1
+#### Chandrayaan-1 (PDS)
   - M3 L0, L1B, and L2 images and ancillary files 
   (*note: L0 line prefix tables are not currently supported*)
+#### Chandrayaan-1 (ESA)
+  - C1XS EDRs 
+  - SIR2 EDRs
 #### Clementine
   - Imaging Bundle (PDS4 at IMG)
     - EDRs (HiRes, LWIR, NIR, UVVIS and star trackers)
@@ -215,10 +222,18 @@ kernels in combination with JPL Horizons).
   - Waves RDR 'Burst' tables
 #### LOIRP
   - Lunar Orbiter 1-5 EDRs 
-#### Kaguya/Selene
+#### Kaguya/Selene (PDS)
   - Spectral Profiler data
   - Other datasets have been migrated to PDS4 and are notionally supported
   - Many datasets on JAXA DARTS (ARD, GRS, LALT, MAG, SNDR, SP, TC, TEXI, TVIS)
+#### Kaguya / Selene (JAXA)
+  - LALT tables 
+  - MAG tables and images
+  - SP 2B and 2C products
+  - Many SNDR products
+  - TEXI images 
+  - TVIS 2A images
+  - Many TC images / maps
 #### Lunar Prospector
   - PDS3 datasets that have not been deprecated by PDS4 versions. specifically:
     - LOSAPDR
@@ -359,7 +374,7 @@ kernels in combination with JPL Horizons).
   - SHARAD rgram and geom files
   - RSS ODF, RSR, RSDMAP, SHADR, SHBDR, and TPS
   - HiRISE EDRs, RDRs, and DTMs
-  - MCS EDRs and RDRs
+  - MCS EDRs, RDRs and DDRs
   - CTX EDRs
   - MARCI EDRs
 #### MSL
@@ -481,6 +496,11 @@ kernels in combination with JPL Horizons).
   - WIYN images
 #### Saturn Ring Occultation of 28 Sagittarii (1989)
   - Earth-based observations at RMS
+#### SMART-1 (ESA)
+  - AMIE EDRs & RDRs
+  - DCIXS EDRs
+  - SIR2 EDRs
+  - SPEDE EDRs & REFDRs
 #### SOHO
   - LASCO images and photometry data
 #### Stardust
@@ -532,6 +552,7 @@ kernels in combination with JPL Horizons).
   - VMC GEOM & RDR products
   - ASPERA EDR and RDR tables
   - MAG EDR, RDR, REFDR tables
+  - VIRTIS Raw
 #### Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps
@@ -600,6 +621,59 @@ kernels in combination with JPL Horizons).
       for these products that share a name but handle the data differently. If 
       there are unexpected offsets in a table, confirm you are using the correct 
       'romap_calhk.fmt' file.*
+#### Chang'e 1 (CNSA)
+  - SWID Level 1, 3B
+  - XRS Level 1, 2C
+  - MRM Level 1
+  - LAM Level 1, 2A, 2B
+  - IIM Level 2A 
+  - HPD Level 1
+  - GRS Level 1, 2C
+  - CCD Level 1, 3
+#### Chang'e 2 (CNSA)
+  - XRS Level 2C
+  - SWID Level 2B
+  - MRM Level 2C 
+  - LAM Level 2B
+  - GRS Level 2C
+  - CCD Level 2C
+#### Chang'e 3 (CNSA)
+  - VNIS SC, CC, and SD Level 2A
+  - TCAM Level 2A, 2B
+  - PIXS Level 2A
+  - PCAMR / PCAML Level 2A
+  - MUVT Level 2A
+  - LCAM Level 2A
+  - EUVC Level 2B
+#### Chang'e 4 (CNSA)
+  - VNIS SD Level 2B 
+  - TCAM Level 2C 
+  - PCAML / PCAMR Level 2B
+  - LND Level 2A 
+  - LCAM Level 2A
+  - ASAN Level 2B
+#### Chang'e 5 (CNSA)
+  - PCAML / PCAMR Level 2B
+  - LMS Level 2B
+  - LCAM Level 2A
+#### Chang'e 6 (CNSA)
+  - PCAML / PCAMR Level 2B
+  - LMS Level 2B
+  - LCAM Level 2A
+#### Chandrayaan 2 (ISRO)
+  - CHACE2 tables
+  - CLASS Level 1 tables
+  - IIRS NCI & NRI 
+  - OHRC NRP
+  - TMC NCA 
+  - XSM Level 1, 2
+#### Chandrayaan 3 (ISRO)
+  - APXS Level 1 
+  - ChaSTE tables
+  - ILSA tables
+  - LIBS tables
+  - RAMBHA-LP tables 
+
 
 ## Known Unsupported Datasets
 #### Cassini
@@ -611,6 +685,8 @@ kernels in combination with JPL Horizons).
   - RSS ancillary products: TDF, TLM, PD1, PD2, TNF, EOP, ION, and TRO (support not planned)
   - VIMS EDR cubes (PDS3 labels; support not planned--open with PDS4 labels)
   - Huygens Probe DISR IR tables (PDS3 labels, support not planned; open with PDS4 labels instead)
+#### Chandrayaan-1 
+  - SARA CENA & SWIM EDRs (3D tables within an array)
 #### Clementine
   - RSS EDRs (support not planned)
   - RSS bistatic radar RDR images in the CL_2108 volume's 'sort' directory (support planned)
@@ -652,6 +728,9 @@ kernels in combination with JPL Horizons).
     - *Currently, these are available at the PPI node in .csv format and can be opened with Excel.*
 #### Kaguya / Selene
    - JAXA DARTS datasets in GEODYN (several RISE datasets) & CDF (LRS spectra) formats
+   - GRS ENG tables with PDS3 labels (there is an updated PDS4 dataset to use instead)
+   - IPACE PBF1 tables (requires specialized software, support not planned)
+   - LRS Spectra (do not have PDS labels, in NASA CDF format)
 #### Lunar Prospector
   - Level 0: ephemeris and position (support not planned)
   - Level 0: sun pulse and merged telemetry (support planned; low priority)
@@ -700,7 +779,6 @@ kernels in combination with JPL Horizons).
 #### MRO
   - RSS .tnf (support not planned)
   - RSS products in the 'ancillary' directory (support not planned)
-  - MCS DDRs (support not planned)
 #### MSL
   - ChemCam LIBS EDR tables (support not planned)
   - RAD EDRs and RDRs (support planned)
@@ -722,6 +800,7 @@ kernels in combination with JPL Horizons).
   - PUMA raw and processed data (support not planned)
 #### Venus Express
   - VERA LV1A Closed Loop DSN TNF files in DSN TRK-2-34 format (support not planned)
+  - VIRTIS Calibrated files 
 #### Viking 1 and 2
   - Orbiter
     - IRTM 1989 version (support planned)
