@@ -22,7 +22,9 @@
   - Venus Express
   - Juno UVS
   - Hayabusa
-  - Kaguya / Selene
+  - Kaguya / Selene (JAXA)
+  - Chandraayan 2 & 3 (ISRO)
+  - Chang'e 1-6 
 - MSL Mastcam, MAHLI, and MARDI EDRs
 - MGS MOC compressed SDPs
 

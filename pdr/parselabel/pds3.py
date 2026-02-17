@@ -17,6 +17,7 @@ from dustgoggles.structures import dig_for_keys
 from more_itertools import split_before
 from multidict import MultiDict
 
+from pdr.formats.checkers import check_special_label
 from pdr.parselabel.utils import trim_label, DEFAULT_PVL_LIMIT
 from pdr.utils import decompress
 
@@ -158,10 +159,14 @@ def read_pvl(
     max_size: int = DEFAULT_PVL_LIMIT
 ) -> tuple[MultiDict, list[str]]:
     """Read and parse a file containing a PVL-text."""
-    with decompress(filename) as stream:
-        label = trim_label(
-            stream, max_size, strict_decode=not looks_pvl(filename)
-        )
+
+    is_special, label = check_special_label(filename)
+
+    if is_special is False:
+        with decompress(filename) as stream:
+            label = trim_label(
+                stream, max_size, strict_decode=not looks_pvl(filename)
+            )
     return parse_pvl(label, deduplicate_pointers)
 
 

@@ -1,4 +1,5 @@
 """Functions for the nitty-gritty array-shaping parts of image loading."""
+from __future__ import annotations
 
 from io import BufferedIOBase
 from itertools import product

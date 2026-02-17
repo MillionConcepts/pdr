@@ -7,6 +7,7 @@ from dustgoggles.func import constant
 from pdr.formats import (
     check_special_sample_type,
     check_special_qube_band_storage,
+    check_special_label,
     check_special_position,
     check_special_structure,
     check_special_table_reader,
@@ -144,8 +145,7 @@ class ReadLabel(Loader):
 
     def __init__(self):
         from pdr.loaders.text import read_label
-
-        super().__init__(read_label)
+        super().__init__(specialize(read_label, check_special_label))
 
 
 class ReadFits(Loader):

@@ -42,7 +42,8 @@ def trim_label(
     fn: Union[IO, Path, str],
     max_size: int = DEFAULT_PVL_LIMIT,
     strict_decode: bool = True,
-    raise_no_ending: bool = False
+    raise_no_ending: bool = False,
+    special_encoding: str = "utf-8"
 ) -> str:
     """Look for a PVL label at the top of a file."""
     target_is_fn = isinstance(fn, (Path, str))
@@ -61,13 +62,6 @@ def trim_label(
             fn.close()
     policy = "strict" if strict_decode is True else "replace"
     try:
-        return text.decode("utf-8", errors=policy)
+        return text.decode(special_encoding, errors=policy)
     except UnicodeDecodeError:
-        try:
-            # TODO: we could change above to just allow errors
-            # but the characters might look wrong.
-            # this may capture a wider variety of intended chars
-            # (gb18030 is a chinese standard for encoding)
-            return text.decode(encoding="gb18030", errors="replace")
-        except UnicodeDecodeError:
-            raise InvalidAttachedLabel("Invalid characters in label.")
+        raise InvalidAttachedLabel("Invalid characters in label.")

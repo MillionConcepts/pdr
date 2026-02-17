@@ -112,3 +112,23 @@ def cal_target_data_trivial():
         f"The characters around the filename in the label are also not UTF."
     )
     return True
+
+
+def special_label(fn):
+    """
+    Load Chang'e labels with characters not in utf-8.
+
+    HITS:
+    * change1
+    * change2
+    * change3
+    """
+    from pdr.parselabel.utils import trim_label
+    from pdr.utils import decompress
+
+    return trim_label(
+        decompress(fn),
+        strict_decode=False,
+        raise_no_ending=False,
+        special_encoding="gb18030"
+    )

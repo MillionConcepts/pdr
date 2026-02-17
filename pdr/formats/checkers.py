@@ -40,9 +40,9 @@ designed specifically to be called inline of a specific handler function.
 """
 from __future__ import annotations
 import re
-from typing import Any, Mapping, Optional, TYPE_CHECKING
-
+from typing import Any, Mapping, Optional, TYPE_CHECKING, Union
 from multidict import MultiDict
+from pathlib import Path
 
 from pdr import formats
 from pdr.loaders.utility import is_trivial
@@ -115,7 +115,8 @@ def check_special_offset(
         return formats.msl_rems.edr_offset(data, name)
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
-        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT",
+                                             "MAST_LEFT", "MARDI"]
         and "EDR" in identifiers["DATA_SET_ID"]
     ):
         return formats.msl_edr.edr_offset(data, name)
@@ -295,7 +296,7 @@ def check_special_table_reader(
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
         and identifiers["INSTRUMENT_ID"] == "MRS"
-        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF","L1B"])
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF", "L1B"])
         and "TABLE" in name
     ):
         return True, formats.mex.mrs_l1b_odf_table_loader(fn, fmtdef_dt)
@@ -322,7 +323,7 @@ def check_special_table_reader(
     ):
         return True, formats.msl_rems.rdr_table_loader(fn, fmtdef_dt)
     if (
-        all(x in identifiers["DATA_SET_ID"] for x in ["ICE-C-","-3-RDR-"])
+        all(x in identifiers["DATA_SET_ID"] for x in ["ICE-C-", "-3-RDR-"])
         and "TRAJ_ICE" in fn
         and name == "TABLE"
     ):
@@ -647,7 +648,7 @@ def check_special_position(
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
         and identifiers["INSTRUMENT_ID"] == "MRS"
-        and all(x in identifiers["PRODUCT_ID"] for x in ["ICL","L1B"])
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ICL", "L1B"])
         and name == "DOPPLER_TABLE"
     ):
         return True, formats.mex.mrs_get_position(
@@ -656,7 +657,7 @@ def check_special_position(
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
         and identifiers["INSTRUMENT_ID"] == "MRS"
-        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF","L02"])
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF", "L02"])
         and name == "RANGING_TABLE"
     ):
         return True, formats.mex.mrs_get_position(
@@ -928,7 +929,7 @@ def check_special_block(
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS EXPRESS"
         and identifiers["INSTRUMENT_ID"] == "MRS"
-        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF","L1B","RMP"]) 
+        and all(x in identifiers["PRODUCT_ID"] for x in ["ODF", "L1B", "RMP"])
         and "TABLE" in name
     ):
         return True, formats.mex.mrs_l1b_odf_rmp_redirect(data)
@@ -970,7 +971,8 @@ def check_special_block(
         return True, formats.galileo.ssi_prefix_block(data, name)
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
-        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT",
+                                             "MAST_LEFT", "MARDI"]
         and "EDR" in identifiers["DATA_SET_ID"]
         and name == "IMAGE"
     ):
@@ -985,7 +987,7 @@ def check_special_block(
         identifiers["DATA_SET_ID"] == 'SLN-L-GRS-5-NUCLIDE-MAP-V2.0'
         and name == "TABLE"
     ):
-        return True, formats.kaguya.get_special_block_grs_table(data, name)
+        return True, formats.kaguya.get_special_block_grs_table(data)
     if (
         "SLN-L-SP" in identifiers['DATA_SET_ID']
         and "LEVEL2B" in identifiers['DATA_SET_ID']
@@ -996,7 +998,7 @@ def check_special_block(
         "SLN-L-LMAG-5-MA-GRID" in identifiers['DATA_SET_ID']
         and name == "TABLE"
     ):
-        return True, formats.kaguya.get_special_grid_table_block(data, name)
+        return True, formats.kaguya.get_special_grid_table_block()
     if(
         identifiers['DATA_SET_ID'] == "SLN-L-LMAG-5-1D-SIGMA-ECS-V1.0"
         and name == "TABLE"
@@ -1107,7 +1109,7 @@ def check_trivial_case(pointer: str, identifiers: DataIdentifiers, fn: str) -> b
         "MRO-M-MCS-5-DDR" in identifiers["DATA_SET_ID"]
         and "V1.0" in identifiers["DATA_SET_ID"]
     ):
-        return True, formats.mro.mcs_ddr_oldformat_trivial()
+        return formats.mro.mcs_ddr_oldformat_trivial()
     if (
         identifiers["DATA_SET_ID"] == 'SLN-L-PACE-3-PBF1-V3.0'
         and pointer == 'TIME_SERIES'
@@ -1194,14 +1196,16 @@ def check_special_fn(
         and object_name == "IMAGE_LINE_PREFIX_TABLE"
     ):
         return formats.galileo.ssi_redr_prefix_fn(data)
-    if (identifiers["DATA_SET_ID"] == "VG2-SR/UR/NR-PPS-2/4-OCC-V1.0"
+    if (
+        identifiers["DATA_SET_ID"] == "VG2-SR/UR/NR-PPS-2/4-OCC-V1.0"
         and identifiers["PRODUCT_TYPE"] == "JITTER"
         and object_name == "SERIES"
     ):
         return formats.voyager.get_fn(data)
     if (
         identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
-        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+        and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT",
+                                             "MAST_LEFT", "MARDI"]
         and "EDR" in identifiers["DATA_SET_ID"] and object_name == "IMAGE"
     ):
         return formats.msl_edr.msl_msss_edr_prefix_fn(data)
@@ -1271,12 +1275,17 @@ def check_special_fits_start_byte(
 
 
 def check_special_objects(identifiers: DataIdentifiers):
+    """
+    Check to add objects not correctly ID'd as objects in a label, or remove
+    objects ID'd in a label. Called inline by `_find_objects()`.
+    """
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
-            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT",
+                                                 "MAST_LEFT", "MARDI"]
             and "EDR" in identifiers["DATA_SET_ID"]
     ):
-        # a consequence of this is the the geometry file and miniheader objects
+        # a consequence of this is the geometry file and miniheader objects
         # denoted in the label for the edrs
         return True, ['IMAGE', 'MODEL_DESC']
     if (
@@ -1285,7 +1294,7 @@ def check_special_objects(identifiers: DataIdentifiers):
             and ".2A" in identifiers["PRODUCT_ID"]
     ):
         # this would need to be modified if you could find the cal target data
-        # excel file and removed the bad characters from the label around it
+        # Excel file and removed the bad characters from the label around it
         return True, ['LABEL', 'IMAGE_PREFIX', 'IMAGE']
     if (
             identifiers["SPACECRAFT_NAME"] == "Chang'E-3 Rover"
@@ -1293,7 +1302,7 @@ def check_special_objects(identifiers: DataIdentifiers):
             and ".2A" in identifiers["PRODUCT_ID"]
     ):
         # this would need to be modified if you could find the cal target data
-        # excel file and removed the bad characters from the label around it
+        # Excel file and removed the bad characters from the label around it
         return True, ['LABEL', 'TABLE']
     if (
             identifiers["SPACECRAFT_NAME"] == "Chang'E-3 Rover"
@@ -1301,19 +1310,20 @@ def check_special_objects(identifiers: DataIdentifiers):
             and ".2A" in identifiers["PRODUCT_ID"]
     ):
         # this would need to be modified if you could find the cal target data
-        # excel file and removed the bad characters from the label around it
+        # Excel file and removed the bad characters from the label around it
         return True, ['LABEL', 'TABLE']
     return False, None
 
 
-def check_special_compressed_file_reader(identifiers, fn):
+def check_special_compressed_file_reader(identifiers: DataIdentifiers, fn: str):
     """
     Distribute to correct specialized image loader, otherwise return
-    False/None.
+    False/None. Preempt loaders.datawrap.ReadImage's dispatch to `read_image()`
     """
     if (
             identifiers["INSTRUMENT_HOST_NAME"] == "MARS SCIENCE LABORATORY"
-            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT", "MAST_LEFT", "MARDI"]
+            and identifiers["INSTRUMENT_ID"] in ["MAHLI", "MAST_RIGHT",
+                                                 "MAST_LEFT", "MARDI"]
             and "EDR" in identifiers["DATA_SET_ID"]
     ):
         return True, formats.msl_edr.msl_edr_image_loader(fn)
@@ -1381,7 +1391,7 @@ def check_special_pds4_cases(structure, filename, object_name):
     #         "CE4_GRAS_VNIS-VD_SCI" in filename and ".2B" in filename
     #         and object_name == "TABLE_0"
     # ):
-    #this is a fixed width table, but it's not all UTF-8 so PD can't handle it
+    # this is a fixed width table, but it's not all UTF-8 so PD can't handle it
     #    return formats.change.read_table_using_spaces(structure, filename)
     if (
             "CE4_GRAS_VNIS-SD_SCI" in filename and ".2B" in filename
@@ -1394,3 +1404,26 @@ def check_special_pds4_cases(structure, filename, object_name):
     ):
         return formats.ch2_isro.read_class_fits_table(filename, object_name)
     return None
+
+
+def check_special_label(fn: Union[str, Path]):
+    """
+    Used primarily to check for labels with known characters invalid in utf-8.
+    We then read the label with a more correct or lenient encoding. Preempt
+    loaders.datawrap.ReadLabel's dispatch to `read_label()`. Also used in
+    `read_pvl()`.
+    """
+    if (
+            any(tag in fn for tag in ['CE1', 'CE2', 'CE3'])
+            and any(sfx in fn for sfx in ['.1A', '.1B', '.1C',
+                                                '.2A', '.2B', '.2C',
+                                                '.3A', '.3B', '.3C',
+                                                '.01', '.02', '.03'])
+    ):
+        return True, formats.change.special_label(fn)
+    if (
+            ".TAB" in fn and "_DOY" in fn and
+            ("MAG_" in fn or "BIO_" in fn) and "_V1" in fn
+    ):
+        return True, formats.vex_mag.special_label(fn)
+    return False, None

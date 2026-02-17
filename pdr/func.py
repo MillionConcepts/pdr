@@ -111,6 +111,14 @@ def paramsort(params: Collection[Parameter]) -> list[Parameter]:
     }
     for p in params:
         bins[p.kind.name].append(p)
+
+    # then put Optional variables at the end of each bin
+    for kind, paramlist in bins.items():
+        bins[kind] = sorted(
+            paramlist,
+            key=lambda p: not_optional(p) is False
+        )
+
     # noinspection PyTypeChecker
     return list(chain.from_iterable(bins.values()))
 

@@ -49,6 +49,7 @@ import pdr.formats.smart1_esa as smart1_esa
 import pdr.formats.themis as themis
 import pdr.formats.ulysses as ulysses
 import pdr.formats.vega as vega
+import pdr.formats.vex_mag as vex_mag
 import pdr.formats.vex_vera as vex_vera
 import pdr.formats.vex_virtis as vex_virtis
 import pdr.formats.viking as viking

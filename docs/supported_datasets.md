@@ -531,6 +531,7 @@ kernels in combination with JPL Horizons).
   - SPICAV-SOIR LV2 & LV3 products 
   - VMC GEOM & RDR products
   - ASPERA EDR and RDR tables
+  - MAG EDR, RDR, REFDR tables
 #### Venus Radar Data (Earth-based)
   - Uncalibrated, Delay-Doppler Images
   - Calibrated, Multi-Look Maps

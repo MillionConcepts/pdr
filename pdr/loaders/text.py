@@ -1,4 +1,6 @@
 """Pointy-end functions for text-handling Loader subclasses."""
+from __future__ import annotations
+
 from io import TextIOWrapper
 from pathlib import Path
 from typing import Optional, Union
