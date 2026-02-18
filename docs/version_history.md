@@ -9,6 +9,9 @@
 - `Data.dump_browse()` and `Data.show()` now take an optional `rgb_channels`
   keyword argument which allows for manual control over which bands of a
   multiband image are used as the color channels when creating an RGB image.
+- new `strict_label_decode` option for `Data`: if you pass 
+  `strict_label_decode=False`, `pdr` will attempt to decode attached labels 
+- in non-ASCII character encodings.
 
 #### Dataset Support
 - Miscellaneous additional products from:
@@ -44,7 +47,12 @@
 FITS products are all automatically scaled.
 
 ### Fixed
-- Fixed data type error for some FITS tables.  
+- Fixed an error in some FITS tables in which unsigned integers were 
+  improperly represented as signed integers.
+- Compatibility changes for Pandas 3's typing and copy behaviors.
+- Compatibility changes for Python 3.14's parameter representation behavior.
+- Fixes for a handful of ARRAY products that incorrectly retained PLACEHOLDER 
+  columns in output data structures.
 
 ### Removed
 
