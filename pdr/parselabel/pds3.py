@@ -156,17 +156,17 @@ def parse_pvl(
 def read_pvl(
     filename: Union[str, Path],
     deduplicate_pointers: bool = True,
-    max_size: int = DEFAULT_PVL_LIMIT
+    max_size: int = DEFAULT_PVL_LIMIT,
+    default_strict_decode: bool = True
 ) -> tuple[MultiDict, list[str]]:
     """Read and parse a file containing a PVL-text."""
 
     is_special, label = check_special_label(filename)
 
     if is_special is False:
+        strict = default_strict_decode and not looks_pvl(filename)
         with decompress(filename) as stream:
-            label = trim_label(
-                stream, max_size, strict_decode=not looks_pvl(filename)
-            )
+            label = trim_label(stream, max_size, strict_decode=strict)
     return parse_pvl(label, deduplicate_pointers)
 
 

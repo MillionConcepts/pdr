@@ -228,6 +228,7 @@ class Data:
         skip_existence_check: bool = False,
         pvl_limit: int = DEFAULT_PVL_LIMIT,
         tracker: Optional[TrivialTracker] = None,
+        strict_label_decode: bool = True
     ):
         """"""
         # Bail out early if someone's trying to load directly from the network.
@@ -302,7 +303,9 @@ class Data:
         else:
             self.standard = "PDS3"
         try:
-            self.metadata = self.read_metadata(pvl_limit=pvl_limit)
+            self.metadata = self.read_metadata(
+                pvl_limit=pvl_limit, strict_decode=strict_label_decode
+            )
         except (UnicodeError, FileNotFoundError) as ex:
             raise ValueError(
                 f"Can't load this product's metadata: {ex}, {type(ex)}"
@@ -756,7 +759,9 @@ class Data:
         else:
             setattr(self, object_name, structure.data)
 
-    def read_metadata(self, pvl_limit: int = DEFAULT_PVL_LIMIT) -> Metadata:
+    def read_metadata(
+        self, pvl_limit: int = DEFAULT_PVL_LIMIT, strict_decode: bool = True
+    ) -> Metadata:
         """
         Attempt to ingest a product's metadata. if it is a PDS4 product,
         pds4_tools will already have ingested its detached XML label in
@@ -788,7 +793,10 @@ class Data:
             return Metadata(paramdig(skim_image_data(self.filename)))
         # self.labelname is None means we didn't find a detached label
         target = self.filename if self.labelname is None else self.labelname
-        metadata = Metadata(read_pvl(target, max_size=pvl_limit))
+        parsed_pvl = read_pvl(
+            target, max_size=pvl_limit, default_strict_decode=strict_decode
+        )
+        metadata = Metadata(parsed_pvl)
         # we wait until after the read step to make these assignments in order
         # to facilitate debugging in cases where there is not in fact an
         # attached label or we couldn't read it
