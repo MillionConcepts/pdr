@@ -1,5 +1,5 @@
 # Version History
-## [X.X.X] - 202X-XX-XX
+## [1.4.1] - 2026-02-18
 ### Added
 - A user guide for `Data.dump_browse()` and `Data.show()`
 
