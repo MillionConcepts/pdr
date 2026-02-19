@@ -46,8 +46,16 @@ from dustgoggles.tracker import Tracker, TrivialTracker
 from multidict import MultiDict
 
 from pdr.errors import AlreadyLoadedError, DuplicateKeyWarning
-from pdr.formats import check_special_fn, special_image_constants
-from pdr.loaders.utility import DESKTOP_IMAGE_STANDARDS
+from pdr.formats import (
+    check_special_fn,
+    special_image_constants,
+    check_special_pds4_cases
+)
+from pdr.loaders.utility import (
+    DESKTOP_IMAGE_STANDARDS,
+    FITS_EXTENSIONS,
+    looks_like_this_kind_of_file,
+)
 from pdr.parselabel.pds3 import (
     depointerize,
     get_pds3_pointers,
@@ -220,6 +228,7 @@ class Data:
         skip_existence_check: bool = False,
         pvl_limit: int = DEFAULT_PVL_LIMIT,
         tracker: Optional[TrivialTracker] = None,
+        strict_label_decode: bool = True
     ):
         """"""
         # Bail out early if someone's trying to load directly from the network.
@@ -282,14 +291,21 @@ class Data:
 
                 # TODO: bad. need to not leave this open, although inefficient
                 self._hdulist = fits.open(self.filename)
-        elif str(self.labelname).endswith(".xml"):
+        elif (
+            str(self.labelname).endswith(".xml") 
+            or str(self.labelname).endswith(".lblx")
+            or ("CE" in str(self.labelname) and
+                str(self.labelname).endswith((".2BL", ".2AL", ".2CL", ".01L")))
+        ):
             self.standard = "PDS4"
             self._pds4_structures = {}
             self._init_pds4()
         else:
             self.standard = "PDS3"
         try:
-            self.metadata = self.read_metadata(pvl_limit=pvl_limit)
+            self.metadata = self.read_metadata(
+                pvl_limit=pvl_limit, strict_decode=strict_label_decode
+            )
         except (UnicodeError, FileNotFoundError) as ex:
             raise ValueError(
                 f"Can't load this product's metadata: {ex}, {type(ex)}"
@@ -401,6 +417,12 @@ class Data:
         TODO: check for ISIS-style axplane objects.
         """
         from pdr.loaders.utility import is_trivial
+        from pdr.formats.checkers import check_special_objects
+
+        is_special, special_objects = check_special_objects(self.identifiers)
+        if is_special is True:
+            self.index += special_objects
+            return
 
         # TODO: make this not add objects again if called multiple times
         for pointer in self.pointers:
@@ -671,8 +693,17 @@ class Data:
         distinct data object with a local identifier. If it is, return the
         PDS4 local identifier of that object. If not, return None.
         """
+        from pdr.pds4_tools.reader.header_objects import HeaderStructure
+
         for k, v in self._pds4_structures.items():
+            if not isinstance(v, HeaderStructure):
+                # we only require header objects to have the
+                # 'object_length' key. label objects also do not
+                # have meta_data
+                continue
             meta = v.meta_data
+            if 'object_length' not in meta.keys():
+                continue
             if meta['offset'] + meta['object_length'] == start_byte:
                 if 'name' not in meta.keys():
                     return None
@@ -694,6 +725,11 @@ class Data:
 
         if isinstance(structure, Label):
             setattr(self, "label", structure)
+        elif check_special_pds4_cases(structure, self.filename,
+                                      object_name) is not None:
+            result = check_special_pds4_cases(structure, self.filename,
+                                              object_name)
+            setattr(self, object_name, result)
         elif check_primary_fmt(structure.parent_filename) == "FITS":
             from pdr.loaders.handlers import handle_fits_file
 
@@ -723,7 +759,9 @@ class Data:
         else:
             setattr(self, object_name, structure.data)
 
-    def read_metadata(self, pvl_limit: int = DEFAULT_PVL_LIMIT) -> Metadata:
+    def read_metadata(
+        self, pvl_limit: int = DEFAULT_PVL_LIMIT, strict_decode: bool = True
+    ) -> Metadata:
         """
         Attempt to ingest a product's metadata. if it is a PDS4 product,
         pds4_tools will already have ingested its detached XML label in
@@ -755,7 +793,10 @@ class Data:
             return Metadata(paramdig(skim_image_data(self.filename)))
         # self.labelname is None means we didn't find a detached label
         target = self.filename if self.labelname is None else self.labelname
-        metadata = Metadata(read_pvl(target, max_size=pvl_limit))
+        parsed_pvl = read_pvl(
+            target, max_size=pvl_limit, default_strict_decode=strict_decode
+        )
+        metadata = Metadata(parsed_pvl)
         # we wait until after the read step to make these assignments in order
         # to facilitate debugging in cases where there is not in fact an
         # attached label or we couldn't read it
@@ -1032,6 +1073,16 @@ class Data:
             dump_browse image. The default slices at axis 0 (which is usually
             the axis labelled "BAND").
 
+        - rgb_channels: Optional[tuple[int, int, int]] = None
+            Allows specification of the bands used to create an RGB image. By 
+            default the first three bands of a 3-4 band image are used for the 
+            red, green, and blue channels respectively (equivalent to manually 
+            specifying rgb_channels=(0,1,2)).
+
+            If this argument is used, band_ix and override_rgba are ignored. It 
+            can also be used on multiband images with >4 bands to output an RGB 
+            image.
+
         """
         if prefix is None:
             prefix = Path(self.filename).stem
@@ -1048,7 +1099,12 @@ class Data:
                 self[obj].__class__.__name__ == "ndarray"
                 and len(self[obj].shape) != 1
             ):
-                if scaled == "both":
+                if looks_like_this_kind_of_file(self.filename, FITS_EXTENSIONS) \
+                        and (scaled == "both" or scaled is False):
+                    warnings.warn("Scaling for FITS files cannot be turned "
+                                  "off, dumping scaled products.")
+                    dump_it(self[obj], outfile + "_scaled")
+                elif scaled == "both":
                     dump_it(
                         self.get_scaled(obj, float_dtype=fdt),
                         outfile + "_scaled",

@@ -97,6 +97,7 @@ class DataIdentifiers(TypedDict):
     """
     DATA_SET_ID: Union[str, None]
     DATA_SET_NAME: Union[str, None]
+    DATA_QUALITY_DESC: Union[str, None]
     FILE_NAME: Union[str, None]
     FILE_RECORDS: Union[int, None]
     INSTRUMENT_ID: Union[str, None]

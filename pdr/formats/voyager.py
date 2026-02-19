@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def mag_special_block(data, name):
     """
     ROW_BYTES are listed as 144 in the labels for Uranus and Neptune MAG RDRs.
@@ -150,3 +153,16 @@ def lecp_vg1_sat_table_loader(filename, fmtdef_dt):
     assert len(table.columns) == len(col_names), "mismatched column count"
     table.columns = col_names
     return table
+
+def get_fn(data):
+    """
+    Some of the PPS Jitter tables' SERIES pointers have the wrong filename.
+
+    HITS:
+    * vg_ring_profiles
+        * pps_jitter
+    """
+    from pathlib import Path
+
+    label = Path(data.labelname)
+    return True, Path(label.parent, f"{label.stem}.TAB")

@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from functools import wraps, reduce
 # noinspection PyProtectedMember,PyUnresolvedReferences
 from inspect import signature, _empty, Signature, Parameter
 from itertools import combinations, chain
+import re
 from typing import Callable, Any, Mapping, Optional, Collection
 
 from cytoolz import keyfilter
@@ -19,7 +22,23 @@ def not_optional(param: Parameter) -> bool:
     is this Parameter flagged as not required according to the conventions of
     this module?
     """
-    if "Optional" in str(param):
+    # TODO, maybe: this is even sketchier than it was before, but
+    #  is the most expedient way to make it compatible with 3.14 and < 3.14.
+    #  There's probably some hellish regex that makes it generally safe, but
+    #  I'm not going to consider all the edge cases, because (1) there are so
+    #  many ways to write type annotations, (2) their string representations
+    #  aren't WYSIWYG, and (3) this is really only intended for
+    #  library-internal use and doesn't need to support the entire type
+    #  annotation system.
+
+    pstr = re.split("[:=]", str(param))
+    pstr = pstr[0] if len(pstr) == 1 else pstr[1]
+    pstr = pstr.strip(" '")
+    if (
+        pstr.startswith("Optional[")
+        or pstr.endswith(" | None")
+        or pstr.startswith("None | ")
+    ):
         return False
     if param.name in ("_", "__"):
         return False
@@ -42,8 +61,12 @@ def get_all_argnames(*funcs: Callable, nonoptional=False) -> set[str]:
     """
     return all parameter names found in the signatures of funcs. if nonoptional
     is True, don't include parameters marked as optional according to the
-    conventions of this module (explicitly type-annotated as Optional or named
-    _ or __)
+    conventions of this module, meaning that any of the following are true:
+
+        1. string representation of their annotation begins with "Optional"
+        2. string representation of their annotation ends with "| None"
+           or begins with "None |"
+        3. they are named _ or __
     """
     if nonoptional is True:
         return reduce(set.union, map(get_non_optional_argnames, funcs))
@@ -90,6 +113,14 @@ def paramsort(params: Collection[Parameter]) -> list[Parameter]:
     }
     for p in params:
         bins[p.kind.name].append(p)
+
+    # then put Optional variables at the end of each bin
+    for kind, paramlist in bins.items():
+        bins[kind] = sorted(
+            paramlist,
+            key=lambda p: not_optional(p) is False
+        )
+
     # noinspection PyTypeChecker
     return list(chain.from_iterable(bins.values()))
 

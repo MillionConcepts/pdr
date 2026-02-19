@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pdr.pds4_tools.reader.label_objects import Label
 from pdr.parselabel.pds4 import reformat_pds4_tools_label
 

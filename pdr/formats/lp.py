@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 def ancillary_table_loader(fn, fmtdef_dt):
     """

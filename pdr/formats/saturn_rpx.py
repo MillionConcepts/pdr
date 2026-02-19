@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def rpx_img_hdu_start_byte(name, hdulist):
     """
     The multiple *_IMAGE pointers in these files all point at the same FITS

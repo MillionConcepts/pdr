@@ -1,3 +1,4 @@
+from __future__ import annotations
 import warnings
 
 def mssso_cal_start_byte(name, hdulist):

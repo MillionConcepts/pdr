@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def get_special_block(data, name):
     """
     A subset of the IUE resampled SSI/LSI comet images have a typo in their 

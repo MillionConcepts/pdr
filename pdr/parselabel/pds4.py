@@ -2,6 +2,8 @@
 Simple utilities for preprocessing pds4_tools-produced label objects for the
 pdr.Metadata constructor.
 """
+from __future__ import annotations
+
 from collections import OrderedDict
 from typing import Mapping, TYPE_CHECKING
 

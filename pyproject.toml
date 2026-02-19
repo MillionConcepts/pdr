@@ -4,7 +4,7 @@
 
 [project]
 name        = "pdr"
-version     = "1.4.0"
+version     = "1.4.1"
 description = "Planetary Data Reader"
 readme      = "README.md"
 license     = { file = "LICENSE.md" }
@@ -15,6 +15,7 @@ authors     = [
     { name = "Sierra Brown",      email = "sierra@millionconcepts.com"   },
     { name = "Sabrina Curtis",    email = "scurtis@millionconcepts.com"  },
     { name = "Zack Weinberg",     email = "zack@millionconcepts.com"     },
+    { name = "Bekah Albach",      email = "ralbach@millionconcepts.com"  }
 ]
 
 classifiers = [

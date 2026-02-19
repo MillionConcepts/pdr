@@ -12,7 +12,6 @@ from more_itertools import divide
 import numpy as np
 import pandas as pd
 import pandas.api.types
-from pandas.errors import SettingWithCopyWarning
 import vax
 
 from pdr.datatypes import sample_types
@@ -210,29 +209,33 @@ def construct_nested_array_format(fmtdef: pd.DataFrame) -> pd.DataFrame:
     ARRAY objects can be deeply nested. This function computes the correct
     byte offsets and dtypes (including array shape) for any nested subelements.
     """
-    for block_name in fmtdef.loc[
-        fmtdef["NAME"] != "PLACEHOLDER_0", "BLOCK_NAME"
-    ].unique()[1:]:
+    block_names = (
+        fmtdef.loc[fmtdef["NAME"] != "PLACEHOLDER_0", "BLOCK_NAME"]
+        .unique()[1:]
+    )
+    for block_name in block_names:
         if block_name == "":
             continue
         fmt_block = fmtdef.loc[fmtdef["BLOCK_NAME"] == block_name]
-        prior = fmtdef.loc[fmt_block.index[0] - 1]
-        if "AXIS_ITEMS" not in prior.keys():
+        if fmt_block.empty:
             continue
-        if np.isnan(axis_items := prior["AXIS_ITEMS"]):
+        prior_idx = fmt_block.index[0] - 1
+        prior = fmtdef.loc[prior_idx]
+        axis_items = prior.get("AXIS_ITEMS", np.nan)
+        if pd.isna(axis_items):
             continue
-        with warnings.catch_warnings():
-            # TODO: We are intentionally setting with copy here. However, it
-            #  will start hard-failing in pandas 3.x and needs to be changed.
-            warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
-            fmt_block[
-                "SB_OFFSET"
-            ] = fmt_block["SB_OFFSET"] - prior["SB_OFFSET"]
-        if isinstance(axis_items, float):
-            axis_items = int(axis_items)
-        dt = fmtdef_to_dtype(fmt_block)
-        fmtdef.at[fmt_block.index[0] - 1, "dt"] = (dt, axis_items)
-        fmtdef = fmtdef[~fmtdef.NAME.isin(fmt_block.NAME)]
+        axis_items = int(axis_items)
+        # Compute the dtype using a copy of the block with SB_OFFSET adjusted,
+        # instead of mutating a view-backed slice (SettingWithCopy).
+        fmt_block_rel = fmt_block.copy()
+        fmt_block_rel.loc[
+            :, "SB_OFFSET"
+        ] = fmt_block_rel["SB_OFFSET"] - prior["SB_OFFSET"]
+
+        dt = fmtdef_to_dtype(fmt_block_rel)
+        fmtdef.at[prior_idx, "dt"] = (dt, axis_items)
+        fmtdef = fmtdef.loc[~fmtdef["NAME"].isin(fmt_block_rel["NAME"])]
+
     return fmtdef
 
 

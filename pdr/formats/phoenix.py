@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def elec_em6_structure(block, name, filename, data, identifiers):
     """
     ELEC EDR em6/TBL tables: All the START_BYTEs in TBL_0_STATE_DATA.FMT

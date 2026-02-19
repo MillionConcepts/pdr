@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def orpa_low_res_loader(data, name):
     """
     ORPA low resolution: labels for earlier orbits have the correct

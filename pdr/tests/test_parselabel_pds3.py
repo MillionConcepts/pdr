@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pdr.parselabel.pds3 import parse_pvl
 from pdr.tests.objects import SILLY_LABEL
 

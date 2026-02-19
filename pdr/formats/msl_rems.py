@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def edr_table_loader(filename, fmtdef_dt, block, start_byte):
     """
     The ROW_SUFFIX_BYTES are either miscounted by a few bytes, or we don't 
@@ -40,15 +42,13 @@ def rdr_table_loader(filename, fmtdef_dt):
     Missing values are variations of "UNK" and "NULL", which cause mixed dtype 
     warnings when using the default pd.read_csv() parameters. 
 
-     HITS
+    HITS
     * msl_rems
         * rdr_rmd
         * rdr_rnv
         * rdr_rtl
     """
     import pandas as pd
-
-    fmtdef, dt = fmtdef_dt
     
     missing_const = [' UNK', '    UNK', '     UNK', '      UNK',
                      '       UNK', '         UNK', 

@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 from pathlib import Path
 import re
 from typing import Union, IO
 
 
 KNOWN_LABEL_ENDINGS = (
-    re.compile(b"\nEND {0,2}(\r| {8})"),  # common PVL convention
+    re.compile(b"\nEND {0,8}(\r| {8})"),  # common PVL convention
     re.compile(b"\x00{3}"),  # just null bytes, for odder cases
+    b"\nEND\n",  # mostly for Chang'e labels
 )
 """
 Fast regex patterns for generic PVL label endings. They work for almost all PVL 
@@ -29,7 +32,7 @@ def _scan_to_end_of_label(
         if (chunk := buf.read(50 * 1024)) == b'':
             break
         for ending in KNOWN_LABEL_ENDINGS:
-            if (endmatch := re.search(ending, text[:-15] + chunk)) is not None:
+            if (endmatch := re.search(ending, chunk)) is not None:
                 return text + chunk[: endmatch.span()[1]]
         text, length = text + chunk, length + 50 * 1024
     if raise_no_ending is True:
@@ -41,7 +44,8 @@ def trim_label(
     fn: Union[IO, Path, str],
     max_size: int = DEFAULT_PVL_LIMIT,
     strict_decode: bool = True,
-    raise_no_ending: bool = False
+    raise_no_ending: bool = False,
+    special_encoding: str = "utf-8"
 ) -> str:
     """Look for a PVL label at the top of a file."""
     target_is_fn = isinstance(fn, (Path, str))
@@ -60,6 +64,6 @@ def trim_label(
             fn.close()
     policy = "strict" if strict_decode is True else "replace"
     try:
-        return text.decode("utf-8", errors=policy)
+        return text.decode(special_encoding, errors=policy)
     except UnicodeDecodeError:
         raise InvalidAttachedLabel("Invalid characters in label.")

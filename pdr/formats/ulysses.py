@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def gas_table_loader(filename, fmtdef_dt):
     """
     GASDATA.FMT has the wrong START_BYTE for columns in the container.

@@ -582,7 +582,7 @@ def parse_table_structure(
     or for one of several ASCII parsers.
     """
     fmtdef = read_table_structure(block, name, fn, data, identifiers)
-    if "BYTES" not in fmtdef.columns:
+    if "DATA_TYPE" in fmtdef.columns and "BYTES" not in fmtdef.columns:
         if _probably_ascii(block, fmtdef, name):
             # this is either a nonstandard fixed-width table or a DSV table.
             # don't bother trying to calculate explicit byte offsets.

@@ -1,4 +1,5 @@
 """Support objects for 'utility' Loader subclasses."""
+from __future__ import annotations
 
 from functools import partial
 from itertools import chain
@@ -13,7 +14,8 @@ from multidict import MultiDict
 # TODO, maybe: I think we should keep these somewhere else; they're certainly
 #  not used exclusively in loaders
 
-LABEL_EXTENSIONS = (".xml", ".lbl")
+LABEL_EXTENSIONS = (".xml", ".lbl", ".lblx")
+CHANG_LBL_EXTENSIONS = (".2bl", ".2al", ".2cl", ".01l", ".3bl", ".3al", ".3cl")
 IMAGE_EXTENSIONS = (".img", ".rgb")
 TABLE_EXTENSIONS = (".tab", ".csv")
 TEXT_EXTENSIONS = (".txt", ".md")

@@ -2,6 +2,8 @@
 Methods for working with numpy objects, primarily intended as components of
 pdr's image- and table-loading routines.
 """
+from __future__ import annotations
+
 from bz2 import BZ2File
 from gzip import GzipFile
 from io import BufferedIOBase, BytesIO

@@ -1,4 +1,5 @@
 """Functions for the nitty-gritty array-shaping parts of image loading."""
+from __future__ import annotations
 
 from io import BufferedIOBase
 from itertools import product
@@ -10,7 +11,7 @@ import vax
 
 from pdr.loaders.queries import get_image_properties
 from pdr.np_utils import make_c_contiguous, np_from_buffered_io
-from pdr.pdrtypes import ImageProps
+from pdr.pdrtypes import ImageProps, DataIdentifiers
 from pdr.utils import decompress
 
 

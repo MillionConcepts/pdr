@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pdr
 
 from pdr.tests.objects import STUB_IMAGE_LABEL

@@ -17,6 +17,7 @@ from dustgoggles.structures import dig_for_keys
 from more_itertools import split_before
 from multidict import MultiDict
 
+from pdr.formats.checkers import check_special_label
 from pdr.parselabel.utils import trim_label, DEFAULT_PVL_LIMIT
 from pdr.utils import decompress
 
@@ -155,13 +156,17 @@ def parse_pvl(
 def read_pvl(
     filename: Union[str, Path],
     deduplicate_pointers: bool = True,
-    max_size: int = DEFAULT_PVL_LIMIT
+    max_size: int = DEFAULT_PVL_LIMIT,
+    default_strict_decode: bool = True
 ) -> tuple[MultiDict, list[str]]:
     """Read and parse a file containing a PVL-text."""
-    with decompress(filename) as stream:
-        label = trim_label(
-            stream, max_size, strict_decode=not looks_pvl(filename)
-        )
+
+    is_special, label = check_special_label(filename)
+
+    if is_special is False:
+        strict = default_strict_decode and not looks_pvl(filename)
+        with decompress(filename) as stream:
+            label = trim_label(stream, max_size, strict_decode=strict)
     return parse_pvl(label, deduplicate_pointers)
 
 
@@ -420,7 +425,8 @@ def index_duplicate_pointers(
                         key_editor=True,
                     )
                     params.append(indexed_depointer)
-                    params.remove(depointer)
+                    if depointer in params:
+                        params.remove(depointer)
 
     return mapping, params
 

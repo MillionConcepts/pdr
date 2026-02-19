@@ -1,4 +1,6 @@
 """utilities for working with the `pvl` library."""
+from __future__ import annotations
+
 from functools import cache
 
 try:

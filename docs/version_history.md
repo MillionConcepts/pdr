@@ -1,4 +1,63 @@
 # Version History
+## [1.4.1] - 2026-02-18
+### Added
+- A user guide for `Data.dump_browse()` and `Data.show()`
+
+#### Features
+- Decompression module for MSSS DAT files
+- Support for PDS4 labels with a ".lblx" filename extension
+- `Data.dump_browse()` and `Data.show()` now take an optional `rgb_channels`
+  keyword argument which allows for manual control over which bands of a
+  multiband image are used as the color channels when creating an RGB image.
+- new `strict_label_decode` option for `Data`: if you pass 
+  `strict_label_decode=False`, `pdr` will attempt to decode attached labels 
+- in non-ASCII character encodings.
+
+#### Dataset Support
+- Miscellaneous additional products from:
+  - Stardust and Stardust-NEXT
+  - Rosetta
+  - Dawn
+  - NEAR
+  - Mars Odyssey
+  - Voyager
+  - MRO
+  - Juno UVS
+  - Hayabusa
+- MSL Mastcam, MAHLI, and MARDI EDRs
+- MGS MOC compressed SDPs
+- Datasets with PDS 3 & 4 labels stored outside PDS nodes:
+  - Venus Express (ESA)
+  - BepiColombo (ESA)
+  - Kaguya / Selene (JAXA)
+  - Chandrayaan 1 (ESA)
+  - SMART-1 (ESA)
+- Preliminary support based on limited testing:
+  - Chang'e 1 (CNSA)
+  - Chang'e 2 (CNSA)
+  - Chang'e 3 (CNSA)
+  - Chang'e 4 (CNSA)
+  - Chang'e 5 (CNSA)
+  - Chang'e 6 (CNSA)
+  - Chandrayaan 2 (ISRO)
+  - Chandrayaan 3 (ISRO)
+
+### Changed
+- `Data.dump_browse()` no longer allows dumping of 'unscaled' FITS products because 
+FITS products are all automatically scaled.
+
+### Fixed
+- Fixed an error in some FITS tables in which unsigned integers were 
+  improperly represented as signed integers.
+- Compatibility changes for Pandas 3's typing and copy behaviors.
+- Compatibility changes for Python 3.14's parameter representation behavior.
+- Fixes for a handful of ARRAY products that incorrectly retained PLACEHOLDER 
+  columns in output data structures.
+
+### Removed
+
+
+# Version History
 ## [1.4.0] - 2025-03-13
 ### Added
 

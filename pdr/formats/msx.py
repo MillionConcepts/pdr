@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 def cube_envi_header_position(identifiers, block, target, name, start_byte, fn):
     """
