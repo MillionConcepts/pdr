@@ -8,7 +8,6 @@ import abc
 
 from ..utils.compat import OrderedDict
 from ..utils.helpers import xml_to_dict, is_array_like
-from ..utils.data_access import is_supported_url, download_file
 from ..utils.exceptions import PDS4StandardsException
 from ..utils.logging import logger_init
 
@@ -462,8 +461,6 @@ class Structure(object):
             Data for the structure; details are defined by the subclass.
         """
 
-        if is_supported_url(self.parent_filename):
-            self.parent_filename = download_file(self.parent_filename)
 
     def is_array(self):
         """

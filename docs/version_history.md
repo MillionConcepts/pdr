@@ -1,4 +1,12 @@
 # Version History
+
+## [1.4.2] - 2026-03-23
+
+### Removed
+
+Vestigial read-from-URL functionality in vendored `pds4-tools` for 
+`emscripten` compatibility.
+
 ## [1.4.1] - 2026-02-18
 ### Added
 - A user guide for `Data.dump_browse()` and `Data.show()`
