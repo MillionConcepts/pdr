@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import os
 import sys
-from posixpath import join as urljoin
 
 from .label_objects import Label
 from .read_headers import read_header
@@ -13,7 +12,6 @@ from .read_arrays import read_array
 from .read_tables import read_table
 from .general_objects import StructureList
 
-from ..utils.data_access import is_supported_url, download_file
 from ..utils.constants import PDS4_DATA_ROOT_ELEMENTS, PDS4_DATA_FILE_AREAS, PDS4_TABLE_TYPES
 from ..utils.logging import logger_init
 
@@ -191,8 +189,7 @@ def pds4_read(filename, quiet=False, lazy_load=False, no_scale=False, decode_str
 
     # Read-in the PDS4 label
     logger.info('Processing label: ' + filename)
-    reified_filename = download_file(filename) if is_supported_url(filename) else filename
-    label = Label.from_file(reified_filename)
+    label = Label.from_file(filename)
 
     # Read and extract all the PDS4 data structures specified in this label
     structures = read_structures(label, filename, lazy_load=lazy_load, no_scale=no_scale,
@@ -249,8 +246,7 @@ def read_structures(label, label_filename, lazy_load=False, no_scale=False, deco
     # The path of the data file is relative to the path of the label according to the PDS4 Standard
     data_path = os.path.dirname(label_filename)
 
-    # Find the path join function (filename or URL)
-    path_join_func = urljoin if is_supported_url(label_filename) else os.path.join
+    path_join_func = os.path.join
 
     # Find all File Areas that can contain supported data structures (e.g. File_Area_Observation)
     file_areas = []
