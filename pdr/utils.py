@@ -248,7 +248,7 @@ def associate_label_file(
     return None
 
 
-def check_primary_fmt(data_filename: str):
+def check_primary_fmt(data_filename: str) -> Union[str, None]:
     """"""
     from pdr.loaders.utility import (
         DESKTOP_IMAGE_EXTENSIONS,
@@ -272,12 +272,7 @@ def check_primary_fmt(data_filename: str):
         try:
             standard = Image.open(data_filename).format
             assert standard in DESKTOP_IMAGE_STANDARDS
-        except UnidentifiedImageError:
-            raise OSError(f"Can't interpret {data_filename} as an image.")
-        except AssertionError:
-            # noinspection PyUnboundLocalVariable
-            raise NotImplementedError(
-                f"{standard} images are not currently supported."
-            )
+        except (UnidentifiedImageError, AssertionError):
+            return None
         return standard
     return None
