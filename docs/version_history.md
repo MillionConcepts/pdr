@@ -1,10 +1,14 @@
 # Version History
 
-## [1.4.2] - 2026-03-23
+## [1.4.3] - 2026-03-23
+
+### Fixed
+
+- Error that prevented loading some PDS4 GeoTIFFs.
 
 ### Removed
 
-Vestigial read-from-URL functionality in vendored `pds4-tools` for 
+- Vestigial read-from-URL functionality in vendored `pds4-tools` for 
 `emscripten` compatibility.
 
 ## [1.4.1] - 2026-02-18
