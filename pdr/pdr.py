@@ -18,6 +18,7 @@ from typing import (
 import re
 import warnings
 
+import multidict
 
 # get_annotations is new in 3.10.  this polyfill handles only
 # the specific case we care about.
@@ -511,7 +512,25 @@ class Data:
         """
         if cached is True and (self.file_mapping.get(object_name) is not None):
             return self.file_mapping[object_name]
+        if object_name not in self.index:
+            raise KeyError(f"{object_name} not in index")
         try:
+            if (
+                self.standard == "FITS"
+                or self.standard in DESKTOP_IMAGE_STANDARDS
+            ):
+                return self.filename
+            if self.standard == "PDS4":
+                if object_name == "label":
+                    path = self.labelname
+                else:
+                    path = self._pds4_structures[object_name].parent_filename
+                if not Path(path).exists():
+                    raise FileNotFoundError
+                self.file_mapping[object_name] = path
+                return path
+            if self.standard != "PDS3":
+                raise ValueError(f"Unknown standard {self.standard}")
             if isinstance(object_name, set):
                 file_list = [
                     self._target_path(obj, cached=cached, raise_missing=raise_missing)
@@ -1124,6 +1143,127 @@ class Data:
                 dump_it(self[obj], outfile)
             if purge is True:
                 self.__delattr__(obj)
+
+    def _type_of_fits_hdu(self, name: str) -> type:
+        if self.standard not in ("PDS3", "FITS"):
+            raise ValueError(
+                f"Do not call this method for {self.standard} files"
+            )
+        from astropy.io import fits
+
+        if self._hdulist is not None:
+            hdul = self._hdulist
+        else:
+            hdul = fits.open(self._target_path(name))
+        if self.standard == "PDS3":
+            from pdr.func import softquery
+            from pdr.loaders.datawrap import ReadFits
+            from pdr.loaders.handlers import hdu_byte_index
+
+            # we need to go through the query workflow to reliably figure
+            # out the HDU
+            loader = ReadFits()
+            kwargdict = {
+                "data": self, "name": name, "tracker": TrivialTracker()
+            }
+            info = softquery(loader.loader_function, loader.queries, kwargdict)
+            if info["hdu_id_is_index"] is False:
+                objrec = hdu_byte_index(hdul)[info["hdu_id"]]
+                hdu_ix = objrec["ix"]
+                is_header = objrec["part"] == "header"
+            else:
+                hdu_ix = info["hdu_id"]
+                is_header = (
+                    "HEADER" in name
+                    # cases where HDUs are named things like "IMAGE HEADER"
+                    and name not in [h[1] for h in hdul.info(False)]
+                )
+        else:
+            hdu_ix = name
+            is_header = False
+        if is_header:
+            return multidict.MultiDict
+        hdu = hdul[hdu_ix]
+        if isinstance(hdu, (fits.BinTableHDU, fits.TableHDU)):
+            import pandas as pd
+
+            return pd.DataFrame
+        if isinstance(
+            hdu, (fits.ImageHDU, fits.CompImageHDU, fits.PrimaryHDU)
+        ):
+            import numpy as np
+
+            return np.ndarray
+        raise TypeError(f"Unsupported HDU type {type(hdu)}")
+
+    def type_of(self, name: str) -> type:
+        """
+        If the object `name` has been loaded, return its type. If it has
+        not been loaded, return its expected type, were it to be loaded.
+
+        Raises:
+            KeyError: if `name` is not in this object's index.
+            FileNotFoundError: if `name` is associated with a missing file.
+            TypeError: if `name` is associated with an unloadable object.
+        """
+        if name not in self.index:
+            raise KeyError(f"{name} not in index.")
+        if name in dir(self):
+            return type(self[name])
+        if self._target_path(name) is None:
+            raise FileNotFoundError(
+                f"No file found for {name}, cannot predict type."
+            )
+        if self.standard == "PDS4":
+            if name == "label":
+                from pdr.pds4_tools.reader.label_objects import Label
+
+                return Label
+            st = self._pds4_structures[name]
+            # while we load FITS files through astropy, these should still
+            # work to lazily check the type unless the PDS4 label is flagrantly
+            # wrong. We don't use a fallback like this for PDS3 because the
+            # label is so often flagrantly wrong.
+            if st.is_table():
+                import pandas as pd
+
+                return pd.DataFrame
+            if st.is_array():
+                import numpy as np
+
+                return np.ndarray
+            # unusual cases like parsed headers, etc.
+            return type(st)
+        if self.standard == "PDS3":
+            from pdr.loaders.dispatch import pointer_to_loader
+            from pdr.loaders import datawrap as dw
+
+            loader = pointer_to_loader(name, self)
+            if isinstance(
+                loader, (dw.ReadArray, dw.ReadImage, dw.ReadCompressedImage)
+            ):
+                import numpy as np
+
+                return np.ndarray
+            if isinstance(loader, dw.ReadTable):
+                import pandas as pd
+
+                return pd.DataFrame
+            if isinstance(loader, (dw.ReadHeader, dw.ReadLabel, dw.ReadText)):
+                # technically these can be loaded as `pvl` objects. but that
+                # is not the default behavior, and if you do that, you know
+                # you're doing it.
+                return str
+            if isinstance(loader, dw.ReadFits):
+                return self._type_of_fits_hdu(name)
+            raise TypeError("Not a loadable object")
+        if self.standard in DESKTOP_IMAGE_STANDARDS:
+            import numpy as np
+
+            return np.ndarray
+        if self.standard == "FITS":
+            return self._type_of_fits_hdu(name)
+        raise ValueError(f"Unknown standard {self.standard}")
 
     def __getattribute__(self, attr: str) -> Any:
         """
