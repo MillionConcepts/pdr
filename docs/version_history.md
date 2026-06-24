@@ -1,5 +1,24 @@
 # Version History
 
+## [1.4.4] - 2026-06-24
+
+### Added
+
+- `Data.type_of()` method. returns the type of a data object in Data's index, or,
+if that object is not yet loaded, the expected type of that object on
+successful load. If the file associated with an object is not present, it raises
+a FileNotFoundError. It raises a TypeError for known-unloadable objects. Returned
+type should be one of:
+  - `np.ndarray`
+  - `pd.DataFrame`
+  - `str`
+  - `multidict.MultiDict` (FITS headers only)
+  - `pdr.pds4_tools.reader.HeaderStructure` (some unusual PDS4 header objects)
+
+### Fixed
+
+Inconsistencies in `Data._target_path()` across standards
+
 ## [1.4.3] - 2026-03-23
 
 ### Fixed
