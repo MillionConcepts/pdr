@@ -10,9 +10,7 @@ fraction of products it does not read is continuously shrinking.
 If the software fails while attempting to read from datasets that we have 
 listed as supported, please submit an issue with a link to the file and 
 information about the error (if applicable). There might also be datasets that 
-work but are not listed. We would like to hear about those too. If a dataset 
-is not yet supported that you would like us to consider prioritizing, 
-[please fill out this request form](https://docs.google.com/forms/d/1JHyMDzC9LlXY4MOMcHqV5fbseSB096_PsLshAMqMWBw/viewform).
+work but are not listed. We would like to hear about those too.
 
 ### Attribution
 If you use _pdr_ in your work, please cite us using our [JOSS Paper](docs/pdr_joss_paper.pdf): [![DOI](https://joss.theoj.org/papers/10.21105/joss.07256/status.svg)](https://doi.org/10.21105/joss.07256).
@@ -90,4 +88,4 @@ If you need general support you can find us on [OpenPlanetary Slack](https://app
 or feel free to [email](mailto:pdr@millionconcepts.com) the team.
 
 ---
-This work is supported by NASA grant No. 80NSSC21K0885.
+This work was supported by NASA PDART 80NSSC21K0885.
